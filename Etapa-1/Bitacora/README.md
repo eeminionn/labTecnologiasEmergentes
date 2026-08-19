@@ -17,6 +17,8 @@ Luego de comparar nuestras observaciones con información municipal, varias idea
 
 ## Documentos de la etapa
 
+> **Navegación:** para mantener abierta esta bitácora, abre los documentos PDF en otra pestaña con `Cmd + clic` en macOS, `Ctrl + clic` en Windows o Linux, o mediante la opción **Abrir enlace en una pestaña nueva** del menú contextual. GitHub no permite forzar este comportamiento desde un archivo README.
+
 | Documento | Aporte a la investigación |
 |:---|:---|
 | [Investigación inicial E. Abarca](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
