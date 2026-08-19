@@ -19,8 +19,8 @@ Luego de comparar nuestras observaciones con información municipal, varias idea
 
 | Documento | Aporte a la investigación |
 |:---|:---|
-| [Investigación inicial de Emilio](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
-| [Investigación de Emilia Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf) | Exploración de movilidad, mantenimiento urbano, patrimonio y adultos mayores. |
+| [Investigación inicial E. Abarca](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
+| [Investigación inicial E. Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf) | Exploración de movilidad, mantenimiento urbano, patrimonio y adultos mayores. |
 | [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf) | Desarrollo del enfoque común y selección de las tres problemáticas principales. |
 
 ## Adaptación del espacio público a las necesidades actuales
@@ -50,7 +50,7 @@ El Plan de Acción Comunal de Cambio Climático identifica veredas amplias sin s
     </td>
   </tr>
   <tr>
-    <td><strong>Figura 1.</strong> Mapa de zonas con mayor exposición al calor en La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
+    <td><strong>Figura 1.</strong> Mapa de zonas con mayor exposición al calor en La Reina. <strong>Fuente:</strong> Municipalidad de La Reina, <a href="https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf"><em>Plan de Acción Comunal de Cambio Climático 2025-2030</em></a> (2025).</td>
   </tr>
 </table>
 
@@ -73,7 +73,7 @@ El Anexo del Plan Comunal de Emergencia registra **28 puntos críticos** de inun
     </td>
   </tr>
   <tr>
-    <td><strong>Figura 2.</strong> Mapa de sectores asociados a inundación en La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
+    <td><strong>Figura 2.</strong> Mapa de sectores asociados a inundación en La Reina. <strong>Fuente:</strong> Municipalidad de La Reina, <a href="https://www.lareina.cl/wp-content/uploads/2025/09/ANEXO_PLAN_AMENAZA_INUNDACIONES_2025-2027.pdf"><em>Anexo Plan Comunal de Emergencia: Amenaza Anegamiento e Inundación 2025-2027</em></a> (2025).</td>
   </tr>
 </table>
 
