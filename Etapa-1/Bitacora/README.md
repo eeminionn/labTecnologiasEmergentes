@@ -11,6 +11,12 @@ Comenzamos revisando distintas situaciones presentes en La Reina antes de elegir
 
 Luego de comparar nuestras observaciones con información municipal, varias ideas quedaron fuera por falta de antecedentes o porque se alejaban del espacio público. La investigación se concentró finalmente en tres problemas que comparten una misma preocupación.
 
+## Documentos de la etapa
+
+- [Investigación inicial de Emilio](../Documentos/01-investigacion-inicial-emilio.pdf)
+- [Investigación de Emilia Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf)
+- [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf)
+
 ## Adaptación del espacio público a las necesidades actuales
 
 Muchos elementos urbanos fueron creados para responder a las condiciones y necesidades de otro momento. Con el paso del tiempo han cambiado la población, la movilidad y las condiciones climáticas, por lo que algunas de esas soluciones parecen no ser suficientes en la actualidad.
@@ -27,6 +33,8 @@ Algunos espacios de circulación peatonal presentan una alta exposición térmic
 
 El Plan de Acción Comunal de Cambio Climático identifica veredas amplias sin sombra y reconoce que las olas de calor han aumentado en frecuencia, duración e intensidad, con eventos sobre los **35 °C** (Municipalidad de La Reina, 2025a).
 
+![Mapa de zonas con mayor exposición al calor en La Reina](../Imagenes/01-calor-peatonal.png)
+
 El problema no es solamente la temperatura. También importa cómo se vive el calor al caminar o permanecer en el espacio público. A partir de esto nos interesa estudiar formas de generar sombra y mejorar el confort térmico de las zonas más expuestas.
 
 ## 2. Anegamientos e inundaciones urbanas
@@ -35,6 +43,8 @@ Durante eventos de lluvia intensa se producen anegamientos que afectan calles, i
 
 El Anexo del Plan Comunal de Emergencia registra **28 puntos críticos** de inundación y anegamiento. Al revisar los primeros 20 puntos urbanos, encontramos que **15** tienen como causa el colapso o la falta de un colector de aguas lluvias. Este último dato corresponde a un conteo propio realizado a partir de la tabla municipal (Municipalidad de La Reina, 2025b).
 
+![Mapa de sectores asociados a inundación en La Reina](../Imagenes/02-anegamientos.png)
+
 La situación muestra una infraestructura de drenaje insuficiente en algunos sectores. También plantea la necesidad de anticipar los eventos de lluvia y preparar canales y colectores antes de que ocurran emergencias.
 
 ## 3. Calles insuficientes para el flujo vehicular actual
@@ -42,6 +52,8 @@ La situación muestra una infraestructura de drenaje insuficiente en algunos sec
 La Reina se consolidó principalmente como una comuna residencial de baja densidad, con calles interiores pequeñas y una estructura de barrios definida. Parte de esta red vial fue creada para una población y un flujo vehicular menores.
 
 La comuna pasó de **55.048 habitantes en 1970** a **89.870 en 2024**. En la investigación también apareció una estimación de **375.014 personas** asociada a la población flotante durante días laborales. Esta última cifra proviene de antecedentes antiguos y debe verificarse antes de tratarla como un dato actual.
+
+![Mapa de la red vial y los principales ejes de La Reina](../Imagenes/03-flujo-vehicular.png)
 
 La congestión no depende solamente de quienes viven en la comuna, sino también de quienes se desplazan por ella. Los viajes se concentran en algunos ejes y accesos principales, especialmente durante las horas punta.
 
