@@ -9,8 +9,6 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 - [Investigación de Emilia Armstrong](./Etapa-1/Documentos/02-investigacion-emilia-armstrong.pdf)
 - [Síntesis final de problemáticas](./Etapa-1/Documentos/03-sintesis-final-problematicas.pdf)
 
-> Para conservar abierta la documentación, abre los PDF en otra pestaña con `Cmd + clic`, `Ctrl + clic` o mediante el menú contextual del navegador.
-
 ---
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena  

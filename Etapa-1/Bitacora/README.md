@@ -17,8 +17,6 @@ Luego de comparar nuestras observaciones con información municipal, varias idea
 
 ## Documentos de la etapa
 
-> **Navegación:** para mantener abierta esta bitácora, abre los documentos PDF en otra pestaña con `Cmd + clic` en macOS, `Ctrl + clic` en Windows o Linux, o mediante la opción **Abrir enlace en una pestaña nueva** del menú contextual. GitHub no permite forzar este comportamiento desde un archivo README.
-
 | Documento | Aporte a la investigación |
 |:---|:---|
 | [Investigación inicial E. Abarca](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
@@ -135,10 +133,12 @@ Esta formulación todavía es preliminar. Su objetivo es orientar la siguiente e
 
 ### Registros internos
 
-- Abarca, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/01-investigacion-inicial-emilio.pdf)* [Registro de investigación no publicado].
-- Armstrong, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/02-investigacion-emilia-armstrong.pdf)* [Registro de investigación no publicado].
-- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Síntesis preliminar de problemáticas de La Reina](../Documentos/03-sintesis-final-problematicas.pdf)* [Trabajo de curso no publicado].
+- Abarca, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/01-investigacion-inicial-emilio.pdf)*.
+- Armstrong, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/02-investigacion-emilia-armstrong.pdf)*.
+- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Síntesis preliminar de problemáticas de La Reina](../Documentos/03-sintesis-final-problematicas.pdf)*.
 
 ---
 
-Documentado por Emilio Abarca, Emilia Armstrong y Victoria Aracena, 2026.
+Documentado por Emilio Abarca y Emilia Armstrong, 2026.
+
+[Volver al README principal](../../README.md)
