@@ -1,10 +1,10 @@
-# Investigación MLR — La Reina
+# Investigación MLR: La Reina
 
-Exploración de problemáticas urbanas y ambientales de la comuna de La Reina desarrollada desde diseño, combinando antecedentes cualitativos y cuantitativos para observar el territorio, contrastar distintas situaciones problemáticas y construir progresivamente un enmarque de investigación.
+Investigación sobre la adaptación del espacio público de La Reina a las necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.
 
 ## Índice
 
-- [Bitácora — Etapa 1: Exploración y definición inicial de la problemática](./Etapa-1/Bitacora/README.md)
+- [Bitácora: Etapa 1](./Etapa-1/Bitacora/README.md)
 
 ---
 
