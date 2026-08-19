@@ -5,6 +5,10 @@
 **Fecha:** Martes 18 de agosto de 2026  
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
+[Volver al README principal](../../README.md)
+
+---
+
 ## Punto de partida
 
 Comenzamos revisando distintas situaciones presentes en La Reina antes de elegir un problema específico. En esta búsqueda aparecieron temas como baches, ciclovías, comunicación municipal, transporte, accesibilidad, calor, inundaciones y congestión.
@@ -13,9 +17,11 @@ Luego de comparar nuestras observaciones con información municipal, varias idea
 
 ## Documentos de la etapa
 
-- [Investigación inicial de Emilio](../Documentos/01-investigacion-inicial-emilio.pdf)
-- [Investigación de Emilia Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf)
-- [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf)
+| Documento | Aporte a la investigación |
+|:---|:---|
+| [Investigación inicial de Emilio](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
+| [Investigación de Emilia Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf) | Exploración de movilidad, mantenimiento urbano, patrimonio y adultos mayores. |
+| [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf) | Desarrollo del enfoque común y selección de las tres problemáticas principales. |
 
 ## Adaptación del espacio público a las necesidades actuales
 
@@ -33,7 +39,20 @@ Algunos espacios de circulación peatonal presentan una alta exposición térmic
 
 El Plan de Acción Comunal de Cambio Climático identifica veredas amplias sin sombra y reconoce que las olas de calor han aumentado en frecuencia, duración e intensidad, con eventos sobre los **35 °C** (Municipalidad de La Reina, 2025a).
 
-![Mapa de zonas con mayor exposición al calor en La Reina](../Imagenes/01-calor-peatonal.png)
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/01-calor-peatonal.png"
+        alt="Mapa de zonas con mayor exposición al calor en La Reina"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 1.</strong> Mapa de zonas con mayor exposición al calor en La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
+  </tr>
+</table>
 
 El problema no es solamente la temperatura. También importa cómo se vive el calor al caminar o permanecer en el espacio público. A partir de esto nos interesa estudiar formas de generar sombra y mejorar el confort térmico de las zonas más expuestas.
 
@@ -43,7 +62,20 @@ Durante eventos de lluvia intensa se producen anegamientos que afectan calles, i
 
 El Anexo del Plan Comunal de Emergencia registra **28 puntos críticos** de inundación y anegamiento. Al revisar los primeros 20 puntos urbanos, encontramos que **15** tienen como causa el colapso o la falta de un colector de aguas lluvias. Este último dato corresponde a un conteo propio realizado a partir de la tabla municipal (Municipalidad de La Reina, 2025b).
 
-![Mapa de sectores asociados a inundación en La Reina](../Imagenes/02-anegamientos.png)
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/02-anegamientos.png"
+        alt="Mapa de sectores asociados a inundación en La Reina"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 2.</strong> Mapa de sectores asociados a inundación en La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
+  </tr>
+</table>
 
 La situación muestra una infraestructura de drenaje insuficiente en algunos sectores. También plantea la necesidad de anticipar los eventos de lluvia y preparar canales y colectores antes de que ocurran emergencias.
 
@@ -53,7 +85,20 @@ La Reina se consolidó principalmente como una comuna residencial de baja densid
 
 La comuna pasó de **55.048 habitantes en 1970** a **89.870 en 2024**. En la investigación también apareció una estimación de **375.014 personas** asociada a la población flotante durante días laborales. Esta última cifra proviene de antecedentes antiguos y debe verificarse antes de tratarla como un dato actual.
 
-![Mapa de la red vial y los principales ejes de La Reina](../Imagenes/03-flujo-vehicular.png)
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/03-flujo-vehicular.png"
+        alt="Mapa de la red vial y los principales ejes de La Reina"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 3.</strong> Mapa de la red vial y los principales ejes de La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
+  </tr>
+</table>
 
 La congestión no depende solamente de quienes viven en la comuna, sino también de quienes se desplazan por ella. Los viajes se concentran en algunos ejes y accesos principales, especialmente durante las horas punta.
 
@@ -81,26 +126,17 @@ Esta formulación todavía es preliminar. Su objetivo es orientar la siguiente e
 
 ## Referencias
 
-Biblioteca del Congreso Nacional de Chile. (2025). *Reporte comunal: La Reina*. Sistema Integrado de Información Territorial.
-
-https://www.bcn.cl/siit/reportescomunales/comunas_v.html?anno=2025&idcom=13113
-
-Municipalidad de La Reina. (2019). *Plan de Desarrollo Comunal La Reina 2019-2025*.
-
-https://lareina.cl/pladeco/
-
-Municipalidad de La Reina. (2025a). *Plan de Acción Comunal de Cambio Climático 2025-2030*.
-
-https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf
-
-Municipalidad de La Reina. (2025b). *Anexo Plan Comunal de Emergencia: Amenaza Anegamiento e Inundación 2025-2027*.
-
-https://www.lareina.cl/wp-content/uploads/2025/09/ANEXO_PLAN_AMENAZA_INUNDACIONES_2025-2027.pdf
+- Biblioteca del Congreso Nacional de Chile. (2025). *[Reporte comunal: La Reina](https://www.bcn.cl/siit/reportescomunales/comunas_v.html?anno=2025&idcom=13113)*. Sistema Integrado de Información Territorial.
+- Municipalidad de La Reina. (2019). *[Plan de Desarrollo Comunal La Reina 2019-2025](https://lareina.cl/pladeco/)*.
+- Municipalidad de La Reina. (2025a). *[Plan de Acción Comunal de Cambio Climático 2025-2030](https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf)*.
+- Municipalidad de La Reina. (2025b). *[Anexo Plan Comunal de Emergencia: Amenaza Anegamiento e Inundación 2025-2027](https://www.lareina.cl/wp-content/uploads/2025/09/ANEXO_PLAN_AMENAZA_INUNDACIONES_2025-2027.pdf)*.
 
 ### Registros internos
 
-Abarca, E. (2026). *Exploración preliminar de situaciones problemáticas de La Reina* [Registro de investigación no publicado].
+- Abarca, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/01-investigacion-inicial-emilio.pdf)* [Registro de investigación no publicado].
+- Armstrong, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/02-investigacion-emilia-armstrong.pdf)* [Registro de investigación no publicado].
+- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Síntesis preliminar de problemáticas de La Reina](../Documentos/03-sintesis-final-problematicas.pdf)* [Trabajo de curso no publicado].
 
-Armstrong, E. (2026). *Exploración preliminar de situaciones problemáticas de La Reina* [Registro de investigación no publicado].
+---
 
-Abarca, E., Armstrong, E., & Aracena, V. (2026). *Síntesis preliminar de problemáticas de La Reina* [Trabajo de curso no publicado].
+Documentado por Emilio Abarca, Emilia Armstrong y Victoria Aracena, 2026.
