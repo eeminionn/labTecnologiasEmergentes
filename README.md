@@ -8,5 +8,6 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 
 ---
 
-**Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena  
-**Estado actual:** Investigación preliminar · Etapa 1
+**Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
+**Estado actual:** Investigación preliminar · Etapa 1<br>
+**Última actualización:** 21 de agosto de 2026

@@ -2,7 +2,8 @@
 
 ### Exploración y definición de la problemática
 
-**Fecha:** Martes 18 de agosto de 2026  
+**Inicio:** Martes 18 de agosto de 2026<br>
+**Última actualización:** Viernes 21 de agosto de 2026<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../../README.md)
@@ -22,6 +23,7 @@ Luego de comparar nuestras observaciones con información municipal, varias idea
 | [Investigación inicial E. Abarca](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
 | [Investigación inicial E. Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf) | Exploración de movilidad, mantenimiento urbano, patrimonio y adultos mayores. |
 | [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf) | Desarrollo del enfoque común y selección de las tres problemáticas principales. |
+| [Validación inicial de movilidad y entrevistas](../Documentos/04-validacion-movilidad-entrevistas.pdf) | Revisión de vías, comparación de recorridos y primeras entrevistas sobre congestión. |
 
 ## Adaptación del espacio público a las necesidades actuales
 
@@ -102,6 +104,54 @@ La comuna pasó de **55.048 habitantes en 1970** a **89.870 en 2024**. En la inv
 
 La congestión no depende solamente de quienes viven en la comuna, sino también de quienes se desplazan por ella. Los viajes se concentran en algunos ejes y accesos principales, especialmente durante las horas punta.
 
+## Actualización: validación inicial de movilidad
+
+**Fecha:** Viernes 21 de agosto de 2026
+
+En este avance profundizamos la tercera problemática mediante una revisión del estado de las vías, la comparación de recorridos y entrevistas breves. La intención fue comprobar si la congestión identificada en los antecedentes también aparecía en situaciones actuales y en la experiencia de las personas.
+
+### Estado de las vías
+
+La consulta realizada en Transporte Informa RM muestra tránsito pesado o moderado en algunos ejes principales. También se observan diferencias de tiempo y velocidad según el sentido del recorrido, lo que refuerza la idea de que el problema se concentra en ciertas avenidas y horarios.
+
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/04-estado-movilidad-vias.png"
+        alt="Estado de movilidad y vías principales en el sector de La Reina"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 4.</strong> Estado de movilidad y vías principales en el sector de La Reina. <strong>Fuente:</strong> Transporte Informa RM, <em>Estado de movilidad y vías reversibles</em> (s. f.).</td>
+  </tr>
+</table>
+
+### Recorridos y entrevistas
+
+Al comparar tres recorridos durante la mañana aparecen tramos de congestión en calles principales y pocas alternativas claras por las vías interiores. Esta observación coincide con las entrevistas, donde se repiten ideas como los tacos frecuentes, la falta de rutas para evitarlos y trayectos cortos que pueden extenderse considerablemente en hora punta.
+
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/05-comparacion-recorridos.png"
+        alt="Comparación de tres recorridos con tramos de congestión"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 5.</strong> Comparación de tres recorridos con tramos de congestión durante la mañana. <strong>Fuente:</strong> registro del equipo incluido en la <a href="../Documentos/04-validacion-movilidad-entrevistas.pdf">validación inicial de movilidad y entrevistas</a> (2026).</td>
+  </tr>
+</table>
+
+Las entrevistas funcionan como una primera aproximación cualitativa y todavía no representan a toda la comuna. Además, la presentación indica `N=4`, pero incluye cinco testimonios distintos. Este dato deberá aclararse antes de cerrar la muestra.
+
+Este avance no cambia la problemática seleccionada. Más bien entrega una primera validación de que la capacidad vial y la concentración de los desplazamientos afectan la experiencia cotidiana de movilidad.
+
 ## Conclusión de las problemáticas
 
 Los tres problemas muestran una dificultad común: parte del espacio público y de la infraestructura de La Reina debe responder hoy a condiciones distintas de aquellas para las que fue creada.
@@ -118,11 +168,11 @@ Esta formulación todavía es preliminar. Su objetivo es orientar la siguiente e
 
 ## Próximos pasos
 
-- Verificar los datos que todavía son preliminares.
-- Observar y registrar los tres problemas en terreno.
-- Identificar a los usuarios más afectados.
-- Ubicar los puntos relevantes de calor, anegamiento y congestión.
-- Profundizar el problema antes de plantear soluciones.
+- Aclarar el número de entrevistas y registrar las características de la muestra.
+- Ampliar las entrevistas a residentes y personas que atraviesan la comuna.
+- Comparar tiempos de viaje en hora punta y fuera de ella.
+- Identificar los cruces y recorridos donde se concentra la congestión.
+- Continuar validando el problema antes de plantear soluciones.
 
 ## Referencias
 
@@ -136,6 +186,7 @@ Esta formulación todavía es preliminar. Su objetivo es orientar la siguiente e
 - Abarca, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/01-investigacion-inicial-emilio.pdf)*.
 - Armstrong, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/02-investigacion-emilia-armstrong.pdf)*.
 - Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Síntesis preliminar de problemáticas de La Reina](../Documentos/03-sintesis-final-problematicas.pdf)*.
+- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Validación inicial de movilidad y entrevistas](../Documentos/04-validacion-movilidad-entrevistas.pdf)*.
 
 ---
 
