@@ -1,0 +1,66 @@
+name: Publicar registro vehicular
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "registroVehicularMLR/**"
+      - ".github/workflows/publicar-registro-vehicular.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: registroVehicularMLR
+    steps:
+      - name: Bajar el proyecto
+        uses: actions/checkout@v4
+
+      - name: Preparar Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: registroVehicularMLR/package-lock.json
+
+      - name: Instalar
+        run: npm ci
+
+      - name: Probar
+        run: npm test
+
+      - name: Construir
+        run: npm run build
+
+      - name: Preparar sitio
+        run: |
+          mkdir -p ../publicacion/registroVehicularMLR
+          cp -R dist/. ../publicacion/registroVehicularMLR/
+          cp redirect.html ../publicacion/index.html
+          touch ../publicacion/.nojekyll
+
+      - name: Configurar Pages
+        uses: actions/configure-pages@v5
+
+      - name: Subir sitio
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: publicacion
+
+      - name: Publicar
+        id: deployment
+        uses: actions/deploy-pages@v4
