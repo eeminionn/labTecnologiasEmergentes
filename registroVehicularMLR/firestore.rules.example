@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Modelo asumido
+    // ===============================================================
+    //
+    // Colección: registros
+    // Documento: ID automático
+    // Campos obligatorios:
+    //   ownerUid: string, 1–128 caracteres
+    //   cruce: string, 3–100 caracteres
+    //   direccion: Norte | Sur | Oriente | Poniente
+    //   fechaLocal: string YYYY-MM-DD
+    //   zonaHoraria: America/Santiago
+    //   verdeSegundos: int, 1–600
+    //   rojoSegundos: int, 1–600
+    //   autos: int, 0–5000
+    //   cierre: manual | automatico
+    //   inicioVerde: timestamp
+    //   finVerde: timestamp
+    //   createdAt: timestamp del servidor
+    //
+    // ===============================================================
+    // Funciones comunes
+    // ===============================================================
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAuthorizedUser() {
+      return isAuthenticated() &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email == 'correo.autorizado@example.com';
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function uidUnchanged() {
+      return request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    function uidNotModified(newData, existingData) {
+      return newData.ownerUid == existingData.ownerUid;
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Validador de dominio
+    // ===============================================================
+
+    function isValidRegistro(data) {
+      let fields = [
+        'ownerUid',
+        'cruce',
+        'direccion',
+        'fechaLocal',
+        'zonaHoraria',
+        'verdeSegundos',
+        'rojoSegundos',
+        'autos',
+        'cierre',
+        'inicioVerde',
+        'finVerde',
+        'createdAt'
+      ];
+
+      return hasRequiredFields(fields) &&
+        hasOnlyAllowedFields(fields) &&
+        data.ownerUid is string &&
+        data.ownerUid.size() >= 1 &&
+        data.ownerUid.size() <= 128 &&
+        data.ownerUid == request.auth.uid &&
+        data.cruce is string &&
+        data.cruce.size() >= 3 &&
+        data.cruce.size() <= 100 &&
+        data.direccion is string &&
+        data.direccion in ['Norte', 'Sur', 'Oriente', 'Poniente'] &&
+        data.fechaLocal is string &&
+        data.fechaLocal.size() == 10 &&
+        data.fechaLocal.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+        data.zonaHoraria is string &&
+        data.zonaHoraria == 'America/Santiago' &&
+        data.verdeSegundos is int &&
+        data.verdeSegundos >= 1 &&
+        data.verdeSegundos <= 600 &&
+        data.rojoSegundos is int &&
+        data.rojoSegundos >= 1 &&
+        data.rojoSegundos <= 600 &&
+        data.autos is int &&
+        data.autos >= 0 &&
+        data.autos <= 5000 &&
+        data.cierre is string &&
+        data.cierre in ['manual', 'automatico'] &&
+        data.inicioVerde is timestamp &&
+        data.finVerde is timestamp &&
+        data.inicioVerde <= data.finVerde &&
+        data.inicioVerde >= request.time - duration.value(1, 'd') &&
+        data.finVerde <= request.time + duration.value(5, 'm') &&
+        data.createdAt is timestamp &&
+        data.createdAt == request.time;
+    }
+
+    match /registros/{registroId} {
+      allow read: if isAuthorizedUser();
+      allow create: if isAuthorizedUser() &&
+        uidUnchanged() &&
+        isOwner(request.resource.data.ownerUid) &&
+        isValidRegistro(request.resource.data);
+      allow update: if isAuthorizedUser() &&
+        uidNotModified(request.resource.data, resource.data) &&
+        isValidRegistro(request.resource.data) &&
+        false;
+      allow delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
