@@ -121,7 +121,8 @@ service cloud.firestore {
         uidNotModified(request.resource.data, resource.data) &&
         isValidRegistro(request.resource.data) &&
         false;
-      allow delete: if false;
+      allow delete: if isAuthorizedUser() &&
+        isOwner(resource.data.ownerUid);
     }
 
     match /{document=**} {

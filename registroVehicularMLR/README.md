@@ -6,11 +6,10 @@ Aplicación móvil para contar autos por ciclo de semáforo en cruces de La Rein
 
 ## Qué hace
 
-- Define segundos de verde y rojo.
-- Cuenta autos con un botón grande durante el verde.
-- Cambia el ciclo automáticamente con un temporizador.
+- Mide el verde y el rojo con un cronómetro de play y pausa.
+- Cuenta autos con un botón grande mientras se mide el verde.
 - Guarda cruce, dirección, día, horario, duraciones y total en Firestore.
-- Ordena los registros por día y permite filtrarlos.
+- Ordena los registros por día, permite filtrarlos y borrarlos con confirmación.
 - Restringe los datos a una sola cuenta de Google autorizada.
 
 ## Abrir en local

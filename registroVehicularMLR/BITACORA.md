@@ -38,3 +38,11 @@ Probé la pantalla a 390 × 844 px, revisé el cambio de estados, el conteo, el 
 ### Publicación
 
 Preparé un flujo de GitHub Pages que prueba y construye la app antes de publicarla. Todo el código, la configuración, las pruebas y esta bitácora viven dentro de `registroVehicularMLR`; solo el archivo obligatorio del flujo queda en `.github/workflows`.
+
+### Segundo ajuste
+
+Reemplacé los tiempos escritos a mano por una medición real. Ahora se elige verde o rojo, se toca iniciar cuando comienza el color y se pausa justo cuando cambia. La app guarda el resultado de cada color y habilita el registro cuando los dos están medidos. El contador de autos solo responde mientras está corriendo el verde.
+
+También sumé un botón para borrar registros desde el historial. Antes de eliminar aparece una confirmación con el cruce, la dirección y la cantidad de autos para evitar errores. En Firebase el borrado quedó limitado a la cuenta autorizada y al dueño original del registro.
+
+Renové toda la interfaz con una estética más cercana a Apple: fondo gris claro, tarjetas blancas, transparencias suaves, tipografía del sistema, controles redondeados y azul como color principal. El verde y el rojo quedan reservados para el semáforo y las alertas, así la lectura sigue siendo rápida en terreno.

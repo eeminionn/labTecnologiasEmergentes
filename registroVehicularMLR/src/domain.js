@@ -8,6 +8,12 @@ export function formatTimer(totalSeconds) {
   return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
+export function secondsFromMilliseconds(milliseconds) {
+  const safeMilliseconds = Math.max(0, Number(milliseconds) || 0);
+  if (safeMilliseconds === 0) return 0;
+  return Math.max(1, Math.round(safeMilliseconds / 1000));
+}
+
 export function sanitizeCrossing(value) {
   return String(value ?? "")
     .trim()

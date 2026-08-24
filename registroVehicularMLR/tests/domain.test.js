@@ -5,12 +5,19 @@ import {
   formatTimer,
   groupRecords,
   sanitizeCrossing,
+  secondsFromMilliseconds,
   validateCycle,
 } from "../src/domain.js";
 
 test("formatea el tiempo con dos dígitos", () => {
   assert.equal(formatTimer(0), "00:00");
   assert.equal(formatTimer(65), "01:05");
+});
+
+test("convierte la medición a segundos enteros", () => {
+  assert.equal(secondsFromMilliseconds(0), 0);
+  assert.equal(secondsFromMilliseconds(440), 1);
+  assert.equal(secondsFromMilliseconds(1_520), 2);
 });
 
 test("limpia espacios del cruce", () => {
