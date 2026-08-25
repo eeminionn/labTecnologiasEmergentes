@@ -523,9 +523,11 @@ function renderHistory() {
                 <div><dt>Verde</dt><dd>${record.verdeSegundos}s</dd></div>
                 <div><dt>Rojo</dt><dd>${record.rojoSegundos}s</dd></div>
               </dl>
-              <button class="delete-record" type="button" data-delete-record="${escapeHtml(record.id)}" aria-label="Borrar registro de ${escapeHtml(record.cruce)}" title="Borrar registro">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
-              </button>
+              ${record.ownerUid === state.user?.uid ? `
+                <button class="delete-record" type="button" data-delete-record="${escapeHtml(record.id)}" aria-label="Borrar registro de ${escapeHtml(record.cruce)}" title="Borrar registro">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5"/></svg>
+                </button>
+              ` : ""}
             </article>
           `).join("")}
         </div>
