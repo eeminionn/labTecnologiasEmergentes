@@ -29,10 +29,10 @@ service cloud.firestore {
       return request.auth != null;
     }
 
-    function isAuthorizedUser() {
+    function isGoogleUser() {
       return isAuthenticated() &&
         request.auth.token.email_verified == true &&
-        request.auth.token.email == 'correo.autorizado@example.com';
+        request.auth.token.firebase.sign_in_provider == 'google.com';
     }
 
     function isOwner(userId) {
@@ -112,16 +112,16 @@ service cloud.firestore {
     }
 
     match /registros/{registroId} {
-      allow read: if isAuthorizedUser();
-      allow create: if isAuthorizedUser() &&
+      allow read: if isGoogleUser();
+      allow create: if isGoogleUser() &&
         uidUnchanged() &&
         isOwner(request.resource.data.ownerUid) &&
         isValidRegistro(request.resource.data);
-      allow update: if isAuthorizedUser() &&
+      allow update: if isGoogleUser() &&
         uidNotModified(request.resource.data, resource.data) &&
         isValidRegistro(request.resource.data) &&
         false;
-      allow delete: if isAuthorizedUser() &&
+      allow delete: if isGoogleUser() &&
         isOwner(resource.data.ownerUid);
     }
 

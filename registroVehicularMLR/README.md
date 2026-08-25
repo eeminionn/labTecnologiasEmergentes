@@ -10,7 +10,7 @@ Aplicación móvil para contar autos por ciclo de semáforo en cruces de La Rein
 - Cuenta autos con un botón grande mientras se mide el verde.
 - Guarda cruce, dirección, día, horario, duraciones y total en Firestore.
 - Ordena los registros por día, permite filtrarlos y borrarlos con confirmación.
-- Restringe los datos a una sola cuenta de Google autorizada.
+- Permite entrar a cualquier persona que inicie sesión con Google.
 
 ## Abrir en local
 
@@ -32,9 +32,9 @@ npm run build
 - Base: Cloud Firestore Standard
 - Región: `southamerica-west1` (Santiago)
 - Colección: `registros`
-- Acceso: Google Authentication y reglas de mínimo privilegio
+- Acceso: Google Authentication; todos los usuarios autenticados pueden leer y crear, pero solo el dueño puede borrar su registro
 
-La regla real con la cuenta autorizada está desplegada en Firebase y se mantiene fuera del repositorio público. `firestore.rules.example` muestra la misma estructura con el correo redactado. Para volver a desplegarla, copia el ejemplo como `firestore.rules`, reemplaza el correo de ejemplo localmente y ejecuta:
+La regla real está desplegada en Firebase y se mantiene fuera del repositorio público. `firestore.rules.example` muestra la misma estructura. Para volver a desplegarla, copia el ejemplo como `firestore.rules` y ejecuta:
 
 ```bash
 npx -y firebase-tools@latest deploy --only firestore
