@@ -50,19 +50,3 @@ Renové toda la interfaz con una estética más cercana a Apple: fondo gris clar
 ### Acceso abierto con Google
 
 Al probar con una segunda cuenta notamos que la regla inicial solo aceptaba mi correo. Cambié ese criterio para que cualquier persona que inicie sesión con Google pueda entrar, revisar los registros compartidos y sumar nuevas mediciones. Cada registro sigue guardando el UID de quien lo creó y solamente esa persona puede borrarlo; las cuentas sin sesión y otros métodos de acceso siguen bloqueados.
-
-## 25 de agosto de 2026
-
-### Uso en terreno
-
-La aplicación dejó de ser solo una prueba y pasó a ser parte de la investigación. La usamos para registrar ciclos en distintos cruces de Salvador Izquierdo, Aguas Claras, Mateo de Toro y Zambrano, Príncipe de Gales y Padre Hurtado.
-
-En una de las series reunimos 20 mediciones, 304 autos y un verde promedio de 39,6 segundos. También comparamos Padre Hurtado cerca de las 19:00 y de las 21:00. En hora punta el verde era más largo, pero pasaban menos autos por minuto. Eso nos mostró que guardar el horario y la duración completa del ciclo era tan importante como contar vehículos.
-
-## 28 de agosto de 2026
-
-### De la medición a una idea más grande
-
-La app nos sirvió para comprobar que una herramienta pequeña puede ordenar datos que normalmente quedarían en notas, fotos o planillas separadas. Esa experiencia influyó en el nuevo enfoque del proyecto: pensar una plataforma territorial capaz de integrar información de tránsito, clima, infraestructura, seguridad y reportes vecinales.
-
-Decidimos mantener Registro Vehicular MLR como un prototipo funcional y como ejemplo de una posible fuente de datos. La futura plataforma no tendría que reemplazarla, sino conectarse con herramientas como esta y mostrar su información junto a las demás capas del territorio.
