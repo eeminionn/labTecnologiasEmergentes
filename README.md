@@ -19,7 +19,7 @@ La investigación siguió desde los tres problemas iniciales hacia una oportunid
 - [Bitácora: Etapa 2](./Etapa-2/Bitacora/README.md)
 - [Presentación del nuevo avance](./Etapa-2/Documentos/01-presentacion-avance-plataforma-territorial.pdf)
 
-<p align="center"><img src="./Etapa-2/Imagenes/04-problematica-transversal.jpg" alt="Problemática transversal de la Etapa 2" width="900"></p>
+<p align="center"><img src="./Etapa-2/Imagenes/04-problematica-transversal.jpg" alt="Problemática transversal de la Etapa 2" width="640"></p>
 
 ## Herramienta web
 

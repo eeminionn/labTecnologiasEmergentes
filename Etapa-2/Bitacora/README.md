@@ -22,17 +22,56 @@ En la primera etapa investigamos calor peatonal, anegamientos y congestión como
 
 Para no seguir anotando tiempos y conteos en el celular de forma separada, desarrollamos Registro Vehicular MLR. La aplicación permite medir verde y rojo con un cronómetro, contar autos, guardar cruce y dirección, y revisar todo después por fecha.
 
-<p align="center"><img src="../Imagenes/02-herramienta-registro.jpg" alt="Aplicación móvil de registro vehicular" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/02-herramienta-registro.jpg"
+        alt="Aplicación móvil de registro vehicular"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 1.</strong> Vistas del registro en terreno y del historial de mediciones. <strong>Fuente:</strong> elaboración del equipo, <a href="../../registroVehicularMLR/"><em>Registro Vehicular MLR</em></a> (2026).</td>
+  </tr>
+</table>
 
 La usamos en cruces de Salvador Izquierdo, Aguas Claras, Mateo de Toro y Zambrano, Príncipe de Gales y Padre Hurtado. En una de las series hicimos 20 mediciones, contamos 304 autos y obtuvimos un verde promedio de 39,6 segundos.
 
-<p align="center"><img src="../Imagenes/01-mediciones-terreno.jpg" alt="Mediciones de semáforos realizadas en terreno" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/01-mediciones-terreno.jpg"
+        alt="Mediciones de semáforos realizadas en terreno"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 2.</strong> Síntesis de veinte mediciones realizadas en cruces del sector de Salvador Izquierdo, Aguas Claras, Mateo de Toro y Zambrano y Príncipe de Gales. <strong>Fuente:</strong> registro del equipo incluido en la <a href="../Documentos/01-presentacion-avance-plataforma-territorial.pdf">presentación de avance</a> (2026).</td>
+  </tr>
+</table>
 
 También comparamos Padre Hurtado en dos momentos. Entre las 18:36 y 18:46 registramos 75 autos en cinco ciclos. Entre las 21:03 y 21:10 registramos 112. Aunque en hora punta el verde era más largo, pasaban menos autos por minuto.
 
 La conclusión no fue que el semáforo estuviera necesariamente mal programado. Entendimos que la congestión depende de más variables y que un verde largo no garantiza por sí solo un flujo eficiente.
 
-<p align="center"><img src="../Imagenes/03-comparacion-flujo.jpg" alt="Comparación entre hora punta y bajo flujo" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/03-comparacion-flujo.jpg"
+        alt="Comparación entre hora punta y bajo flujo"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 3.</strong> Comparación de cinco ciclos en hora punta y cinco ciclos durante un horario de menor congestión en Padre Hurtado. <strong>Fuente:</strong> elaboración propia a partir de las mediciones guardadas en Registro Vehicular MLR (2026).</td>
+  </tr>
+</table>
 
 ## Cómo se decide el tiempo de un semáforo
 
@@ -56,13 +95,39 @@ La Reina enfrenta congestión, anegamientos, sectores con poca sombra, fallas de
 
 > La Municipalidad de La Reina no cuenta con una herramienta territorial transversal que unifique y relacione dinámicamente la información de sus distintas áreas, limitando su capacidad para priorizar, coordinar y anticipar problemas comunales.
 
-<p align="center"><img src="../Imagenes/04-problematica-transversal.jpg" alt="Problemática transversal definida por el equipo" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/04-problematica-transversal.jpg"
+        alt="Problemática transversal definida por el equipo"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 4.</strong> Reformulación de la problemática hacia la falta de una herramienta territorial transversal. <strong>Fuente:</strong> elaboración del equipo incluida en la <a href="../Documentos/01-presentacion-avance-plataforma-territorial.pdf">presentación de avance</a> (2026).</td>
+  </tr>
+</table>
 
 ## Lo que la municipalidad ya tiene
 
 La Reina no parte de cero. Encontramos una Central de Televigilancia, cámaras, pórticos, Centros de Atención Integral, botones de pánico, La Reina Digital, SOSAFE, el 1419, el call center, planes de emergencia, revisión de puntos críticos y Observadores Preventivos Vecinales.
 
-<p align="center"><img src="../Imagenes/05-monitoreo-municipal.jpg" alt="Herramientas actuales de vigilancia municipal" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/05-monitoreo-municipal.jpg"
+        alt="Herramientas actuales de vigilancia municipal"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 5.</strong> Central de Televigilancia, Centro de Atención Integral y botón de emergencia como parte de las herramientas actuales de seguridad. <strong>Fuente:</strong> Municipalidad de La Reina, <a href="https://www.lareina.cl/wp-content/uploads/2024/04/CUENTA-PUBLICA-LA-REINA-GESTION-2023.pdf"><em>Cuenta Pública 2023</em></a> (2024) y <a href="https://www.lareina.cl/wp-content/uploads/2026/04/Cuenta-Publica-2025_Final__.pdf"><em>Cuenta Pública 2025</em></a> (2026).</td>
+  </tr>
+</table>
 
 También existe la Plataforma de Atención al Vecino, que permitió ordenar solicitudes que antes llegaban desde varias fuentes. Aun así, no encontramos evidencia pública de una vista transversal que conecte seguridad, tránsito, clima, infraestructura, emergencias y atención vecinal.
 
@@ -81,7 +146,20 @@ No queremos crear otra plataforma aislada ni obligar a eliminar lo que ya funcio
 3. **Fortalecer la coordinación:** permitir que Seguridad, Tránsito, DIMAO, Obras y Gestión de Riesgos compartan responsabilidades y seguimiento.
 4. **Priorizar y prevenir:** ordenar los casos por gravedad, recurrencia, urgencia y población afectada para reconocer zonas críticas y actuar antes.
 
-<p align="center"><img src="../Imagenes/06-objetivos-plataforma.jpg" alt="Cuatro objetivos específicos de la plataforma" width="900"></p>
+<table>
+  <tr>
+    <td align="center">
+      <img
+        src="../Imagenes/06-objetivos-plataforma.jpg"
+        alt="Cuatro objetivos específicos de la plataforma"
+        width="640"
+      />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 6.</strong> Síntesis de los cuatro objetivos específicos definidos para la plataforma territorial. <strong>Fuente:</strong> elaboración del equipo incluida en la <a href="../Documentos/01-presentacion-avance-plataforma-territorial.pdf">presentación de avance</a> (2026).</td>
+  </tr>
+</table>
 
 ## Qué podría integrar
 
