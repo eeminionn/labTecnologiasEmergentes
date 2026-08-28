@@ -1,6 +1,6 @@
 # Registro Vehicular MLR
 
-Aplicación móvil para contar autos por ciclo de semáforo en cruces de La Reina.
+Aplicación móvil para contar autos por ciclo de semáforo en cruces de La Reina. Nació como una herramienta de terreno para la [investigación territorial del proyecto](../Etapa-1/Bitacora/README.md).
 
 **Sitio:** https://eeminionn.github.io/labTecnologiasEmergentes/registroVehicularMLR/
 
