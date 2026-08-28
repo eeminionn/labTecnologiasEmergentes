@@ -1,7 +1,5 @@
 # Bitácora - Etapa 2
 
-### De tres problemas a una mirada territorial común
-
 **Inicio:** 24 de agosto de 2026<br>
 **Última actualización:** 28 de agosto de 2026<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
