@@ -1,195 +1,151 @@
-# Bitácora - Etapa 1
+# Bitácora del proyecto - La Reina
 
-### Exploración y definición de la problemática
-
-**Inicio:** Martes 18 de agosto de 2026<br>
-**Última actualización:** Viernes 21 de agosto de 2026<br>
+**Inicio:** 18 de agosto de 2026<br>
+**Última actualización:** 28 de agosto de 2026<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../../README.md)
 
----
+## En una frase
 
-## Punto de partida
+Partimos investigando problemas urbanos separados y terminamos proponiendo una herramienta territorial que ayude a la Municipalidad de La Reina a observarlos, relacionarlos y priorizarlos desde un mismo lugar.
 
-Comenzamos revisando distintas situaciones presentes en La Reina antes de elegir un problema específico. En esta búsqueda aparecieron temas como baches, ciclovías, comunicación municipal, transporte, accesibilidad, calor, inundaciones y congestión.
+## Material del proceso
 
-Luego de comparar nuestras observaciones con información municipal, varias ideas quedaron fuera por falta de antecedentes o porque se alejaban del espacio público. La investigación se concentró finalmente en tres problemas que comparten una misma preocupación.
-
-## Documentos de la etapa
-
-| Documento | Aporte a la investigación |
+| Documento | Qué muestra |
 |:---|:---|
-| [Investigación inicial E. Abarca](../Documentos/01-investigacion-inicial-emilio.pdf) | Exploración de calor peatonal, fragmentación del ecosistema precordillerano y anegamientos. |
-| [Investigación inicial E. Armstrong](../Documentos/02-investigacion-emilia-armstrong.pdf) | Exploración de movilidad, mantenimiento urbano, patrimonio y adultos mayores. |
-| [Síntesis final de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf) | Desarrollo del enfoque común y selección de las tres problemáticas principales. |
-| [Validación inicial de movilidad y entrevistas](../Documentos/04-validacion-movilidad-entrevistas.pdf) | Revisión de vías, comparación de recorridos y primeras entrevistas sobre congestión. |
+| [Investigación inicial de Emilio](../Documentos/01-investigacion-inicial-emilio.pdf) | Primera exploración de calor, anegamientos y territorio. |
+| [Investigación inicial de Emilia](../Documentos/02-investigacion-emilia-armstrong.pdf) | Movilidad, mantenimiento urbano y necesidades de distintos usuarios. |
+| [Síntesis de problemáticas](../Documentos/03-sintesis-final-problematicas.pdf) | Selección de los tres temas con los que iniciamos. |
+| [Validación de movilidad y entrevistas](../Documentos/04-validacion-movilidad-entrevistas.pdf) | Recorridos, vías críticas y primeras entrevistas. |
+| [Presentación del último avance](../Documentos/05-presentacion-avance-plataforma-territorial.pdf) | Mediciones, referentes, cambio de enfoque y objetivos actuales. |
 
-## Adaptación del espacio público a las necesidades actuales
+## 18 al 21 de agosto - Abrimos el problema
 
-Muchos elementos urbanos fueron creados para responder a las condiciones y necesidades de otro momento. Con el paso del tiempo han cambiado la población, la movilidad y las condiciones climáticas, por lo que algunas de esas soluciones parecen no ser suficientes en la actualidad.
+Al principio aparecieron muchos temas: baches, ciclovías, comunicación municipal, accesibilidad, calor, inundaciones y congestión. Para no quedarnos con una lista infinita, agrupamos lo que tenía más relación con el espacio público y elegimos tres situaciones para investigar en paralelo:
 
-Desde esta idea identificamos tres aspectos importantes en La Reina:
+1. recorridos peatonales con poca sombra y mucho calor;
+2. anegamientos e inundaciones en puntos críticos;
+3. congestión y calles que reciben más flujo del que manejan cómodamente.
 
-1. Espacios peatonales expuestos a altas temperaturas y falta de sombra.
-2. Anegamientos e inundaciones urbanas en puntos críticos.
-3. Calles insuficientes para el flujo vehicular actual.
+La primera decisión fue no elegir una solución todavía. Antes queríamos comprobar que los problemas fueran reales, actuales y observables.
 
-## 1. Espacios peatonales expuestos al calor
+### Calor peatonal
 
-Algunos espacios de circulación peatonal presentan una alta exposición térmica durante los periodos de calor, especialmente donde hay poca arborización, escasa vegetación y superficies pavimentadas.
+El Plan de Acción Comunal de Cambio Climático reconoce veredas amplias sin sombra y olas de calor más frecuentes e intensas. Esto nos hizo mirar el calor no solo como temperatura, sino como una experiencia que cambia la forma de caminar y permanecer en la comuna.
 
-El Plan de Acción Comunal de Cambio Climático identifica veredas amplias sin sombra y reconoce que las olas de calor han aumentado en frecuencia, duración e intensidad, con eventos sobre los **35 °C** (Municipalidad de La Reina, 2025a).
+<p align="center"><img src="../Imagenes/01-calor-peatonal.png" alt="Mapa de exposición al calor en La Reina" width="760"></p>
 
-<table>
-  <tr>
-    <td align="center">
-      <img
-        src="../Imagenes/01-calor-peatonal.png"
-        alt="Mapa de zonas con mayor exposición al calor en La Reina"
-        width="640"
-      />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Figura 1.</strong> Mapa de zonas con mayor exposición al calor en La Reina. <strong>Fuente:</strong> Municipalidad de La Reina, <a href="https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf"><em>Plan de Acción Comunal de Cambio Climático 2025-2030</em></a> (2025).</td>
-  </tr>
-</table>
+### Anegamientos
 
-El problema no es solamente la temperatura. También importa cómo se vive el calor al caminar o permanecer en el espacio público. A partir de esto nos interesa estudiar formas de generar sombra y mejorar el confort térmico de las zonas más expuestas.
+El Plan Comunal de Emergencia identifica 28 puntos críticos. Al revisar los primeros 20 puntos urbanos contamos 15 relacionados con colapso o falta de colectores. Ese conteo fue propio y nos ayudó a entender que preparar el territorio antes de la lluvia puede ser tan importante como responder durante la emergencia.
 
-## 2. Anegamientos e inundaciones urbanas
+<p align="center"><img src="../Imagenes/02-anegamientos.png" alt="Mapa de anegamientos en La Reina" width="760"></p>
 
-Durante eventos de lluvia intensa se producen anegamientos que afectan calles, infraestructura y sectores residenciales. La comuna presenta riesgos asociados tanto a quebradas como a dificultades para evacuar las aguas lluvias.
+### Congestión
 
-El Anexo del Plan Comunal de Emergencia registra **28 puntos críticos** de inundación y anegamiento. Al revisar los primeros 20 puntos urbanos, encontramos que **15** tienen como causa el colapso o la falta de un colector de aguas lluvias. Este último dato corresponde a un conteo propio realizado a partir de la tabla municipal (Municipalidad de La Reina, 2025b).
+Vimos que los viajes se concentran en pocos ejes principales y que las calles interiores ofrecen pocas alternativas. Las entrevistas también repetían tacos, recorridos cortos que se alargan mucho y cambios de horario o ruta para evitar la hora punta.
 
-<table>
-  <tr>
-    <td align="center">
-      <img
-        src="../Imagenes/02-anegamientos.png"
-        alt="Mapa de sectores asociados a inundación en La Reina"
-        width="640"
-      />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Figura 2.</strong> Mapa de sectores asociados a inundación en La Reina. <strong>Fuente:</strong> Municipalidad de La Reina, <a href="https://www.lareina.cl/wp-content/uploads/2025/09/ANEXO_PLAN_AMENAZA_INUNDACIONES_2025-2027.pdf"><em>Anexo Plan Comunal de Emergencia: Amenaza Anegamiento e Inundación 2025-2027</em></a> (2025).</td>
-  </tr>
-</table>
+<p align="center"><img src="../Imagenes/05-comparacion-recorridos.png" alt="Comparación de recorridos en La Reina" width="760"></p>
 
-La situación muestra una infraestructura de drenaje insuficiente en algunos sectores. También plantea la necesidad de anticipar los eventos de lluvia y preparar canales y colectores antes de que ocurran emergencias.
+## 24 y 25 de agosto - Medimos la congestión
 
-## 3. Calles insuficientes para el flujo vehicular actual
+Decidimos usar la congestión como un caso concreto para aprender a levantar datos territoriales. Medimos tiempos de verde y rojo, cantidad de autos por ciclo, cruce, dirección, fecha y horario.
 
-La Reina se consolidó principalmente como una comuna residencial de baja densidad, con calles interiores pequeñas y una estructura de barrios definida. Parte de esta red vial fue creada para una población y un flujo vehicular menores.
+Para no registrar todo a mano desarrollamos [Registro Vehicular MLR](../../registroVehicularMLR/), una aplicación móvil conectada a Firebase. La herramienta permite cronometrar el semáforo, contar autos y revisar los registros por día, cruce y dirección.
 
-La comuna pasó de **55.048 habitantes en 1970** a **89.870 en 2024**. En la investigación también apareció una estimación de **375.014 personas** asociada a la población flotante durante días laborales. Esta última cifra proviene de antecedentes antiguos y debe verificarse antes de tratarla como un dato actual.
+<p align="center"><img src="../Imagenes/07-herramienta-registro.jpg" alt="Aplicación móvil de registro vehicular" width="900"></p>
 
-<table>
-  <tr>
-    <td align="center">
-      <img
-        src="../Imagenes/03-flujo-vehicular.png"
-        alt="Mapa de la red vial y los principales ejes de La Reina"
-        width="640"
-      />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Figura 3.</strong> Mapa de la red vial y los principales ejes de La Reina. <strong>Fuente:</strong> elaboración del equipo, incluida en la <a href="../Documentos/03-sintesis-final-problematicas.pdf">síntesis final de problemáticas</a> (2026).</td>
-  </tr>
-</table>
+En el cruce de Salvador Izquierdo, Aguas Claras, Mateo de Toro y Zambrano y Príncipe de Gales realizamos 20 mediciones. En total contamos 304 autos y obtuvimos un verde promedio de 39,6 segundos.
 
-La congestión no depende solamente de quienes viven en la comuna, sino también de quienes se desplazan por ella. Los viajes se concentran en algunos ejes y accesos principales, especialmente durante las horas punta.
+<p align="center"><img src="../Imagenes/06-mediciones-terreno.jpg" alt="Mediciones de semáforos realizadas en terreno" width="900"></p>
 
-## Actualización: validación inicial de movilidad
+También comparamos Padre Hurtado en dos horarios. Entre las 18:36 y 18:46 registramos 75 autos en cinco ciclos, mientras que entre las 21:03 y 21:10 registramos 112. Aunque en hora punta el verde era más largo, pasaban menos vehículos por minuto. Nuestra lectura fue que una fila grande y un verde largo no significan necesariamente un flujo más eficiente.
 
-**Fecha:** Viernes 21 de agosto de 2026
+<p align="center"><img src="../Imagenes/08-comparacion-flujo.jpg" alt="Comparación entre horario punta y bajo flujo" width="900"></p>
 
-En este avance profundizamos la tercera problemática mediante una revisión del estado de las vías, la comparación de recorridos y entrevistas breves. La intención fue comprobar si la congestión identificada en los antecedentes también aparecía en situaciones actuales y en la experiencia de las personas.
+## 25 de agosto - Entendimos cómo se calculan los semáforos
 
-### Estado de las vías
+Investigamos quién toma estas decisiones para no asumir que la municipalidad cambia los tiempos directamente. El Departamento de Ingeniería de Tránsito puede estudiar y solicitar ajustes, pero la programación debe ser revisada por la UOCT.
 
-La consulta realizada en Transporte Informa RM muestra tránsito pesado o moderado en algunos ejes principales. También se observan diferencias de tiempo y velocidad según el sentido del recorrido, lo que refuerza la idea de que el problema se concentra en ciertas avenidas y horarios.
+Los cálculos consideran flujo, capacidad de las pistas, virajes, filas, peatones, ciclistas y segundos perdidos entre fases. Revisamos el método de Akçelik y la forma de repartir el verde según la demanda crítica. También entendimos que el mínimo peatonal depende del ancho de la calzada y la velocidad de caminata.
 
-<table>
-  <tr>
-    <td align="center">
-      <img
-        src="../Imagenes/04-estado-movilidad-vias.png"
-        alt="Estado de movilidad y vías principales en el sector de La Reina"
-        width="640"
-      />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Figura 4.</strong> Estado de movilidad y vías principales en el sector de La Reina. <strong>Fuente:</strong> Transporte Informa RM, <em>Estado de movilidad y vías reversibles</em> (s. f.).</td>
-  </tr>
-</table>
+Miramos tres referentes internacionales: GLIDE en Singapur, SCATS en Australia y las recomendaciones de la FHWA en Estados Unidos. Los tres refuerzan una idea que después fue clave para el proyecto: medir continuamente permite adaptar mejor una decisión que trabajar solo con datos aislados.
 
-### Recorridos y entrevistas
+## 28 de agosto - Cambiamos el enfoque
 
-Al comparar tres recorridos durante la mañana aparecen tramos de congestión en calles principales y pocas alternativas claras por las vías interiores. Esta observación coincide con las entrevistas, donde se repiten ideas como los tacos frecuentes, la falta de rutas para evitarlos y trayectos cortos que pueden extenderse considerablemente en hora punta.
+Al poner juntos congestión, inundaciones y calor apareció algo más interesante que resolver cada problema por separado. Los tres ocurren en un mismo territorio, cambian durante el día y pueden afectar a varias áreas municipales al mismo tiempo.
 
-<table>
-  <tr>
-    <td align="center">
-      <img
-        src="../Imagenes/05-comparacion-recorridos.png"
-        alt="Comparación de tres recorridos con tramos de congestión"
-        width="640"
-      />
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Figura 5.</strong> Comparación de tres recorridos con tramos de congestión durante la mañana. <strong>Fuente:</strong> registro del equipo incluido en la <a href="../Documentos/04-validacion-movilidad-entrevistas.pdf">validación inicial de movilidad y entrevistas</a> (2026).</td>
-  </tr>
-</table>
+Después sumamos otros ejemplos como seguridad, iluminación, caída de árboles, infraestructura dañada o cortes de servicios. Ahí apareció nuestra pregunta central: ¿cómo puede la municipalidad ver todo esto como parte de un mismo territorio si la información llega por plataformas, direcciones y formatos distintos?
 
-Las entrevistas funcionan como una primera aproximación cualitativa y todavía no representan a toda la comuna. Además, la presentación indica `N=4`, pero incluye cinco testimonios distintos. Este dato deberá aclararse antes de cerrar la muestra.
+<p align="center"><img src="../Imagenes/09-problematica-transversal.jpg" alt="Problemática transversal definida por el equipo" width="900"></p>
 
-Este avance no cambia la problemática seleccionada. Más bien entrega una primera validación de que la capacidad vial y la concentración de los desplazamientos afectan la experiencia cotidiana de movilidad.
+### Lo que ya existe
 
-## Conclusión de las problemáticas
+La Reina no parte de cero. Encontramos una Central de Televigilancia, cámaras, pórticos, Centros de Atención Integral, botones de pánico, La Reina Digital, SOSAFE, el 1419, el call center, planes de emergencia, revisión de puntos críticos y Observadores Preventivos Vecinales.
 
-Los tres problemas muestran una dificultad común: parte del espacio público y de la infraestructura de La Reina debe responder hoy a condiciones distintas de aquellas para las que fue creada.
+<p align="center"><img src="../Imagenes/10-monitoreo-municipal.jpg" alt="Herramientas actuales de vigilancia municipal" width="900"></p>
 
-Esta dificultad aparece en recorridos peatonales poco preparados para el calor, sistemas de drenaje que fallan durante lluvias intensas y calles que reciben un flujo vehicular mayor al que pueden manejar cómodamente.
+La municipalidad incluso ha avanzado en centralizar solicitudes mediante la Plataforma de Atención al Vecino. Aun así, no encontramos evidencia pública de una herramienta transversal que conecte en una misma vista seguridad, tránsito, clima, infraestructura, emergencias y atención vecinal.
 
-A partir de esta relación definimos como enfoque general la **adaptación del espacio público a las necesidades actuales**.
+Por eso corregimos una idea importante: no queremos reemplazar todas las plataformas. La propuesta sería una capa común que reciba información de las herramientas existentes, la ubique en el territorio y permita que distintas áreas compartan una misma lectura.
 
-## Problemática provisional
+## Situación problemática
 
-> **El espacio público y la infraestructura urbana de La Reina presentan dificultades para responder a algunas necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.**
+La Reina enfrenta congestión, anegamientos, sectores con poca sombra, fallas de iluminación, inseguridad, deterioro del espacio público y riesgos como caída de árboles. Aunque estas situaciones pueden coincidir en un mismo lugar y momento, son observadas y gestionadas por áreas diferentes.
 
-Esta formulación todavía es preliminar. Su objetivo es orientar la siguiente etapa de investigación antes de definir una oportunidad de diseño.
+## Problemática
+
+> La Municipalidad de La Reina no cuenta con una herramienta territorial transversal que unifique y relacione dinámicamente la información de sus distintas áreas, limitando su capacidad para priorizar, coordinar y anticipar problemas comunales.
+
+## Objetivo general
+
+> Desarrollar una herramienta colaborativa que centralice información territorial actualizada para apoyar a la Municipalidad de La Reina en el monitoreo, coordinación, priorización y prevención de problemáticas comunales.
+
+## Objetivos específicos
+
+1. **Centralizar y estandarizar la información:** reunir datos que hoy llegan por distintos canales usando criterios comunes de ubicación, horario, categoría, gravedad y estado.
+2. **Ampliar la cobertura territorial:** complementar cámaras e inspecciones con reportes vecinales georreferenciados en sectores sin monitoreo constante.
+3. **Fortalecer la coordinación:** permitir que Seguridad, Tránsito, DIMAO, Obras y Gestión de Riesgos compartan responsabilidades y seguimiento.
+4. **Priorizar y prevenir:** ordenar los casos por gravedad, recurrencia, urgencia y población afectada para reconocer zonas críticas y actuar antes.
+
+<p align="center"><img src="../Imagenes/11-objetivos-plataforma.jpg" alt="Cuatro objetivos específicos de la plataforma" width="900"></p>
+
+## Qué podría integrar
+
+La plataforma podría crecer por capas: movilidad y accesibilidad; agua y condiciones climáticas; calor y medioambiente; infraestructura y espacio público; seguridad y convivencia; riesgos y emergencias; y dimensión social y sanitaria. No buscamos desarrollar todo al mismo tiempo. Estas categorías sirven para demostrar que la estructura puede comenzar con tres casos y sumar otros sin crear una plataforma nueva para cada problema.
+
+## Decisiones que dejamos tomadas
+
+- La congestión sigue siendo un caso de estudio, pero ya no es el único centro del proyecto.
+- La herramienta debe integrar sistemas existentes en vez de obligar a reemplazarlos.
+- Los reportes vecinales complementan el monitoreo municipal, no lo sustituyen.
+- Una misma situación debe poder ser vista por más de una dirección.
+- La prioridad no puede depender solo del orden de llegada.
+- La parte predictiva es una meta futura y necesita primero datos comparables, históricos y confiables.
 
 ## Próximos pasos
 
-- Aclarar el número de entrevistas y registrar las características de la muestra.
-- Ampliar las entrevistas a residentes y personas que atraviesan la comuna.
-- Comparar tiempos de viaje en hora punta y fuera de ella.
-- Identificar los cruces y recorridos donde se concentra la congestión.
-- Continuar validando el problema antes de plantear soluciones.
+- Mapear qué datos tiene realmente cada dirección municipal y con qué frecuencia se actualizan.
+- Definir un primer alcance pequeño para el prototipo.
+- Diseñar el flujo entre reporte, revisión, asignación, respuesta y cierre.
+- Probar la propuesta con funcionarios y vecinos.
+- Definir criterios de privacidad, permisos y calidad de datos.
 
-## Referencias
+## Referencias principales
 
-- Biblioteca del Congreso Nacional de Chile. (2025). *[Reporte comunal: La Reina](https://www.bcn.cl/siit/reportescomunales/comunas_v.html?anno=2025&idcom=13113)*. Sistema Integrado de Información Territorial.
-- Municipalidad de La Reina. (2019). *[Plan de Desarrollo Comunal La Reina 2019-2025](https://lareina.cl/pladeco/)*.
-- Municipalidad de La Reina. (2025a). *[Plan de Acción Comunal de Cambio Climático 2025-2030](https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf)*.
-- Municipalidad de La Reina. (2025b). *[Anexo Plan Comunal de Emergencia: Amenaza Anegamiento e Inundación 2025-2027](https://www.lareina.cl/wp-content/uploads/2025/09/ANEXO_PLAN_AMENAZA_INUNDACIONES_2025-2027.pdf)*.
-
-### Registros internos
-
-- Abarca, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/01-investigacion-inicial-emilio.pdf)*.
-- Armstrong, E. (2026). *[Exploración preliminar de situaciones problemáticas de La Reina](../Documentos/02-investigacion-emilia-armstrong.pdf)*.
-- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Síntesis preliminar de problemáticas de La Reina](../Documentos/03-sintesis-final-problematicas.pdf)*.
-- Abarca, E., Armstrong, E., & Aracena, V. (2026). *[Validación inicial de movilidad y entrevistas](../Documentos/04-validacion-movilidad-entrevistas.pdf)*.
+- Municipalidad de La Reina. (2022). *[Cuenta Pública 2021](https://www.lareina.cl/wp-content/uploads/2022/04/Cuenta-P%C3%BAblica-2021-Version-Final.pdf)*.
+- Municipalidad de La Reina. (2024). *[Cuenta Pública 2023](https://www.lareina.cl/wp-content/uploads/2024/04/CUENTA-PUBLICA-LA-REINA-GESTION-2023.pdf)*.
+- Municipalidad de La Reina. (2024). *[La Reina, Municipio Digital](https://lareina.cl/la-reina-municipio-digital/)*.
+- Municipalidad de La Reina. (2025). *[Plan de Acción Comunal de Cambio Climático 2025-2030](https://www.lareina.cl/wp-content/uploads/2025/07/DECRETO-ALCALDICIO-N%C2%B0-872-DEL-12.06.2025-1.pdf)*.
+- Municipalidad de La Reina. (2025). *[Plan Comunal de Emergencia 2025-2027](https://www.lareina.cl/wp-content/uploads/2025/09/PLAN_COMUNAL_EMERGENCIA_LAREINA_2025-2027.pdf)*.
+- Municipalidad de La Reina. (2026). *[Cuenta Pública 2025](https://www.lareina.cl/wp-content/uploads/2026/04/Cuenta-Publica-2025_Final__.pdf)*.
+- Land Transport Authority. (s. f.). *[Intelligent transport systems](https://www.lta.gov.sg/content/ltagov/en/getting_around/driving_in_singapore/intelligent_transport_systems.html)*.
+- Transport for NSW. (2022). *[SCATS Core](https://www.transport.nsw.gov.au/system/files/media/documents/2022/SCATS-Core-brochure-Final-web-spreads.pdf)*.
+- Federal Highway Administration. (2008). *[Traffic Signal Timing Manual](https://ops.fhwa.dot.gov/publications/fhwahop08024/fhwa_hop_08_024.pdf)*.
 
 ---
 
-Documentado por Emilio Abarca y Emilia Armstrong, 2026.
+Documentado por Emilio Abarca, Emilia Armstrong y Victoria Aracena, 2026.
 
 [Volver al README principal](../../README.md)
