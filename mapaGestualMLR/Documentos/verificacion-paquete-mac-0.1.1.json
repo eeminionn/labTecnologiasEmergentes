@@ -1,0 +1,37 @@
+{
+  "ok": true,
+  "provider": "OpenStreetMap · prueba",
+  "wasmLoaded": true,
+  "telemetryBlockedByWorkerCsp": true,
+  "emptyFrame": {
+    "hands": 0,
+    "inferenceMs": 52.60000002384186
+  },
+  "positiveFixture": {
+    "hands": 1,
+    "landmarks": 21,
+    "inferenceMs": 50
+  },
+  "zoomWorks": true,
+  "popupWorks": true,
+  "selectionWorks": true,
+  "pointerFeedback": {
+    "oneHand": true,
+    "twoHands": true,
+    "twoDetectedOneEligible": true,
+    "noHands": true,
+    "clearedRipple": true
+  },
+  "navigationFeedback": {
+    "panWorks": true,
+    "combinedZoomWorks": true,
+    "hiddenDuringNavigation": true
+  },
+  "mapView": {
+    "zoom": 14,
+    "center": {
+      "lat": -33.442,
+      "lng": -70.536
+    }
+  }
+}

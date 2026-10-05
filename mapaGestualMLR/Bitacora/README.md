@@ -4,6 +4,8 @@
 **Última actualización:** 5 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
+**Versión vigente:** 0.1.1 · 37 pruebas y paquetes Mac/Windows aprobados
+
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
 ## De dónde veníamos
@@ -35,13 +37,22 @@ El modelo se ejecuta en un worker con CPU y entrega puntos de las manos. El prog
 
 Si las pruebas muestran errores en los puntos, corresponderá mejorar el montaje y comparar otro estimador o adaptar uno entrenable. Si los puntos son correctos pero se activa un clic involuntario, la corrección corresponde a la lógica de intención. Esta separación evita cambiar el modelo sin saber qué está fallando.
 
-## Decisiones de interacción
+## 5 de octubre - Ajuste a versión 0.1.1
 
-- Índice para apuntar, palma abierta para desplazar y dos OK para zoom.
+El usuario observó que la navegación con una palma abierta podía desplazar el mapa accidentalmente. Por esa observación de uso se eliminó el pan de una mano. Este ajuste no se presenta como un estudio sistemático ni como una tasa de falsos positivos medida.
+
+El control de navegación ahora requiere dos OK sostenidos durante `180 ms`. Mover las manos juntas desplaza el mapa mediante su punto medio; cambiar su separación hace zoom. El modelo y runtime de visión conservan su configuración.
+
+La sombra azul queda reservada a la interacción de una mano. Cuando el detector reporta dos manos, se ocultan el halo y el ripple de clic, incluso si sólo una postura supera las comprobaciones geométricas del motor.
+
+## Decisiones de interacción vigentes
+
+- Índice para apuntar, un OK para seleccionar y dos OK para desplazar y hacer zoom.
+- La palma abierta ya no desplaza el mapa.
 - Un OK estable de una mano confirma la selección; el clic ocurre al soltar.
 - La posición seleccionada se congela antes de cerrar el OK para evitar que la punta del índice desplace el objetivo.
 - Mantener cerrado no repite clics. Se exige rearme y se limita la repetición temporal.
-- La segunda mano y el zoom cancelan la selección individual pendiente.
+- La segunda mano y la navegación con dos OK cancelan la selección individual pendiente.
 - Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.
 - La calibración de cuatro esquinas adapta la mesa a la vista del mapa; se puede corregir espejo y orientación.
 
@@ -55,7 +66,7 @@ Los materiales de Stanford orientan una evaluación de usabilidad, prototipado y
 
 Sin API key, la base cartográfica es OpenStreetMap y los marcadores son ficticios. Google Maps queda disponible para configuración y verificación posterior con credenciales propias. Ninguna ficha de esta versión se presenta como un registro municipal real.
 
-## Verificación técnica inicial
+## Evidencia histórica - Versión 0.1.0
 
 La ejecución técnica asistida aprobó 23 casos del motor de gestos y 3 de calibración. En Apple M5 con macOS 26.6.2 y Electron 44.5.1, el smoke obtuvo cero manos en un frame vacío y una mano con 21 puntos en un PNG oficial. También comprobó zoom, apertura de popup y botón de selección en el fondo de prueba de la interfaz.
 
@@ -67,11 +78,23 @@ La [ejecución Windows CI 37263075039](https://github.com/eeminionn/labTecnologi
 
 Los resultados corresponden a comprobaciones técnicas asistidas, no a ensayos realizados por los integrantes del equipo. Tampoco certifican precisión con manos cenitales, dos manos reales ni latencia física de cámara.
 
+Estos reportes pertenecen a 0.1.0. Los resultados de la nueva navegación se registran por separado a continuación.
+
+## Verificación técnica - Versión 0.1.1
+
+La versión final aprobó **37/37 casos: 34 de gestos y 3 de calibración**. También terminaron correctamente el build Vite y el ZIP Mac arm64. La cobertura incorpora la palma abierta sin navegación, pan y zoom con dos OK, cancelación sin clic residual y las protecciones geométricas de la pinza.
+
+El smoke de aplicación y el de la `.app` empaquetada aprobaron carga WASM, fixture positivo de una mano con 21 puntos, frame vacío sin manos, CSP, zoom, popup y selección. Los cinco checks de `pointerFeedback` (`oneHand`, `twoHands`, `twoDetectedOneEligible`, `noHands`, `clearedRipple`) devolvieron `true`. Los tres de `navigationFeedback` (`panWorks`, `combinedZoomWorks`, `hiddenDuringNavigation`) también aprobaron. Se conserva el [reporte Mac 0.1.1](../Documentos/verificacion-paquete-mac-0.1.1.json), distinto del reporte histórico. La `.app` final abrió correctamente y se verificaron visualmente la ayuda y el pie de la interfaz.
+
+El motor comprueba la continuidad de la pinza, además del centro de la mano, y rechaza una separación filtrada cercana a cero. Las pruebas finales cubren la cancelación segura ante saltos anómalos de los landmarks 4 y 8.
+
+La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37264864301), commit `451509904cb8406eba84de961d5c4b9f69a46fb4`, aprobó las **37 pruebas**, build, smoke de runtime, distribución portable y smoke del contenido empaquetado. El [reporte Windows 0.1.1](../Documentos/verificacion-paquete-windows-0.1.1.json) corresponde a la ejecución de `release/win-unpacked/Mapa Gestual MLR.exe`, sin prueba del envoltorio portable ni de una cámara física. Estas comprobaciones siguen siendo técnicas y asistidas; no representan un ensayo cenital con usuarios ni certifican una tasa de acciones accidentales.
+
 Todavía falta medir la cámara USB cenital, las acciones accidentales durante actividades cotidianas y la latencia física de gesto a pantalla. También queda pendiente Google Maps con una key autorizada, el arranque del envoltorio portable Windows y el ensayo con cámara física en Windows.
 
 ## Próximos pasos
 
-1. Conservar los reportes técnicos y repetir las comprobaciones tras cambios de runtime o modelo.
+1. Comprobar el arranque del envoltorio portable en Windows; conservar los reportes Mac y Windows por versión.
 2. Fijar cámara, iluminación y calibración para un montaje repetible.
 3. Registrar tareas intencionales y periodos largos sin intención de control.
 4. Medir errores por acción, estabilidad, pérdidas de tracking y latencia.

@@ -1,5 +1,7 @@
 # Investigación de visión computarizada: manos sobre una superficie
 
+> **Nota de vigencia · 0.1.1 · 5 de octubre de 2026.** La navegación actual usa **dos OK**: mantener `180 ms`, mover ambas manos juntas para desplazar y cambiar su separación para zoom. El pan con una palma abierta se eliminó por una observación del usuario sobre activaciones accidentales. Índice para apuntar y OK de una mano para clic al soltar continúan. Halo y ripple se muestran sólo cuando el detector reporta exactamente una mano. El modelo, SDK y umbrales de detección conservan su configuración. La revisión final aprobó **37/37 pruebas: 34 de gestos y 3 de calibración**, además del smoke del paquete Mac, cinco checks de puntero y tres de navegación. Windows CI aprobó pruebas, build, smoke de runtime, distribución portable y smoke del contenido empaquetado; no se probó el arranque del envoltorio portable ni una cámara física. El texto siguiente mantiene la investigación y evidencia histórica de 0.1.0. La cámara cenital y Google con key siguen pendientes. Consultar el [protocolo vigente](./03-protocolo-validacion.md).
+
 **Proyecto:** control gestual de mapa para La Reina. **Consulta de fuentes:** 5 de octubre de 2026. **Estado:** recomendación de arquitectura, comprobaciones de runtime con imágenes fijas y protocolo experimental; no constituye una validación con la cámara o el PC de la instalación.
 
 ## Decisión para el prototipo

@@ -1,7 +1,8 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 5 de octubre de 2026<br>
-**Estado:** protocolo propuesto; pruebas técnicas y contenido empaquetado aprobados en Mac y Windows CI; cámara cenital pendiente<br>
+**Versión vigente:** 0.1.1<br>
+**Estado:** 37 pruebas y paquetes Mac/Windows 0.1.1 aprobados; cámara cenital pendiente<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -12,6 +13,12 @@
 Evaluar si una cámara cenital permite apuntar, seleccionar, desplazar y hacer zoom sin activar acciones durante movimientos cotidianos. Medir precisión, estabilidad y demora en el equipo de la instalación; no trasladar benchmarks de teléfonos o modelos de cuerpo a este prototipo.
 
 Una buena detección de mano no garantiza un buen clic. Separar tres errores: detectar una mano inexistente, estimar mal su postura y ejecutar una acción que la persona no quería realizar.
+
+La versión 0.1.1 responde a una observación del usuario: la palma abierta podía mover el mapa accidentalmente. Se elimina ese gesto de navegación. No se interpreta la observación como una tasa medida ni como un estudio de usuarios completado.
+
+El vocabulario vigente tiene tres gestos: **índice para apuntar**, **OK de una mano para clic al soltar** y **dos OK para navegar**. Tras `180 ms`, el movimiento conjunto controla pan mediante el punto medio y la variación de separación controla zoom. Soltar o perder cualquiera termina navegación sin clic residual. Pausa con Espacio, pérdida de foco y cancelación con Esc continúan.
+
+La sombra, halo de progreso y ripple de clic sólo se permiten con exactamente una mano reportada por el detector. Comprobar el número de detecciones antes de filtrar posturas: con dos manos detectadas deben ocultarse incluso si el motor acepta sólo una por geometría.
 
 ## Configuración que se debe registrar
 
@@ -24,16 +31,22 @@ Una buena detección de mano no garantiza un buen clic. Separar tres errores: de
 | Histéresis del pinch | Entrada `0,28`; salida `0,40`. |
 | Confirmación y clic | OK estable `220 ms`; clic al soltar, con objetivo congelado. |
 | Rearme y repetición | Apertura/neutral `120 ms`; cooldown de clic `400 ms`. |
-| Entrada a desplazamiento y zoom | `180 ms` para cada modo. |
+| Navegación | Dos OK sostenidos `180 ms`; traslación del punto medio para desplazamiento y cambio de separación para zoom. |
+| Una mano abierta | No desplaza ni amplía el mapa. |
+| Sombra y ripple | Sólo con exactamente una mano detectada; ocultos al detectar dos. |
+| Zona muerta de desplazamiento | `panDeadband=0,003`, movimiento acumulado en unidades métricas normalizadas de cámara. |
+| Zona muerta de zoom | `zoomDeadband=0,008` en cambio log2 y `zoomDistanceDeadband=0,003` de variación de separación; ambas condiciones deben superarse. |
 | Filtro 1€ | `minCutoff=1,4`, `beta=6`, `derivativeCutoff=1`, unidades normalizadas de cámara. |
 | Calibración | Homografía de cuatro esquinas; espejo y rotación configurables. |
 | Equipo principal | macOS arm64 y cámara USB; anotar modelos y versiones reales. |
 | Segundo destino | Windows x64, `.exe` portable; verificación de cámara por separado. |
 | Mapa | OpenStreetMap para pruebas sin key; Google Maps pendiente de credencial y comprobación. |
 
-Estos números son defaults del motor actual. Son hipótesis de ingeniería que se ajustan con validación, no valores universalmente correctos ni resultados publicados. Los ejemplos exploratorios del documento de gestos deben leerse como propuestas, no como configuración ejecutada.
+Estos números son la configuración implementada para 0.1.1 y cubierta por las pruebas finales de software. Son hipótesis de ingeniería que se ajustan con validación, no valores universalmente correctos ni resultados publicados. El modelo, SDK y umbrales de detección permanecen iguales. Los ejemplos exploratorios de los documentos de investigación se conservan como antecedentes históricos de 0.1.0, no como guía de navegación vigente.
 
 La distancia pulgar–índice se divide por una escala de palma obtenida de la muñeca–MCP del dedo medio y el ancho entre MCP de índice y meñique. Se corrige la relación ancho/alto de la cámara antes de comparar geometría. El rango entre `0,28` y `0,40` conserva el estado previo y evita alternancias alrededor de un único umbral.
+
+La continuidad se comprueba en el centro de palma **y en la pinza formada por los landmarks 4 y 8**. Un centro estable no debe permitir continuar si pulgar o índice saltan de forma anómala. Ante discontinuidad se cancela la acción de forma segura. Comprobar también que la separación filtrada sea válida y suficientemente alejada de cero antes de dividir o aplicar log2; rechazar esa condición sin generar pan, zoom ni clic residual.
 
 Registrar commit, hash del modelo y build, versión del runtime, SO, CPU, resolución de pantalla, cámara, resolución/FPS reales, exposición, iluminación, altura de montaje, ROI y calibración. Cualquier cambio crea una condición nueva; no mezclar sus resultados sin identificarla.
 
@@ -48,7 +61,7 @@ npm run build
 npm run test:app
 ```
 
-La suite aprobó **26/26 casos: 23 de gestos y 3 de calibración** en la verificación del 5 de octubre. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
+La versión final de 0.1.1 aprobó **37/37 casos: 34 de gestos y 3 de calibración**, incluidas las protecciones de continuidad de pinza y separación filtrada. Los **26/26 casos aprobados de 0.1.0** se conservan como evidencia histórica y no certifican el cambio. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
 
 La prueba de aplicación debe comprobar:
 
@@ -58,12 +71,30 @@ La prueba de aplicación debe comprobar:
 - Restricciones de red del worker: intento bloqueado por CSP con evidencia de violación aplicada, además de carga e inferencia funcionales.
 - Desplazamiento, zoom, apertura de popup y respuesta del botón de prueba dentro de la ventana propia.
 - Entrada a Ajustes, pausa y cancelación sin eventos residuales.
+- Una palma abierta de una mano sin desplazamiento ni zoom.
+- Dos OK con movimiento paralelo y separación constante: desplazamiento sin zoom involuntario.
+- Dos OK con punto medio fijo y separación variable: zoom sin desplazamiento involuntario.
+- Dos OK con traslación y cambio de separación: comprobar ambas componentes.
+- Halo y ripple ocultos inmediatamente al detectar dos manos, incluidos casos con una postura descartada por el motor.
+- Liberación, pérdida de mano y transición de navegación a una mano sin clic residual.
+- Saltos anómalos de landmarks 4/8 aunque el centro de palma apenas cambie: cancelación sin pan/zoom/clic residual.
+- Separación filtrada inválida o cercana a cero: ningún evento no finito y cancelación segura.
 
 Conservar reportes y screenshot técnico si se genera. La prueba de UI puede usar un fondo de test sin cartografía para evitar depender de redes externas; esa ejecución no prueba disponibilidad de tiles OSM ni Google Maps.
 
-### Evidencia técnica disponible
+### Verificación vigente: versión 0.1.1
 
-La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
+La suite final de 37 casos, build Vite y ZIP Mac arm64 terminaron correctamente. `test:app` y el smoke del paquete Mac aprobaron WASM, fixture de una mano con 21 puntos, frame vacío sin manos, CSP, zoom, popup y selección. El [reporte Mac 0.1.1](./verificacion-paquete-mac-0.1.1.json) registró `ok:true`. La `.app` final abrió correctamente y se verificaron visualmente la ayuda y el pie de la interfaz.
+
+Los checks `pointerFeedback.oneHand`, `twoHands`, `twoDetectedOneEligible`, `noHands` y `clearedRipple` devolvieron `true`. Cubren visibilidad con una mano, ocultación con dos detecciones —incluso si sólo una postura es elegible—, ausencia de manos y limpieza de ripple. Son comprobaciones automatizadas de feedback, no resultados de percepción ni precisión de cámara física.
+
+Los checks `navigationFeedback.panWorks`, `combinedZoomWorks` y `hiddenDuringNavigation` devolvieron `true`: desplazamiento, zoom combinado y feedback oculto durante navegación. Estas entradas son sintéticas y verifican motor e interfaz; no certifican detección de dos OK en cámara física.
+
+La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37264864301), commit `451509904cb8406eba84de961d5c4b9f69a46fb4`, aprobó **37/37 pruebas, build, smoke de runtime, construcción del portable y smoke del contenido empaquetado**. El [reporte Windows 0.1.1](./verificacion-paquete-windows-0.1.1.json) corresponde a `release/win-unpacked/Mapa Gestual MLR.exe`. No se probó el arranque del envoltorio portable ni una cámara física Windows.
+
+### Evidencia histórica disponible: versión 0.1.0
+
+Las comprobaciones siguientes corresponden a **0.1.0** y se conservan como antecedentes. La verificación de 0.1.1 se registra por separado arriba. La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
 
 | Comprobación | Resultado observado y alcance |
 |:---|:---|
@@ -102,10 +133,13 @@ Cada sesión incluye:
 3. Mantener OK durante varios segundos: debe producir como máximo un clic al soltar.
 4. Interrumpir un OK demasiado corto, moverlo demasiado, ocultar la mano y recuperarla: no debe completar la selección cancelada.
 5. Abrir y cerrar una ficha; accionar su botón con OK.
-6. Desplazar el mapa, cerrar la mano y reposicionarla sin arrastrar.
-7. Hacer zoom con dos OK; soltar primero una mano y después la otra sin clic residual.
+6. Formar dos OK, mantener `180 ms` y mover ambas manos juntas conservando su separación; soltar y reposicionarlas sin arrastrar.
+7. Formar dos OK y variar su separación manteniendo el punto medio quieto; soltar primero una mano y después la otra sin clic residual.
 8. Cruzar manos, añadir la segunda durante un click pendiente y retirar ambas.
 9. Pausar con Espacio, cancelar con Esc y cambiar el foco de ventana durante cada acción.
+10. Mover una palma abierta, cerrar y abrir dedos casualmente: no debe navegar.
+11. Introducir una segunda mano durante un halo/ripple y mantener una postura no válida: no debe quedar sombra visible.
+12. Combinar traslación y separación de dos OK; medir cada componente y la comprensión del gesto.
 
 Registrar intención, acción obtenida, objetivo, hora de inicio/fin, errores y necesidad de ayuda. Explicar la tarea antes de comenzar; no enseñar continuamente una corrección mientras se mide aprendizaje.
 
@@ -141,7 +175,11 @@ No publicar sólo FPS o promedios. Informar condiciones, número de muestras, ca
 | Criterio | Condición inicial de aceptación |
 |:---|:---|
 | Cancelación | Cero acciones emitidas durante pausa, pérdida de foco, pérdida de mano y recuperación de un candidato cancelado en los casos ensayados. |
-| Arbitraje | Cero clics individuales al entrar/salir de zoom en el test reservado. |
+| Arbitraje | Cero clics individuales al entrar/salir de navegación con dos OK en el test reservado. |
+| Pan de una mano eliminado | Cero episodios de desplazamiento o zoom con una palma abierta de una mano en el test. |
+| Navegación de dos OK | Traslación pura desplaza; separación pura amplía; tolerancia geométrica y zona muerta registradas antes del ensayo. |
+| Sombra | Cero frames con halo o ripple visible mientras el detector reporta dos manos en los casos ensayados. |
+| Continuidad geométrica | Saltos anómalos de centro o pinza y separación filtrada inválida/cercana a cero cancelan sin eventos residuales ni valores no finitos. |
 | Repetición | Un OK confirmado produce como máximo un clic al soltar; un OK corto no produce clic. |
 | Recall de clic | Al menos 95 % en las tareas y condiciones declaradas. |
 | Falsos clics | Límite superior unilateral de 95 % por debajo de `0,01/min` en condiciones negativas representativas. |
@@ -169,13 +207,17 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite de 26 casos | 26/26 aprobados en Mac y Windows CI. |
-| Build de interfaz, assets y Mac ZIP | Aprobado en el host Mac arm64. |
-| Smoke con modelo real, PNG positivo/frame vacío, CSP y UI | Aprobado en Apple M5/macOS 26.6.2/Electron 44.5.1; alcance descrito arriba. |
-| Apertura de `.app` final y smoke del paquete Mac | Aprobados; reporte `verificacion-paquete-mac.json`. |
+| Suite final de 0.1.1 | 37/37 aprobados: 34 de gestos y 3 de calibración; incluye continuidad de pinza y separación filtrada. |
+| Build y paquete Mac final de 0.1.1 | Vite, ZIP arm64, apertura de `.app` y smoke del paquete aprobados. |
+| Smoke de 0.1.1 | Modelo/CSP/UI, cinco checks de puntero y tres de navegación aprobados. |
+| Windows 0.1.1 | CI 37264864301 aprobada: 37 tests, build, smoke de runtime, `.exe` portable construido y smoke del contenido empaquetado. |
+| Suite histórica de 0.1.0 | 26/26 aprobados en Mac y Windows CI. |
+| Build de interfaz, assets y Mac ZIP de 0.1.0 | Aprobado en el host Mac arm64. |
+| Smoke de 0.1.0 con modelo real, PNG positivo/frame vacío, CSP y UI | Aprobado en Apple M5/macOS 26.6.2/Electron 44.5.1; alcance descrito arriba. |
+| Apertura de `.app` y smoke del paquete Mac 0.1.0 | Aprobados; reporte histórico `verificacion-paquete-mac.json`. |
 | Mac arm64 con cámara USB cenital | Pendiente de ensayo de instalación. |
-| Windows build y `.exe` portable | Artefacto construido en CI; 26 tests y smoke de runtime aprobados. |
-| Contenido empaquetado Windows | Smoke aprobado con `release/win-unpacked/Mapa Gestual MLR.exe` en CI. |
+| Windows build y `.exe` portable de 0.1.0 | Artefacto construido en CI; 26 tests y smoke de runtime aprobados. |
+| Contenido empaquetado Windows 0.1.0 | Smoke aprobado con `release/win-unpacked/Mapa Gestual MLR.exe` en CI. |
 | Envoltorio portable Windows | Arranque no probado en esta verificación. |
 | Windows con cámara USB física | Pendiente de ensayo de instalación. |
 | Google Maps con key propia | Pendiente; no hay key del usuario configurada. |
