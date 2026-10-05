@@ -21,13 +21,13 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   rearmMs: 120,
   clickCooldownMs: 400,
   maxClickDrift: 0.055, // Camera metric units, before homography.
-  panDwellMs: 180,
-  zoomDwellMs: 180,
+  navigationDwellMs: 180, // Both hands in OK acquire pan and zoom together.
   maxFrameGapMs: 180, // A paused inference loop never counts as dwell.
   trackingJumpRadius: 0.22,
   ambiguousMatchMargin: 0.025,
   panDeadband: 0.003, // Accumulated camera-metric movement; suppress resting jitter.
   zoomDeadband: 0.008,
+  zoomDistanceDeadband: 0.003, // Also reject tiny separation jitter at close range.
   zoomMinSeparation: 0.10,
   zoomGain: 1,
   pointAnchorMaxAgeMs: 350,
@@ -150,6 +150,8 @@ class PointFilter {
  * At most two hands are accepted. A click needs: release/point to arm -> a stable
  * OK held for clickDwellMs -> an actual pinch release. Losing a hand, adding a
  * second hand, a model pause, or changing identity cancels pending actions.
+ * Navigation requires two OK hands: midpoint motion pans, separation zooms.
+ * A single hand only points/clicks; an open palm never moves the map.
  */
 export class GestureEngine {
   constructor(options = {}) {
@@ -181,10 +183,8 @@ export class GestureEngine {
     this.armed = false;
     this.rearmSince = null;
     this.pendingClick = null;
-    this.panCandidate = null;
-    this.pan = null;
-    this.zoomCandidate = null;
-    this.zoom = null;
+    this.navigationCandidate = null;
+    this.navigation = null;
     this.lastPoint = null;
   }
 
@@ -203,7 +203,13 @@ export class GestureEngine {
         const explicitIds = entry.hand.id !== undefined && track.externalId !== undefined;
         if (explicitIds && entry.hand.id !== track.externalId) return;
         const separation = metricDistance(entry.shape.center, track.shape.center, this.options.aspectRatio);
-        if (separation <= this.options.trackingJumpRadius) candidates.push({ newIndex, oldIndex, separation });
+        const pinchJump = metricDistance(entry.shape.pinch, track.shape.pinch, this.options.aspectRatio);
+        // A landmark outlier can move fingertips while leaving every palm
+        // landmark/ID intact. Such a jump must not inherit live navigation or
+        // enter its filters, where opposing jumps could collapse separation.
+        if (separation <= this.options.trackingJumpRadius && pinchJump <= this.options.trackingJumpRadius) {
+          candidates.push({ newIndex, oldIndex, separation });
+        }
       });
     });
     candidates.sort((a, b) => a.separation - b.separation);
@@ -273,32 +279,52 @@ export class GestureEngine {
     this.armed = false;
     this.rearmSince = null;
     this.pendingClick = null;
-    this.panCandidate = null;
-    this.pan = null;
     this.lastPoint = null;
     const [a, b] = this.tracks;
-    const separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
-    if (!a.shape.ok || !b.shape.ok || separation < this.options.zoomMinSeparation) {
-      this.zoomCandidate = null;
-      this.zoom = null;
+    let separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
+    const rawSeparation = metricDistance(a.shape.pinch, b.shape.pinch, this.options.aspectRatio);
+    if (!a.shape.ok || !b.shape.ok || !Number.isFinite(rawSeparation)
+      || rawSeparation < this.options.zoomMinSeparation
+      || !Number.isFinite(separation) || separation < this.options.zoomMinSeparation) {
+      this.navigationCandidate = null;
+      this.navigation = null;
       return this.result();
     }
-    const cursor = mean(a.filtered.pinch, b.filtered.pinch);
-    if (this.zoom) {
-      const delta = Math.log2(separation / this.zoom.separation) * this.options.zoomGain;
+    let cursor = mean(a.filtered.pinch, b.filtered.pinch);
+    if (this.navigation) {
+      const dx = cursor.x - this.navigation.position.x;
+      const dy = cursor.y - this.navigation.position.y;
+      const delta = Math.log2(separation / this.navigation.separation) * this.options.zoomGain;
       const events = [];
-      if (Math.abs(delta) >= this.options.zoomDeadband) {
-        events.push({ type: 'zoom', delta, ...this.zoom.anchor });
-        this.zoom.separation = separation;
+      if (Math.hypot(dx * this.options.aspectRatio, dy) >= this.options.panDeadband) {
+        events.push({ type: 'pan', dx, dy });
+        this.navigation.position = cursor;
       }
-      return this.result('zoom', this.zoom.anchor, 1, events);
+      if (Math.abs(delta) >= this.options.zoomDeadband
+        && Math.abs(separation - this.navigation.separation) >= this.options.zoomDistanceDeadband) {
+        // Translate first, then scale around the current hand midpoint.
+        events.push({ type: 'zoom', delta, ...cursor });
+        this.navigation.separation = separation;
+      }
+      return this.result('navigate', cursor, 1, events);
     }
-    if (!this.zoomCandidate) this.zoomCandidate = { since: timestampMs };
-    const progress = (timestampMs - this.zoomCandidate.since) / this.options.zoomDwellMs;
+    if (!this.navigationCandidate) {
+      this.navigationCandidate = { since: timestampMs };
+      // Discard history from the clutch, then let the 180 ms dwell smooth any
+      // jitter before capturing baselines. Old positions cannot pull the map
+      // on reacquisition, nor can a single noisy activation frame set scale.
+      for (const track of this.tracks) {
+        track.filters.pinch = new PointFilter(this.options);
+        track.filtered.pinch = track.filters.pinch.update(track.shape.pinch, timestampMs);
+      }
+      cursor = mean(a.filtered.pinch, b.filtered.pinch);
+      separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
+    }
+    const progress = (timestampMs - this.navigationCandidate.since) / this.options.navigationDwellMs;
     if (progress >= 1) {
-      this.zoom = { separation, anchor: cursor };
-      this.zoomCandidate = null;
-      return this.result('zoom', cursor, 1);
+      this.navigation = { separation, position: cursor };
+      this.navigationCandidate = null;
+      return this.result('navigate', cursor, 1);
     }
     return this.result('idle', cursor, progress);
   }
@@ -309,24 +335,8 @@ export class GestureEngine {
     const point = track.filtered.pointer;
     const pinch = track.filtered.pinch;
     const center = track.filtered.center;
+    const cursor = hand.point ? point : hand.ok ? pinch : center;
     const released = hand.pinchRatio >= this.options.pinchExit;
-
-    if (this.pan) {
-      if (hand.open) {
-        const dx = center.x - this.pan.position.x;
-        const dy = center.y - this.pan.position.y;
-        const events = [];
-        if (Math.hypot(dx * this.options.aspectRatio, dy) >= this.options.panDeadband) {
-          events.push({ type: 'pan', dx, dy });
-          this.pan.position = center;
-        }
-        return this.result('pan', center, 1, events);
-      }
-      this.pan = null;
-      this.armed = false;
-      this.rearmSince = null;
-      this.lastPoint = null;
-    }
 
     if (this.pendingClick) {
       const pending = this.pendingClick;
@@ -334,7 +344,7 @@ export class GestureEngine {
         if (metricDistance(hand.pinch, pending.rawPinch, this.options.aspectRatio) > this.options.maxClickDrift) {
           this.pendingClick = null;
           this.armed = false;
-          return this.result();
+          return this.result('idle', cursor);
         }
         const progress = (timestampMs - pending.since) / this.options.clickDwellMs;
         if (progress >= 1) pending.ready = true;
@@ -350,23 +360,15 @@ export class GestureEngine {
       const events = mature && released && !this.multiHandLock
         ? [{ type: 'click', ...pending.anchor }] : [];
       if (events.length) this.cooldownUntil = timestampMs + this.options.clickCooldownMs;
-      return this.result(hand.point ? 'point' : 'idle', hand.point ? point : null, 0, events);
+      return this.result(hand.point ? 'point' : 'idle', cursor, 0, events);
     }
 
     if (hand.open) {
       this.armed = false;
       this.rearmSince = null;
       this.lastPoint = null;
-      if (!this.panCandidate) this.panCandidate = { since: timestampMs };
-      const progress = (timestampMs - this.panCandidate.since) / this.options.panDwellMs;
-      if (progress >= 1) {
-        this.pan = { position: center };
-        this.panCandidate = null;
-        return this.result('pan', center, 1);
-      }
-      return this.result('idle', center, progress);
+      return this.result('idle', cursor);
     }
-    this.panCandidate = null;
 
     if (hand.ok) {
       this.rearmSince = null;
@@ -382,7 +384,7 @@ export class GestureEngine {
         this.armed = false;
         return this.result('click-pending', this.pendingClick.anchor, 0);
       }
-      return this.result();
+      return this.result('idle', cursor);
     }
 
     if (released) {
@@ -398,6 +400,6 @@ export class GestureEngine {
       this.lastPoint = { cursor: point, time: timestampMs };
       return this.result('point', point);
     }
-    return this.result();
+    return this.result('idle', cursor);
   }
 }

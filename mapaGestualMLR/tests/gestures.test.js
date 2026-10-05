@@ -47,6 +47,15 @@ function armedEngine(options = {}) {
   frames(engine, [hand('point')], 0, 140);
   return engine;
 }
+function okPair({ x = 0, y = 0, separation = 0.30 } = {}) {
+  return [hand('ok', { id: 'a', x: x - separation / 2, y }),
+    hand('ok', { id: 'b', x: x + separation / 2, y })];
+}
+function navigationEngine(options = {}) {
+  const engine = new GestureEngine(options);
+  frames(engine, okPair(), 0, 200);
+  return engine;
+}
 
 test('geometry recognizes poses under in-plane rotation, translation and size changes', () => {
   for (const angle of [0, Math.PI / 2, Math.PI, Math.PI * 1.7]) {
@@ -176,12 +185,12 @@ test('folding the other fingers while still pinching is cancellation', () => {
   assert.equal(engine.update([hand('point')], 460).events.length, 0);
 });
 
-test('two OK hands zoom after dwell; order changes and removal never create clicks', () => {
+test('two OK hands acquire navigation after dwell; order changes and removal never click', () => {
   const engine = armedEngine();
   frames(engine, [hand('ok')], 160, 320);
   const pair = [hand('ok', { id: 'a', x: -0.15 }), hand('ok', { id: 'b', x: 0.15 })];
   const results = frames(engine, pair, 340, 560);
-  assert.equal(results.at(-1).mode, 'zoom');
+  assert.equal(results.at(-1).mode, 'navigate');
   assert.equal(events(results).length, 0);
   const spread = [hand('ok', { id: 'b', x: 0.23 }), hand('ok', { id: 'a', x: -0.23 })];
   results.push(...frames(engine, spread, 580, 660));
@@ -193,7 +202,7 @@ test('two OK hands zoom after dwell; order changes and removal never create clic
   assert.equal(clicks(results).length, 0);
 });
 
-test('a lost or changed zoom track restarts dwell without emitting a scale jump', () => {
+test('a lost or changed navigation track restarts dwell without a pan or scale jump', () => {
   const engine = new GestureEngine();
   const pair = [hand('ok', { id: 'a', x: -0.15 }), hand('ok', { id: 'b', x: 0.15 })];
   frames(engine, pair, 0, 220);
@@ -203,8 +212,56 @@ test('a lost or changed zoom track restarts dwell without emitting a scale jump'
   assert.equal(result.progress, 0);
   assert.equal(result.events.length, 0);
   const restarted = frames(engine, changed, 260, 440);
-  assert.equal(restarted.at(-1).mode, 'zoom');
+  assert.equal(restarted.at(-1).mode, 'navigate');
   assert.equal(events(restarted).length, 0);
+});
+
+test('opposing fingertip outliers with unchanged palms and IDs cancel navigation safely', () => {
+  for (const anonymous of [false, true]) {
+    const pair = () => okPair().map(value => {
+      if (anonymous) delete value.id;
+      return value;
+    });
+    const engine = new GestureEngine();
+    frames(engine, pair(), 0, 200);
+    const outlier = pair();
+    outlier.forEach((value, i) => {
+      const before = classifyHand(value);
+      for (const index of [4, 8]) value.landmarks[index].x += i === 0 ? 0.30 : -0.30;
+      const after = classifyHand(value);
+      assert.equal(after.ok, true);
+      assert.deepEqual(after.center, before.center);
+    });
+    const cancelled = engine.update(outlier, 220);
+    assert.equal(cancelled.mode, 'idle');
+    assert.equal(cancelled.events.length, 0);
+    // Recovery must also reject the inverse jump back to normal positions.
+    const recovered = frames(engine, pair(), 240, 660);
+    assert.equal(recovered.at(-1).mode, 'navigate');
+    assert.equal(events(recovered).length, 0);
+    const moved = okPair({ x: 0.04 });
+    if (anonymous) moved.forEach(value => { delete value.id; });
+    assert.equal(engine.update(moved, 680).events[0]?.type, 'pan');
+  }
+});
+
+test('filtered separation below the safe minimum cancels instead of taking log2', () => {
+  const engine = navigationEngine();
+  const crossing = okPair();
+  crossing.forEach((value, i) => {
+    // Each jump is below the tracking cap. Raw separation stays above .10,
+    // while the old-to-new filters temporarily bring the pinches too close.
+    for (const index of [4, 8]) value.landmarks[index].x += i === 0 ? 0.21 : -0.21;
+  });
+  const raw = crossing.map(value => classifyHand(value));
+  assert.ok(raw.every(shape => shape.ok));
+  assert.ok(Math.abs(raw[0].pinch.x - raw[1].pinch.x) >= 0.10);
+  const cancelled = engine.update(crossing, 220);
+  assert.equal(cancelled.mode, 'idle');
+  assert.equal(cancelled.events.length, 0);
+  const recovered = frames(engine, okPair(), 240, 660);
+  assert.equal(recovered.at(-1).mode, 'navigate');
+  assert.equal(events(recovered).length, 0);
 });
 
 test('adding any second hand cancels a pending click even without a zoom pose', () => {
@@ -216,24 +273,105 @@ test('adding any second hand cancels a pending click even without a zoom pose', 
   assert.equal(clicks(results).length, 0);
 });
 
-test('open palm engages pan only after dwell and closing it clutches immediately', () => {
-  const engine = new GestureEngine();
-  const initial = frames(engine, [hand('open')], 0, 160);
-  assert.equal(events(initial).length, 0);
-  assert.equal(engine.update([hand('open')], 180).mode, 'pan');
-  const movement = engine.update([hand('open', { x: 0.04, y: -0.02 })], 200);
-  assert.equal(movement.events[0]?.type, 'pan');
-  assert.ok(movement.events[0].dx > 0);
-  assert.ok(movement.events[0].dy < 0);
-  const close = engine.update([hand('neutral', { x: 0.05 })], 220);
-  assert.equal(close.mode, 'idle');
-  assert.equal(close.events.length, 0);
-  const reopened = engine.update([hand('open', { x: -0.1 })], 240);
-  assert.equal(reopened.events.length, 0);
-  assert.equal(reopened.mode, 'idle');
+test('one moving palm or neutral hand never pans or zooms', () => {
+  for (const pose of ['open', 'neutral', 'ok', 'point']) {
+    const engine = new GestureEngine();
+    const results = [];
+    for (let time = 0; time <= 600; time += 20) {
+      results.push(engine.update([hand(pose, { x: time * 0.0001 })], time));
+    }
+    assert.ok(results.every(result => result.cursor), pose);
+    assert.equal(events(results).length, 0, pose);
+    assert.ok(results.every(result => result.mode !== 'navigate'), pose);
+  }
 });
 
-test('a resting open palm with small detector jitter does not move the map', () => {
+test('two OK hands pan by common midpoint movement without changing zoom', () => {
+  const engine = navigationEngine();
+  const results = frames(engine, okPair({ x: 0.04, y: -0.02 }), 220, 340);
+  const movements = events(results);
+  assert.ok(movements.some(event => event.type === 'pan' && event.dx > 0 && event.dy < 0));
+  assert.ok(movements.every(event => event.type === 'pan'));
+  assert.equal(results.at(-1).mode, 'navigate');
+});
+
+test('symmetric separation zooms around the current midpoint without panning', () => {
+  const engine = navigationEngine();
+  const results = frames(engine, okPair({ separation: 0.42 }), 220, 340);
+  assert.ok(events(results).length > 0);
+  assert.ok(events(results).every(event => event.type === 'zoom' && event.delta > 0));
+  for (const result of results) {
+    for (const event of result.events) {
+      assert.equal(event.x, result.cursor.x);
+      assert.equal(event.y, result.cursor.y);
+    }
+  }
+});
+
+test('common translation and separation produce pan then zoom in the same frame', () => {
+  const engine = navigationEngine();
+  const result = engine.update(okPair({ x: 0.06, y: 0.04, separation: 0.42 }), 220);
+  assert.deepEqual(result.events.map(event => event.type), ['pan', 'zoom']);
+  const [pan, zoom] = result.events;
+  assert.ok(pan.dx > 0 && pan.dy > 0 && zoom.delta > 0);
+  assert.equal(zoom.x, result.cursor.x);
+  assert.equal(zoom.y, result.cursor.y);
+});
+
+test('two open palms or one OK plus another pose never acquire navigation', () => {
+  for (const poses of [['open', 'open'], ['ok', 'open'], ['ok', 'point'], ['ok', 'neutral']]) {
+    const engine = new GestureEngine();
+    const results = [];
+    for (let time = 0; time <= 600; time += 20) {
+      results.push(engine.update(poses.map((pose, i) => hand(pose, {
+        id: i === 0 ? 'a' : 'b', x: (i === 0 ? -0.15 : 0.15) + time * 0.0001,
+      })), time));
+    }
+    assert.equal(events(results).length, 0, poses.join('/'));
+    assert.ok(results.every(result => result.mode === 'idle'), poses.join('/'));
+  }
+});
+
+test('opening either hand clutches navigation and reacquisition starts without jumps', () => {
+  for (const openedIndex of [0, 1]) {
+    const engine = navigationEngine();
+    engine.update(okPair({ x: 0.04, separation: 0.36 }), 220);
+    const released = okPair({ x: 0.04, separation: 0.36 });
+    released[openedIndex] = hand('open', { id: openedIndex === 0 ? 'a' : 'b', x: openedIndex === 0 ? -0.14 : 0.22 });
+    const clutch = engine.update(released, 240);
+    assert.equal(clutch.mode, 'idle');
+    assert.equal(clutch.events.length, 0);
+    const repositioned = okPair({ x: -0.03, y: -0.03, separation: 0.24 });
+    const readquire = frames(engine, repositioned, 260, 660);
+    assert.equal(readquire.at(-1).mode, 'navigate');
+    assert.equal(events(readquire).length, 0);
+  }
+});
+
+test('a single hand cursor follows pose geometry without moving the map', () => {
+  for (const [pose, key] of [['point', 'pointer'], ['ok', 'pinch'], ['open', 'center'], ['neutral', 'center']]) {
+    const engine = new GestureEngine();
+    const value = hand(pose);
+    const result = engine.update([value], 0);
+    assert.deepEqual(result.cursor, classifyHand(value)[key]);
+    assert.equal(result.events.length, 0);
+    const moved = engine.update([hand(pose, { x: 0.02 })], 20);
+    assert.ok(moved.cursor.x > result.cursor.x);
+    assert.equal(moved.events.length, 0);
+  }
+});
+
+test('navigation is inactive until 180 ms of two observed OK hands', () => {
+  const engine = new GestureEngine();
+  const initial = frames(engine, okPair(), 0, 160);
+  assert.equal(events(initial).length, 0);
+  assert.ok(initial.every(result => result.mode === 'idle'));
+  const ready = engine.update(okPair(), 180);
+  assert.equal(ready.mode, 'navigate');
+  assert.equal(ready.events.length, 0);
+});
+
+test('resting two OK hands with small detector jitter do not move the map', () => {
   const engine = new GestureEngine();
   let seed = 42;
   const random = () => {
@@ -242,23 +380,21 @@ test('a resting open palm with small detector jitter does not move the map', () 
   };
   const results = [];
   for (let time = 0; time <= 3000; time += 1000 / 30) {
-    results.push(engine.update([hand('open', {
-      x: (random() - 0.5) * 0.008,
-      y: (random() - 0.5) * 0.008,
-    })], time));
+    results.push(engine.update([hand('ok', { id: 'a', x: -0.15 + (random() - 0.5) * 0.004,
+      y: (random() - 0.5) * 0.004 }), hand('ok', { id: 'b', x: 0.15 + (random() - 0.5) * 0.004,
+      y: (random() - 0.5) * 0.004 })], time));
   }
-  assert.equal(results.at(-1).mode, 'pan');
+  assert.equal(results.at(-1).mode, 'navigate');
   assert.equal(events(results).length, 0);
-  const intentional = engine.update([hand('open', { x: 0.04 })], 3020);
+  const intentional = engine.update(okPair({ x: 0.04 }), 3020);
   assert.equal(intentional.events[0]?.type, 'pan');
 });
 
 test('sub-deadband intentional movements accumulate instead of being discarded', () => {
-  const engine = new GestureEngine();
-  frames(engine, [hand('open')], 0, 200);
+  const engine = navigationEngine();
   const results = [];
   for (let time = 220; time <= 620; time += 20) {
-    results.push(engine.update([hand('open', { x: (time - 200) * 0.00005 })], time));
+    results.push(engine.update(okPair({ x: (time - 200) * 0.00005 }), time));
   }
   const movement = events(results).filter(event => event.type === 'pan');
   assert.ok(movement.length > 0);
@@ -279,6 +415,42 @@ test('the same timed interaction clicks once at 15, 30 and 60 FPS', () => {
   }
 });
 
+test('two-hand navigation dwell and combined movement work at 15, 30 and 60 FPS', () => {
+  for (const fps of [15, 30, 60]) {
+    const engine = new GestureEngine();
+    const step = 1000 / fps;
+    const results = [];
+    let acquiredAt;
+    for (let time = 0; time <= 900; time += step) {
+      const movement = Math.max(0, Math.min(1, (time - 400) / 300));
+      const result = engine.update(okPair({ x: movement * 0.06,
+        y: movement * -0.03, separation: 0.30 + movement * 0.12 }), time);
+      if (result.mode === 'navigate' && acquiredAt === undefined) acquiredAt = time;
+      results.push(result);
+    }
+    assert.ok(acquiredAt >= 180 && acquiredAt <= 180 + step, `FPS=${fps}`);
+    assert.ok(events(results).some(event => event.type === 'pan'), `pan FPS=${fps}`);
+    assert.ok(events(results).some(event => event.type === 'zoom'), `zoom FPS=${fps}`);
+    assert.equal(clicks(results).length, 0, `click FPS=${fps}`);
+  }
+});
+
+test('occlusion cancels navigation; returning with both OK or one OK never jumps or clicks', () => {
+  const engine = navigationEngine();
+  engine.update(okPair({ x: 0.04, separation: 0.40 }), 220);
+  const lost = engine.update([], 240);
+  assert.equal(lost.cursor, null);
+  assert.equal(lost.events.length, 0);
+  const repositioned = okPair({ x: -0.04, y: -0.03, separation: 0.24 });
+  const returning = frames(engine, repositioned, 260, 660);
+  assert.equal(returning.at(-1).mode, 'navigate');
+  assert.equal(events(returning).length, 0);
+  const one = frames(engine, [repositioned[0]], 680, 940);
+  one.push(engine.update([hand('point', { x: -0.16, y: -0.03 })], 960));
+  assert.equal(events(one).length, 0);
+  assert.ok(one.every(result => result.cursor));
+});
+
 test('identity replacement cannot inherit dwell or create a pan jump', () => {
   const engine = armedEngine();
   frames(engine, [hand('ok')], 160, 420);
@@ -286,20 +458,18 @@ test('identity replacement cannot inherit dwell or create a pan jump', () => {
   results.push(engine.update([hand('point', { id: 'new' })], 760));
   assert.equal(clicks(results).length, 0);
   engine.reset();
-  frames(engine, [hand('open')], 0, 200);
-  assert.equal(engine.update([hand('open', { id: 'new', x: 0.1 })], 220).events.length, 0);
+  frames(engine, okPair(), 0, 200);
+  const changed = okPair({ x: 0.04 });
+  changed[0].id = 'new';
+  assert.equal(engine.update(changed, 220).events.length, 0);
 });
 
-test('unlabelled hands match spatially; a large relocation cancels pan', () => {
+test('unlabelled hands match spatially; a large relocation cancels navigation', () => {
   const engine = new GestureEngine();
-  const anonymous = pose => { const value = hand(pose); delete value.id; return value; };
-  frames(engine, [anonymous('open')], 0, 200);
-  const moved = anonymous('open');
-  moved.landmarks = moved.landmarks.map(p => ({ ...p, x: p.x + 0.02 }));
-  assert.equal(engine.update([moved], 220).events[0]?.type, 'pan');
-  const jumped = anonymous('open');
-  jumped.landmarks = jumped.landmarks.map(p => ({ ...p, x: p.x - 0.3 }));
-  assert.equal(engine.update([jumped], 240).events.length, 0);
+  const anonymousPair = options => okPair(options).map(value => { delete value.id; return value; });
+  frames(engine, anonymousPair(), 0, 200);
+  assert.equal(engine.update(anonymousPair({ x: 0.02 }), 220).events[0]?.type, 'pan');
+  assert.equal(engine.update(anonymousPair({ x: -0.3 }), 240).events.length, 0);
 });
 
 test('explicit rearm and cooldown permit a second deliberate click', () => {
