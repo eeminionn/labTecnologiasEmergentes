@@ -7,6 +7,7 @@ const origin = 'http://127.0.0.1:47831';
 const smoke = process.argv.includes('--smoke');
 const smokeReport = process.argv.find(v => v.startsWith('--smoke-report='))?.slice(15);
 const screenshot = process.argv.find(v => v.startsWith('--screenshot='))?.slice(13);
+const progressScreenshot = process.argv.find(v=>v.startsWith('--progress-screenshot='))?.slice(22);
 let win, server, timeout;
 const trusted = sender => sender === win?.webContents && sender.getURL().startsWith(`${origin}/`);
 function openMapLink(url) {
@@ -44,12 +45,17 @@ else {
       details.requestHeaders['User-Agent'] = `MapaGestualMLR/${app.getVersion()} (+https://github.com/eeminionn/labTecnologiasEmergentes)`;
       callback({ requestHeaders: details.requestHeaders });
     });
-    win = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650, title: 'Mapa Gestual MLR', backgroundColor: '#f6f8fa', show: !smoke, webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
+    win = new BrowserWindow({ width: 1440, height: 960, minWidth: 900, minHeight: 650, title: 'Mapa Gestual MLR', backgroundColor: '#f6f8fa', webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, nodeIntegration: false, sandbox: true } });
     win.setMenuBarVisibility(false);
     win.webContents.setWindowOpenHandler(({url}) => {openMapLink(url);return { action: 'deny' };});
     win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`${origin}/`)) {event.preventDefault();openMapLink(url);} });
     win.on('blur', () => win.webContents.send('window-blur'));
     ipcMain.handle('map-click', async (event, point) => {
+      // Tests restore focus immediately before native input. Production keeps
+      // rejecting background input and never activates the window itself.
+      if(smoke && trusted(event.sender) && !win.isFocused()){
+        app.focus({steal:true});win.focus();await new Promise(resolve=>setTimeout(resolve,80));
+      }
       if (!trusted(event.sender) || !win.isFocused() || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
       const [width, height] = win.getContentSize();
       const x = Math.round(point.x), y = Math.round(point.y);
@@ -62,6 +68,10 @@ else {
     });
     ipcMain.on('smoke-result', async (event, report) => {
       if (!smoke || !trusted(event.sender)) return;
+      if(report.phase==='progress'){
+        if(progressScreenshot){fs.mkdirSync(path.dirname(progressScreenshot),{recursive:true});fs.writeFileSync(progressScreenshot,(await win.webContents.capturePage()).toPNG());}
+        return;
+      }
       clearTimeout(timeout);
       if (screenshot && report.ok) {
         fs.mkdirSync(path.dirname(screenshot), { recursive: true });
@@ -73,6 +83,9 @@ else {
     });
     if (smoke) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, 40000);
     await win.loadURL(`${origin}/${smoke ? '?smoke=1' : ''}`);
+    // Smoke exercises the same focus-gated native click path as camera input.
+    // A hidden window would only test DOM dispatch and miss real input bugs.
+    if(smoke){win.show();app.focus({steal:true});win.focus();}
   }).catch(error => { if (!smoke) dialog.showErrorBox('No se pudo iniciar', error.code === 'EADDRINUSE' ? 'El puerto local 47831 está ocupado. Cierra la otra instancia o reinicia el equipo.' : error.message); console.error(error); app.exit(1); });
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => server?.close());

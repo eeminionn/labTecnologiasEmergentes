@@ -42,7 +42,7 @@ function frames(engine, hands, from, until, step = 20) {
 }
 const events = results => results.flatMap(result => result.events);
 const clicks = results => events(results).filter(event => event.type === 'click');
-function armedEngine(options = {}) {
+function pointedEngine(options = {}) {
   const engine = new GestureEngine(options);
   frames(engine, [hand('point')], 0, 140);
   return engine;
@@ -88,105 +88,160 @@ test('camera aspect correction preserves geometry and leaves output coordinates 
   assert.throws(() => new GestureEngine({ aspectRatio: 0 }), RangeError);
 });
 
-test('hand appearing already in OK cannot click, regardless of hold duration', () => {
+test('initial OK can click after three seconds, including after empty startup frames', () => {
   const engine = new GestureEngine();
-  const results = frames(engine, [hand('ok')], 0, 600);
-  results.push(...frames(engine, [hand('neutral')], 620, 680));
-  assert.equal(clicks(results).length, 0);
-  assert.ok(results.every(result => result.mode !== 'click-pending'));
+  frames(engine, [], 0, 200);
+  const results = frames(engine, [hand('ok')], 220, 3220);
+  assert.equal(results[0].mode, 'click-pending');
+  assert.equal(results[0].progress, 0);
+  assert.equal(clicks(results).length, 1);
+  assert.equal(results.at(-1).mode, 'click-confirmed');
 });
 
-test('a stable OK produces exactly one click on release, using the pointed target', () => {
-  const engine = armedEngine();
-  const target = engine.update([hand('point')], 160).cursor;
-  const hold = frames(engine, [hand('ok')], 180, 440);
-  assert.equal(hold.at(-1).mode, 'click-pending');
-  assert.equal(hold.at(-1).progress, 1);
-  assert.deepEqual(hold.at(-1).cursor, target);
-  assert.equal(clicks(hold).length, 0);
-  const release = frames(engine, [hand('point')], 460, 520);
-  assert.deepEqual(clicks(release), [{ type: 'click', ...target }]);
-  const unarmedRepeat = frames(engine, [hand('ok')], 540, 900);
-  unarmedRepeat.push(engine.update([hand('point')], 920));
-  assert.equal(clicks(unarmedRepeat).length, 0);
+test('2999 ms cannot click; 3000 ms clicks once automatically without release', () => {
+  const engine = new GestureEngine();
+  const held = frames(engine, [hand('ok')], 0, 2980);
+  const before = engine.update([hand('ok')], 2999);
+  assert.equal(before.mode, 'click-pending');
+  assert.equal(before.progress, 2999 / 3000);
+  assert.equal(before.events.length, 0);
+  const confirmed = engine.update([hand('ok')], 3000);
+  assert.equal(confirmed.mode, 'click-confirmed');
+  assert.equal(confirmed.progress, 1);
+  assert.deepEqual(confirmed.events, [{ type: 'click', ...held[0].cursor }]);
+  const sustained = frames(engine, [hand('ok')], 3020, 10000);
+  assert.equal(events(sustained).length, 0);
+  assert.ok(sustained.every(result => result.mode === 'click-confirmed'));
+  const release = engine.update([hand('open')], 10020);
+  assert.equal(release.events.length, 0);
+  assert.deepEqual(release.cursor, confirmed.cursor);
 });
 
-test('dwell progress is temporal and the click anchor stays fixed', () => {
-  const engine = armedEngine();
-  const start = engine.update([hand('ok')], 160);
-  const first = engine.update([hand('ok', { x: 0.005 })], 215);
-  const middle = engine.update([hand('ok', { x: -0.005 })], 270);
-  assert.equal(start.progress, 0);
-  assert.equal(first.progress, 0.25);
-  assert.equal(middle.progress, 0.5);
-  assert.deepEqual(start.cursor, middle.cursor);
-  assert.equal(engine.update([hand('point')], 290).events.length, 0);
+test('point, palm and neutral targets stay anchored when fingers close into OK', () => {
+  for (const pose of ['point', 'open', 'neutral']) {
+    const engine = new GestureEngine();
+    const target = frames(engine, [hand(pose, { x: -0.12, y: -0.10 })], 0, 140).at(-1).cursor;
+    const hold = frames(engine, [hand('ok', { x: -0.12, y: -0.10 })], 160, 3160);
+    assert.deepEqual(hold[0].cursor, target, pose);
+    assert.ok(hold.every(result => Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12));
+    assert.deepEqual(clicks(hold), [{ type: 'click', ...target }], pose);
+  }
 });
 
-test('a release sample cannot prove a mature OK that was never observed', () => {
-  const engine = armedEngine();
-  frames(engine, [hand('ok')], 160, 340);
-  // Less than the gap limit, but only 180 ms of stable OK was observed.
-  assert.equal(engine.update([hand('point')], 400).events.length, 0);
+test('pose changes and OK release preserve cursor continuity without a center flash', () => {
+  const engine = new GestureEngine();
+  const location = { x: -0.20, y: -0.20 };
+  const target = engine.update([hand('point', location)], 0).cursor;
+  assert.ok(Math.hypot(target.x - 0.5, target.y - 0.5) > 0.20);
+  for (const [time, pose] of [[20, 'neutral'], [40, 'open'], [60, 'point'], [80, 'ok']]) {
+    const result = engine.update([hand(pose, location)], time);
+    assert.ok(Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12, pose);
+  }
+  const hold = frames(engine, [hand('ok', location)], 100, 3080);
+  assert.deepEqual(clicks(hold), [{ type: 'click', ...target }]);
+  const release = engine.update([hand('open', location)], 3100);
+  assert.deepEqual(release.cursor, target);
+  const moved = engine.update([hand('open', { ...location, x: location.x + 0.02 })], 3120);
+  assert.ok(moved.cursor.x > target.x && moved.cursor.x < target.x + 0.02);
+  assert.ok(Math.abs(moved.cursor.y - target.y) < 1e-12);
+  assert.equal(moved.events.length, 0);
+});
+
+test('cancelClick blocks an invalidated target until a stable opening, without resetting cursor', () => {
+  const engine = new GestureEngine();
+  const target = engine.update([hand('open')], 0).cursor;
+  const pending = frames(engine, [hand('ok')], 20, 2020);
+  assert.equal(pending.at(-1).mode, 'click-pending');
+  engine.cancelClick();
+  const blocked = frames(engine, [hand('ok')], 2040, 5600);
+  assert.ok(blocked.every(result => result.mode === 'idle'));
+  assert.ok(blocked.every(result => Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12));
+  assert.equal(clicks(blocked).length, 0);
+  engine.update([hand('open')], 5620);
+  assert.equal(clicks(frames(engine, [hand('ok')], 5640, 9000)).length, 0);
+  frames(engine, [hand('neutral')], 9020, 9160);
+  const retry = frames(engine, [hand('ok')], 9180, 12180);
+  assert.equal(clicks(retry).length, 1);
+});
+
+test('ring progress advances from zero to one throughout the full three seconds', () => {
+  const engine = new GestureEngine();
+  const hold = frames(engine, [hand('ok')], 0, 3000, 50);
+  for (const [time, progress] of [[0, 0], [750, 0.25], [1500, 0.5], [2250, 0.75], [3000, 1]]) {
+    const result = hold[time / 50];
+    assert.equal(result.progress, progress);
+    assert.deepEqual(result.cursor, hold[0].cursor);
+    assert.equal(result.mode, time < 3000 ? 'click-pending' : 'click-confirmed');
+  }
+});
+
+test('releasing early or exactly at the deadline never emits a click', () => {
+  for (const releaseAt of [800, 2999, 3000]) {
+    const engine = new GestureEngine();
+    const held = frames(engine, [hand('ok')], 0, Math.floor((releaseAt - 1) / 20) * 20);
+    assert.equal(clicks(held).length, 0);
+    assert.equal(engine.update([hand('open')], releaseAt).events.length, 0);
+  }
 });
 
 test('moving a pending pinch cancels the click until explicit release/rearm', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 400);
   assert.equal(engine.update([hand('ok', { x: 0.07 })], 420).mode, 'idle');
-  const results = frames(engine, [hand('ok', { x: 0.07 })], 440, 720);
-  results.push(engine.update([hand('neutral', { x: 0.07 })], 740));
+  const results = frames(engine, [hand('ok', { x: 0.07 })], 440, 3800);
   assert.equal(clicks(results).length, 0);
+  assert.ok(results.every(result => result.mode === 'idle' && result.cursor));
+  frames(engine, [hand('open', { x: 0.07 })], 3820, 3960);
+  assert.equal(clicks(frames(engine, [hand('ok', { x: 0.07 })], 3980, 6980)).length, 1);
 });
 
-test('pinch hysteresis tolerates enter-boundary noise and fires only beyond exit', () => {
-  const engine = armedEngine();
+test('pinch hysteresis preserves a continuous noisy hold without release clicks', () => {
+  const engine = pointedEngine();
   const results = [engine.update([hand('ok', { pinchRatio: 0.25 })], 160)];
-  for (let time = 180; time <= 420; time += 20) {
+  for (let time = 180; time <= 3160; time += 20) {
     results.push(engine.update([hand('ok', { pinchRatio: time % 40 === 0 ? 0.32 : 0.27 })], time));
   }
-  assert.ok(results.every(result => result.mode === 'click-pending'));
-  assert.equal(clicks(results).length, 0);
-  const release = engine.update([hand('ok', { pinchRatio: 0.45 })], 440);
-  assert.equal(release.events[0]?.type, 'click');
-  assert.equal(engine.update([hand('ok', { pinchRatio: 0.25 })], 460).events.length, 0);
+  assert.ok(results.slice(0, -1).every(result => result.mode === 'click-pending'));
+  assert.equal(clicks(results).length, 1);
+  const release = engine.update([hand('ok', { pinchRatio: 0.45 })], 3180);
+  assert.equal(release.events.length, 0);
+  assert.equal(clicks(frames(engine, [hand('ok', { pinchRatio: 0.25 })], 3200, 6500)).length, 0);
 });
 
 test('loss of tracking or invalid landmarks never releases a click', () => {
   for (const lost of [[], [{ landmarks: [] }], [{ landmarks: Array(21).fill({ x: NaN, y: 0 }) }]]) {
-    const engine = armedEngine();
-    frames(engine, [hand('ok')], 160, 420);
-    const result = engine.update(lost, 440);
+    const engine = pointedEngine();
+    frames(engine, [hand('ok')], 160, 3140);
+    const result = engine.update(lost, 3160);
     assert.equal(result.mode, 'idle');
     assert.equal(result.cursor, null);
     assert.equal(result.events.length, 0);
-    const results = frames(engine, [hand('ok')], 460, 800);
-    results.push(engine.update([hand('point')], 820));
+    const results = frames(engine, [hand('ok')], 3180, 6600);
     assert.equal(clicks(results).length, 0);
   }
 });
 
-test('a long inference pause cancels mature dwell, including exactly 180 ms', () => {
+test('a long inference pause cancels the hold and blocks unchanged OK, including exactly 180 ms', () => {
   for (const gap of [180, 500, 5000]) {
-    const engine = armedEngine();
-    frames(engine, [hand('ok')], 160, 420);
-    const release = engine.update([hand('point')], 420 + gap);
-    assert.equal(clicks([release]).length, 0);
+    const engine = pointedEngine();
+    frames(engine, [hand('ok')], 160, 2960);
+    const returning = frames(engine, [hand('ok')], 2960 + gap, 6560 + gap);
+    assert.equal(clicks(returning).length, 0);
   }
 });
 
 test('folding the other fingers while still pinching is cancellation', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 420);
   const closed = hand('ok');
   const neutral = hand('neutral');
   for (let index = 9; index < 21; index++) closed.landmarks[index] = neutral.landmarks[index];
   assert.equal(engine.update([closed], 440).events.length, 0);
-  assert.equal(engine.update([hand('point')], 460).events.length, 0);
+  assert.equal(clicks(frames(engine, [hand('ok')], 460, 3800)).length, 0);
 });
 
 test('two OK hands acquire navigation after dwell; order changes and removal never click', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 320);
   const pair = [hand('ok', { id: 'a', x: -0.15 }), hand('ok', { id: 'b', x: 0.15 })];
   const results = frames(engine, pair, 340, 560);
@@ -197,8 +252,8 @@ test('two OK hands acquire navigation after dwell; order changes and removal nev
   assert.ok(events(results).some(event => event.type === 'zoom' && event.delta > 0));
   assert.equal(clicks(results).length, 0);
   const one = [hand('ok', { id: 'a', x: -0.23 })];
-  results.push(...frames(engine, one, 680, 1020));
-  results.push(engine.update([hand('point', { id: 'a', x: -0.23 })], 1040));
+  results.push(...frames(engine, one, 680, 4400));
+  results.push(engine.update([hand('point', { id: 'a', x: -0.23 })], 4420));
   assert.equal(clicks(results).length, 0);
 });
 
@@ -265,11 +320,11 @@ test('filtered separation below the safe minimum cancels instead of taking log2'
 });
 
 test('adding any second hand cancels a pending click even without a zoom pose', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 420);
   engine.update([hand('ok'), hand('neutral', { id: 'b', x: 0.25 })], 440);
-  const results = frames(engine, [hand('ok')], 460, 740);
-  results.push(engine.update([hand('point')], 760));
+  const results = frames(engine, [hand('ok')], 460, 3800);
+  results.push(engine.update([hand('point')], 3820));
   assert.equal(clicks(results).length, 0);
 });
 
@@ -356,7 +411,8 @@ test('a single hand cursor follows pose geometry without moving the map', () => 
     assert.deepEqual(result.cursor, classifyHand(value)[key]);
     assert.equal(result.events.length, 0);
     const moved = engine.update([hand(pose, { x: 0.02 })], 20);
-    assert.ok(moved.cursor.x > result.cursor.x);
+    if (pose === 'ok') assert.deepEqual(moved.cursor, result.cursor);
+    else assert.ok(moved.cursor.x > result.cursor.x);
     assert.equal(moved.events.length, 0);
   }
 });
@@ -407,11 +463,16 @@ test('the same timed interaction clicks once at 15, 30 and 60 FPS', () => {
     const engine = new GestureEngine();
     const results = [];
     const step = 1000 / fps;
-    for (let time = 0; time < 1000; time += step) {
-      const pose = time < 200 ? 'point' : time < 600 ? 'ok' : 'point';
-      results.push(engine.update([hand(pose)], time));
+    let started, fired;
+    for (let time = 0; time < 4600; time += step) {
+      const pose = time < 200 ? 'open' : time < 4000 ? 'ok' : 'open';
+      if (pose === 'ok' && started === undefined) started = time;
+      const result = engine.update([hand(pose)], time);
+      if (result.events.some(event => event.type === 'click')) fired = time;
+      results.push(result);
     }
     assert.equal(clicks(results).length, 1, `FPS=${fps}`);
+    assert.ok(fired - started >= 3000 && fired - started <= 3000 + step + 1e-8, `duration FPS=${fps}`);
   }
 });
 
@@ -452,10 +513,10 @@ test('occlusion cancels navigation; returning with both OK or one OK never jumps
 });
 
 test('identity replacement cannot inherit dwell or create a pan jump', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 420);
-  const results = frames(engine, [hand('ok', { id: 'new' })], 440, 740);
-  results.push(engine.update([hand('point', { id: 'new' })], 760));
+  const results = frames(engine, [hand('ok', { id: 'new' })], 440, 3800);
+  results.push(engine.update([hand('point', { id: 'new' })], 3820));
   assert.equal(clicks(results).length, 0);
   engine.reset();
   frames(engine, okPair(), 0, 200);
@@ -472,14 +533,15 @@ test('unlabelled hands match spatially; a large relocation cancels navigation', 
   assert.equal(engine.update(anonymousPair({ x: -0.3 }), 240).events.length, 0);
 });
 
-test('explicit rearm and cooldown permit a second deliberate click', () => {
-  const engine = armedEngine();
-  const first = frames(engine, [hand('ok')], 160, 400);
-  first.push(engine.update([hand('point')], 420));
+test('stable open release permits another hold, while a brief release does not repeat', () => {
+  const engine = pointedEngine();
+  const first = frames(engine, [hand('ok')], 160, 3160);
   assert.equal(clicks(first).length, 1);
-  frames(engine, [hand('point')], 440, 840);
-  const second = frames(engine, [hand('ok')], 860, 1100);
-  second.push(engine.update([hand('point')], 1120));
+  engine.update([hand('open')], 3180);
+  const brief = frames(engine, [hand('ok')], 3200, 6500);
+  assert.equal(clicks(brief).length, 0);
+  frames(engine, [hand('open')], 6520, 6660);
+  const second = frames(engine, [hand('ok')], 6680, 9680);
   assert.equal(clicks(second).length, 1);
 });
 
@@ -496,7 +558,7 @@ test('One Euro smooths static jitter and follows intentional motion', () => {
 });
 
 test('invalid timestamps reset the interpreter; three hands produce no events', () => {
-  const engine = armedEngine();
+  const engine = pointedEngine();
   frames(engine, [hand('ok')], 160, 400);
   assert.equal(engine.update([hand('point')], NaN).events.length, 0);
   assert.equal(engine.update([hand('open'), hand('open', { id: 'b' }), hand('open', { id: 'c' })], 420).events.length, 0);

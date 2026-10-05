@@ -8,6 +8,7 @@ await mkdir('public/models', { recursive: true });
 await cp('node_modules/@mediapipe/tasks-vision/wasm', 'public/wasm', { recursive: true });
 await mkdir('public/fixtures', { recursive: true });
 await cp('tests/fixtures/thumbs-up.png','public/fixtures/thumbs-up.png');
+await cp('tests/fixtures/selection-poses.json','public/fixtures/selection-poses.json');
 let bytes;
 try { bytes = await readFile('public/models/hand_landmarker.task'); }
 catch {

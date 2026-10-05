@@ -2,6 +2,7 @@ import './style.css';
 import { GestureEngine, classifyHand } from './gestures.js';
 import { orientation, homography, project } from './calibration.js';
 import { createMap } from './map.js';
+import { SelectionFeedback } from './selection.js';
 
 const $ = id => document.getElementById(id);
 const smoke = new URLSearchParams(location.search).has('smoke');
@@ -12,17 +13,21 @@ if (smoke) config={...defaults};
 let matrix; try { matrix=config.corners ? homography(config.corners) : null; } catch { config.corners=null; }
 let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], calibrating=null, samplePoints=[], previousPan=null, lastFrame=-1;
 let engine = new GestureEngine();
+const selection=new SelectionFeedback();
+let hoverElement;
+const controlIds=new WeakMap();let nextControlId=0;
 const timings=[], inferenceTimes=[];
 const counters={frames:0,clicks:0,panEvents:0,zoomEvents:0,markedFalseClicks:0};
 const startedAt=new Date().toISOString();
 const linePairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-const labels={idle:'En reposo',point:'Apuntando','click-pending':'Preparando clic',navigate:'Moviendo y ampliando mapa'};
+const labels={idle:'En reposo',point:'Apuntando','click-pending':'Mantén OK · 3 s','click-confirmed':'Seleccionado',navigate:'Moviendo y ampliando mapa'};
 let noticeTimer;
 let telemetryBlocked=false;
 const resultTimes=[];
 let lastFreshResult=0;
 let smokeStage='empty',emptyFrameResult;
 let cameraGeneration=0;
+let hasFreshCameraResult=false;
 function notify(message) { $('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
 function save() { localStorage.setItem('mlr-config',JSON.stringify(config)); }
 function updateStatus() {
@@ -31,7 +36,8 @@ function updateStatus() {
   $('camera-toggle').textContent=active?'Detener cámara':'Iniciar cámara';
   $('diagnostics').hidden=!config.showPreview || !active;
 }
-function cancelGesture() { engine.reset(); previousPan=null; $('cursor').style.display='none'; $('click-ripple').classList.remove('play'); }
+function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
+function cancelGesture() { engine.cancelInteraction();engine.cancelClick();selection.reset();highlightTarget(null);previousPan=null;$('cursor').style.display='none';$('cursor').dataset.state='idle';$('click-ripple').classList.remove('play'); }
 function isBlocked() { return paused || !document.hasFocus() || $('settings').open || $('help').open || !!calibrating; }
 function mapPoint(p) { return project(orientation(p,config.rotation,config.mirror),matrix); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
@@ -53,18 +59,14 @@ function initializeWorker() {
         if(smokeStage==='empty') {
           emptyFrameResult={hands:data.landmarks.length,inferenceMs:data.inferenceMs};smokeStage='positive';smokePositive();
         } else {
-          const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;$('home').click();
-          $('map').querySelector('.leaflet-marker-icon')?.dispatchEvent(new MouseEvent('click',{bubbles:true}));
-          const button=$('map').querySelector('.demo-popup button');const popupWorks=!!button;button?.click();const selectionWorks=button?.textContent==='Punto seleccionado';
-          const pointerFeedback=verifyPointerFeedback();
-          const navigationFeedback=verifyNavigationFeedback();
-          window.desktop.reportSmoke({ok:emptyFrameResult.hands===0 && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks && popupWorks && selectionWorks && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean),provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,inferenceMs:data.inferenceMs},zoomWorks,popupWorks,selectionWorks,pointerFeedback,navigationFeedback,mapView:map.info()});
+          finishSmoke(data).catch(error=>window.desktop.reportSmoke({ok:false,error:error.message}));
         }
         return;
       }
       if(!active) return;
       lastFreshResult=performance.now();
-      if(performance.now()-data.capturedAt>150) { samplePoints=[];cancelGesture();return; }
+      if(performance.now()-data.capturedAt>150) {samplePoints=[];if(hasFreshCameraResult)cancelGesture();return;}
+      hasFreshCameraResult=true;
       counters.frames++; timings.push(performance.now()-data.capturedAt); inferenceTimes.push(data.inferenceMs);
       if(timings.length>10000) { timings.shift(); inferenceTimes.shift(); }
       latestHands=data.landmarks.map(landmarks=>({landmarks}));
@@ -106,6 +108,65 @@ async function smokePositive() {
     worker.postMessage({type:'frame',bitmap,timestamp:performance.now(),capturedAt:performance.now()},[bitmap]);
   } catch(error) {window.desktop.reportSmoke({ok:false,error:error.message});}
 }
+const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function waitFor(test,timeoutMs=2000,label='condición') {
+  const since=performance.now();while(!test()){if(performance.now()-since>timeoutMs)throw new Error(`Smoke: ${label} no observado`);await sleep(20);}
+}
+async function finishSmoke(data) {
+  await waitFor(()=>document.hasFocus(),2000,'foco de ventana');
+  const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
+  const pointerFeedback=verifyPointerFeedback(),navigationFeedback=verifyNavigationFeedback();
+  const nativeSelection=await verifyNativeSelection();
+  const ok=emptyFrameResult.hands===0 && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
+    && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
+    && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
+    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===2 && nativeSelection.holdElapsedMs>=3000
+    && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
+  window.desktop.reportSmoke({version:'0.1.2',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,inferenceMs:data.inferenceMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,nativeSelection,mapView:map.info()});
+}
+async function verifyNativeSelection() {
+  map.home();map.pan(180,90);cancelGesture();
+  const target=map.targets()[0];
+  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  let trustedClicks=0;const observe=event=>{if(event.isTrusted)trustedClicks++;};$('map').addEventListener('click',observe,true);
+  const pointHold=await verifyHoldAt(target,fixture,()=>trustedClicks,true);
+  await waitFor(()=>$('map').querySelector('.demo-popup button'),2000,`popup (clicks=${pointHold.clicks}, accepted=${pointHold.clickAccepted})`);
+  const button=$('map').querySelector('.demo-popup button');
+  cancelGesture();
+  const buttonTarget=selectionTargets($('map').getBoundingClientRect()).find(t=>t.element===button);
+  if(!buttonTarget)throw new Error('Smoke: botón de popup no disponible');
+  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks);
+  await waitFor(()=>button.textContent==='Punto seleccionado',2000,'selección de botón');
+  $('map').removeEventListener('click',observe,true);
+  const result={gestureClickAccepted:pointHold.clickAccepted,popupOpened:true,buttonClickAccepted:buttonHold.clickAccepted,selectionWorks:button.textContent==='Punto seleccionado',trustedClicks,holdElapsedMs:Math.min(pointHold.elapsedMs,buttonHold.elapsedMs),cursorLocked:pointHold.cursorLocked&&buttonHold.cursorLocked,ringHalfVisible:pointHold.ringHalfVisible&&buttonHold.ringHalfVisible,noEarlyClick:pointHold.noEarlyClick&&buttonHold.noEarlyClick,oneClickWhileHeld:pointHold.clicks===1&&buttonHold.clicks===1,pointHold,buttonHold};
+  cancelGesture();map.home();
+  return result;
+}
+async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false) {
+  const rect=$('map').getBoundingClientRect();
+  const dx=target.x/rect.width-fixture.poses.point[8].x,dy=target.y/rect.height-fixture.poses.point[8].y;
+  const hand=pose=>({id:'smoke-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+dx,y:p.y+dy}))});
+  const synthetic=new GestureEngine();
+  await renderGesture(synthetic.update([hand('point')],performance.now()),1);
+  await sleep(40);
+  const start=performance.now(),beforeClicks=trustedCount();
+  let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false;
+  const anchor={x:target.x,y:target.y};
+  while(performance.now()-start<3300){
+    const now=performance.now(),result=synthetic.update([hand('ok')],now);
+    const accepted=await renderGesture(result,1);
+    cursorLocked &&= Math.abs(parseFloat($('cursor').style.left)-anchor.x)<.5 && Math.abs(parseFloat($('cursor').style.top)-anchor.y)<.5;
+    if(result.progress>=.45 && result.progress<=.65){
+      const ring=$('cursor').querySelector('.cursor-progress'),style=getComputedStyle(ring);
+      ringHalfVisible ||= style.opacity==='1' && Math.abs(parseFloat(style.strokeDashoffset)-138.23*(1-result.progress))<.2;
+      if(captureProgress && !progressCaptured){progressCaptured=true;window.desktop.reportSmoke({phase:'progress',progress:result.progress});}
+    }
+    if(now-start<3000 && (result.events.length || trustedCount()!==beforeClicks))noEarlyClick=false;
+    if(result.events.some(event=>event.type==='click')){clicks++;elapsedMs=now-start;clickAccepted=accepted[0]===true;}
+    await sleep(40);
+  }
+  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks};
+}
 async function startCamera() {
   if(active) return;
   const generation=++cameraGeneration;
@@ -117,7 +178,7 @@ async function startCamera() {
     $('video').srcObject=stream;await $('video').play();
     const aspect=$('video').videoWidth/$('video').videoHeight;
     engine=new GestureEngine({aspectRatio:aspect});
-    active=true;paused=false;lastFrame=-1;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
+    active=true;paused=false;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
     stream.getVideoTracks()[0].addEventListener('ended',()=>{stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Iniciar cámara.');});
     updateStatus(); enumerateCameras(); frameLoop(generation);
   } catch(error) { stopCamera(); notify(error.name==='NotAllowedError'?'Autoriza la cámara en Ajustes del Sistema → Privacidad y seguridad → Cámara.':`No se pudo abrir la cámara USB: ${error.message}`); }
@@ -125,14 +186,14 @@ async function startCamera() {
 }
 function stopCamera() {
   cameraGeneration++;
-  active=false; stream?.getTracks().forEach(track=>track.stop());stream=null;
+  active=false;hasFreshCameraResult=false;stream?.getTracks().forEach(track=>track.stop());stream=null;
   $('video').srcObject=null; worker?.terminate();worker=null;workerReady=false;busy=false;latestHands=[];
   cancelGesture();updateStatus();
 }
 async function frameLoop(generation) {
   if(!active || generation!==cameraGeneration) return;
   const video=$('video');
-  if(performance.now()-lastFreshResult>180) {samplePoints=[];cancelGesture();}
+  if(hasFreshCameraResult && performance.now()-lastFreshResult>180) {samplePoints=[];cancelGesture();}
   if(workerReady && !busy && video.readyState>=2 && video.currentTime!==lastFrame) {
     busy=true;lastFrame=video.currentTime;
     const capturedAt=performance.now();
@@ -158,18 +219,29 @@ function renderGesture(result,detectedHands=latestHands.length) {
   const p=result.cursor && mapPoint(result.cursor);
   $('gesture-metric').textContent=labels[result.mode]||result.mode;
   const singleHand=detectedHands===1;
-  $('cursor').style.display=singleHand && within(p)?'block':'none';
+  let feedback={point:null,target:null,cancel:false};
+  if(singleHand && within(p))feedback=selection.update({x:p.x*rect.width,y:p.y*rect.height},result.mode,selectionTargets(rect),rect);
+  else {selection.reset();if(singleHand && result.mode==='click-pending')engine.cancelClick();}
+  if(feedback.cancel){engine.cancelClick();selection.reset();}
+  const visible=singleHand && feedback.point;
+  $('cursor').style.display=visible?'block':'none';
   if(!singleHand) $('click-ripple').classList.remove('play');
-  if(within(p)) { $('cursor').style.left=`${p.x*rect.width}px`;$('cursor').style.top=`${p.y*rect.height}px`; }
-  $('cursor').querySelector('circle').style.strokeDashoffset=138.23*(1-result.progress);
+  if(visible){$('cursor').style.left=`${feedback.point.x}px`;$('cursor').style.top=`${feedback.point.y}px`;}
+  const state=feedback.cancel?'idle':result.mode==='click-pending'?'loading':result.mode==='click-confirmed'?'confirmed':feedback.target?'hover':'idle';
+  $('cursor').dataset.state=state;
+  $('cursor').querySelector('.cursor-progress').style.strokeDashoffset=138.23*(1-(feedback.cancel?0:result.progress));
+  highlightTarget(singleHand && !feedback.cancel?feedback.target:null);
   if(result.mode!=='navigate') previousPan=null;
+  const actions=[];
   for(const event of result.events) {
     if(event.type==='click') {
-      const at=mapPoint(event);if(!within(at)) continue;
-      const x=at.x*rect.width,y=at.y*rect.height;
-      window.desktop.click({x:rect.left+x,y:rect.top+y}).then(ok=>{
-        if(ok) { counters.clicks++;if(active && !isBlocked() && latestHands.length===1)pulse(x,y); }
-      });
+      if(!visible || feedback.cancel)continue;
+      const {x,y}=feedback.point;
+      actions.push(window.desktop.click({x:rect.left+x,y:rect.top+y}).then(ok=>{
+        if(ok){counters.clicks++;if(smoke || (active && !isBlocked() && latestHands.length===1))pulse(x,y);}
+        else{engine.cancelClick();selection.reset();$('cursor').dataset.state='idle';}
+        return ok;
+      }).catch(error=>{engine.cancelClick();selection.reset();if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
     } else if(event.type==='pan' && result.cursor) {
       const current=mapPoint(result.cursor), old=previousPan || mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
       if(within(current) && within(old)) { map.pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++; }
@@ -179,6 +251,21 @@ function renderGesture(result,detectedHands=latestHands.length) {
       map.zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
     }
   }
+  return Promise.all(actions);
+}
+function selectionTargets(rect) {
+  const targets=map.targets();
+  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button').forEach(element=>{
+    if(element.disabled || !element.getClientRects().length)return;
+    if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
+    const box=element.getBoundingClientRect();
+    targets.push({id:controlIds.get(element),x:box.left+box.width/2-rect.left,y:box.top+box.height/2-rect.top,width:box.width,height:box.height,element,priority:1});
+  });
+  return targets.filter(target=>{
+    if(target.x<0 || target.y<0 || target.x>rect.width || target.y>rect.height)return false;
+    const top=document.elementFromPoint(rect.left+target.x,rect.top+target.y);
+    return target.element?target.element.contains(top):$('map').contains(top);
+  });
 }
 function pulse(x,y) { const ripple=$('click-ripple');ripple.style.left=`${x}px`;ripple.style.top=`${y}px`;ripple.classList.remove('play');void ripple.offsetWidth;ripple.classList.add('play'); }
 function verifyPointerFeedback() {
@@ -253,7 +340,7 @@ $('reset-calibration').onclick=()=>{matrix=null;config.corners=null;save();notif
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.1',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],calibrated:!!matrix},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.2',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],calibrated:!!matrix},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

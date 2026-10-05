@@ -13,7 +13,7 @@
     </header>
     <main id="workspace">
       <div id="map" aria-label="Mapa interactivo de La Reina"></div>
-      <div id="cursor" aria-hidden="true"><span></span><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" /></svg></div>
+      <div id="cursor" aria-hidden="true"><span></span><svg viewBox="0 0 64 64"><circle class="cursor-track" cx="32" cy="32" r="22"/><circle class="cursor-progress" cx="32" cy="32" r="22"/></svg></div>
       <div id="click-ripple" aria-hidden="true"></div>
       <div id="notice" role="status" hidden></div>
       <section id="diagnostics" class="panel" hidden aria-label="Diagnóstico de cámara">
@@ -26,7 +26,7 @@
       <div class="map-tools"><button id="zoom-in" aria-label="Acercar">+</button><button id="zoom-out" aria-label="Alejar">−</button><button id="home" aria-label="Volver a La Reina">⌂</button></div>
       <section id="calibration" class="calibration" hidden><strong id="calibration-title"></strong><p>Mantén el índice sobre la esquina indicada del área de la mesa y pulsa Espacio.</p><button id="calibration-cancel">Cancelar</button></section>
     </main>
-    <footer><span id="gesture-hint">Índice: apuntar · OK: clic al soltar · Dos OK: mover y zoom</span><span>Espacio: pausar · Esc: cancelar</span></footer>
+    <footer><span id="gesture-hint">Índice: apuntar · OK 3 s: clic · Dos OK: mover y zoom</span><span>Espacio: pausar · Esc: cancelar</span></footer>
     <dialog id="settings">
       <form method="dialog" id="settings-form">
         <div class="dialog-heading"><h1>Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
@@ -43,7 +43,7 @@
       </form>
     </dialog>
     <dialog id="help"><div class="dialog-heading"><h1>Gestos</h1><button id="help-close" aria-label="Cerrar ayuda">×</button></div>
-      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Extiende solo el índice y mueve la mano sobre la mesa. La sombra azul aparece sólo con una mano detectada.</p></li><li><strong>Clic</strong><p>Forma OK: une pulgar e índice con los otros dedos extendidos. Mantén el círculo azul hasta completarlo y suelta. Un gesto, un clic.</p></li><li><strong>Mover</strong><p>Forma OK con ambas manos, espera un instante y muévelas juntas en la misma dirección. Suelta cualquiera de las pinzas para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar; júntalas para alejar. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
+      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Extiende solo el índice y mueve la mano sobre la mesa. La sombra azul aparece sólo con una mano detectada; el punto disponible se resalta.</p></li><li><strong>Clic</strong><p>Coloca la sombra en el punto o botón y forma OK: une pulgar e índice con los otros dedos extendidos. Mantén la mano quieta 3 segundos. El aro se completa y selecciona automáticamente; no hace falta soltar. Abre la pinza antes de seleccionar otra vez. Soltar antes, mover la mano o añadir otra cancela la carga.</p></li><li><strong>Mover</strong><p>Forma OK con ambas manos, espera un instante y muévelas juntas en la misma dirección. Suelta cualquiera de las pinzas para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar; júntalas para alejar. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
       <p class="field-note">Manos separadas, cámara fija, iluminación uniforme y fondo mate. Usa Ajustes para elegir tu USB, rotar y calibrar. Espacio pausa; Esc cancela cualquier acción.</p>
       <p class="field-note">Servicios de mapa: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank">Términos Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank">Privacidad Google</a>. Los mapas usan Internet; este prototipo no envía frames de cámara al proveedor del mapa.</p>
     </dialog>

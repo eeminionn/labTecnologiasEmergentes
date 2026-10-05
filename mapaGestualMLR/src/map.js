@@ -25,7 +25,7 @@ export async function createMap(container, config, notify, providerChanged = () 
         current.destroy();container.replaceChildren();current=osmMap(container,notify,config.offline);notify(failureMessage);providerChanged(current.provider);
       }, notify);
       if(initializationFailed){current.destroy();throw new Error('Google authentication');}
-      return { get provider(){return current.provider;},pan:(...args)=>current.pan(...args),zoom:(...args)=>current.zoom(...args),home:()=>current.home(),destroy:()=>current.destroy(),info:()=>current.info() };
+      return { get provider(){return current.provider;},pan:(...args)=>current.pan(...args),zoom:(...args)=>current.zoom(...args),home:()=>current.home(),destroy:()=>current.destroy(),info:()=>current.info(),targets:()=>current.targets() };
     }
     catch { container.replaceChildren();notify(failureMessage); }
   } else if (config.provider === 'google') notify('Configura una API key para usar Google Maps. Se muestra el mapa de prueba.');
@@ -36,14 +36,15 @@ function osmMap(container, notify, offline = false) {
   map.attributionControl.setPrefix(false);
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, minZoom: 3, updateWhenIdle: true, keepBuffer: 1, attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> · Puntos ficticios' }).addTo(map).once('tileerror', () => notify('No se pudieron cargar algunas teselas. Comprueba la conexión a Internet.'));
   else { container.style.background='repeating-linear-gradient(0deg,transparent 0 59px,#d1d9e0 60px),repeating-linear-gradient(90deg,#e9eef2 0 59px,#d1d9e0 60px)'; map.attributionControl.addAttribution('Prueba automatizada sin cartografía'); }
-  for (const item of samples) L.marker([item.lat, item.lng], { icon: L.divIcon({ className: '', html: '<div class="demo-dot"></div>', iconSize: [16,16], iconAnchor: [8,8] }) }).addTo(map).bindPopup(popup(item));
+  const markers=samples.map(item=>L.marker([item.lat, item.lng], { icon: L.divIcon({ className: '', html: '<div class="demo-dot"></div>', iconSize: [16,16], iconAnchor: [8,8] }) }).addTo(map).bindPopup(popup(item)));
   return {
     provider: 'OpenStreetMap · prueba',
     pan(dx,dy) { map.panBy([-dx,-dy], { animate: false }); },
     zoom(delta,x,y) { map.setZoomAround(L.point(x,y), Math.min(19, Math.max(3, map.getZoom() + delta)), { animate: false }); },
     home() { map.setView([center.lat,center.lng],14,{animate:false}); },
     destroy() { map.remove(); },
-    info() { return { zoom: map.getZoom(), center: map.getCenter() }; }
+    info() { return { zoom: map.getZoom(), center: map.getCenter() }; },
+    targets() { return markers.map((marker,i)=>{const p=map.latLngToContainerPoint(marker.getLatLng());return {id:`point-${i}`,x:p.x,y:p.y,width:16,height:16,element:marker.getElement()};}); }
   };
 }
 async function googleMap(container,key,onFatal,notify) {
@@ -85,6 +86,11 @@ async function googleMap(container,key,onFatal,notify) {
     },
     home() { map.setCenter(center); map.setZoom(14); },
     destroy() { info.close();for(const marker of markers){google.maps.event.clearInstanceListeners(marker);marker.setMap(null);} google.maps.event.clearInstanceListeners(map);window.gm_authFailure=()=>{};container.replaceChildren(); },
-    info() { return { zoom:map.getZoom(),center:map.getCenter().toJSON() }; }
+    info() { return { zoom:map.getZoom(),center:map.getCenter().toJSON() }; },
+    targets() {
+      const projection=map.getProjection();if(!projection)return [];
+      const c=projection.fromLatLngToPoint(map.getCenter()),scale=2**map.getZoom();
+      return markers.map((marker,i)=>{const p=projection.fromLatLngToPoint(marker.getPosition());return {id:`point-${i}`,x:(p.x-c.x)*scale+container.clientWidth/2,y:(p.y-c.y)*scale+container.clientHeight/2,width:16,height:16};});
+    }
   };
 }

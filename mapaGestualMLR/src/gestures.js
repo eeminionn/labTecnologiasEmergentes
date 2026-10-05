@@ -17,7 +17,7 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   aspectRatio: 1, // Set from actual videoWidth / videoHeight, before calibration.
   pinchEnter: 0.28, // Thumb-index distance divided by palm size.
   pinchExit: 0.40, // Wider release threshold prevents boundary chatter.
-  clickDwellMs: 220,
+  clickDwellMs: 3000,
   rearmMs: 120,
   clickCooldownMs: 400,
   maxClickDrift: 0.055, // Camera metric units, before homography.
@@ -30,7 +30,7 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   zoomDistanceDeadband: 0.003, // Also reject tiny separation jitter at close range.
   zoomMinSeparation: 0.10,
   zoomGain: 1,
-  pointAnchorMaxAgeMs: 350,
+  cursorAnchorMaxAgeMs: 350, // Preserve the last single-hand target across poses.
   minCutoff: 1.4,
   beta: 6,
   derivativeCutoff: 1,
@@ -147,9 +147,10 @@ class PointFilter {
  * update([{ landmarks: [{x,y,z}, ...21], id?: stableCameraId }], timestampMs)
  * -> { mode, cursor, progress, events, hands }
  *
- * At most two hands are accepted. A click needs: release/point to arm -> a stable
- * OK held for clickDwellMs -> an actual pinch release. Losing a hand, adding a
- * second hand, a model pause, or changing identity cancels pending actions.
+ * At most two hands are accepted. One stable OK clicks automatically after
+ * clickDwellMs and remains click-confirmed until released, without repeating.
+ * Initial OK is allowed. Drift, loss, a second hand, a model pause or identity
+ * replacement cancels the hold and requires a stable release before retrying.
  * Navigation requires two OK hands: midpoint motion pans, separation zooms.
  * A single hand only points/clicks; an open palm never moves the map.
  */
@@ -176,16 +177,26 @@ export class GestureEngine {
     this.previousCount = 0;
     this.cooldownUntil = 0;
     this.multiHandLock = false;
+    this.clickBlocked = false;
+    this.hasObservedHand = false;
+    this.cursorState = null;
     this.cancelInteraction();
   }
 
   cancelInteraction() {
-    this.armed = false;
     this.rearmSince = null;
     this.pendingClick = null;
+    this.confirmedClick = null;
     this.navigationCandidate = null;
     this.navigation = null;
-    this.lastPoint = null;
+  }
+
+  /** Cancel an invalidated UI target; held OK cannot restart until released. */
+  cancelClick() {
+    this.pendingClick = null;
+    this.confirmedClick = null;
+    this.clickBlocked = true;
+    this.rearmSince = null;
   }
 
   result(mode = 'idle', cursor = null, progress = 0, events = [], hands = this.tracks.length) {
@@ -245,7 +256,11 @@ export class GestureEngine {
 
   update(hands, timestampMs) {
     if (!Array.isArray(hands) || !Number.isFinite(timestampMs)) {
-      this.reset();
+      this.cancelInteraction();
+      this.tracks = [];
+      this.previousCount = 0;
+      this.lastTimestamp = null;
+      if (this.hasObservedHand) this.clickBlocked = true;
       return this.result();
     }
     if (this.lastTimestamp !== null
@@ -253,7 +268,7 @@ export class GestureEngine {
       this.cancelInteraction();
       this.tracks = [];
       this.previousCount = 0;
-      this.multiHandLock = false;
+      if (this.hasObservedHand) this.clickBlocked = true;
     }
     this.lastTimestamp = timestampMs;
     const oldIds = this.tracks.map(track => track.trackId).sort().join(',');
@@ -263,10 +278,14 @@ export class GestureEngine {
     if (count === 0) {
       this.cancelInteraction();
       this.previousCount = 0;
-      this.multiHandLock = false;
+      if (this.hasObservedHand) this.clickBlocked = true;
       return this.result();
     }
-    if (oldIds !== newIds || count !== this.previousCount) this.cancelInteraction();
+    if (oldIds !== newIds || count !== this.previousCount) {
+      this.cancelInteraction();
+      if (this.hasObservedHand) this.clickBlocked = true;
+    }
+    this.hasObservedHand = true;
     this.previousCount = count;
     if (count === 2) {
       this.multiHandLock = true;
@@ -276,10 +295,10 @@ export class GestureEngine {
   }
 
   updateTwoHands(timestampMs) {
-    this.armed = false;
+    this.clickBlocked = true;
     this.rearmSince = null;
     this.pendingClick = null;
-    this.lastPoint = null;
+    this.confirmedClick = null;
     const [a, b] = this.tracks;
     let separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
     const rawSeparation = metricDistance(a.shape.pinch, b.shape.pinch, this.options.aspectRatio);
@@ -329,59 +348,83 @@ export class GestureEngine {
     return this.result('idle', cursor, progress);
   }
 
+  singleHandCursor(track, timestampMs) {
+    const kind = track.shape.point ? 'pointer' : track.shape.ok ? 'pinch' : 'center';
+    let source = track.filtered[kind];
+    const previous = this.cursorState;
+    const recent = previous && timestampMs >= previous.time
+      && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
+    let offset = { x: 0, y: 0 };
+    if (recent) {
+      // Fingers curling into OK change the landmark used as reference. Keep
+      // the displayed target and interpret subsequent motion relative to it.
+      const sameReference = previous.trackId === track.trackId && previous.kind === kind;
+      if (!sameReference) {
+        // Old pose geometry must not keep settling underneath the new offset
+        // and move a stationary cursor after cancellation or release.
+        track.filters[kind] = new PointFilter(this.options);
+        source = track.filters[kind].update(track.shape[kind], timestampMs);
+        track.filtered[kind] = source;
+      }
+      offset = sameReference ? previous.offset
+        : { x: previous.position.x - source.x, y: previous.position.y - source.y };
+    }
+    const position = { x: source.x + offset.x, y: source.y + offset.y };
+    this.cursorState = { trackId: track.trackId, kind, source, offset, position, time: timestampMs };
+    return position;
+  }
+
+  holdCursor(anchor) {
+    // The state records what is actually visible, so cancellation/release can
+    // continue from the held target rather than snapping to another landmark.
+    this.cursorState.position = copy(anchor);
+    this.cursorState.offset = { x: anchor.x - this.cursorState.source.x,
+      y: anchor.y - this.cursorState.source.y };
+  }
+
   updateSingleHand(timestampMs) {
     const track = this.tracks[0];
     const hand = track.shape;
-    const point = track.filtered.pointer;
-    const pinch = track.filtered.pinch;
-    const center = track.filtered.center;
-    const cursor = hand.point ? point : hand.ok ? pinch : center;
+    const cursor = this.singleHandCursor(track, timestampMs);
     const released = hand.pinchRatio >= this.options.pinchExit;
-
-    if (this.pendingClick) {
-      const pending = this.pendingClick;
+    const hold = this.pendingClick || this.confirmedClick;
+    if (hold) {
       if (hand.ok) {
-        if (metricDistance(hand.pinch, pending.rawPinch, this.options.aspectRatio) > this.options.maxClickDrift) {
+        if (metricDistance(hand.pinch, hold.rawPinch, this.options.aspectRatio) > this.options.maxClickDrift) {
           this.pendingClick = null;
-          this.armed = false;
+          this.confirmedClick = null;
+          this.clickBlocked = true;
+          this.rearmSince = null;
           return this.result('idle', cursor);
         }
-        const progress = (timestampMs - pending.since) / this.options.clickDwellMs;
-        if (progress >= 1) pending.ready = true;
-        return this.result('click-pending', pending.anchor, progress);
+        this.holdCursor(hold.anchor);
+        if (this.confirmedClick) return this.result('click-confirmed', hold.anchor, 1);
+        const progress = (timestampMs - hold.since) / this.options.clickDwellMs;
+        if (progress >= 1 && timestampMs >= this.cooldownUntil) {
+          this.pendingClick = null;
+          this.confirmedClick = hold;
+          this.clickBlocked = true;
+          this.cooldownUntil = timestampMs + this.options.clickCooldownMs;
+          return this.result('click-confirmed', hold.anchor, 1, [{ type: 'click', ...hold.anchor }]);
+        }
+        return this.result('click-pending', hold.anchor, progress);
       }
       this.pendingClick = null;
-      this.armed = false;
+      this.confirmedClick = null;
+      this.clickBlocked = true;
       this.rearmSince = null;
-      // Require a positively observed mature OK frame. The release sample
-      // cannot itself prove how long the pinch remained held between frames.
-      const mature = pending.ready;
-      // Folding the other fingers while pinched is cancellation, not release.
-      const events = mature && released && !this.multiHandLock
-        ? [{ type: 'click', ...pending.anchor }] : [];
-      if (events.length) this.cooldownUntil = timestampMs + this.options.clickCooldownMs;
-      return this.result(hand.point ? 'point' : 'idle', cursor, 0, events);
-    }
-
-    if (hand.open) {
-      this.armed = false;
-      this.rearmSince = null;
-      this.lastPoint = null;
-      return this.result('idle', cursor);
+      // A release only cancels/starts rearming. It never emits a click.
     }
 
     if (hand.ok) {
       this.rearmSince = null;
-      if (this.armed && !this.multiHandLock && timestampMs >= this.cooldownUntil) {
-        const recentPoint = this.lastPoint && timestampMs - this.lastPoint.time <= this.options.pointAnchorMaxAgeMs;
+      if (!this.clickBlocked && !this.multiHandLock) {
         this.pendingClick = {
           since: timestampMs,
-          ready: false,
           rawPinch: copy(hand.pinch),
-          // Retain the target selected with the index before curling it into OK.
-          anchor: copy(recentPoint ? this.lastPoint.cursor : pinch),
+          anchor: copy(cursor),
         };
-        this.armed = false;
+        this.holdCursor(this.pendingClick.anchor);
         return this.result('click-pending', this.pendingClick.anchor, 0);
       }
       return this.result('idle', cursor);
@@ -390,16 +433,12 @@ export class GestureEngine {
     if (released) {
       if (this.rearmSince === null) this.rearmSince = timestampMs;
       if (timestampMs - this.rearmSince >= this.options.rearmMs) {
-        this.armed = true;
+        this.clickBlocked = false;
         this.multiHandLock = false;
       }
     } else {
       this.rearmSince = null;
     }
-    if (hand.point) {
-      this.lastPoint = { cursor: point, time: timestampMs };
-      return this.result('point', point);
-    }
-    return this.result('idle', cursor);
+    return this.result(hand.point ? 'point' : 'idle', cursor);
   }
 }
