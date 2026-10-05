@@ -88,7 +88,7 @@ La suite final de 37 casos, build Vite y ZIP Mac arm64 terminaron correctamente.
 
 Los checks `pointerFeedback.oneHand`, `twoHands`, `twoDetectedOneEligible`, `noHands` y `clearedRipple` devolvieron `true`. Cubren visibilidad con una mano, ocultación con dos detecciones —incluso si sólo una postura es elegible—, ausencia de manos y limpieza de ripple. Son comprobaciones automatizadas de feedback, no resultados de percepción ni precisión de cámara física.
 
-Los checks `navigationFeedback.panWorks`, `combinedZoomWorks` y `hiddenDuringNavigation` devolvieron `true`: desplazamiento, zoom combinado y feedback oculto durante navegación. Estas entradas son sintéticas y verifican motor e interfaz; no certifican detección de dos OK en cámara física.
+Los checks `navigationFeedback.panWorks`, `combinedZoomWorks` y `hiddenDuringNavigation` devolvieron `true`: desplazamiento, zoom combinado y feedback oculto durante navegación. Inyectan eventos sintéticos para verificar el renderizado y el adaptador del mapa; la suite de gestos comprueba el motor por separado. No certifican detección de dos OK en cámara física.
 
 La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37264864301), commit `451509904cb8406eba84de961d5c4b9f69a46fb4`, aprobó **37/37 pruebas, build, smoke de runtime, construcción del portable y smoke del contenido empaquetado**. El [reporte Windows 0.1.1](./verificacion-paquete-windows-0.1.1.json) corresponde a `release/win-unpacked/Mapa Gestual MLR.exe`. No se probó el arranque del envoltorio portable ni una cámara física Windows.
 
