@@ -25,7 +25,7 @@ La pregunta actual es concreta: ¿podemos controlar un mapa con manos observadas
 
 El encargo inicial combina desplazamiento del mapa, zoom, apertura de información mediante OK y una sombra azul que indique el punto de interacción. El alcance de esta versión se concentra en cámara, landmarks y motor de gestos. La integración de datos municipales y el ajuste final de UX quedan para un siguiente avance.
 
-La aplicación es de escritorio. Electron dibuja el mapa y la interfaz en una ventana propia; el programa no controla un navegador externo. El equipo principal de prueba es un Mac Apple Silicon con cámara USB. También se prepara una distribución Windows portable.
+La aplicación es de escritorio. Electron dibuja el mapa y la interfaz en una ventana propia; el programa no controla un navegador externo. El equipo principal de instalación es un Mac Apple Silicon con cámara USB. Se construyeron una `.app` Mac arm64 y una distribución Windows portable; el montaje con cámara sigue pendiente.
 
 ## Cómo se eligió la primera ruta de visión
 
@@ -61,9 +61,13 @@ La ejecución técnica asistida aprobó 23 casos del motor de gestos y 3 de cali
 
 Se confirmó bloqueo CSP del intento de telemetría del worker. Una comprobación aislada del cierre real del task registró el POST bloqueado por `connect-src` aplicado y ninguna solicitud externa del worker en ese ensayo. La aplicación completa sí se conecta a los proveedores de mapas. El ZIP de la aplicación Mac arm64 se construyó correctamente.
 
+La `.app` final abrió correctamente y aprobó un smoke sobre el paquete entregado. Se conserva el [reporte de verificación Mac](../Documentos/verificacion-paquete-mac.json), con carga del WASM, inferencia sobre fixtures y controles de UI aprobados.
+
+La [ejecución Windows CI 37263075039](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37263075039), para el commit `d2a4e1948611012c24356dde2d2acbec927224f8`, aprobó build, los 26 tests, smoke del runtime y smoke del contenido empaquetado. Generó el `.exe` portable. El smoke ejecutó `release/win-unpacked/Mapa Gestual MLR.exe`, por lo que no constituye una prueba del arranque mediante el envoltorio portable ni de una cámara Windows física.
+
 Los resultados corresponden a comprobaciones técnicas asistidas, no a ensayos realizados por los integrantes del equipo. Tampoco certifican precisión con manos cenitales, dos manos reales ni latencia física de cámara.
 
-Todavía falta medir la cámara USB cenital, las acciones accidentales durante actividades cotidianas y la latencia física de gesto a pantalla. También queda pendiente Google Maps con una key autorizada y el ensayo del `.exe` en Windows con cámara.
+Todavía falta medir la cámara USB cenital, las acciones accidentales durante actividades cotidianas y la latencia física de gesto a pantalla. También queda pendiente Google Maps con una key autorizada, el arranque del envoltorio portable Windows y el ensayo con cámara física en Windows.
 
 ## Próximos pasos
 

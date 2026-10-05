@@ -1,7 +1,7 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 5 de octubre de 2026<br>
-**Estado:** protocolo propuesto; verificación técnica inicial aprobada en Mac y resultados de cámara cenital pendientes<br>
+**Estado:** protocolo propuesto; pruebas técnicas y contenido empaquetado aprobados en Mac y Windows CI; cámara cenital pendiente<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -73,6 +73,11 @@ La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
 | Probe de telemetría | Violación CSP confirmada desde worker. |
 | Cierre real del task, ensayo aislado | POST a telemetría bloqueado por `connect-src`, `disposition=enforce`; sin requests externas del worker observadas. |
 | Build Mac arm64 | ZIP generado correctamente. |
+| `.app` final Mac | Abrió correctamente; smoke del paquete `ok:true`, con WASM, fixtures y controles de UI aprobados. |
+
+El [reporte del paquete Mac](./verificacion-paquete-mac.json) registra la comprobación de la `.app` final.
+
+En Windows, la [ejecución CI 37263075039](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37263075039), commit `d2a4e1948611012c24356dde2d2acbec927224f8`, aprobó **build, 26/26 tests, smoke de runtime y smoke de la aplicación empaquetada**. Se construyó el artefacto `.exe` portable. El smoke del paquete arrancó `release/win-unpacked/Mapa Gestual MLR.exe`, que contiene la aplicación y assets empaquetados; no arrancó el envoltorio portable. No se usó una cámara USB física en Windows.
 
 En el ensayo aislado también se consultó un segundo fixture JPG con dos manos: devolvió `0` manos en esa configuración. Conservar ese dato; no extender el resultado del PNG a todos los fixtures o a dos manos reales. Las mediciones aisladas de inferencia sobre imágenes no son percentiles de una sesión de cámara.
 
@@ -164,11 +169,15 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite de 26 casos | 26/26 aprobados en verificación técnica inicial. |
+| Suite de 26 casos | 26/26 aprobados en Mac y Windows CI. |
 | Build de interfaz, assets y Mac ZIP | Aprobado en el host Mac arm64. |
 | Smoke con modelo real, PNG positivo/frame vacío, CSP y UI | Aprobado en Apple M5/macOS 26.6.2/Electron 44.5.1; alcance descrito arriba. |
+| Apertura de `.app` final y smoke del paquete Mac | Aprobados; reporte `verificacion-paquete-mac.json`. |
 | Mac arm64 con cámara USB cenital | Pendiente de ensayo de instalación. |
-| Windows `.exe` y cámara | Build/CI y ejecución por verificar por separado. |
+| Windows build y `.exe` portable | Artefacto construido en CI; 26 tests y smoke de runtime aprobados. |
+| Contenido empaquetado Windows | Smoke aprobado con `release/win-unpacked/Mapa Gestual MLR.exe` en CI. |
+| Envoltorio portable Windows | Arranque no probado en esta verificación. |
+| Windows con cámara USB física | Pendiente de ensayo de instalación. |
 | Google Maps con key propia | Pendiente; no hay key del usuario configurada. |
 | Evaluación de usuarios y falsos clics | Pendiente; no existe tasa medida publicada. |
 

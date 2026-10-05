@@ -1,0 +1,25 @@
+{
+  "ok": true,
+  "provider": "OpenStreetMap · prueba",
+  "wasmLoaded": true,
+  "telemetryBlockedByWorkerCsp": true,
+  "emptyFrame": {
+    "hands": 0,
+    "inferenceMs": 146.70000000001164
+  },
+  "positiveFixture": {
+    "hands": 1,
+    "landmarks": 21,
+    "inferenceMs": 108.90000000002328
+  },
+  "zoomWorks": true,
+  "popupWorks": true,
+  "selectionWorks": true,
+  "mapView": {
+    "zoom": 14,
+    "center": {
+      "lat": -33.442,
+      "lng": -70.536
+    }
+  }
+}
