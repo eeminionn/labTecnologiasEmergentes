@@ -5,7 +5,7 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 **Inicio:** 5 de octubre de 2026<br>
 **Última actualización:** 5 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Estado:** prototipo funcional en desarrollo y verificación técnica; evaluación cenital con usuarios pendiente<br>
+**Estado:** verificación técnica inicial aprobada en Mac; evaluación cenital con usuarios pendiente<br>
 **Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
@@ -39,7 +39,7 @@ flowchart LR
     K[Modelo y WASM empaquetados] --> C
 ```
 
-La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Los mapas requieren Internet. La inferencia se ejecuta con modelo y runtime locales; la verificación de las restricciones de red del worker forma parte de las pruebas técnicas.
+La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Los mapas requieren Internet. La inferencia se ejecuta con modelo y runtime locales. Una prueba aislada comprobó que CSP bloquea el intento de telemetría del worker al cerrar el task; esto no significa que la aplicación completa, que carga mapas, esté desconectada.
 
 ## Abrir el programa empaquetado
 
@@ -102,7 +102,9 @@ npm run build
 npm run test:app
 ```
 
-La suite contempla **26 casos automatizados: 23 del motor de gestos y 3 de calibración**. El resultado de la ejecución y la prueba de aplicación deben confirmarse con sus reportes. La prueba de aplicación contempla el renderer, modelo real, imágenes negativas y positivas, política de red del worker y controles de mapa; sigue en verificación al escribir esta documentación.
+La suite aprobó **26/26 casos automatizados: 23 del motor de gestos y 3 de calibración**. El smoke de Electron `44.5.1` en Apple M5 con macOS `26.6.2` confirmó cero manos en un frame vacío, una mano con 21 puntos en un PNG oficial y funcionamiento de zoom, popup y botón de selección. Confirmó también una violación CSP al intentar la conexión de telemetría desde el worker. Una comprobación aislada del cierre real del task registró el POST bloqueado por `connect-src` en modo `enforce`, sin solicitudes externas del worker observadas en ese ensayo.
+
+El build ZIP de Mac arm64 terminó correctamente. Estas son comprobaciones de integración; no miden precisión cenital, latencia con cámara USB ni detección de dos manos reales. Los fixtures son imágenes de prueba y no corresponden al montaje municipal.
 
 Estas pruebas no sustituyen el ensayo con cámara USB cenital. Google Maps todavía no está probado con una key del usuario. Consultar el [protocolo de validación](./Documentos/03-protocolo-validacion.md) para medir falsos clics, estabilidad y latencia en condiciones reales.
 
@@ -130,7 +132,7 @@ MediaPipe Tasks Vision `1.0.1`, Hand Landmarker full, modo video, hasta dos mano
 
 El motor usa histéresis del pinch `0,28/0,40`, confirmación de OK de `220 ms`, rearme de `120 ms`, cooldown de `400 ms` y entrada a pan/zoom de `180 ms`. Filtro 1€ para reducir temblor. La configuración completa y la definición de cada medida están en el protocolo; los ejemplos exploratorios de la investigación no sustituyen estos defaults.
 
-El diagnóstico muestra tiempos de inferencia y del recorrido medido por la aplicación. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado; no constituye por sí solo una medición de latencia extremo a extremo.
+El diagnóstico muestra tiempos de inferencia y captura→resultado del worker. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado de hasta 10.000 muestras recientes. El botón **Marcar falso clic** suma una anotación manual; no detecta errores ni calcula una tasa de falsos positivos automáticamente. Para medir esa tasa se requiere tiempo negativo e intención anotados.
 
 ---
 

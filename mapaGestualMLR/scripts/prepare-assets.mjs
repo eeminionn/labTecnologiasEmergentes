@@ -17,5 +17,5 @@ catch {
   await writeFile('public/models/hand_landmarker.task', bytes);
 }
 const sha = createHash('sha256').update(bytes).digest('hex');
-if (expectedSha !== 'MODEL_SHA_PENDING' && sha !== expectedSha) throw new Error('El SHA-256 del modelo no coincide');
+if (sha !== expectedSha) throw new Error('El SHA-256 del modelo no coincide');
 console.log(`Modelo local: ${bytes.length} bytes; SHA-256 ${sha}`);

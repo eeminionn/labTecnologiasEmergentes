@@ -107,8 +107,9 @@ async function startCamera() {
   const generation=++cameraGeneration;
   $('camera-toggle').disabled=true;
   try {
-    stream=await navigator.mediaDevices.getUserMedia({video:{ deviceId:config.cameraId?{exact:config.cameraId}:undefined,width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}},audio:false});
-    if(generation!==cameraGeneration){stream.getTracks().forEach(track=>track.stop());stream=null;return;}
+    const acquired=await navigator.mediaDevices.getUserMedia({video:{ deviceId:config.cameraId?{exact:config.cameraId}:undefined,width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}},audio:false});
+    if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
+    stream=acquired;
     $('video').srcObject=stream;await $('video').play();
     const aspect=$('video').videoWidth/$('video').videoHeight;
     engine=new GestureEngine({aspectRatio:aspect});

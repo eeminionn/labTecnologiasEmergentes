@@ -1,7 +1,7 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 5 de octubre de 2026<br>
-**Estado:** protocolo propuesto y verificación técnica en curso; resultados de cámara cenital pendientes<br>
+**Estado:** protocolo propuesto; verificación técnica inicial aprobada en Mac y resultados de cámara cenital pendientes<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -48,7 +48,7 @@ npm run build
 npm run test:app
 ```
 
-La suite contempla **26 casos: 23 de gestos y 3 de calibración**. Confirmar los resultados con la salida real. No describir un test como aprobado sólo porque exista su código.
+La suite aprobó **26/26 casos: 23 de gestos y 3 de calibración** en la verificación del 5 de octubre. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
 
 La prueba de aplicación debe comprobar:
 
@@ -60,6 +60,21 @@ La prueba de aplicación debe comprobar:
 - Entrada a Ajustes, pausa y cancelación sin eventos residuales.
 
 Conservar reportes y screenshot técnico si se genera. La prueba de UI puede usar un fondo de test sin cartografía para evitar depender de redes externas; esa ejecución no prueba disponibilidad de tiles OSM ni Google Maps.
+
+### Evidencia técnica disponible
+
+La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
+
+| Comprobación | Resultado observado y alcance |
+|:---|:---|
+| Frame vacío | `0` manos con modelo real. |
+| PNG oficial positivo | `1` mano y `21` puntos; fixture frontal, no cenital. |
+| Zoom, popup y botón de selección | Los tres checks de UI devolvieron `true` sobre fondo de test. |
+| Probe de telemetría | Violación CSP confirmada desde worker. |
+| Cierre real del task, ensayo aislado | POST a telemetría bloqueado por `connect-src`, `disposition=enforce`; sin requests externas del worker observadas. |
+| Build Mac arm64 | ZIP generado correctamente. |
+
+En el ensayo aislado también se consultó un segundo fixture JPG con dos manos: devolvió `0` manos en esa configuración. Conservar ese dato; no extender el resultado del PNG a todos los fixtures o a dos manos reales. Las mediciones aisladas de inferencia sobre imágenes no son percentiles de una sesión de cámara.
 
 Google Maps necesita otra comprobación con key autorizada, API habilitada, facturación, restricciones correctas y atribución visible. Registrar cambio de key, fallo de autenticación, recuperación, POI real y popup. Actualmente esa prueba está pendiente.
 
@@ -112,7 +127,7 @@ Contar episodios de acción y su duración. Una mano falsa sostenida durante 100
 | Demora de confirmación | Tiempo exigido al gesto y tiempo real mantenido por la persona; no ocultarlos dentro de la inferencia. |
 | Confort | Esfuerzo percibido por bloques, pausas y postura observada de brazos. |
 
-El diagnóstico exporta un **resumen agregado de sesión**. Sus milisegundos medidos por la aplicación no incluyen la exposición/buffering USB completo ni el tiempo hasta que el píxel se presenta en pantalla. El resumen no sustituye anotaciones de intención ni un registro de falsos eventos. Para latencia física gesto→pantalla, filmar mano y pantalla con una cámara rápida y reportar resolución temporal del método.
+El diagnóstico exporta un **resumen agregado de sesión**: contadores, configuración, tiempos de inferencia y captura→resultado del worker, con un máximo de 10.000 muestras recientes. Sus milisegundos no incluyen la exposición/buffering USB completo, el procesamiento posterior de gestos ni el tiempo hasta que el píxel se presenta en pantalla. El botón **Marcar falso clic** incrementa una anotación manual; no determina la intención ni calcula tasas automáticamente. El resumen no sustituye periodos negativos cronometrados, anotaciones de intención ni revisión de falsos eventos. Para latencia física gesto→pantalla, filmar mano y pantalla con una cámara rápida y reportar resolución temporal del método.
 
 No publicar sólo FPS o promedios. Informar condiciones, número de muestras, calentamiento, percentiles, intervalos de confianza y diferencias entre usuarios/dispositivos.
 
@@ -149,9 +164,9 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite de 26 casos | Definida; resultado por confirmar con reporte. |
-| Build de interfaz y assets | En preparación/verificación. |
-| Smoke con modelo real, positivo/negativo, CSP y UI | En curso; resultado por confirmar. |
+| Suite de 26 casos | 26/26 aprobados en verificación técnica inicial. |
+| Build de interfaz, assets y Mac ZIP | Aprobado en el host Mac arm64. |
+| Smoke con modelo real, PNG positivo/frame vacío, CSP y UI | Aprobado en Apple M5/macOS 26.6.2/Electron 44.5.1; alcance descrito arriba. |
 | Mac arm64 con cámara USB cenital | Pendiente de ensayo de instalación. |
 | Windows `.exe` y cámara | Build/CI y ejecución por verificar por separado. |
 | Google Maps con key propia | Pendiente; no hay key del usuario configurada. |
@@ -161,6 +176,6 @@ Actualizar esta tabla sólo con evidencia de la condición específica. Una prue
 
 ---
 
-Protocolo preparado con asistencia técnica de Codex, 2026. No registra resultados de ensayos realizados por el equipo del proyecto.
+Protocolo preparado con asistencia técnica de Codex, 2026. Los resultados disponibles corresponden a verificaciones técnicas asistidas; no se atribuyen al equipo del proyecto ni a un ensayo municipal.
 
 [Volver al prototipo](../README.md)

@@ -28,15 +28,16 @@
     "appId": "cl.mlr.mapagestual",
     "productName": "Mapa Gestual MLR",
     "directories": { "output": "release" },
-    "files": ["dist/**/*", "electron/**/*", "package.json", "THIRD_PARTY_NOTICES.md"],
+    "files": ["dist/**/*", "electron/**/*", "assets/**/*", "package.json", "THIRD_PARTY_NOTICES.md"],
     "asar": true,
     "mac": {
+      "icon": "assets/icon.icns",
       "category": "public.app-category.utilities",
       "identity": null,
       "extendInfo": { "NSCameraUsageDescription": "La cámara detecta tus manos para mover el mapa. Las imágenes se procesan en este equipo." },
       "artifactName": "MapaGestualMLR-${version}-mac-${arch}.${ext}"
     },
-    "win": { "target": ["portable"], "artifactName": "MapaGestualMLR-${version}-windows-${arch}.${ext}" },
+    "win": { "icon": "assets/icon.ico", "target": ["portable"], "artifactName": "MapaGestualMLR-${version}-windows-${arch}.${ext}" },
     "portable": { "requestExecutionLevel": "user" }
   }
 }

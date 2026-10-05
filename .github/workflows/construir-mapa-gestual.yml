@@ -3,7 +3,17 @@ name: Construir Mapa Gestual MLR
 on:
   push:
     branches: [main, codex/mapa-gestual-prototipo]
-    paths: ['mapaGestualMLR/**', '.github/workflows/construir-mapa-gestual.yml']
+    paths:
+      - 'mapaGestualMLR/src/**'
+      - 'mapaGestualMLR/electron/**'
+      - 'mapaGestualMLR/scripts/**'
+      - 'mapaGestualMLR/tests/**'
+      - 'mapaGestualMLR/assets/**'
+      - 'mapaGestualMLR/package*.json'
+      - 'mapaGestualMLR/index.html'
+      - 'mapaGestualMLR/vite.config.js'
+      - 'mapaGestualMLR/THIRD_PARTY_NOTICES.md'
+      - '.github/workflows/construir-mapa-gestual.yml'
   workflow_dispatch:
 
 permissions:

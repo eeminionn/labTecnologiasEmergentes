@@ -55,15 +55,19 @@ Los materiales de Stanford orientan una evaluación de usabilidad, prototipado y
 
 Sin API key, la base cartográfica es OpenStreetMap y los marcadores son ficticios. Google Maps queda disponible para configuración y verificación posterior con credenciales propias. Ninguna ficha de esta versión se presenta como un registro municipal real.
 
-## Verificación técnica en curso
+## Verificación técnica inicial
 
-La suite definida contempla 23 casos del motor de gestos y 3 de calibración. Se prepara además una prueba de aplicación con modelo real, imagen sin mano, fixture positivo, controles de interfaz y restricciones de red del worker. Los reportes de ejecución deben confirmar sus resultados; esta bitácora no atribuye esos ensayos al equipo ni anticipa que estén aprobados.
+La ejecución técnica asistida aprobó 23 casos del motor de gestos y 3 de calibración. En Apple M5 con macOS 26.6.2 y Electron 44.5.1, el smoke obtuvo cero manos en un frame vacío y una mano con 21 puntos en un PNG oficial. También comprobó zoom, apertura de popup y botón de selección en el fondo de prueba de la interfaz.
+
+Se confirmó bloqueo CSP del intento de telemetría del worker. Una comprobación aislada del cierre real del task registró el POST bloqueado por `connect-src` aplicado y ninguna solicitud externa del worker en ese ensayo. La aplicación completa sí se conecta a los proveedores de mapas. El ZIP de la aplicación Mac arm64 se construyó correctamente.
+
+Los resultados corresponden a comprobaciones técnicas asistidas, no a ensayos realizados por los integrantes del equipo. Tampoco certifican precisión con manos cenitales, dos manos reales ni latencia física de cámara.
 
 Todavía falta medir la cámara USB cenital, las acciones accidentales durante actividades cotidianas y la latencia física de gesto a pantalla. También queda pendiente Google Maps con una key autorizada y el ensayo del `.exe` en Windows con cámara.
 
 ## Próximos pasos
 
-1. Confirmar los reportes de pruebas automatizadas y de apertura de la aplicación.
+1. Conservar los reportes técnicos y repetir las comprobaciones tras cambios de runtime o modelo.
 2. Fijar cámara, iluminación y calibración para un montaje repetible.
 3. Registrar tareas intencionales y periodos largos sin intención de control.
 4. Medir errores por acción, estabilidad, pérdidas de tracking y latencia.
