@@ -1,0 +1,139 @@
+# Mapa Gestual MLR
+
+Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando una cámara USB fija sobre una mesa. En esta etapa probamos la detección, la selección y el movimiento; la interfaz y la integración municipal se ajustarán después.
+
+**Inicio:** 5 de octubre de 2026<br>
+**Última actualización:** 5 de octubre de 2026<br>
+**Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
+**Estado:** prototipo funcional en desarrollo y verificación técnica; evaluación cenital con usuarios pendiente<br>
+**Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
+
+[Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
+
+## Qué hace
+
+- Detecta hasta dos manos con MediaPipe Hand Landmarker y procesa las imágenes en este equipo.
+- Permite apuntar, abrir información, desplazar el mapa y acercar o alejar la vista.
+- Muestra una sombra azul transparente en el lugar de interacción y una confirmación visual del clic.
+- Permite elegir cámara, reflejar o rotar la imagen, calibrar el área de la mesa y mostrar diagnóstico.
+- Mantiene controles de mouse y teclado para configurar, pausar y recuperar la interacción.
+- Usa OpenStreetMap sin clave para las primeras pruebas. Google Maps se puede configurar con una API key propia.
+
+Los puntos de prueba son **datos ficticios**. No corresponden a reportes municipales ni conectan con sistemas de la Municipalidad de La Reina. OpenStreetMap y Google Maps son proveedores distintos; seleccionar uno no convierte los datos del otro en información municipal.
+
+## Software propio
+
+La aplicación tiene su propia ventana de escritorio, cámara, motor de gestos y controles. Electron incorpora un renderer Chromium para dibujar la interfaz y el mapa; el programa no controla Google Maps en Chrome ni automatiza un navegador externo.
+
+```mermaid
+flowchart LR
+    A[Cámara USB cenital] --> B[Captura local]
+    B --> C[Worker: Hand Landmarker CPU]
+    C --> D[21 puntos por mano]
+    D --> E[Estados de gestos y filtro 1€]
+    E --> F[Orientación y calibración]
+    F --> G[Desplazamiento y zoom del mapa]
+    F --> H[Clic validado en ventana propia]
+    H --> I[Marcador o popup]
+    G --> J[OpenStreetMap o Google Maps]
+    K[Modelo y WASM empaquetados] --> C
+```
+
+La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Los mapas requieren Internet. La inferencia se ejecuta con modelo y runtime locales; la verificación de las restricciones de red del worker forma parte de las pruebas técnicas.
+
+## Abrir el programa empaquetado
+
+**macOS Apple Silicon:** descomprimir el ZIP para obtener `Mapa Gestual MLR.app` y abrirla. Elegir la cámara USB y conceder el acceso a cámara cuando macOS lo solicite. Esta versión de desarrollo no tiene firma ni notarización. Si Gatekeeper bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación de macOS; no desactivar la protección global del equipo.
+
+**Windows x64:** abrir el `.exe` portable. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La compilación de Windows tiene un flujo de CI, pero la ejecución y la cámara deben verificarse en un equipo Windows real antes de declarar compatibilidad confirmada.
+
+La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y plataforma de cada entrega junto con los resultados de verificación. Construir un archivo no demuestra por sí solo que la detección funcione con la cámara de la instalación.
+
+## Gestos
+
+| Acción | Cómo se realiza |
+|:---|:---|
+| Apuntar | Extender solamente el índice y mover la mano sobre el área calibrada. |
+| Clic | Formar OK con pulgar e índice y otros dedos extendidos. Mantener hasta completar la confirmación azul y soltar. El clic ocurre al soltar. |
+| Mover | Abrir la palma, esperar un instante y deslizar la mano. Cerrar para dejar de mover el mapa. |
+| Zoom | Formar OK con ambas manos. Separarlas para acercar y juntarlas para alejar. Soltar para terminar. |
+| Pausa | Pulsar Espacio. La pérdida de foco detiene la interacción. Esc cancela la acción en curso. |
+
+Un OK sostenido produce como máximo un clic y no repite mientras permanece cerrado. Se requiere apertura o postura neutral previa para armar la selección. Si se pierde una mano o aparece la segunda, se cancela la selección pendiente; el zoom tiene prioridad sobre los clics individuales.
+
+Los tiempos y umbrales son decisiones iniciales del prototipo. No representan una tasa de falsos positivos demostrada. La cámara reconoce proximidad proyectada entre los dedos, no contacto físico verificable.
+
+## Preparar la mesa
+
+1. Fijar la cámara USB sobre la zona de trabajo, con iluminación difusa y fondo mate.
+2. Abrir Ajustes y elegir la cámara. Revisar la orientación y el reflejo con el diagnóstico.
+3. Calibrar las cuatro esquinas en el orden indicado: superior izquierda, superior derecha, inferior derecha e inferior izquierda. Mantener el índice en cada esquina y pulsar Espacio.
+4. Comprobar el puntero en las cuatro esquinas y el centro antes de probar clics.
+5. Probar los marcadores ficticios y pausar antes de cambiar cámara, orientación o montaje.
+
+La calibración usa una homografía para llevar un área de la mesa al mapa. Es una transformación de un plano; variar mucho la altura de la mano introduce error. Volver a calibrar si se mueve la cámara o cambia la instalación. Mantener los brazos cómodos y permitir descansos.
+
+## Google Maps
+
+No se incluye una API key de Google. Sin una clave configurada, las pruebas usan OpenStreetMap.
+
+Para habilitar el proveedor Google, crear una key propia con **Maps JavaScript API** habilitada y facturación configurada. Restringirla a esa API y al referrer `http://127.0.0.1:47831/*`. Guardarla en Ajustes y verificar que el mapa carga correctamente. Las políticas, restricciones y precios del proveedor deben revisarse antes del uso municipal. [Configuración oficial de Google](https://developers.google.com/maps/documentation/javascript/get-api-key).
+
+La key se guarda en `localStorage` de esta aplicación. Es una credencial cliente visible y recuperable del equipo o renderer; no se convierte en un secreto por estar dentro de una `.app` o `.exe`. No guardarla en Git ni compartir capturas donde aparezca. [Guía de seguridad de Google](https://developers.google.com/maps/api-security-best-practices).
+
+La atribución del mapa permanece visible. OpenStreetMap requiere atribución y uso moderado de sus tiles; su servicio comunitario no garantiza disponibilidad ni permite descargar regiones para funcionamiento offline. [Política de tiles OSM](https://operations.osmfoundation.org/policies/tiles/).
+
+## Abrir en local
+
+Desde esta carpeta, con Node y npm disponibles:
+
+```bash
+npm ci
+npm start
+```
+
+`npm start` prepara los assets, construye la interfaz y abre la ventana Electron. El modelo y el WASM se incluyen en el build. Las descargas necesarias para preparar los assets requieren conexión; la distribución empaquetada no necesita instalar estas herramientas.
+
+## Revisar antes de entregar
+
+```bash
+npm test
+npm run build
+npm run test:app
+```
+
+La suite contempla **26 casos automatizados: 23 del motor de gestos y 3 de calibración**. El resultado de la ejecución y la prueba de aplicación deben confirmarse con sus reportes. La prueba de aplicación contempla el renderer, modelo real, imágenes negativas y positivas, política de red del worker y controles de mapa; sigue en verificación al escribir esta documentación.
+
+Estas pruebas no sustituyen el ensayo con cámara USB cenital. Google Maps todavía no está probado con una key del usuario. Consultar el [protocolo de validación](./Documentos/03-protocolo-validacion.md) para medir falsos clics, estabilidad y latencia en condiciones reales.
+
+## Generar las distribuciones
+
+```bash
+npm run dist:mac
+npm run dist:win
+```
+
+`dist:mac` genera el ZIP de la `.app` arm64. `dist:win` genera el `.exe` portable x64. La ruta recomendada para Windows es el flujo de CI en Windows; un intento de compilación cruzada depende de las herramientas del host y no constituye una prueba de ejecución.
+
+## Material del prototipo
+
+| Documento | Qué muestra |
+|:---|:---|
+| [Bitácora](./Bitacora/README.md) | Punto de partida, alcance, decisiones y verificación pendiente. |
+| [Investigación de visión](./Documentos/01-investigacion-vision.md) | Comparación de modelos, elección inicial y ruta de mejora. |
+| [Gestos y UX](./Documentos/02-gestos-y-ux.md) | Referentes de interacción, diseño y requisitos de mapas. |
+| [Protocolo de validación](./Documentos/03-protocolo-validacion.md) | Configuración implementada, métricas y criterios para un piloto. |
+
+## Configuración técnica inicial
+
+MediaPipe Tasks Vision `1.0.1`, Hand Landmarker full, modo video, hasta dos manos y delegate CPU en worker local. Umbrales iniciales de detección, presencia y tracking: `0,70`.
+
+El motor usa histéresis del pinch `0,28/0,40`, confirmación de OK de `220 ms`, rearme de `120 ms`, cooldown de `400 ms` y entrada a pan/zoom de `180 ms`. Filtro 1€ para reducir temblor. La configuración completa y la definición de cada medida están en el protocolo; los ejemplos exploratorios de la investigación no sustituyen estos defaults.
+
+El diagnóstico muestra tiempos de inferencia y del recorrido medido por la aplicación. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado; no constituye por sí solo una medición de latencia extremo a extremo.
+
+---
+
+Documentación técnica del prototipo, preparada con asistencia de Codex, 2026.
+
+[Volver al README principal](../README.md)

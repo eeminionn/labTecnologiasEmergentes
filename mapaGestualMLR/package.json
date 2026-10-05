@@ -1,0 +1,42 @@
+{
+  "name": "mapa-gestual-mlr",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Prototipo cenital de interacción territorial mediante manos",
+  "author": "Emilio Abarca",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "assets": "node scripts/prepare-assets.mjs",
+    "build": "npm run assets && vite build",
+    "start": "npm run build && electron .",
+    "test": "node --test tests/*.test.js",
+    "test:app": "node scripts/smoke.mjs",
+    "dist:mac": "npm run build && electron-builder --mac zip --arm64 --publish never",
+    "dist:win": "npm run build && electron-builder --win portable --x64 --publish never"
+  },
+  "dependencies": {
+    "@mediapipe/tasks-vision": "1.0.1",
+    "leaflet": "1.9.4"
+  },
+  "devDependencies": {
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "vite": "8.3.2"
+  },
+  "build": {
+    "appId": "cl.mlr.mapagestual",
+    "productName": "Mapa Gestual MLR",
+    "directories": { "output": "release" },
+    "files": ["dist/**/*", "electron/**/*", "package.json", "THIRD_PARTY_NOTICES.md"],
+    "asar": true,
+    "mac": {
+      "category": "public.app-category.utilities",
+      "identity": null,
+      "extendInfo": { "NSCameraUsageDescription": "La cámara detecta tus manos para mover el mapa. Las imágenes se procesan en este equipo." },
+      "artifactName": "MapaGestualMLR-${version}-mac-${arch}.${ext}"
+    },
+    "win": { "target": ["portable"], "artifactName": "MapaGestualMLR-${version}-windows-${arch}.${ext}" },
+    "portable": { "requestExecutionLevel": "user" }
+  }
+}

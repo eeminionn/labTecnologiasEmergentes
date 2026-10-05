@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="es">
+  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Mapa Gestual MLR</title></head>
+  <body>
+    <header class="topbar">
+      <div class="location">La Reina <span class="separator">/</span> <span id="provider-label">Mapa de prueba</span></div>
+      <nav aria-label="Controles">
+        <span id="status" role="status"><i></i> Cámara detenida</span>
+        <button id="camera-toggle" class="primary">Iniciar cámara</button>
+        <button id="settings-open">Ajustes</button>
+        <button id="help-open" aria-label="Ayuda de gestos">?</button>
+      </nav>
+    </header>
+    <main id="workspace">
+      <div id="map" aria-label="Mapa interactivo de La Reina"></div>
+      <div id="cursor" aria-hidden="true"><span></span><svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="22" /></svg></div>
+      <div id="click-ripple" aria-hidden="true"></div>
+      <div id="notice" role="status" hidden></div>
+      <section id="diagnostics" class="panel" hidden aria-label="Diagnóstico de cámara">
+        <div class="panel-heading">Vista cenital <button id="preview-close" aria-label="Ocultar diagnóstico">×</button></div>
+        <div class="video-frame"><video id="video" autoplay playsinline muted></video><canvas id="skeleton"></canvas></div>
+        <div class="metrics"><span id="hands-metric">0 manos</span><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
+        <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics">Exportar sesión</button></div>
+        <div class="metrics"><button id="mark-false-click">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+      </section>
+      <div class="map-tools"><button id="zoom-in" aria-label="Acercar">+</button><button id="zoom-out" aria-label="Alejar">−</button><button id="home" aria-label="Volver a La Reina">⌂</button></div>
+      <section id="calibration" class="calibration" hidden><strong id="calibration-title"></strong><p>Mantén el índice sobre la esquina indicada del área de la mesa y pulsa Espacio.</p><button id="calibration-cancel">Cancelar</button></section>
+    </main>
+    <footer><span id="gesture-hint">Índice: apuntar · OK: clic al soltar · Palma: mover · Dos OK: zoom</span><span>Espacio: pausar · Esc: cancelar</span></footer>
+    <dialog id="settings">
+      <form method="dialog" id="settings-form">
+        <div class="dialog-heading"><h1>Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
+        <label>Cámara USB cenital<select id="camera-select"><option value="">Cámara predeterminada</option></select></label>
+        <div class="row"><label><input id="mirror" type="checkbox" /> Reflejar horizontalmente</label><label>Orientación<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label></div>
+        <label>Mapa<select id="provider"><option value="osm">OpenStreetMap · prueba sin clave</option><option value="google">Google Maps</option></select></label>
+        <label id="key-label">API key de Google Maps<input id="google-key" type="password" autocomplete="off" placeholder="Configúrala cuando habilites Google Maps Platform" /></label>
+        <p class="field-note">Google Maps requiere Maps JavaScript API y facturación. La clave se guarda solo en este equipo. Referrer: http://127.0.0.1:47831/*</p>
+        <label>Sensibilidad del detector<select id="confidence"><option value="0.7">Equilibrada · 0,70</option><option value="0.8">Conservadora · 0,80</option><option value="0.6">Más sensible · 0,60</option></select></label>
+        <label><input id="show-preview" type="checkbox" /> Mostrar diagnóstico de cámara</label>
+        <div class="row"><button id="calibrate" type="button">Calibrar área de la mesa</button><button id="reset-calibration" type="button">Restablecer área</button></div>
+        <p class="field-note">La cámara se procesa localmente. Los mapas sí usan Internet. Los puntos azules son datos ficticios para probar selección.</p>
+        <div class="dialog-actions"><button value="cancel">Cancelar</button><button value="save" class="primary">Guardar</button></div>
+      </form>
+    </dialog>
+    <dialog id="help"><div class="dialog-heading"><h1>Gestos</h1><button id="help-close" aria-label="Cerrar ayuda">×</button></div>
+      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Extiende solo el índice y mueve la mano sobre la mesa.</p></li><li><strong>Clic</strong><p>Forma OK: une pulgar e índice con los otros dedos extendidos. Mantén el círculo azul hasta completarlo y suelta. Un gesto, un clic.</p></li><li><strong>Mover</strong><p>Abre la palma, espera un instante y desliza. Cierra la mano para soltar el mapa.</p></li><li><strong>Zoom</strong><p>Forma OK con ambas manos. Sepáralas para acercar; júntalas para alejar. Suelta para terminar.</p></li></ol>
+      <p class="field-note">Manos separadas, cámara fija, iluminación uniforme y fondo mate. Usa Ajustes para elegir tu USB, rotar y calibrar. Espacio pausa; Esc cancela cualquier acción.</p>
+      <p class="field-note">Servicios de mapa: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank">Términos Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank">Privacidad Google</a>. Los mapas usan Internet; este prototipo no envía frames de cámara al proveedor del mapa.</p>
+    </dialog>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

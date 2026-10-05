@@ -1,0 +1,8 @@
+node_modules/
+dist/
+release/
+public/wasm/
+public/fixtures/
+public/models/*.task
+test-results/
+*.log

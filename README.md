@@ -30,3 +30,15 @@ Como parte del levantamiento de datos construimos una aplicación móvil para me
 El código y la documentación de la aplicación están en [registroVehicularMLR](./registroVehicularMLR/).
 
 **Actualización Etapa 2:** 28 de agosto de 2026
+
+## Prototipo de interacción territorial
+
+Comenzamos a explorar una aplicación de escritorio para recorrer el mapa con las manos, vistas por una cámara USB cenital. Esta etapa se centra en la detección, la intención de los gestos y la reducción de acciones accidentales antes de ajustar la experiencia municipal definitiva.
+
+- [Mapa Gestual MLR: aplicación, instalación y gestos](./mapaGestualMLR/README.md)
+- [Bitácora del prototipo](./mapaGestualMLR/Bitacora/README.md)
+- [Investigación de modelos de visión](./mapaGestualMLR/Documentos/01-investigacion-vision.md)
+- [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md)
+- [Protocolo de validación cenital](./mapaGestualMLR/Documentos/03-protocolo-validacion.md)
+
+**Actualización del prototipo:** 5 de octubre de 2026
