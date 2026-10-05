@@ -4,7 +4,7 @@
 **Última actualización:** 5 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.1 · 37 pruebas y paquetes Mac/Windows aprobados
+**Versión vigente:** 0.1.2 · 49/49 pruebas y paquetes Mac/Windows aprobados
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -22,6 +22,7 @@ La pregunta actual es concreta: ¿podemos controlar un mapa con manos observadas
 | [Investigación de visión](../Documentos/01-investigacion-vision.md) | Alternativas de detección, límites y recomendación inicial. |
 | [Gestos y UX](../Documentos/02-gestos-y-ux.md) | Papers, vocabulario de interacción y criterios de interfaz. |
 | [Protocolo de validación](../Documentos/03-protocolo-validacion.md) | Pruebas que faltan para evaluar precisión y latencia. |
+| [Meta Quest y selección](../Documentos/05-meta-quest-y-seleccion.md) | Referentes oficiales sobre cursor estable, hover, confirmación y pérdida de tracking. |
 
 ## 5 de octubre - Primer alcance
 
@@ -33,7 +34,7 @@ La aplicación es de escritorio. Electron dibuja el mapa y la interfaz en una ve
 
 La investigación comparó detectores de manos, estimadores de landmarks y modelos de reconstrucción 3D. MediaPipe Hand Landmarker full es el punto de partida por su integración local y seguimiento temporal. Su elección no demuestra que sea el modelo más preciso en cualquier vista cenital.
 
-El modelo se ejecuta en un worker con CPU y entrega puntos de las manos. El programa interpreta esos puntos con geometría, filtro y estados temporales. Una postura reconocida no se convierte directamente en una acción: tiene que cumplir adquisición, estabilidad, duración y liberación.
+El modelo se ejecuta en un worker con CPU y entrega puntos de las manos. El programa interpreta esos puntos con geometría, filtro y estados temporales. Una postura reconocida no se convierte directamente en una acción: tiene que cumplir adquisición, estabilidad y duración, además de rearme entre selecciones.
 
 Si las pruebas muestran errores en los puntos, corresponderá mejorar el montaje y comparar otro estimador o adaptar uno entrenable. Si los puntos son correctos pero se activa un clic involuntario, la corrección corresponde a la lógica de intención. Esta separación evita cambiar el modelo sin saber qué está fallando.
 
@@ -45,13 +46,22 @@ El control de navegación ahora requiere dos OK sostenidos durante `180 ms`. Mov
 
 La sombra azul queda reservada a la interacción de una mano. Cuando el detector reporta dos manos, se ocultan el halo y el ripple de clic, incluso si sólo una postura supera las comprobaciones geométricas del motor.
 
+## 5 de octubre - Selección en versión 0.1.2
+
+El usuario solicita mantener OK durante 3 segundos y confirmar sin tener que soltar. También reporta un cursor que vuelve al centro durante la transición a OK. El ajuste conserva el objetivo entre posturas y al iniciar la confirmación; separa la posición de apuntado del movimiento de pulgar e índice. También permite empezar directamente con OK y anclar la posición válida actual, sin exigir apuntado previo.
+
+La selección incorpora hover y resolución first/best de un candidato visible, con hitareas mínimas de `44 × 44 px` en puntos propios. Un aro azul avanza de `0` a `1` y confirma en verde al completar el mantenimiento. Los 3 segundos y 44 px son decisiones del prototipo; no se atribuyen como valores predeterminados de Meta.
+
+La investigación de [Meta Quest](../Documentos/05-meta-quest-y-seleccion.md) toma como referentes apuntado estable, objetivos tolerantes y cancelación ante pérdida de tracking. No incorpora el modelo propietario de Quest ni traslada sus poses 3D a nuestra cámara RGB.
+
 ## Decisiones de interacción vigentes
 
 - Índice para apuntar, un OK para seleccionar y dos OK para desplazar y hacer zoom.
 - La palma abierta ya no desplaza el mapa.
-- Un OK estable de una mano confirma la selección; el clic ocurre al soltar.
-- La posición seleccionada se congela antes de cerrar el OK para evitar que la punta del índice desplace el objetivo.
-- Mantener cerrado no repite clics. Se exige rearme y se limita la repetición temporal.
+- Un OK estable de una mano ejecuta el clic automáticamente al completar `3000 ms`, sin soltar.
+- La posición seleccionada se conserva entre posturas y se ancla antes de cerrar el OK; el aro y clic comparten objetivo.
+- Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
+- Abrir antes del umbral cancela el mantenimiento. El aro azul confirma en verde cuando se ejecuta el clic.
 - La segunda mano y la navegación con dos OK cancelan la selección individual pendiente.
 - Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.
 - La calibración de cuatro esquinas adapta la mesa a la vista del mapa; se puede corregir espejo y orientación.
@@ -80,7 +90,7 @@ Los resultados corresponden a comprobaciones técnicas asistidas, no a ensayos r
 
 Estos reportes pertenecen a 0.1.0. Los resultados de la nueva navegación se registran por separado a continuación.
 
-## Verificación técnica - Versión 0.1.1
+## Evidencia histórica - Versión 0.1.1
 
 La versión final aprobó **37/37 casos: 34 de gestos y 3 de calibración**. También terminaron correctamente el build Vite y el ZIP Mac arm64. La cobertura incorpora la palma abierta sin navegación, pan y zoom con dos OK, cancelación sin clic residual y las protecciones geométricas de la pinza.
 
@@ -90,11 +100,19 @@ El motor comprueba la continuidad de la pinza, además del centro de la mano, y 
 
 La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37264864301), commit `451509904cb8406eba84de961d5c4b9f69a46fb4`, aprobó las **37 pruebas**, build, smoke de runtime, distribución portable y smoke del contenido empaquetado. El [reporte Windows 0.1.1](../Documentos/verificacion-paquete-windows-0.1.1.json) corresponde a la ejecución de `release/win-unpacked/Mapa Gestual MLR.exe`, sin prueba del envoltorio portable ni de una cámara física. Estas comprobaciones siguen siendo técnicas y asistidas; no representan un ensayo cenital con usuarios ni certifican una tasa de acciones accidentales.
 
+Estos reportes pertenecen a 0.1.1 y no certifican el nuevo clic de 0.1.2.
+
+## Verificación técnica - Versión 0.1.2
+
+La suite actual aprobó **49/49 casos: 37 de gestos, 3 de calibración y 9 de selección**. El smoke de desarrollo y el de la `.app` Mac empaquetada aprobaron el ciclo completo de 3 segundos sobre un punto azul y el botón de su popup. Registraron `trustedClicks=2`, anclaje y aro intermedio correctos, sin clic temprano ni repetición. Los mantenimientos fueron `3018,2 ms` y `3018,6 ms`, con reloj real. El [reporte Mac 0.1.2](../Documentos/verificacion-paquete-mac-0.1.2.json) conserva estos resultados.
+
+La verificación corresponde al código `eb23ff4de28d6a1cea8fe12de576dce7737bec85`. La [CI Windows 0.1.2](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37267138909) aprobó 49 tests, build, runtime, distribución portable y smoke del contenido empaquetado. El [reporte Windows 0.1.2](../Documentos/verificacion-paquete-windows-0.1.2.json) registró dos clics nativos, anclaje/aro intermedio correctos y ausencia de clic temprano/repetición, con intervalos de `3040,1 ms` y `3021 ms`. Se ejecutó `release/win-unpacked/Mapa Gestual MLR.exe`; no el envoltorio portable. El modo OpenStreetMap de prueba usa entradas sintéticas; no equivale a validar una webcam física ni Google Maps. La ayuda de la `.app` Mac entregada también se comprobó visualmente.
+
 Todavía falta medir la cámara USB cenital, las acciones accidentales durante actividades cotidianas y la latencia física de gesto a pantalla. También queda pendiente Google Maps con una key autorizada, el arranque del envoltorio portable Windows y el ensayo con cámara física en Windows.
 
 ## Próximos pasos
 
-1. Comprobar el arranque del envoltorio portable en Windows; conservar los reportes Mac y Windows por versión.
+1. Conservar reportes por versión y comprobar el arranque del envoltorio portable en Windows.
 2. Fijar cámara, iluminación y calibración para un montaje repetible.
 3. Registrar tareas intencionales y periodos largos sin intención de control.
 4. Medir errores por acción, estabilidad, pérdidas de tracking y latencia.
