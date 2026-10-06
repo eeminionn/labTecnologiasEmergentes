@@ -1,0 +1,181 @@
+{
+  "version": "0.1.7",
+  "ok": true,
+  "provider": "OpenStreetMap",
+  "wasmLoaded": true,
+  "telemetryBlockedByWorkerCsp": true,
+  "emptyFrame": {
+    "hands": 0,
+    "inferenceMs": 102.60000002384186,
+    "qualityValid": true
+  },
+  "positiveFixture": {
+    "hands": 1,
+    "landmarks": 21,
+    "worldLandmarks": 21,
+    "inferenceMs": 99.5,
+    "qualityValid": true,
+    "qualityMs": 17.799999952316284
+  },
+  "zoomWorks": true,
+  "popupWorks": true,
+  "selectionWorks": true,
+  "pointerFeedback": {
+    "oneHand": true,
+    "twoHands": true,
+    "panColor": true,
+    "zoomColor": true,
+    "blockedVisible": true,
+    "noHands": true,
+    "fullFrameEdges": true,
+    "clearedRipple": true
+  },
+  "navigationFeedback": {
+    "panWorks": true,
+    "zoomWorks": true,
+    "noZoomDuringPan": true,
+    "translationInZoomIgnored": true,
+    "noPanDuringZoom": true,
+    "modeSwitchReacquires": true,
+    "mixedPosesIdle": true,
+    "visibleDuringNavigation": true,
+    "crossModeEventsIgnored": true
+  },
+  "fistViewsFeedback": {
+    "worldLandmarksLoaded": true,
+    "worldGeometryUsed": true,
+    "cenital-dorso": true,
+    "frontal-nudillos": true,
+    "frontal-palma": true,
+    "mixedOrientationsPan": true
+  },
+  "indexTrackingFeedback": {
+    "pointReference": true,
+    "openReference": true,
+    "neutralReference": true,
+    "okReference": true,
+    "fistReference": true,
+    "modelReference": true,
+    "closeWithoutJump": true,
+    "stationaryFistConverges": true,
+    "openWithoutJump": true,
+    "stationaryIndexConverges": true,
+    "fallbackIndex": true,
+    "fallbackKnuckles": true,
+    "unknownGeometryUsesIndex": true
+  },
+  "qualityFeedback": {
+    "normalAllows": true,
+    "darkCancels": true,
+    "heldBlocks": true,
+    "recoveryWaits": true,
+    "recovered": true,
+    "noBlockedInput": true,
+    "warningAfterGap": true,
+    "conditionalCameraControls": true
+  },
+  "previewFeedback": {
+    "previewVisibleStopped": true,
+    "previewVisibleActive": true,
+    "previewVisiblePaused": true,
+    "compactPlacement": true,
+    "trackingDrawn": true,
+    "staleTrackingCleared": true,
+    "noPreviewToggle": true
+  },
+  "nativeSelection": {
+    "gestureClickAccepted": true,
+    "popupOpened": true,
+    "buttonClickAccepted": true,
+    "selectionWorks": true,
+    "trustedClicks": 4,
+    "advancesOnlyOnPoint": true,
+    "sequenceCompleted": true,
+    "sequenceHolds": [
+      {
+        "clickAccepted": true,
+        "elapsedMs": 1540.8999999761581,
+        "cursorLocked": true,
+        "ringHalfVisible": true,
+        "noEarlyClick": true,
+        "clicks": 1,
+        "gradualClosure": true,
+        "stationaryThumb": false,
+        "closureFrames": 15,
+        "closureDurationMs": 624.3999999761581,
+        "firstOkElapsedMs": 541.3999999761581,
+        "preparingObserved": true,
+        "noClickBeforeOk": true,
+        "retainedTargetAtOk": true
+      },
+      {
+        "clickAccepted": true,
+        "elapsedMs": 1532.6000000238419,
+        "cursorLocked": true,
+        "ringHalfVisible": true,
+        "noEarlyClick": true,
+        "clicks": 1,
+        "gradualClosure": true,
+        "stationaryThumb": false,
+        "closureFrames": 15,
+        "closureDurationMs": 624,
+        "firstOkElapsedMs": 540.2999999523163,
+        "preparingObserved": true,
+        "noClickBeforeOk": true,
+        "retainedTargetAtOk": true
+      }
+    ],
+    "holdElapsedMs": 1541.2000000476837,
+    "cursorLocked": true,
+    "ringHalfVisible": true,
+    "noEarlyClick": true,
+    "oneClickWhileHeld": true,
+    "pointHold": {
+      "clickAccepted": true,
+      "elapsedMs": 1541.2000000476837,
+      "cursorLocked": true,
+      "ringHalfVisible": true,
+      "noEarlyClick": true,
+      "clicks": 1,
+      "gradualClosure": true,
+      "stationaryThumb": false,
+      "closureFrames": 15,
+      "closureDurationMs": 628.1000000238419,
+      "firstOkElapsedMs": 544.1000000238419,
+      "preparingObserved": true,
+      "noClickBeforeOk": true,
+      "retainedTargetAtOk": true
+    },
+    "buttonHold": {
+      "clickAccepted": true,
+      "elapsedMs": 1541.6000000238419,
+      "cursorLocked": true,
+      "ringHalfVisible": true,
+      "noEarlyClick": true,
+      "clicks": 1,
+      "gradualClosure": true,
+      "stationaryThumb": true,
+      "closureFrames": 15,
+      "closureDurationMs": 624.5999999046326,
+      "firstOkElapsedMs": 541.0999999046326,
+      "preparingObserved": true,
+      "noClickBeforeOk": true,
+      "retainedTargetAtOk": true
+    }
+  },
+  "mapView": {
+    "zoom": 14.198931903756527,
+    "center": {
+      "lat": -33.44710686068579,
+      "lng": -70.53547584683704
+    },
+    "sequence": {
+      "activeIndex": 0,
+      "completed": false,
+      "completedCount": 0,
+      "total": 3
+    },
+    "boundaryLoaded": true,
+    "boundaryFeatureCount": 1
+  }
+}
