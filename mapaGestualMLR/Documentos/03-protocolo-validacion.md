@@ -1,8 +1,8 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 6 de octubre de 2026<br>
-**Versión vigente:** 0.1.3<br>
-**Estado:** 86/86 pruebas y paquetes Mac/Windows aprobados; cámara física, driver real, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.4<br>
+**Estado:** 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -18,9 +18,9 @@ La versión 0.1.1 responde a una observación del usuario: la palma abierta pod�
 
 En 0.1.2 el usuario pide mantener OK durante **3 segundos** y ejecutar el clic automáticamente, sin soltar. El objetivo se conserva entre la postura de apuntado y OK para evitar que el cursor se recentre. Un OK inicial directo también está permitido y ancla la posición válida actual; no requiere apuntado previo. El [referente Meta Quest](./05-meta-quest-y-seleccion.md) orienta apuntado estable, hover y recuperación; no determina esos 3 segundos ni equivale a integrar su modelo 3D en una cámara USB.
 
-El vocabulario vigente tiene tres gestos: **índice para apuntar**, **OK de una mano mantenido 3 segundos para clic automático** y **dos OK para navegar**. Tras `180 ms`, el movimiento conjunto controla pan mediante el punto medio y la variación de separación controla zoom. Soltar o perder cualquiera termina navegación sin clic residual. Pausa con Espacio, pérdida de foco y cancelación con Esc continúan.
+En **0.1.4** el usuario reduce la confirmación a **1,5 segundos** y separa las posturas: **índice para apuntar**, **OK de una mano para clic automático**, **dos puños cerrados para pan** y **dos OK para zoom**. Tras `180 ms`, sólo los puños trasladan el mapa por su punto medio y sólo los OK cambian el zoom por separación. Las componentes no se combinan: variar separación con puños no amplía y trasladar dos OK no desplaza. Mezclas y una sola mano no navegan. Cambiar postura obliga a una nueva adquisición; abrir o perder una mano termina sin clic residual. Pausa con Espacio, pérdida de foco y Esc continúan.
 
-En 0.1.3 cada mano detectada conserva una sombra fresca, incluso en reposo y durante navegación: azul para apuntado/reposo, violeta tenue para navegación adquirida, violeta para desplazamiento y ámbar para zoom dominante con histéresis. Las acciones bloqueadas muestran punteros grises. El aro y ripple de clic individual requieren exactamente una mano reportada por el detector. El aro avanza de `0` a `1` durante el mantenimiento y confirma en verde. Comprobar el conteo bruto antes de filtrar posturas: dos detecciones cancelan el clic individual aunque el motor acepte sólo una por geometría, sin ocultar sus sombras.
+Desde 0.1.3 cada mano detectada conserva una sombra fresca, incluso en reposo y durante navegación. En 0.1.4 azul indica apuntado/reposo, violeta identifica dos puños adquiridos y ámbar dos OK adquiridos, incluso quietos. El color depende de la postura, no del movimiento dominante. Las acciones bloqueadas muestran punteros grises. El aro y ripple de clic individual requieren exactamente una mano reportada por el detector. El aro avanza de `0` a `1` durante el mantenimiento y confirma en verde. Comprobar el conteo bruto antes de filtrar posturas: dos detecciones cancelan el clic individual aunque el motor acepte sólo una por geometría, sin ocultar sus sombras.
 
 Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. El recorrido tiene tres puntos ficticios numerados, un único activo con pulso y avance por clic nativo **1→2→3**. El límite comunal proviene de SUBDERE DPA 2023 y se documenta en [Límite de La Reina y recorrido](./07-limite-la-reina.md); no convierte los marcadores ficticios en datos municipales.
 
@@ -33,32 +33,39 @@ Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y l
 | Umbrales del task | Detección `0,70`, presencia `0,70`, tracking `0,70`. |
 | OK | Pinch pulgar–índice y al menos dos de los otros tres dedos extendidos. |
 | Histéresis del pinch | Entrada `0,28`; salida `0,40`. |
-| Confirmación y clic | OK válido durante `3000 ms`; clic automático al completar, sin soltar, con objetivo anclado. |
+| Confirmación y clic | OK válido durante `1500 ms`; clic automático al completar, sin soltar, con objetivo anclado. |
 | Rearme y repetición | Un clic por mantenimiento hasta abrir `120 ms`; cooldown de clic `400 ms`. |
 | Objetivo | Posición conservada entre posturas y anclada durante confirmación; OK inicial directo usa la posición válida actual, sin requisito de apuntado previo ni centro de pantalla como fallback. |
 | Hover y candidatos | Resolución first/best de un solo objetivo visible, sin alternar destino durante el aro. |
 | Marcadores y hitarea | Tres puntos numerados: dibujo nominal `40 px`, activo `56 px`, área exterior fija `56 × 56 px`; sólo el activo pulsa y se ofrece como objetivo del recorrido. |
 | Recorrido | Clic nativo sobre el activo avanza una posición; tras 1→2→3 no queda pulso. Reinicio desde Ajustes; Inicio conserva progreso y el botón del popup no lo duplica. |
-| Navegación | Dos OK sostenidos `180 ms`; traslación del punto medio para desplazamiento y cambio de separación para zoom. |
+| Pan exclusivo | Dos puños adquiridos durante `180 ms`; sólo traslación del punto medio. La separación no cambia el zoom. |
+| Zoom exclusivo | Dos OK adquiridos durante `180 ms`; sólo cambio de separación. La traslación común no cambia el centro. |
+| Cambio de modo | Puños ↔ OK exige otros `180 ms`; mezclas no navegan y no conservan anclas anteriores. |
+| Puño | Cuatro dedos flexionados/compactos, pulgar compacto y flexionado en MCP o IP; mano entera dentro del frame y segmentos no degenerados. Comprobación positiva con umbrales experimentales, no mera ausencia de palma/OK. |
 | Una mano abierta | No desplaza ni amplía el mapa. |
-| Sombras | Una por cada mano con datos frescos, hasta dos, incluyendo posturas no elegibles; azul apuntado/reposo, violeta navegación adquirida/desplazamiento, ámbar zoom dominante y gris bloqueo. |
-| Aro y ripple | Sólo con exactamente una mano detectada; progreso `0→1` durante 3 segundos y confirmación verde, sobre el destino anclado. La segunda mano cancela el clic individual sin ocultar punteros. |
-| Color de navegación | `ready`, `pan` o `zoom`; ventana y adquisición de intención `100 ms`, dominancia `1,35`, movimiento mínimo `0,006` y conservación `280 ms` tras movimiento deliberado. Histéresis independiente del clic. |
+| Sombras | Una por cada mano con datos frescos, hasta dos, incluyendo posturas no elegibles; azul apuntado/reposo, violeta dos puños/pan, ámbar dos OK/zoom y gris bloqueo. |
+| Aro y ripple | Sólo con exactamente una mano detectada; progreso `0→1` durante 1,5 segundos y confirmación verde, sobre el destino anclado. La segunda mano cancela el clic individual sin ocultar punteros. |
+| Color de navegación | `pan` violeta con dos puños y `zoom` ámbar con dos OK, tras adquisición y aun quietos; los parámetros de dominancia de movimiento de 0.1.3 no definen el modo nuevo. |
 | Zona muerta de desplazamiento | `panDeadband=0,003`, movimiento acumulado en unidades métricas normalizadas de cámara. |
 | Zona muerta de zoom | `zoomDeadband=0,008` en cambio log2 y `zoomDistanceDeadband=0,003` de variación de separación; ambas condiciones deben superarse. |
 | Filtro 1€ | `minCutoff=1,4`, `beta=6`, `derivativeCutoff=1`, unidades normalizadas de cámara. |
 | Mapeo | Todo el frame a todo el mapa; espejo/rotación y límites `0..1`, sin homografía ni esquinas guardadas. Corrección breve de postura; recuperar posición absoluta al desplazarse y alcanzar bordes. |
 | Calidad de imagen | Imagen casi totalmente negra/blanca o frame inválido cancela y bloquea acciones inmediatamente; recuperación no severa continua `600 ms`. Aviso estable tras `200 ms` de condición severa, sin permitir acciones durante esa espera. |
 | Cámara | Brillo, contraste y compensación de exposición sólo con rangos válidos declarados por el track; solicitar modos continuos sólo si están disponibles y verificar ajustes reportados. |
+| Preview permanente | Vista cenital fija arriba a la izquierda, ancho nominal `200 px` o `160 px` en pantallas pequeñas; imagen, skeleton fresco y conteo con cámara activa. Sin casilla ni botón de cierre. Cámara detenida: mensaje y datos anteriores limpios. |
+| Diagnóstico | Métricas detalladas, exportación y Marcar falso clic en una sección desplegable de Ajustes. No iniciar cámara ni pedir permisos automáticamente. |
 | Equipo principal | macOS arm64 y cámara USB; anotar modelos y versiones reales. |
 | Segundo destino | Windows x64, `.exe` portable; verificación de cámara por separado. |
 | Mapa | OpenStreetMap para pruebas sin key; Google Maps pendiente de credencial y comprobación. |
 
-Estos números describen el contrato implementado para 0.1.3. La suite compartida, los smoke de desarrollo/runtime y los paquetes Mac/Windows están aprobados. La cámara física, el soporte real de sus controles/driver, Google Maps con key propia y el arranque del envoltorio portable Windows siguen pendientes. Son hipótesis de ingeniería que se ajustan con validación, no valores universalmente correctos ni resultados publicados. Los 3 segundos son preferencia del usuario y los tamaños de marcador una decisión 2D propia, no especificaciones Meta. El modelo, SDK y umbrales de detección permanecen iguales. Las investigaciones anteriores conservan antecedentes históricos, no sustituyen esta guía vigente.
+Estos números describen el contrato implementado en **0.1.4**. Sus 94 pruebas, runtime y paquetes Mac/Windows están aprobados. El preview Mac se inspeccionó con cámara física; el ensayo cenital USB, los controles reales del driver, Google Maps con key propia y el arranque del envoltorio portable Windows siguen pendientes. Son hipótesis de ingeniería que se ajustan con validación, no valores universalmente correctos ni resultados publicados. Los 1,5 segundos son la preferencia actual del usuario y los tamaños de marcador una decisión 2D propia, no especificaciones Meta. El modelo, SDK y umbrales de detección permanecen iguales. Las investigaciones anteriores conservan antecedentes históricos, no sustituyen esta guía vigente.
 
 El gate de calidad controla si se pueden emitir acciones, no la confianza del detector ni el número de manos. Las sombras siguen basándose en resultados frescos durante bloqueo. Una imagen con brillo y contraste aceptables puede contener landmarks erróneos; no afirmar que el gate garantiza pocos falsos positivos. Los avisos de bajo contraste o poco detalle no bloquean por sí solos. Registrar falsos bloqueos y tiempo habilitado, además de errores de gestos. La [investigación de cámara](./06-camara-y-contraste.md) define las métricas y los umbrales severos.
 
 La distancia pulgar–índice se divide por una escala de palma obtenida de la muñeca–MCP del dedo medio y el ancho entre MCP de índice y meñique. Se corrige la relación ancho/alto de la cámara antes de comparar geometría. El rango entre `0,28` y `0,40` conserva el estado previo y evita alternancias alrededor de un único umbral.
+
+El puño se comprueba positivamente con la misma escala de palma `s`: los cuatro dedos largos deben tener ángulo PIP ≤ `115°`, DIP ≤ `155°`, distancia MCP–punta ≤ `0,65s` y punta–centro de palma ≤ `0,85s`. El pulgar exige punta–centro ≤ `0,75s` y flexión MCP **o** IP ≤ `150°`; su IP puede quedar recto si MCP está flexionado. Cada segmento debe medir entre `0,04s` y `0,75s`. La mano completa debe quedar dentro del frame para habilitar pan; una mano recortada puede conservar su puntero sin establecer esa postura de acción. Estos ángulos se calculan sobre landmarks estimados, no son medidas físicas de articulaciones. Son umbrales experimentales del motor y no una precisión cenital demostrada.
 
 La continuidad se comprueba en el centro de palma **y en la pinza formada por los landmarks 4 y 8**. Un centro estable no debe permitir continuar si pulgar o índice saltan de forma anómala. Ante discontinuidad se cancela la acción de forma segura. Comprobar también que la separación filtrada sea válida y suficientemente alejada de cero antes de dividir o aplicar log2; rechazar esa condición sin generar pan, zoom ni clic residual.
 
@@ -75,7 +82,7 @@ npm run build
 npm run test:app
 ```
 
-La suite compartida actual de **0.1.3 aprobó 86/86 casos**. Incluye clic automático y anclaje del objetivo, punteros de ambas manos, continuidad y bordes, navegación y colores, mapeo completo, calidad de imagen, capacidades de cámara y recorrido. Los resultados anteriores se conservan como evidencia histórica y no certifican el cambio. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
+La suite de **0.1.4 aprobó 94/94 casos**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Cubre clic a `1500 ms`, no repetición, dos puños sólo para pan, dos OK sólo para zoom, mezclas sin navegación y adquisición nueva al cambiar, además de anclaje, bordes, calidad y recorrido. El preview se comprueba en el runtime. Los **86/86 casos de 0.1.3** se conservan como evidencia histórica y no certifican este cambio. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
 
 La prueba de aplicación debe comprobar:
 
@@ -85,23 +92,26 @@ La prueba de aplicación debe comprobar:
 - Restricciones de red del worker: intento bloqueado por CSP con evidencia de violación aplicada, además de carga e inferencia funcionales.
 - Desplazamiento, zoom, apertura de popup y respuesta del botón de prueba dentro de la ventana propia.
 - Entrada a Ajustes, pausa y cancelación sin eventos residuales.
-- Mantener OK válido durante 3 segundos sobre un punto azul: ningún clic antes del umbral y un clic automático al completarlo, sin soltar.
+- Mantener OK válido durante 1,5 segundos sobre un punto azul: ningún clic antes del umbral y un clic automático al completarlo, sin soltar.
 - Repetir el ciclo completo sobre el botón del popup: un evento nativo dirigido al control propio y ninguna repetición mientras OK sigue cerrado.
 - Abrir durante `120 ms` y seleccionar de nuevo; soltar después del clic no genera otro evento.
 - Objetivo y aro estables en posiciones laterales durante la transición de índice a OK; no recentrar al faltar puntero en una postura intermedia.
 - OK inicial directo con posición válida actual: iniciar mantenimiento sin exigir apuntado previo.
 - Hover, hitarea propia y destino real coincidentes; un único candidato en áreas próximas, sin selección de controles ocultos.
 - Una palma abierta de una mano sin desplazamiento ni zoom.
-- Dos OK con movimiento paralelo y separación constante: desplazamiento sin zoom involuntario.
+- Dos puños con movimiento paralelo: pan sin zoom; variar sólo su separación con punto medio quieto no debe cambiar la escala.
 - Dos OK con punto medio fijo y separación variable: zoom sin desplazamiento involuntario.
-- Dos OK con traslación y cambio de separación: comprobar ambas componentes.
+- Dos OK con traslación y cambio de separación: sólo zoom, sin pan. Dos OK con separación constante no deben desplazar.
+- Cambiar dos puños por dos OK y viceversa: adquirir otra vez `180 ms`, sin saltos ni eventos del modo anterior. Puño + OK y otras mezclas no navegan.
 - Dos sombras independientes y frescas durante reposo, entrada a dos OK y navegación; no mostrar un único puntero en el punto medio.
 - Cancelación y ocultación del aro/ripple de clic individual al detectar dos manos, incluso si una postura es descartada por el motor; conservar ambos halos.
-- Azul en apuntado/reposo, violeta al adquirir navegación y desplazarse, ámbar con zoom dominante y gris durante bloqueo; jitter bajo zona muerta no debe cambiar intención ni mover el mapa.
+- Azul en apuntado/reposo, violeta con dos puños adquiridos, ámbar con dos OK adquiridos y gris durante bloqueo; comprobar ambos colores aun quietos y ausencia de eventos por jitter.
+- Preview siempre visible, pequeño y arriba a la izquierda; cámara activa con skeleton/conteo frescos, cámara detenida con mensaje y dibujo anterior limpio. Sin casilla ni botón para ocultarlo; permisos sólo al iniciar cámara explícitamente.
+- Métricas, exportación y anotación manual accesibles en Ajustes → Diagnóstico de seguimiento, sin ampliar el preview.
 - Pausa o bloqueo de calidad con resultados frescos: sombras grises sin eventos; pérdida o antigüedad excesiva de tracking: eliminar las sombras obsoletas.
 - Extremos de cámara y centro a extremos de mapa y centro, incluyendo espejo/rotación; una transición de postura cerca del borde no debe impedir alcanzar `0` o `1`.
 - Tres marcadores numerados, uno activo con pulso y área exterior fija; clic nativo sobre el activo avanza una vez 1→2→3, final sin pulso, reinicio desde Ajustes e Inicio sin pérdida de progreso.
-- Objetivo estable durante el pulso y el mantenimiento de 3 segundos, sin clic temprano. Botón del popup sin segundo avance del recorrido.
+- Objetivo estable durante el pulso y el mantenimiento de 1,5 segundos, sin clic temprano. Botón del popup sin segundo avance del recorrido.
 - Frame casi totalmente negro/blanco e inválido: cancelación inmediata, sin completar progreso anterior, recuperación continua de `600 ms` y rearme antes de otro clic.
 - Controles de cámara sólo si se declaran rangos válidos; modos automáticos sólo si están disponibles. Distinguir ajuste aplicado, ignorado, no reportado y rechazado.
 - Límite comunal local y atribución SUBDERE DPA 2023 visibles en los proveedores; puntos ficticios diferenciados de la geometría oficial.
@@ -113,7 +123,28 @@ Conservar reportes y screenshot técnico si se genera. La prueba de UI puede usa
 
 El fixture positivo PNG tiene transparencia. En el smoke se compone sobre gris `#777` antes de pasar al worker de producción, cuyo análisis de calidad requiere una imagen opaca. Registrar esa condición del fixture. Las cámaras y la entrada real no se preprocesan así; no atribuir a una prueba de imagen compuesta mejoras de precisión en webcam ni de contraste del modelo.
 
-### Verificación vigente: versión 0.1.3
+### Verificación vigente: versión 0.1.4
+
+La suite aprobó **94/94 pruebas**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia.
+
+El runtime Mac aprobó **nueve checks de navegación** con el `GestureEngine` real y entradas sintéticas: dos puños sólo pan, dos OK sólo zoom, mezcla sin navegación y nueva adquisición al cambiar de postura. Aprobaron **siete checks de preview** —detenido, activo, pausado, tamaño compacto, dibujo, limpieza y ausencia de casilla—, además de ocho de punteros y ocho de calidad.
+
+Registró **cuatro clics nativos** (`trustedClicks=4`) en punto 1, botón de popup, punto 2 y punto 3, cada uno tras al menos `1500 ms`, sin clic temprano ni repetición. El objetivo y el aro permanecieron anclados; el recorrido terminó en orden y el botón no duplicó el avance.
+
+| Paquete 0.1.4 | Punto 1 | Botón del popup | Punto 2 | Punto 3 |
+|:---|---:|---:|---:|---:|
+| [Mac](./verificacion-paquete-mac-0.1.4.json) | 1540,5 ms | 1541,1 ms | 1541,4 ms | 1540,0 ms |
+| [Windows](./verificacion-paquete-windows-0.1.4.json) | 1507,4 ms | 1515,3 ms | 1533,6 ms | 1537,4 ms |
+
+Son cuatro intervalos de mantenimiento por plataforma, con entradas sintéticas y reloj real. No constituyen una distribución de latencia física cámara→pantalla ni una medición de respuesta humana.
+
+El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquetes **Mac y Windows 0.1.4 están verificados**: [reporte Mac](./verificacion-paquete-mac-0.1.4.json) y [reporte Windows](./verificacion-paquete-windows-0.1.4.json). La [CI Windows 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930) terminó con éxito: 94 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Los smoke usan entradas sintéticas; el ensayo USB cenital y Google con key real siguen pendientes.
+
+La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física.
+
+Los estímulos de los smoke son fixtures/landmarks sintéticos; usar el motor real en el runtime verifica la integración de navegación, no una evaluación de reconocimiento de puños en el montaje físico. Las tres pruebas de calibración permanecen como cobertura histórica de su helper: el mapeo vigente usa todo el frame, sin activar homografía.
+
+### Evidencia histórica disponible: versión 0.1.3
 
 La suite compartida aprobó **86/86 pruebas**. El smoke de desarrollo y los paquetes Mac/Windows del commit `f5716f0b134ef15d97f2a727990122b3dbf18e54` aprobaron la selección y el recorrido con eventos nativos dentro de la ventana propia. Los [reportes Mac](./verificacion-paquete-mac-0.1.3.json) y [Windows 0.1.3](./verificacion-paquete-windows-0.1.3.json) conservan:
 
@@ -164,7 +195,7 @@ La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/acti
 
 ### Evidencia histórica disponible: versión 0.1.0
 
-Las comprobaciones siguientes corresponden a **0.1.0** y se conservan como antecedentes. No certifican las funciones ni los paquetes 0.1.3. La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
+Las comprobaciones siguientes corresponden a **0.1.0** y se conservan como antecedentes. No certifican las funciones ni los paquetes 0.1.4. La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
 
 | Comprobación | Resultado observado y alcance |
 |:---|:---|
@@ -188,7 +219,7 @@ Google Maps necesita otra comprobación con key autorizada, API habilitada, fact
 
 Fijar la cámara USB, iluminar de forma uniforme y delimitar una zona de mesa cómoda. Anotar la geometría antes de comparar modelos. Revisar que la mano mantenga suficiente detalle al moverse y que el foco no cambie de forma inestable.
 
-Comprobar superior izquierda, superior derecha, inferior derecha, inferior izquierda, bordes y centro. La app usa el frame completo con espejo, rotación y límites `0..1`, sin homografía ni esquinas guardadas. Repetir la comprobación tras mover la cámara, cambiar resolución, espejo u orientación. Una corrección breve al cambiar de postura debe desaparecer al desplazarse y permitir alcanzar los extremos incluso con un recorrido pequeño cerca del borde. Durante OK quieto conservar el destino adquirido durante los 3 segundos. Evaluar por separado cambios de altura y deformación de la perspectiva.
+Comprobar superior izquierda, superior derecha, inferior derecha, inferior izquierda, bordes y centro. La app usa el frame completo con espejo, rotación y límites `0..1`, sin homografía ni esquinas guardadas. Repetir la comprobación tras mover la cámara, cambiar resolución, espejo u orientación. Una corrección breve al cambiar de postura debe desaparecer al desplazarse y permitir alcanzar los extremos incluso con un recorrido pequeño cerca del borde. Durante OK quieto conservar el destino adquirido durante los 1,5 segundos. Evaluar por separado cambios de altura y deformación de la perspectiva.
 
 Consultar las capacidades del track después de iniciar streaming y registrar los ajustes que realmente informa. Si brillo, contraste o compensación de exposición no están disponibles, no inventar sliders ni confundir soporte del navegador con soporte de la USB. Probar modos continuos únicamente si la cámara los anuncia; comparar imagen quieta y manos en movimiento para detectar autofocus inestable, ruido o blur. Una solicitud resuelta no demuestra que el hardware haya cambiado.
 
@@ -203,29 +234,30 @@ Propuesta inicial: 15–20 participantes voluntarios y dos sesiones por persona.
 Cada sesión incluye:
 
 1. Apuntar a objetivos de diferentes tamaños y posiciones sin seleccionarlos.
-2. Apuntar a un objetivo, formar OK y mantener 3 segundos: debe seleccionarlo automáticamente sin soltar.
+2. Apuntar a un objetivo, formar OK y mantener 1,5 segundos: debe seleccionarlo automáticamente sin soltar.
 3. Mantener OK después de completar: un solo clic. Abrir durante `120 ms` y volver a mantener para una segunda selección.
 4. Interrumpir un OK demasiado corto, moverlo demasiado, ocultar la mano y recuperarla: no debe completar la selección cancelada.
 5. Abrir y cerrar una ficha; accionar su botón con OK.
-6. Formar dos OK, mantener `180 ms` y mover ambas manos juntas conservando su separación; soltar y reposicionarlas sin arrastrar.
+6. Formar dos puños, mantener `180 ms` y mover ambas manos juntas; debe desplazar sin zoom. Variar sólo la separación con punto medio quieto no debe ampliar. Abrir y reposicionar sin arrastrar.
 7. Formar dos OK y variar su separación manteniendo el punto medio quieto; soltar primero una mano y después la otra sin clic residual.
 8. Cruzar manos, añadir la segunda durante un click pendiente y retirar ambas.
 9. Pausar con Espacio, cancelar con Esc y cambiar el foco de ventana durante cada acción.
 10. Mover una palma abierta, cerrar y abrir dedos casualmente: no debe navegar.
 11. Introducir una segunda mano durante un halo/ripple y mantener una postura no elegible: deben seguir visibles ambas sombras frescas, sin aro, ripple ni clic individual.
-12. Combinar traslación y separación de dos OK; medir cada componente y la comprensión del gesto.
+12. Combinar traslación y separación de dos OK: sólo zoom. Trasladar dos OK con separación constante: ningún pan. Cambiar a dos puños y adquirir otra vez; mezclas sin navegación.
 13. Seleccionar objetivos laterales y cercanos entre sí; comprobar que cursor, hover, aro y clic coincidan sin saltar al centro.
 14. Recorrer extremos y centro de cámara con una y dos manos; cambiar postura cerca del borde y alcanzar los límites del mapa sin offset residual.
-15. Completar 1→2→3 mediante OK de 3 segundos sobre cada activo; comprobar un avance por clic nativo, pulso detenido al finalizar y reinicio desde Ajustes.
-16. Separar/trasladar dos OK y detenerlos: observar violeta/ámbar según movimiento dominante; pequeños temblores no deben alternar colores ni accionar el mapa.
+15. Completar 1→2→3 mediante OK de 1,5 segundos sobre cada activo; comprobar un avance por clic nativo, pulso detenido al finalizar y reinicio desde Ajustes.
+16. Mantener dos puños y dos OK quietos: observar violeta/ámbar según postura adquirida; pequeños temblores no deben producir eventos ni alternar modo.
 17. Provocar una imagen extrema durante un clic o navegación, recuperar imagen y abrir para rearmar; no completar un temporizador previo. Las sombras frescas deben quedar grises durante bloqueo.
 18. Revisar controles de cámara disponibles y ajustes reportados, sin asumir soporte de exposición o contraste en cualquier dispositivo.
+19. Iniciar y detener cámara, reiniciar sesión y perder el stream: preview siempre visible, skeleton fresco sólo con datos vigentes, mensaje Cámara detenida y ningún dibujo o conteo anterior al detener. Confirmar diagnóstico en Ajustes y ausencia de controles para ocultar el preview.
 
 Registrar intención, acción obtenida, objetivo, hora de inicio/fin, errores y necesidad de ayuda. Explicar la tarea antes de comenzar; no enseñar continuamente una corrección mientras se mide aprendizaje.
 
 ## 4. Periodos sin intención de control
 
-Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Dedicar al menos la mitad del material a estas condiciones negativas.
+Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Añadir puños casuales al tomar objetos, dos manos recogidas y mezclas puño/OK sin intención de navegar; distinguir reconocimiento de postura de intención real. Dedicar al menos la mitad del material a estas condiciones negativas.
 
 Variar iluminación, fondo, altura de mano, anillos y oclusiones de forma registrada. Si guantes u otras condiciones no están cubiertas por el sistema, medir su rechazo y documentar la limitación; no descartarlas silenciosamente del informe.
 
@@ -260,22 +292,25 @@ No publicar sólo FPS o promedios. Informar condiciones, número de muestras, ca
 | Criterio | Condición inicial de aceptación |
 |:---|:---|
 | Cancelación | Cero acciones emitidas durante pausa, pérdida de foco, pérdida de mano y recuperación de un candidato cancelado en los casos ensayados. |
-| Arbitraje | Cero clics individuales al entrar/salir de navegación con dos OK en el test reservado. |
+| Arbitraje | Cero clics individuales al entrar/salir de cualquiera de los modos de dos manos en el test reservado. |
 | Pan de una mano eliminado | Cero episodios de desplazamiento o zoom con una palma abierta de una mano en el test. |
-| Navegación de dos OK | Traslación pura desplaza; separación pura amplía; tolerancia geométrica y zona muerta registradas antes del ensayo. |
+| Pan de dos puños | Traslación desplaza sin zoom; separación pura con punto medio quieto no amplía. |
+| Zoom de dos OK | Separación amplía sin pan; traslación común con separación constante no desplaza. |
+| Cambio y mezcla | Puños ↔ OK exige adquirir de nuevo `180 ms`; mezclas no navegan y no heredan anclas. Registrar tolerancia geométrica y zonas muertas antes del ensayo. |
 | Sombras | Una sombra por cada mano detectada con datos frescos, hasta dos, incluso en reposo y navegación; eliminar feedback obsoleto y conservar gris durante bloqueo. Cero aro/ripple o clic individual con dos detecciones en los casos ensayados. |
-| Color de navegación | Adquisición violeta, desplazamiento violeta y zoom dominante ámbar sin alternancias por jitter bajo zona muerta en los casos ensayados. |
+| Color de navegación | Dos puños adquiridos violeta y dos OK adquiridos ámbar, incluso quietos; sin alternar modo ni emitir eventos por jitter. |
+| Preview | Siempre visible y pequeño arriba a la izquierda; datos vigentes con cámara activa, limpieza/mensaje al detener y sin controles para ocultar. Diagnóstico detallado en Ajustes. |
 | Mapeo completo | Extremos y centro de cámara alcanzan extremos y centro del mapa según orientación; sin esquinas guardadas ni offset permanente tras cambiar postura. |
 | Recorrido | Clic nativo sobre el único activo avanza exactamente 1→2→3; no avance por hover, otro punto o botón del popup; final sin pulso y reinicio desde Ajustes. |
 | Calidad de imagen | Frames severos o inválidos cancelan inmediatamente; recuperación continua de `600 ms` sin reutilizar selección pendiente. Registrar falsos bloqueos y no inferir precisión del detector a partir del gate. |
 | Controles de cámara | Mostrar y solicitar sólo capacidades válidas reportadas por el track; informar si el ajuste no se confirma y no garantizar soporte de USB no ensayadas. |
 | Continuidad geométrica | Saltos anómalos de centro o pinza y separación filtrada inválida/cercana a cero cancelan sin eventos residuales ni valores no finitos. |
-| Repetición | Un OK válido produce un clic al completar `3000 ms`; mantener cerrado y soltar después no repiten. Nueva selección requiere apertura de `120 ms`. |
+| Repetición | Un OK válido produce un clic al completar `1500 ms`; mantener cerrado y soltar después no repiten. Nueva selección requiere apertura de `120 ms`. |
 | Objetivo estable | Cursor, hover, aro y clic conservan el destino adquirido durante la transición a OK, sin recentrado ni cambio silencioso de candidato. |
 | Recall de clic | Al menos 95 % en las tareas y condiciones declaradas. |
 | Falsos clics | Límite superior unilateral de 95 % por debajo de `0,01/min` en condiciones negativas representativas. |
 | Respuesta de movimiento | p95 del recorrido medido por la aplicación menor de `100 ms`; medir y reportar aparte demora física de cámara/pantalla. |
-| Selección | Reportar confirmación intencional de `3000 ms`, tiempo real mantenido y demora adicional hasta el evento/pantalla. No exigir un tiempo total inferior a los 3 segundos elegidos ni mezclarlo con latencia de inferencia. |
+| Selección | Reportar confirmación intencional de `1500 ms`, tiempo real mantenido y demora adicional hasta el evento/pantalla. No exigir un tiempo total inferior a los 1,5 segundos elegidos ni mezclarlo con latencia de inferencia. |
 | Usabilidad | Al menos 95 % de tareas básicas completadas; sin necesidad de ayuda continua ni fatiga que impida terminar el bloque. |
 
 Estos criterios son objetivos de evaluación, **no resultados alcanzados**. Revisarlos con usuarios municipales antes de aprobar despliegue. Si una condición falla, conservar el resultado y limitar el alcance en lugar de declarar éxito global.
@@ -298,11 +333,17 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite actual de 0.1.3 | 86/86 pruebas de la suite compartida aprobadas. |
-| Smoke de desarrollo 0.1.3 | Aprobado: cuatro clics nativos de 3 segundos, anclaje/aro/sin clic temprano/sin repetición; recorrido, dos sombras, colores, bordes y bloqueo gris comprobados. |
-| Runtime Windows 0.1.3 | CI 37414071782: 86 pruebas y `test:app` aprobados para el commit f5716f0b134ef15d97f2a727990122b3dbf18e54. |
-| Paquete Mac 0.1.3 | ZIP arm64 construido y smoke de `.app` final aprobado: cuatro clics nativos, checks de puntero/navegación y ocho de calidad correctos. Apertura real, Ajustes y ayuda revisados. |
-| Paquete Windows 0.1.3 | CI 37414071782 terminada correctamente: `npm ci`, 86 tests, build, runtime, portable construido y smoke de `release/win-unpacked/Mapa Gestual MLR.exe` aprobados. |
+| Suite de 0.1.4 | 94/94 aprobadas; distribución de casos descrita arriba. |
+| Runtime Mac y Windows 0.1.4 | Aprobados; clic1500ms, recorrido y checks de navegación, preview, punteros y calidad. |
+| Windows CI 0.1.4 | Ejecución 37415440930 terminada con éxito para fe733f504f64a27cf577bf18a2c91ebd426b9ba2. |
+| Paquete Mac 0.1.4 | ZIP construido y smoke del contenido empaquetado aprobado; cuatro clics nativos, nueve checks de navegación y siete de preview correctos. |
+| Paquete Windows 0.1.4 | Portable construido y smoke del contenido `win-unpacked` aprobado; envoltorio portable sin ensayo de arranque. |
+| Inspección nativa Mac 0.1.4 | Ayuda/Ajustes revisados; preview y landmarks inspeccionados con cámara física, sin guardar imagen personal y sin ensayo USB cenital. |
+| Suite histórica de 0.1.3 | 86/86 pruebas de la suite compartida aprobadas. |
+| Smoke histórico de desarrollo 0.1.3 | Aprobado: cuatro clics nativos de 3 segundos, anclaje/aro/sin clic temprano/sin repetición; recorrido, dos sombras, colores, bordes y bloqueo gris comprobados. |
+| Runtime histórico Windows 0.1.3 | CI 37414071782: 86 pruebas y `test:app` aprobados para el commit f5716f0b134ef15d97f2a727990122b3dbf18e54. |
+| Paquete histórico Mac 0.1.3 | ZIP arm64 construido y smoke de `.app` final aprobado: cuatro clics nativos, checks de puntero/navegación y ocho de calidad correctos. Apertura real, Ajustes y ayuda revisados. |
+| Paquete histórico Windows 0.1.3 | CI 37414071782 terminada correctamente: `npm ci`, 86 tests, build, runtime, portable construido y smoke de `release/win-unpacked/Mapa Gestual MLR.exe` aprobados. |
 | Suite histórica de 0.1.2 | 49/49 aprobados: 37 de gestos, 3 de calibración y 9 de selección. |
 | Smoke histórico de desarrollo y paquete Mac 0.1.2 | Aprobados; dos ciclos nativos de 3 segundos, anclaje/aro/sin clic temprano/sin repetición correctos. |
 | Windows histórico de 0.1.2 | CI 37267138909 aprobada: 49 tests, build, runtime, portable construido y smoke del contenido empaquetado, con dos clics nativos de 3 segundos. |

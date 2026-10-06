@@ -2,8 +2,8 @@
 
 **Fecha:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión:** 0.1.3<br>
-**Estado:** geometría y recorrido verificados; paquetes Mac y Windows aprobados<br>
+**Versión:** 0.1.4<br>
+**Estado:** geometría conservada; 94/94 pruebas, runtime y paquetes Mac/Windows 0.1.4 aprobados. 0.1.3 conserva su evidencia histórica<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
@@ -68,7 +68,7 @@ La geometría no procede de OpenStreetMap; no se le atribuye licencia ODbL. Las 
 
 Los tres puntos mantienen identidades estables `point-0`, `point-1` y `point-2`, con números visibles **1, 2 y 3**. Su apariencia nominal mide 40 px y el siguiente punto activo mide 56 px. Sólo el activo tiene un pulso suave; al completar el tercero, los tres quedan completos y dejan de pulsar.
 
-El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante el mantenimiento de OK por 3 segundos. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
+El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante el mantenimiento de OK por 1,5 segundos. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
 
 El aro de mantenimiento usa un contenedor de **96 × 96 px**, radio de **34 px** y trazo de 3 px. Su perímetro queda fuera del círculo activo de 56 px, de modo que el punto no oculta el progreso. Conserva el azul durante el mantenimiento y el verde al confirmar.
 
@@ -91,9 +91,21 @@ Diagnóstico disponible mediante `map.info()`:
 }
 ```
 
-## Comprobación
+## Verificación vigente de 0.1.4
 
-Las ocho pruebas de `tests/sequence.test.js` pasan: inicio, orden e identidad de los clics, finalización sin repetición, reinicio, protección del estado, rechazo de identidades ambiguas, integridad del GeoJSON y pertenencia de los puntos al polígono. La extracción también comprobó validez topológica con Shapely. La suite completa de 0.1.3 pasó **86/86 pruebas**.
+El recorrido mantiene las mismas identidades, posiciones, áreas fijas y fuente del límite. El clic cambia a **OK durante 1,5 segundos**, automático sin soltar. **Dos puños desplazan** y **dos OK hacen zoom**, en modos exclusivos; esa navegación no avanza el recorrido. El preview cenital pequeño permanece visible y sólo dibuja tracking fresco con cámara activa; detenida, muestra el mensaje y limpia los datos anteriores.
+
+Las ocho pruebas de secuencia/GeoJSON se incluyen en las **94/94 aprobadas**. Registró **cuatro clics nativos** (`trustedClicks=4`) en punto 1, botón de popup, punto 2 y punto 3, cada uno tras al menos `1500 ms`, sin clic temprano ni repetición. El objetivo y el aro permanecieron anclados; el recorrido terminó en orden y el botón no duplicó el avance. Los smoke Mac y Windows aprobaron el recorrido y el contenido empaquetado; el reporte Mac confirma nueve checks de navegación y siete de preview, usando entradas sintéticas, y una entidad de límite cargada.
+
+El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquetes **Mac y Windows 0.1.4 están verificados**: [reporte Mac](./verificacion-paquete-mac-0.1.4.json) y [reporte Windows](./verificacion-paquete-windows-0.1.4.json). La [CI Windows 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930) terminó con éxito: 94 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Los smoke usan entradas sintéticas; el ensayo USB cenital y Google con key real siguen pendientes.
+
+La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física.
+
+La fuente y el SHA-256 del GeoJSON no cambian; las comprobaciones históricas siguientes conservan su versión.
+
+## Evidencia histórica de 0.1.3
+
+En 0.1.3 las ocho pruebas de `tests/sequence.test.js` pasaron: inicio, orden e identidad de los clics, finalización sin repetición, reinicio, protección del estado, rechazo de identidades ambiguas, integridad del GeoJSON y pertenencia de los puntos al polígono. La extracción también comprobó validez topológica con Shapely. La suite completa de 0.1.3 pasó **86/86 pruebas**.
 
 El runtime Mac y Windows verificó el recorrido **1 → 2 → 3** en el mapa sin teselas externas: tres clics sobre los marcadores activos y un clic sobre el botón del primer popup, **cuatro eventos nativos `isTrusted`**. El botón conservó `completedCount = 1`; los siguientes clics completaron el recorrido y dejaron `map.targets()` vacío. Se confirmó `boundaryLoaded = true` y `boundaryFeatureCount = 1`.
 

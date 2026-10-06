@@ -1,64 +1,57 @@
-# Entrega técnica - Mapa Gestual MLR 0.1.3
+# Entrega técnica - Mapa Gestual MLR 0.1.4
 
 **Fecha:** 6 de octubre de 2026<br>
-**Estado:** paquetes Mac y Windows verificados; validación cenital pendiente
+**Estado:** 94 pruebas y paquetes Mac/Windows aprobados
 
 [Volver al prototipo](../README.md)
 
-## Cambios de interacción
+## Interacción vigente
 
-Las sombras de ambas manos se mantienen visibles mientras existan detecciones frescas, también en reposo, OK y navegación. Azul indica apuntado/reposo; violeta, navegación preparada/desplazamiento; ámbar, zoom predominante. Durante pausa o bloqueo de imagen se muestran grises. Los colores identifican la intención predominante: desplazamiento y zoom pueden combinarse. No se mantienen posiciones antiguas cuando el tracking se pierde.
+Una sola mano detectada selecciona al mantener **OK durante 1,5 segundos**. El aro y el clic comparten el objetivo anclado, sin salto al centro. Mantener cerrado no repite; abrir 120 ms rearma. Pérdida de tracking, discontinuidad, movimiento excesivo, otra mano, cambio/ocultación del objetivo, pausa o pérdida de foco cancelan la selección como antes.
 
-Dos manos en OK durante 180 ms habilitan navegación. Moverlas juntas desplaza; separar acerca y juntar aleja. La palma abierta no desplaza. Una sola mano detectada selecciona automáticamente al mantener OK **3 segundos**, con aro de progreso de 96 px y radio 34 px, situado por fuera de los puntos grandes. Mantener la pinza cerrada no repite el clic; abrirla 120 ms rearma la selección.
+**Dos puños completamente cerrados desplazan** el mapa mediante el movimiento del centro de ambas manos. **Dos OK controlan sólo zoom**, separando para acercar y juntando para alejar. Mover ambos OK juntos no desplaza el mapa. Las parejas mixtas o una sola mano no navegan. Abrir cualquiera de las manos termina el modo; cambiar entre puños y OK necesita 180 ms de adquisición nueva, sin arrastrar movimiento anterior.
 
-El objetivo conserva posición al cerrar OK. Soltar antes de tiempo, desplazarse fuera de la tolerancia, perder tracking, recibir frames tardíos/discontinuos, detectar otra mano, perder foco, pausar o pulsar Esc cancela la carga. También se cancela si desaparece o cambia el objetivo. Las áreas de selección propias y controles visibles conservan asistencia local y comprobación de oclusión.
+Las sombras permanecen independientes y frescas. Violeta identifica pan con puños y ámbar zoom con OK, también al estar quietos dentro del modo adquirido. Azul representa apuntado/reposo y gris acciones bloqueadas. El mapeo completo, tres puntos en orden 1 → 2 → 3, contorno SUBDERE/IDE Chile DPA 2023 y controles condicionales de exposición se conservan.
 
-La **imagen completa de cámara cubre el viewport completo del mapa**, con la orientación/espejo elegidos. Se retiró la calibración manual de cuatro esquinas del flujo y se ignoran esquinas antiguas guardadas. Los filtros y transiciones se resuelven para alcanzar los cuatro bordes; no se conserva una región central recortada.
+El puño necesita evidencia positiva de flexión de los cuatro dedos, puntas y pulgar compactos, segmentos no degenerados y una mano completa dentro del frame. No basta con que una pose deje de ser OK o palma. El puntero permanece disponible en bordes aunque una mano incompleta no pueda activar pan. Estos criterios geométricos son iniciales; no demuestran visibilidad de articulaciones ocultas ni precisión física.
 
-Los tres puntos ficticios son mayores, numerados y ordenados. Sólo el siguiente activo, de 56 px, pulsa; los restantes miden 40 px. El clic del punto activo abre su popup y avanza **1 → 2 → 3**. El botón del popup no avanza dos veces. Ajustes permite reiniciar el recorrido e Inicio conserva su avance. Se eliminó la palabra “prueba” de los textos visibles del mapa.
+## Cámara pequeña permanente
 
-## Cámara y contorno
+El panel **Vista cenital** permanece arriba a la izquierda, de 200 px de ancho (160 px en ventanas pequeñas), con vídeo, skeleton de manos y conteo. No existe casilla de preview ni botón para ocultarlo. Con cámara detenida muestra un estado claro y limpia landmarks; con vídeo activo siempre dibuja las detecciones frescas, también durante pausa. Una pérdida de datos frescos limpia el skeleton anterior.
 
-El worker analiza una copia pequeña de la imagen y cancela acciones ante frames inválidos o prácticamente totalmente negros/blancos. El bloqueo comienza en el primer frame severo; el aviso necesita 200 ms continuos y la recuperación, 600 ms de calidad no severa. Los avisos de poco contraste o detalle no bloquean automáticamente una mesa lisa. El diagnóstico exporta tiempo de análisis, inferencia y captura a resultado por separado.
-
-Se consultan capacidades del track después de iniciar el vídeo. Ajustes muestra brillo, contraste y compensación de exposición sólo cuando la cámara ofrece rangos válidos; verifica valores devueltos y distingue solicitudes no confirmadas. No se inventan controles USB ni se aplica CLAHE a la entrada del modelo. [Fuentes, decisiones y límites](./06-camara-y-contraste.md).
-
-El contorno verde azulado de La Reina proviene de **SUBDERE / IDE Chile, DPA 2023, CUT_COM 13113**: un polígono local, válido, con 306 vértices y sin simplificación. Inicio encuadra la comuna completa. La procedencia se atribuye dentro del mapa. [Fuente oficial, extracción y condiciones](./07-limite-la-reina.md). La cartografía descargada no equivale a una certificación municipal del software.
-
-Se mantiene MediaPipe Hand Landmarker full con sus pesos originales. Las pautas Meta se adaptan al cursor, hover y selección de una cámara RGB cenital; no se incorpora el tracking propietario del visor. [Investigación Meta](./05-meta-quest-y-seleccion.md).
+Se mantienen Iniciar/Detener cámara y la elección de USB en Ajustes; no se solicita acceso automáticamente al abrir. La imagen del preview respeta la proporción real del vídeo. Inferencia/FPS, calidad, exportación de sesión y marcado de falso clic quedan en **Diagnóstico de seguimiento**, desplegable en Ajustes.
 
 ## Archivos entregados
 
-Código de los binarios: `f5716f0b134ef15d97f2a727990122b3dbf18e54`.
+Código de los binarios: `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`.
 
 | Archivo | Plataforma | SHA-256 |
 | --- | --- | --- |
-| `MapaGestualMLR-0.1.3-mac-arm64.zip` | macOS Apple Silicon; contiene `Mapa Gestual MLR.app` | `05ac7b3f4940b59263ef91239946f506f07b9a6bc9e24bf413ff329555586b33` |
-| `MapaGestualMLR-0.1.3-windows-x64.exe` | Windows x64; portable | `33aa6352acf5f07ae289ce5d47505f92ccac877f69a9d667304a1d09785e48f5` |
+| `MapaGestualMLR-0.1.4-mac-arm64.zip` | macOS Apple Silicon; contiene `Mapa Gestual MLR.app` | `1b5ff100855cab31c3f078739fa39bf62b985f84f1fc5ec69e99208d152194cb` |
+| `MapaGestualMLR-0.1.4-windows-x64.exe` | Windows x64; portable | `c469493486caabdf3354bc240bd8409fad47dfa39dc4a2aa55b875c4c80b5299` |
 
-Los ejecutables incluyen modelo full, loaders WASM y contorno. No requieren Node ni Python en el equipo de uso. Las teselas del mapa utilizan Internet. Esta distribución de desarrollo no tiene certificados de firma/notarización.
+Los paquetes incluyen modelo full, loaders WASM y contorno. No requieren Node ni Python al usar el programa. Las teselas necesitan Internet. Esta distribución de desarrollo no tiene firma/notarización. El portable NSIS es un contenedor autoextraíble de 32 bits que transporta Electron x64; el programa objetivo sigue siendo x64.
 
-El portable utiliza un contenedor autoextraíble NSIS de 32 bits que transporta Electron x64. La arquitectura del contenedor no cambia el objetivo x64 del programa.
+## Evidencia de 0.1.4
 
-## Evidencia de 0.1.3
+- **94/94 pruebas:** 55 de gestos, 3 del helper histórico de calibración, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. La calibración histórica no participa en el flujo actual.
+- El motor comprueba 1499 ms sin clic y 1500 ms con un único clic, exclusión pan/zoom, poses mixtas y parciales, cambios de modo, quietud, geometría bajo rotación/aspecto y continuidad. Los filtros de navegación se vinculan a identidad; invertir el orden de manos inmóviles no genera zoom accidental.
+- **Mac:** Vite, ZIP arm64 y [smoke del paquete](./verificacion-paquete-mac-0.1.4.json) aprobados. Se abrió la `.app` y se comprobaron ajustes, ayuda y preview con vídeo/landmarks de una cámara física.
+- **Windows aprobado:** [CI 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930), runtime, portable y [smoke de win-unpacked](./verificacion-paquete-windows-0.1.4.json). El arranque mediante envoltorio NSIS se valida por separado.
+- El smoke carga modelo/WASM reales, frame vacío/positivo, calidad y bloqueo CSP. El PNG positivo oficial con alpha se compone sobre gris #777 sólo como estímulo fijo; no se transforma así la cámara real.
+- `navigationFeedback` utiliza poses sintéticas y **GestureEngine real** antes del adaptador: pan funciona sin zoom, zoom funciona sin pan, traslación de dos OK no actúa, cambio requiere nueva adquisición y mezcla no navega. También verifica ambas sombras y descarte de eventos del modo incorrecto en el renderer.
+- Los siete `previewFeedback` comprueban panel visible detenido/activo/pausado, tamaño/posición, dibujo de landmarks del fixture, limpieza del dibujo obsoleto y ausencia de casilla/botón de ocultación.
+- Los ocho `qualityFeedback` y ocho `pointerFeedback` mantienen controles de cámara condicionales, bloqueo/recuperación, colores, ambas sombras y bordes.
+- **Cuatro clics nativos isTrusted por plataforma**: puntos 1, 2, 3 y botón del primer popup. Cada mantenimiento dura al menos 1500 ms, con cursor/aro anclados, sin clic temprano ni repetido. El botón no avanza dos veces y el recorrido se completa. El programa queda reiniciado en punto 1 después del smoke.
 
-- **86/86 pruebas:** 47 de gestos, 3 del helper histórico de calibración, 9 de selección, 4 de mapeo completo, 15 de calidad/cámara y 8 de secuencia/contorno. El helper de calibración se conserva como antecedente, sin uso en el flujo actual.
-- **Mac:** build Vite, ZIP arm64 y [smoke del paquete](./verificacion-paquete-mac-0.1.3.json) aprobados en Apple M5/macOS 26.6.2. La `.app` final abre con contorno, tres puntos y ayuda actualizada.
-- **Windows:** [CI 37414071782](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37414071782) aprobó tests, build, smoke del runtime, portable y [smoke del contenido empaquetado](./verificacion-paquete-windows-0.1.3.json). Se ejecutó `release/win-unpacked/Mapa Gestual MLR.exe`; no se ejecutó el envoltorio NSIS directamente.
-- Los smoke cargan modelo/WASM locales: frame vacío con cero manos y fixture oficial con una mano/21 puntos, ambos con análisis de calidad válido, más bloqueo CSP de telemetría. El PNG oficial transparente se compone sobre gris `#777` sólo como estímulo fijo del smoke; la cámara no recibe esa transformación.
-- `pointerFeedback` comprueba una y dos sombras, colores pan/zoom, sombras grises con bloqueo, ocultación sin manos, extremos del frame y limpieza del ripple. `navigationFeedback` verifica pan, combinación pan/zoom y ambas sombras visibles mediante eventos de prueba.
-- Los ocho checks `qualityFeedback` comprueban acción con imagen normal, cancelación inmediata, bloqueo sostenido, recuperación temporal, ausencia de input bloqueado y aviso después de una discontinuidad aunque el estado ya fuese `blocked`, además de visibilidad CSS real de controles dentro del diálogo: ocultos sin capacidades y visibles cuando se habilitan.
-- **Selección nativa:** landmarks sintéticos pasan por motor real → renderer → IPC → eventos nativos Electron. Tres mantenimientos seleccionan los puntos 1, 2 y 3; un cuarto selecciona el botón del primer popup sin volver a avanzar. Cada mantenimiento conserva objetivo/aro, tarda al menos 3000 ms y no produce clic temprano ni repetido. Se observan **cuatro eventos `isTrusted` por plataforma** y secuencia completa. Después se reinicia en el punto 1 para dejar el programa preparado.
-- `map.info()` confirma contorno cargado con una entidad. Las pruebas de integridad comprueban anillo cerrado, atributos oficiales y los tres puntos dentro de la comuna.
+![Preview pequeño permanente y mapa](./preview-permanente-0.1.4.png)
 
-![Dos sombras en color de zoom y contorno completo](./dos-manos-zoom-0.1.3.png)
+![Aro durante selección de 1,5 segundos](./seleccion-1-5s-0.1.4.png)
 
-![Aro de selección alrededor del punto activo](./seleccion-3s-0.1.3.png)
-
-Las capturas muestran el contorno sin teselas externas, con estados/landmarks inyectados. Verifican interfaz y recorrido de eventos propios, pero no precisión física del detector. Las inferencias con imágenes fijas son muestras aisladas, no un benchmark de latencia ni una medida de falsos positivos.
+Las imágenes y navegación del smoke usan geometría/landmarks de prueba sin teselas externas. No representan un ensayo de gestos físicos. El preview se prueba con landmarks del fixture real del detector; sus estados activo/pausado se simulan sin abrir hardware. La inspección adicional del preview con una cámara física confirma vídeo y dibujo de landmarks; no es un ensayo de gestos con USB cenital. Una inferencia aislada no es un benchmark de latencia física.
 
 ## Antecedentes y validación pendiente
 
-Se conservan reportes de 0.1.0, 0.1.1 y 0.1.2 como antecedentes. El [ensayo aislado de visión](./verificacion-vision-mac.json) comprobó bloqueo CSP del POST real del logger al cerrar el task, sin requests externas observadas; no se repitió como ensayo independiente en esta actualización.
+Los informes 0.1.0–0.1.3 conservan la evidencia anterior; [Mac 0.1.3](./verificacion-paquete-mac-0.1.3.json) y [Windows 0.1.3](./verificacion-paquete-windows-0.1.3.json) no certifican los cambios nuevos. Se mantienen Hand Landmarker full y sus pesos; sólo se modifica interpretación/UI.
 
-Queda medir acciones accidentales, precisión, falsos bloqueos, comodidad de mantener OK 3 segundos y latencia con la **cámara USB cenital física**, según el [protocolo](./03-protocolo-validacion.md). También falta probar controles del driver real, Google Maps con API key autorizada y picking de POI reales, el arranque del envoltorio portable en Windows y accesibilidad antes de una instalación municipal. La inspección y pruebas automatizadas no acreditan esas condiciones.
+Falta medir puños naturales, manos parciales, descanso, oclusión, cruces, luz y acciones accidentales con USB cenital real, además de comodidad y latencia física. También quedan driver/controles reales, Google con API key y POI reales, arranque del portable en Windows y accesibilidad antes del uso municipal. [Protocolo vigente](./03-protocolo-validacion.md) · [Investigación de cámara](./06-camara-y-contraste.md).

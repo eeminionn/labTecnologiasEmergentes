@@ -2,11 +2,17 @@
 
 **Fecha de consulta:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión de implementación:** 0.1.3<br>
-**Estado:** módulos implementados; 15/15 pruebas propias y 86/86 del proyecto aprobadas; ejecución integral y paquetes finales Mac/Windows aprobados; mediciones con USB real, falsos positivos, latencia y controles físicos pendientes<br>
+**Versión de implementación:** 0.1.4<br>
+**Estado:** 15/15 pruebas propias, 94/94 del proyecto, runtime y paquetes Mac/Windows aprobados en 0.1.4; preview físico Mac inspeccionado. Ensayo USB cenital, controles reales y métricas físicas pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar selección](./05-meta-quest-y-seleccion.md)
+
+## Vigencia de 0.1.4
+
+La selección ahora exige **1,5 segundos**, pan usa exclusivamente **dos puños** y zoom exclusivamente **dos OK**. El gate cancela cualquiera de esas acciones ante una imagen inutilizable y no reutiliza el tiempo anterior. Los umbrales de calidad y el modelo se conservan; sus resultados anteriores no certifican por sí solos la nueva integración.
+
+El preview pequeño Vista cenital permanece visible arriba a la izquierda, de unos **200 px de ancho** o **160 px** en pantallas pequeñas. Muestra imagen, skeleton y conteo frescos con cámara activa; al detenerla muestra Cámara detenida y limpia el dibujo y datos anteriores. No tiene casilla ni botón para ocultar. La cámara sólo se inicia por acción explícita. Métricas detalladas, exportación y anotación manual de falsos clics se consultan en Ajustes → Diagnóstico de seguimiento. Esta UI aprobó los smoke de runtime y paquete en Mac y Windows; también se inspeccionó el preview físico Mac sin guardar imágenes personales.
 
 La mejora consiste en identificar imágenes claramente inutilizables, cancelar los gestos pendientes y ofrecer ajustes que la cámara realmente admite. No consiste en garantizar que una imagen con buen contraste contiene landmarks correctos. Un detector puede equivocarse con iluminación normal; una mano puede seguir siendo visible sobre una mesa casi uniforme. El gate complementa la geometría, continuidad y temporizadores del motor.
 
@@ -48,7 +54,7 @@ El ancho, proporción y ajustes de procesamiento deben permanecer constantes al 
 | Buffer inválido, transparente o ROI inválida | `invalid-frame`: impedir acciones; no inventar una medición. |
 | Media < 35 o > 230, contraste < 12, o varianza de Laplaciano < 2 | Aviso numérico; **no bloquear por sí solo**. |
 
-El recorte extremo actúa inmediatamente: no se completa un clic de 3 segundos utilizando ese frame. Tras **200 ms continuos** de condición severa aparece un aviso estable. Ese tiempo evita notificaciones por un frame aislado; no permite ejecutar acciones durante esos 200 ms. Después se necesitan **600 ms continuos de calidad no severa** para permitir acciones otra vez. Otra imagen severa reinicia la recuperación.
+El recorte extremo actúa inmediatamente: no se completa un clic de 1,5 segundos utilizando ese frame. Tras **200 ms continuos** de condición severa aparece un aviso estable. Ese tiempo evita notificaciones por un frame aislado; no permite ejecutar acciones durante esos 200 ms. Después se necesitan **600 ms continuos de calidad no severa** para permitir acciones otra vez. Otra imagen severa reinicia la recuperación.
 
 `FrameQualityGate.update(analysis, capturedAt)` devuelve `allowActions`, `cancelInteraction`, `state`, `showWarning`, `reasons` y `warnings`. Sus estados son `good`, `suspect`, `blocked` y `recovering`; `unknown` existe antes de la primera actualización. Un resultado inicial válido permite comenzar sin una espera artificial. Un salto de captura superior a 250 ms o un reloj inválido invalida la continuidad y obliga a recuperar; se debe hacer `reset()` al cambiar sesión o cámara. El watchdog del motor conserva su comprobación de resultados obsoletos por separado.
 
@@ -82,11 +88,11 @@ Estas son propuestas de ensayo, no condiciones ya verificadas en la municipalida
 
 No se define un nivel de lux, color de fondo, obturación ni cámara «óptimos» sin medidas del montaje. Exposición más corta puede mejorar bordes en movimiento a costa de señal; brillo y contraste extremos pueden perder detalle. La solución se elige con ensayos, no con la apariencia más vistosa del preview.
 
-## Qué se probó y qué falta
+## Evidencia histórica de 0.1.3 y alcance
 
 `tests/frame-quality.test.js` aprueba **15 pruebas** de ambos módulos. Usa imágenes numéricas conocidas: negro/blanco/gris opacos, 5 % de reflejo, 90 % de fondo oscuro, un único canal rojo saturado, un patrón con blur gaussiano, rampa suave y ROI de contenido conocido. Comprueba clipping y luma, pérdida de energía bajo blur, avisos sin falsa promesa de foco, cancelación inmediata, 200/600 ms exactos, interrupciones, tiempo inválido y buffers inválidos.
 
-Los tests de cámara usan tracks simulados para comprobar rangos, pasos, conservación de constraints, modos soportados, solicitudes inválidas, ajustes ignorados/no reportados y `OverconstrainedError`. Demuestran comportamiento del helper, **no soporte real de una USB**. El proyecto completo aprueba **86 pruebas** y la ejecución integral pasa en Mac y Windows. Los paquetes finales de ambas plataformas, del código `f5716f0b134ef15d97f2a727990122b3dbf18e54`, también aprueban los checks: en Windows, el pipeline final `37414071782` verifica además el smoke de `win-unpacked`. Dentro del smoke, `qualityFeedback` comprueba estas ocho condiciones:
+Los tests de cámara usan tracks simulados para comprobar rangos, pasos, conservación de constraints, modos soportados, solicitudes inválidas, ajustes ignorados/no reportados y `OverconstrainedError`. Demuestran comportamiento del helper, **no soporte real de una USB**. En **0.1.3**, el proyecto completo aprobó **86 pruebas** y la ejecución integral pasó en Mac y Windows. Los paquetes finales de ambas plataformas, del código `f5716f0b134ef15d97f2a727990122b3dbf18e54`, también aprueban los checks: en Windows, el pipeline final `37414071782` verifica además el smoke de `win-unpacked`. Dentro del smoke, `qualityFeedback` comprueba estas ocho condiciones:
 
 | Comprobación | Resultado que verifica |
 |:---|:---|
@@ -103,9 +109,19 @@ La hoja de estilos aplica `[hidden]{display:none!important}` para que la present
 
 La prueba visual integrada también verifica dos halos visibles durante navegación y bloqueo. El estímulo positivo de inferencia es un PNG fijo oficial con transparencia, compuesto sobre gris `#777` **sólo en el smoke** para producir una imagen opaca de prueba. Ese paso no se aplica a la cámara ni constituye preprocesamiento de su entrada al modelo.
 
-Los paquetes finales Mac y Windows están aprobados; sus resultados quedan en los informes [Mac](./verificacion-paquete-mac-0.1.3.json) y [Windows](./verificacion-paquete-windows-0.1.3.json), junto con la [guía de entrega](./04-entrega-y-verificacion.md). No se capturó una USB real para calibrar estos umbrales, no se midió una tasa de falsos positivos y no se hizo un benchmark físico de latencia. La respuesta real de exposición, contraste, foco y balance de blancos también requiere verificar el hardware instalado. Esas mediciones siguen pendientes y no se deducen de los checks de los paquetes.
+Los paquetes históricos **0.1.3** Mac y Windows están aprobados; sus resultados quedan en los informes [Mac](./verificacion-paquete-mac-0.1.3.json) y [Windows](./verificacion-paquete-windows-0.1.3.json), junto con la [guía de entrega](./04-entrega-y-verificacion.md). No se capturó una USB real para calibrar estos umbrales, no se midió una tasa de falsos positivos y no se hizo un benchmark físico de latencia. La respuesta real de exposición, contraste, foco y balance de blancos también requiere verificar el hardware instalado. Esas mediciones siguen pendientes y no se deducen de los checks de los paquetes.
 
-La validación física debe comparar versión con y sin gate sobre secuencias equivalentes: reposo, un OK, dos OK, transiciones, manos cruzadas, objetos sin manos, entradas/salidas y pausas. Variar iluminación, fondo, tono de piel, distancia, movimiento y controles admitidos. Etiquetar falsos clics y pan/zoom accidentales por minuto, recuperaciones, falsos bloqueos y fracción del tiempo bloqueada. Incluir el tiempo total y el tiempo habilitado en los denominadores para que pausar mucho no parezca una mejora de precisión. Separar `qualityMs`, inferencia y captura a resultado; ninguno sustituye por sí solo latencia cámara-a-pantalla.
+La validación física debe comparar versión con y sin gate sobre secuencias equivalentes: reposo, un OK, dos puños, dos OK, mezclas y cambios de modo, transiciones, manos cruzadas, objetos sin manos, entradas/salidas y pausas. Variar iluminación, fondo, tono de piel, distancia, movimiento y controles admitidos. Etiquetar falsos clics y pan/zoom accidentales por minuto, recuperaciones, falsos bloqueos y fracción del tiempo bloqueada. Incluir el tiempo total y el tiempo habilitado en los denominadores para que pausar mucho no parezca una mejora de precisión. Separar `qualityMs`, inferencia y captura a resultado; ninguno sustituye por sí solo latencia cámara-a-pantalla.
+
+## Verificación de 0.1.4
+
+Las 15 pruebas de calidad/cámara se incluyen en la suite **94/94 aprobada**. El runtime Mac aprobó ocho checks de calidad y siete de preview: panel detenido/activo/pausado, compacto, dibujo fresco, limpieza y ausencia de casilla. También pasaron ocho de punteros y nueve de navegación exclusiva usando el motor real con entradas sintéticas. El ciclo de selección aprobó cuatro clics nativos tras al menos `1500 ms`, sin temprano/repetición y con anclaje/aro correctos.
+
+El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquetes **Mac y Windows 0.1.4 están verificados**: [reporte Mac](./verificacion-paquete-mac-0.1.4.json) y [reporte Windows](./verificacion-paquete-windows-0.1.4.json). La [CI Windows 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930) terminó con éxito: 94 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Los smoke usan entradas sintéticas; el ensayo USB cenital y Google con key real siguen pendientes.
+
+La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física.
+
+Los controles simulados no demuestran capacidades de una USB física; ese ensayo sigue pendiente, junto con falsos positivos y latencia física. Los reportes anteriores no certifican el nuevo preview ni los modos de 0.1.4.
 
 ## CLAHE y siguientes investigaciones
 

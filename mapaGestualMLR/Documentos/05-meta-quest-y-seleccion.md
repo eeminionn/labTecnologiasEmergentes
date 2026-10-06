@@ -3,23 +3,39 @@
 **Fecha de consulta:** 5 de octubre de 2026<br>
 **Última actualización de implementación:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.3<br>
-**Estado:** 86/86 pruebas y paquetes Mac/Windows aprobados; cámara física, driver real, Google con key y envoltorio portable pendientes. La sección histórica de comprobaciones pertenece a 0.1.2<br>
+**Versión vigente:** 0.1.4<br>
+**Estado:** 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes. Evidencia histórica de 0.1.2 y 0.1.3 conservada<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
 
-## Nota de versión vigente: 0.1.3
+## Nota de versión vigente: 0.1.4
 
-La selección conserva el contrato de **OK continuo durante 3000 ms**, objetivo anclado, aro proporcional, un clic automático al completar y rearme tras apertura; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El cuerpo de esta investigación y sus comprobaciones se conserva como historia de **0.1.2**. Sus 49/49 pruebas y paquetes no certifican la nueva versión.
+El usuario reduce el mantenimiento a **OK continuo durante 1500 ms (1,5 segundos)**. Se conservan objetivo anclado, aro proporcional, un clic automático al completar y rearme tras abrir `120 ms`; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El tiempo es una preferencia de este prototipo, no un valor recomendado por Meta. Las comprobaciones de 0.1.2 y 0.1.3 se conservan como historia y no certifican esta actualización.
 
-En 0.1.3 permanecen visibles las sombras frescas de ambas manos, incluso en reposo, durante clic y con dos OK. Azul indica apuntado/reposo; violeta, navegación adquirida o desplazamiento; ámbar, zoom dominante con histéresis; gris, acciones bloqueadas. El aro y ripple del clic individual siguen requiriendo exactamente una mano detectada. La regla histórica de ocultar toda sombra con dos manos ya no se aplica.
+Desde 0.1.3 permanecen visibles las sombras frescas de ambas manos. En 0.1.4 **dos puños cerrados sólo desplazan** por su punto medio y **dos OK sólo hacen zoom** por separación. Cambiar de postura exige adquirir el nuevo modo durante `180 ms`; una mezcla no navega y no se combinan componentes. Azul indica apuntado/reposo; violeta identifica dos puños adquiridos y ámbar dos OK adquiridos, incluso quietos; gris indica acciones bloqueadas. El aro y ripple del clic individual siguen requiriendo exactamente una mano detectada. La regla histórica de ocultar toda sombra con dos manos ya no se aplica.
 
 Todo el encuadre se corresponde con todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. La continuidad breve de postura conserva el destino de clic sin dejar un offset permanente al desplazarse. Los tres puntos ficticios miden 40 px nominales y 56 px cuando están activos, con área exterior fija de 56 × 56 px. Un clic nativo sobre el activo avanza **1→2→3**; tras el tercero se detiene el pulso y Ajustes permite reiniciar. Estos tamaños, colores y tiempos son decisiones de la app, no especificaciones Meta.
 
 El control de imágenes casi negras o blancas bloquea acciones y requiere **600 ms** continuos de recuperación, conservando punteros frescos en gris. No garantiza landmarks correctos ni una tasa baja de falsos positivos. Brillo, contraste, compensación de exposición y modos continuos dependen de las capacidades anunciadas por la cámara. Los detalles vigentes están en el [protocolo](./03-protocolo-validacion.md), la [investigación de cámara](./06-camara-y-contraste.md) y el [recorrido y límite SUBDERE DPA 2023](./07-limite-la-reina.md).
 
-La comprobación actual del commit `f5716f0b134ef15d97f2a727990122b3dbf18e54` aprobó **cuatro clics nativos**: punto 1, botón de popup, punto 2 y punto 3; al menos 3 segundos por mantenimiento, sin clic temprano ni repetición, con anclaje y aro correctos. Se completó el recorrido y aprobaron ambas sombras, colores, bordes y punteros grises sin acciones al bloquear la imagen. El [smoke de la `.app` Mac final](./verificacion-paquete-mac-0.1.3.json) también aprobó esos resultados; la apertura real, Ajustes y ayuda se revisaron en la app.
+El preview **Vista cenital** queda siempre visible arriba a la izquierda: unos 200 px de ancho, o 160 px en pantallas pequeñas, con imagen, skeleton fresco y conteo de manos. No incluye casilla ni botón para ocultar. Iniciar/Detener cámara sigue siendo explícito, sin permisos automáticos al abrir; detenida, muestra el mensaje y limpia los datos anteriores. Las métricas, exportación y anotación manual quedan en Ajustes → Diagnóstico de seguimiento.
+
+### Verificación vigente de 0.1.4
+
+La suite aprobó **94/94 pruebas**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia.
+
+Registró **cuatro clics nativos** (`trustedClicks=4`) en punto 1, botón de popup, punto 2 y punto 3, cada uno tras al menos `1500 ms`, sin clic temprano ni repetición. El objetivo y el aro permanecieron anclados; el recorrido terminó en orden y el botón no duplicó el avance.
+
+El runtime Mac aprobó **nueve checks de navegación** con el `GestureEngine` real y entradas sintéticas: dos puños sólo pan, dos OK sólo zoom, mezcla sin navegación y nueva adquisición al cambiar de postura. Aprobaron **siete checks de preview** —detenido, activo, pausado, tamaño compacto, dibujo, limpieza y ausencia de casilla—, además de ocho de punteros y ocho de calidad.
+
+El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquetes **Mac y Windows 0.1.4 están verificados**: [reporte Mac](./verificacion-paquete-mac-0.1.4.json) y [reporte Windows](./verificacion-paquete-windows-0.1.4.json). La [CI Windows 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930) terminó con éxito: 94 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Los smoke usan entradas sintéticas; el ensayo USB cenital y Google con key real siguen pendientes.
+
+La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física. Mantener la evaluación de accesibilidad y esfuerzo con la nueva demora; los resultados sintéticos no demuestran pocos falsos positivos ni confort cenital.
+
+### Evidencia histórica de 0.1.3
+
+La comprobación histórica del commit `f5716f0b134ef15d97f2a727990122b3dbf18e54` aprobó **cuatro clics nativos**: punto 1, botón de popup, punto 2 y punto 3; al menos 3 segundos por mantenimiento, sin clic temprano ni repetición, con anclaje y aro correctos. Se completó el recorrido y aprobaron ambas sombras, colores, bordes y punteros grises sin acciones al bloquear la imagen. El [smoke de la `.app` Mac final](./verificacion-paquete-mac-0.1.3.json) también aprobó esos resultados; la apertura real, Ajustes y ayuda se revisaron en la app.
 
 Los ocho checks de calidad incluyen controles ocultos cuando no hay capacidades y visibles/habilitados dentro de Ajustes al anunciar rangos válidos. Se comprueba la UI con capacidades simuladas, no el hardware USB. La [CI Windows 0.1.3](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37414071782) terminó correctamente para el commit final: `npm ci`, 86 pruebas, build, runtime, portable y smoke del contenido empaquetado aprobados. El [reporte Windows 0.1.3](./verificacion-paquete-windows-0.1.3.json) corresponde a `release/win-unpacked/Mapa Gestual MLR.exe`; no prueba el arranque de su envoltorio portable.
 
@@ -73,7 +89,7 @@ La interfaz mantiene sombra azul, aro de progreso y hover del objetivo. El diagn
 
 La guía de interacción indirecta también advierte contra esperas largas y mantener posturas incómodas. Implementar la preferencia de 3 segundos exige evaluar esfuerzo y tiempo de tarea, sin confundir la demora intencional con latencia del modelo. Una demora mayor por sí sola no demuestra menos falsos positivos.
 
-## Comprobaciones y alcance
+## Comprobaciones históricas de 0.1.2 y alcance
 
 | Caso | Resultado esperado |
 |:---|:---|

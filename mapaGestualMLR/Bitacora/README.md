@@ -4,7 +4,7 @@
 **Última actualización:** 6 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.3 · 86/86 pruebas y paquetes Mac/Windows aprobados; cámara física, driver real, Google con key y envoltorio portable pendientes
+**Versión vigente:** 0.1.4 · 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -74,16 +74,33 @@ Los ocho checks de calidad incluyen `conditionalCameraControls`: sin capacidades
 
 El fixture PNG positivo se compone sobre gris `#777` porque tiene transparencia, únicamente en el smoke; la cámara y la entrada real no se preprocesan así. La ejecución usa fixtures, gestos sintéticos y fondo de mapa de prueba: no valida precisión cenital física ni Google Maps con key real. Las comprobaciones de 0.1.2 se conservan como historia y no certifican las nuevas funciones. Sigue pendiente el ensayo con cámara USB, Google Maps propio y la medición de acciones accidentales y latencia física.
 
+## 6 de octubre - Modos exclusivos y preview en versión 0.1.4
+
+El usuario reduce la confirmación de OK de 3 segundos a **1,5 segundos** y separa las acciones de navegación. **Dos puños cerrados desplazan** el mapa según el movimiento de su punto medio; cambiar su separación no hace zoom. **Dos OK hacen zoom** por separación; trasladarlos juntos no desplaza el mapa. Una mezcla de posturas no navega. La nueva postura requiere `180 ms` de adquisición, también al cambiar de modo. El puño se reconoce por dedos flexionados y compactos y pulgar cercano a la palma; no basta con que la mano deje de parecer abierta u OK.
+
+El preview Vista cenital permanece arriba a la izquierda, con unos **200 px de ancho** —160 px en pantallas pequeñas—, imagen, skeleton fresco y conteo de manos. Se retiran la casilla para mostrarlo y el botón de cierre. La cámara mantiene Iniciar/Detener y no se activa ni solicita permisos al arrancar. Al detenerla, el panel muestra Cámara detenida y limpia video, skeleton y conteo antiguos. Las métricas, exportación y anotación manual de falsos clics pasan a Diagnóstico de seguimiento, desplegable dentro de Ajustes.
+
+Se conservan el objetivo anclado, aro azul/confirmación verde, un clic por mantenimiento y rearme de `120 ms`. Las sombras permanecen independientes y frescas: violeta para dos puños y ámbar para dos OK, una vez adquirida la postura, sin depender del movimiento dominante. El detector y SDK conservan su configuración.
+
+La suite de 0.1.4 aprobó **94/94 pruebas**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El runtime Mac aprobó **nueve checks de navegación** con el `GestureEngine` real y entradas sintéticas: dos puños sólo pan, dos OK sólo zoom, mezcla sin navegación y nueva adquisición al cambiar de postura. Aprobaron **siete checks de preview** —detenido, activo, pausado, tamaño compacto, dibujo, limpieza y ausencia de casilla—, además de ocho de punteros y ocho de calidad.
+
+Registró **cuatro clics nativos** (`trustedClicks=4`) en punto 1, botón de popup, punto 2 y punto 3, cada uno tras al menos `1500 ms`, sin clic temprano ni repetición. El objetivo y el aro permanecieron anclados; el recorrido terminó en orden y el botón no duplicó el avance.
+
+El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquetes **Mac y Windows 0.1.4 están verificados**: [reporte Mac](../Documentos/verificacion-paquete-mac-0.1.4.json) y [reporte Windows](../Documentos/verificacion-paquete-windows-0.1.4.json). La [CI Windows 37415440930](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37415440930) terminó con éxito: 94 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Los smoke usan entradas sintéticas; el ensayo USB cenital y Google con key real siguen pendientes.
+
+La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física. Las 86 pruebas y los paquetes de 0.1.3 permanecen identificados como antecedentes.
+
 ## Decisiones de interacción vigentes
 
-- Índice para apuntar, un OK para seleccionar y dos OK para desplazar y hacer zoom.
+- Índice para apuntar, un OK de una mano para seleccionar, dos puños para desplazar y dos OK exclusivamente para zoom.
 - La palma abierta ya no desplaza el mapa.
-- Un OK estable de una mano ejecuta el clic automáticamente al completar `3000 ms`, sin soltar.
+- Un OK estable de una mano ejecuta el clic automáticamente al completar `1500 ms`, sin soltar.
 - La posición seleccionada se conserva entre posturas y se ancla antes de cerrar el OK; el aro y clic comparten objetivo.
 - Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
 - Abrir antes del umbral cancela el mantenimiento. El aro azul confirma en verde cuando se ejecuta el clic.
-- La segunda mano y la navegación con dos OK cancelan la selección individual pendiente.
-- Una sombra por mano conserva feedback en reposo, clic y dos OK; el color distingue apuntado, desplazamiento, zoom dominante y acciones bloqueadas.
+- La segunda mano cancela la selección individual pendiente; dos puños o dos OK adquieren sólo su modo y una mezcla no navega.
+- Una sombra por mano conserva feedback en reposo, clic y navegación; violeta identifica dos puños y ámbar dos OK. No se ejecuta pan y zoom a la vez.
+- El preview pequeño está siempre visible; sólo muestra skeleton fresco con cámara activa y se limpia al detenerla. El diagnóstico detallado está en Ajustes.
 - Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.
 - Todo el encuadre de cámara corresponde a todo el mapa con espejo, orientación y límites `0..1`, sin calibración de esquinas.
 - El recorrido avanza por clic nativo sobre el punto activo; tras completar 1→2→3 se reinicia desde Ajustes.
@@ -93,7 +110,7 @@ Los tiempos elegidos son valores iniciales para probar. No se registran todavía
 
 ## Interfaz y mapas
 
-La interfaz usa controles sobrios, bordes finos y tipografía de sistema, tomando Primer de GitHub como referente. El mapa ocupa el espacio principal; ajustes y diagnóstico aparecen cuando se necesitan. Las sombras comunican posición y estado de control, mientras el aro indica el tiempo de confirmación.
+La interfaz usa controles sobrios, bordes finos y tipografía de sistema, tomando Primer de GitHub como referente. El mapa ocupa el espacio principal y el preview pequeño permanece visible arriba a la izquierda. Los ajustes y el diagnóstico detallado se despliegan cuando se necesitan. Las sombras comunican posición y estado de control, mientras el aro indica el tiempo de confirmación.
 
 Los materiales de Stanford orientan una evaluación de usabilidad, prototipado y accesibilidad. No se asume que exista una lista única de leyes que permita certificar automáticamente esta interfaz. La revisión con usuarios deberá comprobar comprensión, control, recuperación y confort.
 
