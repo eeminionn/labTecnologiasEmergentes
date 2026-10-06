@@ -185,7 +185,7 @@ async function verifyNativeSelection() {
   const buttonTarget=selectionTargets($('map').getBoundingClientRect()).find(t=>t.element===button);
   if(!buttonTarget)throw new Error('Smoke: botón de popup no disponible');
   const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks,false,true);
-  await waitFor(()=>button.textContent==='Punto seleccionado',2000,'selección de botón');
+  await waitFor(()=>button.textContent==='Punto seleccionado',2000,`selección de botón (accepted=${buttonHold.clickAccepted}, clicks=${buttonHold.clicks}, elapsed=${buttonHold.elapsedMs}, locked=${buttonHold.cursorLocked}, trusted=${trustedClicks})`);
   const advancesOnlyOnPoint=map.info().sequence.completedCount===1;
   const sequenceHolds=[];
   for(let index=1;index<3;index++){
@@ -623,9 +623,14 @@ async function verifyNavigationFeedback() {
   const rejectedSecondHandCannotPan=sameMapView(beforeGuard,map.info());
   map.home();cancelGesture();
   const width=$('map').getBoundingClientRect().width;
-  map.pan(.01*width,0);map.pan(.01*width,0);const expectedPan=map.info();map.home();
-  for(const x of [.3,.7])await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x,y:.5},pointers:[{id:1,x,y:.5}],hands:1,progress:1,events:[{type:'pan',dx:.01,dy:0}]},1);
-  const panIgnoresVisualShift=sameMapView(expectedPan,map.info());
+  // Verify the adapter's physical pixel deltas before Leaflet rounds them.
+  // Quantized geography after fitBounds varies with the desktop viewport.
+  const originalPan=map.pan,panCalls=[];
+  map.pan=(dx,dy)=>{panCalls.push({dx,dy});return originalPan(dx,dy);};
+  try {
+    for(const x of [.3,.7])await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x,y:.5},pointers:[{id:1,x,y:.5}],hands:1,progress:1,events:[{type:'pan',dx:.01,dy:0}]},1);
+  } finally {map.pan=originalPan;}
+  const panIgnoresVisualShift=panCalls.length===2 && panCalls.every(p=>Math.abs(p.dx-.01*width)<1e-6 && Math.abs(p.dy)<1e-6);
   map.home();cancelGesture();
   return {singlePanWorks,singlePanWaits,candidateDoesNotSelect,singlePanColor,singlePanNoSelection,singlePanNoZoomOrClick,oneToTwoReacquires,twoToOneReacquires,openingStopsSinglePan,panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedFistPan,freeHandStaysBlue,freeHandMovementIgnored,mixedPanFollowsFist,visibleDuringNavigation,crossModeEventsIgnored,rejectedSecondHandCannotPan,panIgnoresVisualShift};
 }
