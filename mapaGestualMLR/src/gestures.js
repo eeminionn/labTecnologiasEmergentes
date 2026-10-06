@@ -297,6 +297,7 @@ export class GestureEngine {
     this.multiHandLock = false;
     this.clickBlocked = false;
     this.hasObservedHand = false;
+    this.selectionResetRequested = false;
     this.cancelInteraction();
   }
 
@@ -310,8 +311,13 @@ export class GestureEngine {
     this.navigation = null;
   }
 
-  /** Cancel an invalidated UI target; held OK cannot restart until released. */
-  cancelClick() {
+  /** Armed clicks require release; unarmed assistance can be discarded safely. */
+  cancelClick(requireRelease = false) {
+    if (!requireRelease && !this.pendingClick && !this.confirmedClick
+      && (this.preparingClick || this.tracks.some(track => track.clickIntent))) {
+      this.discardClickAssistance();
+      return;
+    }
     this.pendingClick = null;
     this.confirmedClick = null;
     this.preparingClick = null;
@@ -320,14 +326,39 @@ export class GestureEngine {
     this.rearmSince = null;
   }
 
+  discardClickAssistance() {
+    this.preparingClick = null;
+    this.selectionResetRequested = true;
+    for (const track of this.tracks) {
+      track.clickAim = null;
+      track.clickIntent = null;
+      track.lastSingleCursor = null;
+      // An abandoned snapshot cannot survive through the previous visible
+      // cursor/history and become the anchor of the next valid OK.
+      const kind = track.shape.fist ? 'knuckles' : 'pointer';
+      track.filters[kind] = new PointFilter(this.options);
+      const source = track.filters[kind].update(track.shape[kind], this.lastTimestamp);
+      track.filtered[kind] = source;
+      track.visual = { kind, source, position: { x: clamp(source.x, 0, 1), y: clamp(source.y, 0, 1) },
+        transition: null, locked: false, rawSource: copy(track.shape[kind]),
+        center: copy(track.shape.center), time: this.lastTimestamp };
+    }
+  }
+
   result(mode = 'idle', cursor = null, progress = 0, events = [], hands = this.tracks.length) {
     if (this.tracks.length === 1 && cursor) {
       this.tracks[0].lastSingleCursor = { position: copy(cursor), time: this.lastTimestamp };
     }
     const pointers = this.tracks.map(track => ({ id: track.trackId,
       ...(this.tracks.length === 1 && cursor ? cursor : track.visual.position) }));
-    return { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
-      progress: clamp(progress, 0, 1), events, hands };
+    const result = { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
+      progress: clamp(progress, 0, 1), events, hands,
+      resetSelection: this.selectionResetRequested,
+      selectionBlockedReason: this.tracks.some(track => !track.shape.actionGeometryValid) ? 'invalid-geometry'
+        : this.tracks.length === 2 ? 'second-hand'
+          : this.clickBlocked || this.multiHandLock ? 'release-required' : null };
+    this.selectionResetRequested = false;
+    return result;
   }
 
   matchHands(hands, timestampMs) {
@@ -561,36 +592,33 @@ export class GestureEngine {
   updateSingleHand(timestampMs) {
     const track = this.tracks[0];
     const hand = track.shape;
-    const cursor = copy(track.visual.position);
+    let cursor = copy(track.visual.position);
     if (!hand.actionGeometryValid) {
-      this.cancelClick();
+      this.cancelClick(true);
       return this.result(hand.point ? 'point' : 'idle', cursor);
     }
     const released = hand.pinchRatio >= this.options.pinchExit;
-    const intent = track.clickIntent;
-    if (intent) {
-      const reversed = hand.pinchRatio > intent.minimumRatio
+    let intent = track.clickIntent;
+    let preparation = this.preparingClick;
+    const assistance = preparation || intent;
+    let assistedAnchor = null;
+    if (assistance) {
+      const expired = timestampMs - assistance.since >= this.options.clickPrepareTimeoutMs;
+      const movement = this.palmDrift(hand, assistance.rawPalm);
+      const reversed = hand.pinchRatio > assistance.minimumRatio
         + this.options.pinchExit - this.options.pinchEnter;
-      if (timestampMs - intent.since >= this.options.clickPrepareTimeoutMs
-        || this.palmDrift(hand, intent.rawPalm) > this.options.clickPalmStability
-        || hand.fist || reversed) {
-        this.cancelClick();
-        return this.result('idle', cursor);
+      if (hand.ok && !expired && movement <= this.options.maxClickDrift) {
+        // Assistance is optional. A valid OK has priority over the stricter
+        // preparation stability/reversal checks and starts a fresh full dwell.
+        assistedAnchor = copy(assistance.anchor);
+      } else if (expired || movement > this.options.clickPalmStability || hand.fist || reversed) {
+        this.discardClickAssistance();
+        cursor = copy(track.visual.position);
+        intent = preparation = null;
+      } else {
+        assistance.minimumRatio = Math.min(assistance.minimumRatio, hand.pinchRatio);
+        if (preparation) return this.result('click-preparing', preparation.anchor);
       }
-      intent.minimumRatio = Math.min(intent.minimumRatio, hand.pinchRatio);
-    }
-    const preparation = this.preparingClick;
-    if (preparation) {
-      const reversed = hand.pinchRatio > preparation.minimumRatio
-        + this.options.pinchExit - this.options.pinchEnter;
-      if (timestampMs - preparation.since >= this.options.clickPrepareTimeoutMs
-        || this.palmDrift(hand, preparation.rawPalm) > this.options.clickPalmStability
-        || hand.fist || reversed) {
-        this.cancelClick();
-        return this.result('idle', cursor);
-      }
-      preparation.minimumRatio = Math.min(preparation.minimumRatio, hand.pinchRatio);
-      if (!hand.ok) return this.result('click-preparing', preparation.anchor);
     }
     const hold = this.pendingClick || this.confirmedClick;
     if (hold) {
@@ -646,7 +674,7 @@ export class GestureEngine {
           initialPinch: copy(hand.pinch),
           minimumRatio: hand.pinchRatio,
           rawPalm: hand.palmAnchors.map(copy),
-          anchor: copy(preparation ? preparation.anchor : intent ? intent.anchor : recent ? previous.position : cursor),
+          anchor: copy(assistedAnchor || (recent ? previous.position : cursor)),
           trackId: track.trackId,
         };
         this.preparingClick = null;
@@ -713,7 +741,11 @@ export class GestureEngine {
   }
 
   palmDrift(hand, baseline) {
-    return Math.max(...hand.palmAnchors.map((point, index) =>
-      metricDistance(point, baseline[index], this.options.aspectRatio)));
+    const distances = hand.palmAnchors.map((point, index) =>
+      metricDistance(point, baseline[index], this.options.aspectRatio)).sort((a, b) => a - b);
+    // A single estimated MCP can deform while the hand closes. The median and
+    // whole-palm centroid remain sensitive to accumulated hand translation,
+    // with the original fixed baseline rather than a frame-to-frame reset.
+    return Math.max(distances[2], metricDistance(mean(...hand.palmAnchors), mean(...baseline), this.options.aspectRatio));
   }
 }

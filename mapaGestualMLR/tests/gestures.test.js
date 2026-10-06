@@ -534,7 +534,7 @@ test('moving or flexing only the pointing index without thumb approach never pre
   }
 });
 
-test('a private curling intent expires or cancels on palm movement without freezing or clicking', () => {
+test('discarding a private curling intent does not freeze, click or block a later valid OK', () => {
   for (const moved of [false, true]) {
     const engine = new GestureEngine();
     const from = hand('point'), neutral = hand('neutral');
@@ -544,14 +544,21 @@ test('a private curling intent expires or cancels on palm movement without freez
     assert.ok(engine.tracks[0].clickIntent);
     assert.notEqual(latent.mode, 'click-preparing');
     assert.ok(latent.cursor.y > from.landmarks[8].y);
-    if (moved) assert.equal(engine.update([translatedImage(partial, 0.03)], 260).mode, 'idle');
+    let discarded;
+    if (moved) discarded = engine.update([translatedImage(partial, 0.03)], 260);
     else {
       frames(engine, [partial], 260, 1420);
-      assert.equal(engine.update([partial], 1440).mode, 'idle');
+      discarded = engine.update([partial], 1440);
     }
+    assert.notEqual(discarded.mode, 'click-preparing');
+    assert.equal(discarded.resetSelection, true);
+    assert.equal(discarded.selectionBlockedReason, null);
+    assert.equal(discarded.events.length, 0);
     assert.equal(engine.tracks[0].clickIntent, null);
     const held = frames(engine, [hand('ok')], moved ? 280 : 1460, moved ? 2200 : 3380);
-    assert.equal(clicks(held).length, 0);
+    assert.equal(held[0].mode, 'click-pending');
+    assert.equal(held[0].progress, 0, 'private intent contributes no dwell time');
+    assert.equal(clicks(held).length, 1);
   }
 });
 
@@ -566,7 +573,9 @@ test('preparation expires without acting and a fresh aim cannot inherit its old 
   assert.ok(expired.every(result => result.mode === 'click-preparing'));
   expired.push(engine.update([partial], 1440));
   assert.equal(events(expired).length, 0);
-  assert.equal(expired.at(-1).mode, 'idle', 'expires exactly 1200 ms after preparing begins');
+  assert.notEqual(expired.at(-1).mode, 'click-preparing', 'expires exactly 1200 ms after preparing begins');
+  assert.equal(expired.at(-1).resetSelection, true);
+  assert.equal(expired.at(-1).selectionBlockedReason, null);
   frames(engine, [partial], 1460, 1600);
   const newFrom = hand('point', { x: 0.12 });
   const newTo = hand('ok', { x: 0.12 });
@@ -584,7 +593,7 @@ test('preparation expires without acting and a fresh aim cannot inherit its old 
   assert.ok(clicks(held)[0].x > initial.cursor.x + 0.10);
 });
 
-test('opening, palm motion, lost tracking, a second hand or invalid geometry cancel preparation', () => {
+test('assistance aborts are optional; tracking, hand-count and geometry interruptions still require release', () => {
   for (const reason of ['open', 'palm', 'loss', 'second', 'geometry', 'identity', 'gap']) {
     const engine = new GestureEngine();
     const from = hand('point'), to = hand('ok');
@@ -600,8 +609,155 @@ test('opening, palm motion, lost tracking, a second hand or invalid geometry can
     assert.notEqual(cancelled.mode, 'click-preparing', reason);
     assert.equal(cancelled.events.length, 0, reason);
     const held = frames(engine, [reason === 'identity' ? { ...to, id: 'replacement' } : to], time + 20, time + 1900);
-    assert.equal(clicks(held).length, 0, reason);
+    const soft = reason === 'open' || reason === 'palm';
+    assert.equal(clicks(held).length, soft ? 1 : 0, reason);
+    assert.equal(held[0].mode, soft ? 'click-pending' : 'idle', reason);
+    assert.equal(held[0].progress, 0, reason);
   }
+});
+
+test('one estimated MCP can deform during closure without vetoing a valid OK or moving its target', () => {
+  for (const aspectRatio of [1, 16 / 9]) for (const world of [false, true]) {
+    for (const deformation of [0.02, 0.03, 0.04]) {
+      const engine = new GestureEngine({ aspectRatio });
+      const from = cameraView('open', { aspectRatio, world });
+      const target = frames(engine, [from], 0, 200).at(-1).cursor;
+      const partial = cameraView(blendHand(hand('open'), hand('ok'), 0.3), { aspectRatio, world });
+      assert.equal(engine.update([partial], 220).mode, 'click-preparing');
+      const closed = cameraView('ok', { aspectRatio, world });
+      closed.landmarks[5].x += deformation;
+      assert.equal(classifyHand(closed, { aspectRatio }).ok, true);
+      assert.equal(classifyHand(closed, { aspectRatio }).actionGeometryValid, true);
+      const pending = engine.update([closed], 240);
+      assert.equal(pending.mode, 'click-pending', `aspect=${aspectRatio}, world=${world}, MCP=${deformation}`);
+      assert.deepEqual(pending.cursor, target);
+      assert.equal(pending.progress, 0);
+      assert.equal(pending.resetSelection, false);
+      assert.equal(pending.selectionBlockedReason, null);
+      const held = frames(engine, [closed], 260, 1720);
+      assert.equal(clicks(held).length, 0);
+      assert.deepEqual(engine.update([closed], 1740).events, [{ type: 'click', ...target }]);
+      assert.equal(clicks(frames(engine, [closed], 1760, 2240)).length, 0);
+    }
+  }
+});
+
+test('a valid OK has priority over optional preparation stability and starts a complete new dwell', () => {
+  const engine = new GestureEngine();
+  const target = frames(engine, [hand('point')], 0, 200).at(-1).cursor;
+  assert.equal(engine.update([blendHand(hand('point'), hand('ok'), 0.2)], 240).mode, 'click-preparing');
+  // This exceeds the stricter preparation threshold, but remains inside the
+  // established held-click drift bound. It is not a tracking discontinuity.
+  const closed = hand('ok', { x: 0.03 });
+  const pending = engine.update([closed], 260);
+  assert.equal(pending.mode, 'click-pending');
+  assert.equal(pending.progress, 0);
+  assert.equal(pending.resetSelection, false);
+  assert.deepEqual(pending.cursor, target);
+  assert.equal(clicks(frames(engine, [closed], 280, 1740)).length, 0);
+  assert.deepEqual(engine.update([closed], 1760).events, [{ type: 'click', ...target }]);
+});
+
+test('preparation expiring on the first valid OK frame starts fresh without an obsolete target or early click', () => {
+  const engine = new GestureEngine();
+  const from = hand('point'), to = hand('ok');
+  const oldTarget = frames(engine, [from], 0, 200).at(-1).cursor;
+  const partial = blendHand(from, to, 0.2);
+  assert.equal(engine.update([partial], 240).mode, 'click-preparing');
+  frames(engine, [partial], 260, 1420);
+  const pending = engine.update([to], 1440);
+  assert.equal(pending.mode, 'click-pending');
+  assert.equal(pending.progress, 0);
+  assert.equal(pending.resetSelection, true);
+  assert.equal(pending.selectionBlockedReason, null);
+  assert.deepEqual(pending.cursor, classifyHand(to).pointer);
+  assert.ok(Math.hypot(pending.cursor.x - oldTarget.x, pending.cursor.y - oldTarget.y) > 0.10);
+  assert.equal(clicks(frames(engine, [to], 1460, 2920)).length, 0);
+  assert.equal(engine.update([to], 2939).events.length, 0);
+  assert.deepEqual(engine.update([to], 2940).events, [{ type: 'click', ...pending.cursor }]);
+});
+
+test('discarding a stale public snapshot resets its locked cursor before a subsequent OK', () => {
+  for (const translated of [false, true]) {
+    const engine = new GestureEngine();
+    const from = hand('point'), to = hand('ok');
+    const oldTarget = frames(engine, [from], 0, 200).at(-1).cursor;
+    const partial = blendHand(from, to, 0.2);
+    assert.equal(engine.update([partial], 240).mode, 'click-preparing');
+    let discarded, nextTime;
+    if (translated) {
+      discarded = engine.update([translatedImage(partial, 0.06)], 260);
+      nextTime = 280;
+    } else {
+      frames(engine, [partial], 260, 1420);
+      discarded = engine.update([partial], 1440);
+      nextTime = 1460;
+    }
+    assert.equal(discarded.resetSelection, true);
+    assert.equal(discarded.selectionBlockedReason, null);
+    const latest = translated ? translatedImage(partial, 0.06) : partial;
+    assert.deepEqual(discarded.cursor, classifyHand(latest).pointer);
+    assert.ok(Math.hypot(discarded.cursor.x - oldTarget.x, discarded.cursor.y - oldTarget.y) > 0.025);
+    const closed = translated ? translatedImage(to, 0.06) : to;
+    const pending = engine.update([closed], nextTime);
+    assert.equal(pending.mode, 'click-pending');
+    assert.equal(pending.progress, 0);
+    assert.deepEqual(pending.cursor, discarded.cursor, 'only the current, freshly displayed aim is inherited');
+    assert.equal(clicks(frames(engine, [closed], nextTime + 20, nextTime + 1480)).length, 0);
+    assert.deepEqual(engine.update([closed], nextTime + 1500).events, [{ type: 'click', ...pending.cursor }]);
+  }
+});
+
+test('invalidating an unarmed UI preparation is soft, while explicit safety cancellation still requires release', () => {
+  for (const requireRelease of [false, true]) {
+    const engine = new GestureEngine();
+    const oldTarget = frames(engine, [hand('point')], 0, 200).at(-1).cursor;
+    const partial = blendHand(hand('point'), hand('ok'), 0.2);
+    assert.equal(engine.update([partial], 240).mode, 'click-preparing');
+    engine.cancelClick(requireRelease);
+    const pending = engine.update([hand('ok')], 260);
+    assert.equal(pending.mode, requireRelease ? 'idle' : 'click-pending');
+    assert.equal(pending.selectionBlockedReason, requireRelease ? 'release-required' : null);
+    if (!requireRelease) {
+      assert.equal(pending.resetSelection, true, 'external assistance cancellation is signalled on the next result');
+      assert.ok(pending.cursor.y > partial.landmarks[8].y
+        && pending.cursor.y <= hand('ok').landmarks[8].y, 'filtered current tip replaces the locked UI anchor');
+      assert.ok(Math.hypot(pending.cursor.x - oldTarget.x, pending.cursor.y - oldTarget.y) > 0.05);
+      assert.equal(pending.progress, 0);
+    }
+    const held = frames(engine, [hand('ok')], 280, 1760);
+    assert.equal(clicks(held).length, requireRelease ? 0 : 1);
+  }
+});
+
+test('isolated MCP jitter during an active OK preserves its fixed target and full dwell', () => {
+  const engine = pointedEngine({ aspectRatio: 16 / 9 });
+  const target = engine.update([hand('ok')], 160).cursor;
+  const results = [];
+  for (let elapsed = 20; elapsed <= 1500; elapsed += 20) {
+    const closed = hand('ok');
+    closed.landmarks[5].x += elapsed % 60 === 0 ? 0.04 : 0.02;
+    results.push(engine.update([closed], 160 + elapsed));
+  }
+  assert.ok(results.slice(0, -1).every(result => result.mode === 'click-pending'));
+  assert.deepEqual(clicks(results), [{ type: 'click', ...target }]);
+});
+
+test('selection diagnostics distinguish second-hand, release-required and invalid geometry without weakening rearme', () => {
+  const engine = navigationEngine();
+  assert.equal(engine.update(okPair(), 220).selectionBlockedReason, 'second-hand');
+  const alone = frames(engine, [okPair()[0]], 240, 500);
+  assert.ok(alone.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
+  assert.equal(clicks(alone).length, 0);
+  frames(engine, [hand('open', { x: -0.15 })], 520, 660);
+  const pending = engine.update([hand('ok', { x: -0.15 })], 680);
+  assert.equal(pending.mode, 'click-pending');
+  assert.equal(pending.selectionBlockedReason, null);
+  const invalid = engine.update([{ ...hand('ok', { x: -0.15 }), worldLandmarks: [] }], 700);
+  assert.equal(invalid.selectionBlockedReason, 'invalid-geometry');
+  const returning = frames(engine, [hand('ok', { x: -0.15 })], 720, 2500);
+  assert.ok(returning.every(result => result.selectionBlockedReason === 'release-required'));
+  assert.equal(clicks(returning).length, 0);
 });
 
 test('a quiet-palm OK can finish its bounded finger closure while retaining the target and dwell', () => {
