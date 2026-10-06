@@ -46,6 +46,35 @@ function hand(pose = 'neutral', { id = 'a', x = 0, y = 0, angle = 0, scale = 1, 
   };
 }
 
+// A rigid XYZ rotation changes the camera projection without stretching bones.
+// Normalized z has wrist origin/image-width units; world XYZ is in metres with
+// its own hand-centred origin. These remain synthetic geometry, not recordings.
+function cameraView(value, { pitch = 0, yaw = 0, roll = 0, aspectRatio = 1,
+  world = true, metricScale = 0.45 } = {}) {
+  const source = typeof value === 'string' ? hand(value) : value;
+  const rotated = source.landmarks.map(point => {
+    const x = point.x - 0.5, y = point.y - 0.6, z = point.z ?? 0;
+    const py = y * Math.cos(pitch) - z * Math.sin(pitch);
+    const pz = y * Math.sin(pitch) + z * Math.cos(pitch);
+    const yx = x * Math.cos(yaw) + pz * Math.sin(yaw);
+    const yz = -x * Math.sin(yaw) + pz * Math.cos(yaw);
+    return { x: yx * Math.cos(roll) - py * Math.sin(roll),
+      y: yx * Math.sin(roll) + py * Math.cos(roll), z: yz };
+  });
+  const centroid = rotated.reduce((sum, p) => ({ x: sum.x + p.x / 21,
+    y: sum.y + p.y / 21, z: sum.z + p.z / 21 }), { x: 0, y: 0, z: 0 });
+  return {
+    ...(source.id === undefined ? {} : { id: source.id }),
+    landmarks: rotated.map(p => ({ x: 0.5 + p.x / aspectRatio, y: 0.55 + p.y,
+      z: (p.z - rotated[0].z) / aspectRatio })),
+    ...(world ? { worldLandmarks: rotated.map(p => ({ x: (p.x - centroid.x) * metricScale,
+      y: (p.y - centroid.y) * metricScale, z: (p.z - centroid.z) * metricScale })) } : {}),
+  };
+}
+
+const translatedImage = (value, x, y = 0) => ({ ...value,
+  landmarks: value.landmarks.map(point => ({ ...point, x: point.x + x, y: point.y + y })) });
+
 function frames(engine, hands, from, until, step = 20) {
   const results = [];
   for (let time = from; time <= until; time += step) results.push(engine.update(hands, time));
@@ -103,7 +132,7 @@ test('camera aspect correction preserves geometry and leaves output coordinates 
   assert.throws(() => new GestureEngine({ aspectRatio: 0 }), RangeError);
 });
 
-test('fist requires four positively folded fingers and a compact flexed thumb', () => {
+test('fist requires four positively folded fingers and a compact adducted thumb', () => {
   const positive = classifyHand(hand('fist'));
   assert.equal(positive.fist, true);
   assert.deepEqual(positive.folded, [true, true, true, true]);
@@ -130,6 +159,184 @@ test('a straight thumb IP can still form a fist with compact positive MCP flexio
   value.landmarks[3] = { x: 0.485, y: 0.62, z: 0 };
   value.landmarks[4] = { x: 0.53, y: 0.60, z: 0 };
   assert.equal(classifyHand(value).fist, true);
+});
+
+test('fist accepts rigid 3D front, back and side rotations in world or normalized XYZ', () => {
+  for (const aspectRatio of [1, 4 / 3, 16 / 9, 9 / 16]) {
+    for (const world of [true, false]) {
+      for (const [pitch, yaw, roll] of [[0, 0, 0], [Math.PI / 2, 0, 0], [-Math.PI / 2, 0, 0],
+        [0, Math.PI / 2, 0], [0, -Math.PI / 2, 0], [1.2, 0.7, 1.5]]) {
+        const value = cameraView('fist', { pitch, yaw, roll, world, aspectRatio });
+        const shape = classifyHand(value, { aspectRatio });
+        assert.equal(shape.fist, true, `${pitch}, ${yaw}, ${roll}, aspect=${aspectRatio}, world=${world}`);
+        assert.equal(shape.fistGeometrySource, world ? 'world' : 'normalized-3d');
+        assert.equal(shape.actionGeometryValid, true);
+        assert.deepEqual(shape.pointer, { x: value.landmarks[8].x, y: value.landmarks[8].y });
+      }
+    }
+  }
+});
+
+test('foreshortened XY bones keep their 3D length; world evidence can resolve hidden fingers', () => {
+  const value = cameraView('fist', { pitch: Math.PI / 2 });
+  const imageShape = classifyHand({ landmarks: value.landmarks });
+  const projectedBone = Math.hypot(value.landmarks[6].x - value.landmarks[5].x,
+    value.landmarks[6].y - value.landmarks[5].y);
+  assert.ok(projectedBone / imageShape.palmSize < 0.04, 'old projected minimum rejected this pose');
+  assert.equal(imageShape.fist, true);
+  // Explicit 3D inference remains available even when image joints overlap.
+  for (const mcp of [5, 9, 13, 17]) {
+    for (let index = mcp; index <= mcp + 3; index++) {
+      value.landmarks[index] = { ...value.landmarks[mcp], z: 0 };
+    }
+  }
+  value.landmarks[0].z = 0;
+  const world = classifyHand(value);
+  assert.equal(world.fist, true);
+  assert.equal(world.fistGeometrySource, 'world');
+  const unknown = classifyHand({ landmarks: value.landmarks });
+  assert.equal(unknown.fist, false, 'collapsed XY without depth is not positive closure evidence');
+});
+
+test('world posture stays invariant to its metric scale and never uses camera aspect twice', () => {
+  for (const aspectRatio of [4 / 3, 16 / 9]) {
+    for (const metricScale of [0.25, 0.45, 0.70]) {
+      const value = cameraView('fist', { pitch: Math.PI / 2, aspectRatio, metricScale });
+      const shape = classifyHand(value, { aspectRatio });
+      assert.equal(shape.fist, true);
+      assert.equal(shape.fistGeometrySource, 'world');
+      assert.deepEqual(shape.center, classifyHand({ landmarks: value.landmarks }, { aspectRatio }).center);
+    }
+  }
+});
+
+test('a compact straight thumb does not need a compulsory IP or MCP bend', () => {
+  const value = hand('fist');
+  for (let index = 1; index <= 4; index++) value.landmarks[index] = { x: 0.41 + index * 0.03, y: 0.615, z: 0 };
+  for (const pitch of [0, Math.PI / 2, -Math.PI / 2]) {
+    for (const world of [false, true]) assert.equal(classifyHand(cameraView(value, { pitch, world })).fist, true);
+  }
+});
+
+test('DIP-straight claws are rejected while strongly retracted DIP-straight fists are allowed', () => {
+  const claw = hand('fist'), closed = hand('fist');
+  for (const mcp of [5, 9, 13, 17]) {
+    const base = claw.landmarks[mcp];
+    claw.landmarks[mcp + 1] = { x: base.x, y: base.y - 0.065, z: 0 };
+    claw.landmarks[mcp + 2] = { x: base.x, y: base.y - 0.065, z: -0.050 };
+    claw.landmarks[mcp + 3] = { x: base.x, y: base.y - 0.065, z: -0.075 };
+    closed.landmarks[mcp + 1] = { x: base.x, y: base.y - 0.065, z: 0 };
+    closed.landmarks[mcp + 2] = { x: base.x, y: base.y - 0.005, z: -0.010 };
+    closed.landmarks[mcp + 3] = { x: base.x, y: base.y + 0.025, z: -0.015 };
+  }
+  for (const pitch of [0, Math.PI / 2, -Math.PI / 2]) {
+    for (const world of [false, true]) {
+      const negative = cameraView(claw, { pitch, world });
+      assert.equal(classifyHand(negative).fist, false, `claw ${pitch}, world=${world}`);
+      const positive = cameraView(closed, { pitch, world });
+      assert.equal(classifyHand(positive).fist, true, `closed ${pitch}, world=${world}`);
+      const engine = new GestureEngine();
+      const pair = [translatedImage(negative, -0.15), { ...translatedImage(negative, 0.15), id: 'b' }];
+      const idle = frames(engine, pair, 0, 200);
+      idle.push(engine.update(pair.map(value => translatedImage(value, 0.04)), 220));
+      assert.equal(events(idle).length, 0);
+      assert.ok(idle.every(result => result.mode === 'idle' && result.pointers.length === 2));
+    }
+  }
+});
+
+test('open, pointing, OK, relaxed, thumbs-up, spread and partial poses are not 3D fists', () => {
+  const thumbUp = hand('fist');
+  thumbUp.landmarks[2] = { x: 0.42, y: 0.61, z: 0 };
+  thumbUp.landmarks[3] = { x: 0.42, y: 0.50, z: 0 };
+  thumbUp.landmarks[4] = { x: 0.42, y: 0.40, z: 0 };
+  const spread = hand('fist');
+  for (const [index, offset] of [[8, -0.12], [12, -0.04], [16, 0.04], [20, 0.12]]) spread.landmarks[index].x += offset;
+  const partial = hand('fist'), open = hand('open');
+  for (let index = 13; index <= 16; index++) partial.landmarks[index] = open.landmarks[index];
+  for (const value of ['open', 'point', 'ok', 'neutral', thumbUp, spread, partial]) {
+    for (const pitch of [0, Math.PI / 2, -Math.PI / 2]) {
+      for (const world of [true, false]) {
+        assert.equal(classifyHand(cameraView(value, { pitch, world })).fist, false);
+      }
+    }
+  }
+});
+
+test('absent world data falls back explicitly; malformed world data blocks actions but keeps pointers', () => {
+  const valid = cameraView('fist');
+  const absent = { ...valid }; delete absent.worldLandmarks;
+  assert.equal(classifyHand(absent).fistGeometrySource, 'normalized-3d');
+  const nonfinite = valid.worldLandmarks.map(p => ({ ...p })); nonfinite[8].z = NaN;
+  const missingZ = valid.worldLandmarks.map(({ x, y }) => ({ x, y }));
+  const collapsed = valid.worldLandmarks.map(() => ({ x: 0, y: 0, z: 0 }));
+  const brokenFinger = valid.worldLandmarks.map(p => ({ ...p })); brokenFinger[10] = { ...brokenFinger[9] };
+  for (const worldLandmarks of [null, [], valid.worldLandmarks.slice(1), nonfinite, missingZ, collapsed, brokenFinger]) {
+    const invalid = { ...valid, worldLandmarks };
+    const shape = classifyHand(invalid);
+    assert.equal(shape.fist, false);
+    assert.equal(shape.fistGeometrySource, 'invalid-world');
+    assert.equal(shape.actionGeometryValid, false);
+    const engine = new GestureEngine();
+    const results = frames(engine, [invalid, { ...translatedImage(valid, 0.20), id: 'b' }], 0, 600);
+    assert.equal(events(results).length, 0);
+    assert.ok(results.every(result => result.pointers.length === 2 && result.mode === 'idle'));
+  }
+});
+
+test('contradictory positive image and world poses cannot drive map actions', () => {
+  const closedWorld = cameraView('fist').worldLandmarks;
+  for (const pose of ['point', 'open', 'ok']) {
+    const value = { ...hand(pose), worldLandmarks: closedWorld };
+    const shape = classifyHand(value);
+    assert.equal(shape[pose], true, 'image classification is preserved');
+    assert.equal(shape.fist, false);
+    assert.equal(shape.actionGeometryValid, false);
+    const results = frames(new GestureEngine(), [value], 0, 2000);
+    assert.equal(events(results).length, 0);
+    assert.ok(results.every(result => result.cursor && result.pointers.length === 1));
+  }
+});
+
+test('invalid world during a click cancels it and cannot resume unchanged OK', () => {
+  const valid = cameraView('ok');
+  const engine = new GestureEngine();
+  frames(engine, [valid], 0, 1480);
+  assert.equal(engine.update([{ ...valid, worldLandmarks: [] }], 1499).events.length, 0);
+  assert.equal(clicks(frames(engine, [valid], 1500, 3500)).length, 0);
+  frames(engine, [cameraView('open')], 3520, 3660);
+  const retry = frames(engine, [valid], 3680, 5180);
+  assert.equal(clicks(retry).length, 1);
+});
+
+test('packaged 3D views pan only from camera XY, preserve halos and never zoom', () => {
+  const fixture = JSON.parse(readFileSync(new URL('./fixtures/selection-poses.json', import.meta.url)));
+  assert.deepEqual(fixture.handViews.map(value => value.name), ['cenital-dorso', 'frontal-nudillos', 'frontal-palma']);
+  for (const view of fixture.handViews) {
+    assert.equal(view.landmarks.length, 21);
+    assert.equal(view.worldLandmarks.length, 21);
+    assert.equal(view.landmarks[0].z, 0);
+    const shape = classifyHand(view);
+    assert.equal(shape.fist, true);
+    assert.equal(shape.fistGeometrySource, 'world');
+    const left = { ...translatedImage(view, -0.15), id: 'a' };
+    const right = { ...translatedImage(view, 0.15), id: 'b' };
+    const engine = new GestureEngine();
+    const acquisition = frames(engine, [left, right], 0, 180);
+    assert.equal(events(acquisition).length, 0);
+    assert.equal(acquisition.at(-1).navigationKind, 'pan');
+    // World coordinates stay local/unchanged while the hands translate.
+    const moved = engine.update([translatedImage(left, 0.04), translatedImage(right, 0.04)], 200);
+    assert.ok(moved.events.length > 0);
+    assert.ok(moved.events.every(event => event.type === 'pan' && event.dx > 0));
+    assert.equal(moved.pointers.length, 2);
+    const worldOrigin = [left, right].map((value, index) => ({ ...translatedImage(value, 0.04),
+      worldLandmarks: value.worldLandmarks.map(p => ({ x: p.x + index, y: p.y - index * 2, z: p.z + index * 3 })) }));
+    // Changing local world origin itself cannot become a camera pan/zoom.
+    const settled = frames(engine, worldOrigin, 220, 600);
+    assert.ok(events(settled).every(event => event.type === 'pan'));
+    assert.equal(events(frames(engine, worldOrigin, 620, 900)).length, 0);
+  }
 });
 
 test('claw, collapsed, implausibly short and clipped geometry cannot establish fists', () => {

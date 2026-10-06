@@ -12,4 +12,4 @@ const code = await new Promise(resolve => child.on('exit', resolve));
 if (code !== 0) process.exit(code || 1);
 const result = JSON.parse(await readFile(report, 'utf8'));
 if (!result.ok) throw new Error(JSON.stringify(result));
-console.log('Smoke: modelo WASM, dos sombras/colores, modos exclusivos, preview permanente, bordes, calidad y recorrido 1 → 2 → 3 con clic nativo de 1,5 s: OK');
+console.log('Smoke: modelo WASM y world 3D, puños cenital/frontal, dos sombras/colores, modos exclusivos, preview permanente, bordes, calidad y recorrido 1 → 2 → 3 con clic nativo de 1,5 s: OK');

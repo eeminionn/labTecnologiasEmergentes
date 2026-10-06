@@ -35,7 +35,9 @@ self.onmessage = async ({ data }) => {
         const qualityMs=performance.now()-qualityStarted;
         const started = performance.now();
         const result = model.detectForVideo(data.bitmap, data.timestamp);
-        self.postMessage({ type: 'result', landmarks: result.landmarks, quality, qualityMs, timestamp: data.timestamp, inferenceMs: performance.now() - started, capturedAt: data.capturedAt });
+        // Keep each world hand at the same index as its image landmarks.
+        // Posture uses estimated 3D geometry; map/skeleton positions stay 2D.
+        self.postMessage({ type: 'result', landmarks: result.landmarks, worldLandmarks: result.worldLandmarks, quality, qualityMs, timestamp: data.timestamp, inferenceMs: performance.now() - started, capturedAt: data.capturedAt });
       } finally { data.bitmap.close(); }
     }
   } catch (error) { self.postMessage({ type: 'error', message: error.message || String(error) }); }

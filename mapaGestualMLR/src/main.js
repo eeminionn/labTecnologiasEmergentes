@@ -77,7 +77,7 @@ function initializeWorker() {
       hasFreshCameraResult=true;
       counters.frames++; timings.push(performance.now()-data.capturedAt); inferenceTimes.push(data.inferenceMs);qualityTimes.push(data.qualityMs);
       if(timings.length>10000) { timings.shift(); inferenceTimes.shift();qualityTimes.shift(); }
-      latestHands=data.landmarks.map(landmarks=>({landmarks}));
+      latestHands=data.landmarks.map((landmarks,index)=>({landmarks,worldLandmarks:data.worldLandmarks?.[index]}));
       drawSkeleton(data.landmarks);
       $('hands-metric').textContent=`${data.landmarks.length} ${data.landmarks.length===1?'mano':'manos'}`;
       $('latency-metric').textContent=`${Math.round(data.inferenceMs)} ms inferencia`;
@@ -127,6 +127,7 @@ async function finishSmoke(data) {
   await waitFor(()=>document.hasFocus(),2000,'foco de ventana');
   const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
   const pointerFeedback=verifyPointerFeedback(),navigationFeedback=await verifyNavigationFeedback();
+  const fistViewsFeedback=await verifyFistViewsFeedback(data);
   const previewFeedback=verifyPreviewFeedback(data);
   renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers:[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}],hands:2,progress:1,events:[]},2);
   // Let Chromium paint both halos before capturing this transient test state.
@@ -139,8 +140,9 @@ async function finishSmoke(data) {
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
     && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint && nativeSelection.sequenceHolds.every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
+    && Object.values(fistViewsFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.4',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.5',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifyNativeSelection() {
   map.resetSequence();map.home();map.pan(180,90);cancelGesture();
@@ -388,6 +390,37 @@ function verifyPointerFeedback() {
   cancelGesture();return {oneHand,twoHands,panColor,zoomColor,blockedVisible,noHands,fullFrameEdges,clearedRipple};
 }
 function sameMapView(a,b) {return a.zoom===b.zoom && Math.abs(a.center.lat-b.center.lat)<1e-8 && Math.abs(a.center.lng-b.center.lng)<1e-8;}
+async function verifyFistViewsFeedback(data) {
+  const worldLandmarksLoaded=Array.isArray(data.worldLandmarks) && data.worldLandmarks.length===data.landmarks.length
+    && data.worldLandmarks.every(points=>points.length===21 && points.every(p=>['x','y','z'].every(key=>Number.isFinite(p[key]))));
+  const detected=classifyHand({landmarks:data.landmarks[0],worldLandmarks:data.worldLandmarks?.[0]},
+    {aspectRatio:smokeFixtureDimensions.width/smokeFixtureDimensions.height});
+  const worldGeometryUsed=detected?.fistGeometrySource==='world';
+  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  if(!Array.isArray(fixture.handViews) || fixture.handViews.length<3)throw new Error('Smoke: faltan vistas 3D del puño');
+  const feedback={worldLandmarksLoaded,worldGeometryUsed};
+  for(const view of fixture.handViews) {
+    const shape=classifyHand(view);
+    if(!shape?.fist || shape.fistGeometrySource!=='world')throw new Error(`Smoke: puño ${view.name} no reconocido`);
+    const hand=(id,x,y)=>({...view,id,landmarks:view.landmarks.map(p=>({...p,x:p.x+x-shape.center.x,y:p.y+y-shape.center.y}))});
+    // Each hand keeps its own local world origin. Only image-space positions
+    // change when moving across the map; world centers never drive pan.
+    const pair=dx=>[hand('left',.35+dx,.5),hand('right',.65+dx,.5)];
+    const synthetic=new GestureEngine();map.home();cancelGesture();const before=map.info();
+    for(const time of [0,100,180])await renderGesture(synthetic.update(pair(0),time),2);
+    const moved=synthetic.update(pair(.04),220);await renderGesture(moved,2);
+    feedback[view.name]=moved.navigationKind==='pan' && moved.events.some(e=>e.type==='pan')
+      && moved.events.every(e=>e.type!=='zoom') && map.info().zoom===before.zoom && map.info().center.lng<before.center.lng;
+  }
+  // Different orientations of the two fists must also acquire the same mode.
+  const views=fixture.handViews.slice(0,2),shapes=views.map(view=>classifyHand(view));
+  const pair=views.map((view,i)=>({...view,id:`mixed-view-${i}`,landmarks:view.landmarks.map(p=>({...p,
+    x:p.x+(i===0?.35:.65)-shapes[i].center.x,y:p.y+.5-shapes[i].center.y}))}));
+  const mixed=new GestureEngine();let acquired;
+  for(const time of [0,100,180])acquired=mixed.update(pair,time);
+  feedback.mixedOrientationsPan=acquired.mode==='navigate' && acquired.navigationKind==='pan';
+  map.home();cancelGesture();return feedback;
+}
 async function verifyNavigationFeedback() {
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
   const hand=(pose,id,x,y)=>{
@@ -490,7 +523,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.4',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.5',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

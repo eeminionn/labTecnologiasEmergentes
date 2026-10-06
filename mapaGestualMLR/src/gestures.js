@@ -33,13 +33,18 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   cursorAnchorMaxAgeMs: 350, // Preserve the last single-hand target across poses.
   cursorRecoveryStart: 0.015, // Ignore palm jitter when recovering absolute mapping.
   cursorRecoveryDistance: 0.12, // Movement consumes the temporary pose correction.
-  fistPipMaxAngle: 115, // Positive four-finger flexion, not merely !extended.
-  fistDipMaxAngle: 155, // Reject claws with straight distal joints.
-  fistTipBaseRatio: 0.65,
-  fistTipPalmRatio: 0.85,
-  fistThumbMaxAngle: 150, // Flexion at MCP or IP plus a compact thumb tip.
-  fistThumbPalmRatio: 0.75,
-  fistBoneMinRatio: 0.04, // Reject collapsed/missing finger segments.
+  fistPipMaxAngle: 150, // Positive proximal curvature; DIP need not be visible.
+  fistDipMaxAngle: 155, // Distal curvature OR strong compact/retracted closure.
+  fistChainMaxRatio: 0.72, // MCP-tip chord / three-bone chain, all in 3D.
+  fistTipBaseRatio: 0.90,
+  fistTipPalmRatio: 1.10,
+  fistTipRetractRatio: 1.10, // Tip-wrist / PIP-wrist, in the same 3D space.
+  fistTipPlaneRatio: 0.45, // Reject a claw whose tips remain off the palm.
+  fistStrongChainRatio: 0.45,
+  fistStrongRetractRatio: 0.90,
+  fistStrongTipPlaneRatio: 0.75, // Tolerate thickness with strong closure evidence.
+  fistThumbPalmRatio: 0.85, // Compact/adducted thumb, without a compulsory bend.
+  fistBoneMinRatio: 0.015, // Low 3D bound; projected XY bones may collapse.
   minCutoff: 1.4,
   beta: 6,
   derivativeCutoff: 1,
@@ -53,6 +58,16 @@ const mean = (...points) => ({
   y: points.reduce((s, p) => s + p.y, 0) / points.length,
 });
 const copy = p => ({ x: p.x, y: p.y });
+const distance3D = (a, b) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
+const subtract3D = (a, b) => [a.x - b.x, a.y - b.y, a.z - b.z];
+const dot3D = (a, b) => a.reduce((sum, value, index) => sum + value * b[index], 0);
+const cross3D = (a, b) => [a[1] * b[2] - a[2] * b[1],
+  a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+const mean3D = points => ({ x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+  y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+  z: points.reduce((sum, p) => sum + p.z, 0) / points.length });
+const finiteWorld = points => Array.isArray(points) && points.length === 21
+  && points.every(p => p && ['x', 'y', 'z'].every(axis => Number.isFinite(p[axis])));
 
 function jointAngle(a, b, c) {
   const u = [a.x - b.x, a.y - b.y, (a.z ?? 0) - (b.z ?? 0)];
@@ -72,15 +87,59 @@ function fingerExtended(points, mcp) {
     && distance(points[0], tip) > distance(points[0], pip) * 1.12;
 }
 
-function fingerFolded(points, mcp, center, palmSize, settings) {
+function fingerClosure3D(points, mcp, center, palmSize, normal, settings) {
   const [base, pip, dip, tip] = points.slice(mcp, mcp + 4);
-  const lengths = [distance(base, pip), distance(pip, dip), distance(dip, tip)];
-  return lengths.every(length => length >= palmSize * settings.fistBoneMinRatio
-      && length <= palmSize * 0.75)
-    && jointAngle(base, pip, dip) <= settings.fistPipMaxAngle
-    && jointAngle(pip, dip, tip) <= settings.fistDipMaxAngle
-    && distance(base, tip) <= palmSize * settings.fistTipBaseRatio
-    && distance(center, tip) <= palmSize * settings.fistTipPalmRatio;
+  const lengths = [distance3D(base, pip), distance3D(pip, dip), distance3D(dip, tip)];
+  const plausible = lengths.every(length => length >= palmSize * settings.fistBoneMinRatio
+    && length <= palmSize * 0.85);
+  const chain = lengths.reduce((sum, length) => sum + length, 0);
+  const chord = distance3D(base, tip) / chain;
+  const pipAngle = jointAngle(base, pip, dip);
+  const dipAngle = jointAngle(pip, dip, tip);
+  const retraction = distance3D(points[0], tip) / distance3D(points[0], pip);
+  const planeDistance = Math.abs(dot3D(subtract3D(tip, points[0]), normal)) / palmSize;
+  const stronglyClosed = chord <= settings.fistStrongChainRatio
+    && retraction <= settings.fistStrongRetractRatio;
+  const nearPlane = planeDistance <= (stronglyClosed
+    ? settings.fistStrongTipPlaneRatio : settings.fistTipPlaneRatio);
+  // Positive 3D extension vetoes a fist even if image projection is tiny.
+  const extended = plausible && pipAngle >= 155 && dipAngle >= 145 && chord >= 0.90
+    && distance3D(points[0], tip) > distance3D(points[0], pip) * 1.12;
+  const folded = plausible && Number.isFinite(chord) && Number.isFinite(retraction)
+    && pipAngle <= settings.fistPipMaxAngle && chord <= settings.fistChainMaxRatio
+    && (dipAngle <= settings.fistDipMaxAngle || stronglyClosed)
+    && retraction <= settings.fistTipRetractRatio
+    && distance3D(base, tip) <= palmSize * settings.fistTipBaseRatio
+    && distance3D(center, tip) <= palmSize * settings.fistTipPalmRatio && nearPlane;
+  return { plausible, extended, folded };
+}
+
+function fistGeometry(hand, normalized, settings) {
+  const supplied = hand.worldLandmarks !== undefined;
+  const source = supplied ? 'world' : 'normalized-3d';
+  // World origin is local to each hand and its units are already metric. It
+  // must never be aspect-corrected, translated into cursor space, or used to
+  // measure the distance between two hands.
+  if (supplied && !finiteWorld(hand.worldLandmarks)) return { source: 'invalid-world', valid: false };
+  const points = supplied ? hand.worldLandmarks : normalized;
+  const palmSize = Math.max(distance3D(points[0], points[9]), distance3D(points[5], points[17]));
+  const normal = cross3D(subtract3D(points[5], points[0]), subtract3D(points[17], points[0]));
+  const normalLength = Math.hypot(...normal);
+  if (!Number.isFinite(palmSize) || palmSize < 1e-6 || normalLength < palmSize * palmSize * 0.01) {
+    return { source: `invalid-${source}`, valid: false };
+  }
+  const unitNormal = normal.map(value => value / normalLength);
+  const center = mean3D([0, 5, 9, 13, 17].map(index => points[index]));
+  const fingers = [5, 9, 13, 17].map(mcp => fingerClosure3D(points, mcp, center, palmSize, unitNormal, settings));
+  const thumbLengths = [distance3D(points[1], points[2]),
+    distance3D(points[2], points[3]), distance3D(points[3], points[4])];
+  const thumbPlausible = thumbLengths.every(length => length >= palmSize * settings.fistBoneMinRatio
+    && length <= palmSize * 0.85);
+  const plausible = fingers.every(finger => finger.plausible) && thumbPlausible;
+  if (supplied && !plausible) return { source: 'invalid-world', valid: false };
+  const thumbCompact = thumbPlausible && distance3D(points[4], center) <= palmSize * settings.fistThumbPalmRatio;
+  return { source, valid: true, folded: fingers.map(finger => finger.folded),
+    fist: fingers.every(finger => finger.folded && !finger.extended) && thumbCompact };
 }
 
 /** Rotation-invariant geometry; no image-up or left/right hand assumption. */
@@ -100,18 +159,13 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   if (palmSize < 0.025 || palmSize > 0.65 * Math.max(1, settings.aspectRatio)) return null;
   const extended = [5, 9, 13, 17].map(mcp => fingerExtended(metricPoints, mcp));
   const center = mean(points[0], points[5], points[9], points[13], points[17]);
-  const metricCenter = mean(metricPoints[0], metricPoints[5], metricPoints[9], metricPoints[13], metricPoints[17]);
   const pinchRatio = distance(metricPoints[4], metricPoints[8]) / palmSize;
   const pinched = pinchRatio <= (wasPinched ? settings.pinchExit : settings.pinchEnter);
   const otherExtended = extended.slice(1).filter(Boolean).length;
-  const folded = [5, 9, 13, 17].map(mcp => fingerFolded(metricPoints, mcp, metricCenter, palmSize, settings));
-  const thumbLengths = [distance(metricPoints[1], metricPoints[2]),
-    distance(metricPoints[2], metricPoints[3]), distance(metricPoints[3], metricPoints[4])];
-  const thumbCompact = thumbLengths.every(length => length >= palmSize * settings.fistBoneMinRatio
-      && length <= palmSize * 0.75)
-    && distance(metricPoints[4], metricCenter) <= palmSize * settings.fistThumbPalmRatio
-    && Math.min(jointAngle(metricPoints[1], metricPoints[2], metricPoints[3]),
-      jointAngle(metricPoints[2], metricPoints[3], metricPoints[4])) <= settings.fistThumbMaxAngle;
+  const geometry = fistGeometry(hand, metricPoints, settings);
+  const ok = pinched && otherExtended >= 2;
+  const point = extended[0] && otherExtended === 0 && !pinched;
+  const open = extended.every(Boolean) && !pinched;
   // A clipped finger cannot establish a fully closed fist. This rejects only
   // the action pose; its hand/pointer remains available at the image edges.
   const handInFrame = points.every(p => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
@@ -122,12 +176,18 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
     palmSize,
     pinchRatio,
     pinched,
-    ok: pinched && otherExtended >= 2,
-    point: extended[0] && otherExtended === 0 && !pinched,
-    open: extended.every(Boolean) && !pinched,
-    fist: folded.every(Boolean) && !extended.some(Boolean) && thumbCompact && handInFrame,
+    ok,
+    point,
+    open,
+    fist: geometry.valid && geometry.fist && !ok && !point && !open && handInFrame,
+    fistGeometrySource: geometry.source,
+    // An explicit closed 3D pose must not coexist with positive image-space
+    // pointing/open/OK evidence from a mismatched result. Keep the pointer,
+    // but cancel actions rather than choosing one contradictory pose.
+    actionGeometryValid: hand.worldLandmarks === undefined
+      || (geometry.valid && !(geometry.fist && (ok || point || open))),
     extended,
-    folded,
+    folded: geometry.folded || [false, false, false, false],
   };
 }
 
@@ -339,7 +399,8 @@ export class GestureEngine {
     this.pendingClick = null;
     this.confirmedClick = null;
     const [a, b] = this.tracks;
-    const kind = a.shape.fist && b.shape.fist ? 'pan' : a.shape.ok && b.shape.ok ? 'zoom' : null;
+    const kind = !a.shape.actionGeometryValid || !b.shape.actionGeometryValid ? null
+      : a.shape.fist && b.shape.fist ? 'pan' : a.shape.ok && b.shape.ok ? 'zoom' : null;
     if (!kind) {
       this.navigationCandidate = null;
       this.navigation = null;
@@ -456,6 +517,10 @@ export class GestureEngine {
     const track = this.tracks[0];
     const hand = track.shape;
     const cursor = copy(track.visual.position);
+    if (!hand.actionGeometryValid) {
+      this.cancelClick();
+      return this.result(hand.point ? 'point' : 'idle', cursor);
+    }
     const released = hand.pinchRatio >= this.options.pinchExit;
     const hold = this.pendingClick || this.confirmedClick;
     if (hold) {
