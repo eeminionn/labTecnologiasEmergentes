@@ -28,7 +28,7 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   clickPalmStability: 0.018,
   clickClosureGraceMs: 300, // Bounded finger settlement while the palm stays still.
   clickClosureMaxDrift: 0.12,
-  navigationDwellMs: 180, // Two fists acquire pan; two OK hands acquire zoom.
+  navigationDwellMs: 180, // One/two fists acquire pan; two OK hands acquire zoom.
   maxFrameGapMs: 180, // A paused inference loop never counts as dwell.
   trackingJumpRadius: 0.22,
   ambiguousMatchMargin: 0.025,
@@ -268,9 +268,10 @@ class PointFilter {
  * Initial OK is allowed. Drift, loss, a second hand, a model pause or identity
  * replacement cancels the hold and requires a stable release before retrying.
  * Visible pointers follow index tip 8, or the four MCP knuckles for a fist.
- * Navigation requires two matching poses: fists pan by their knuckle midpoint;
- * OK hands zoom by index-tip separation. The modes never emit each other's event.
- * Changing pose restarts acquisition; a single fist/palm never moves the map.
+ * Any closed fist pans by its knuckles; two fists use their knuckle midpoint.
+ * A detected free hand does not contribute to pan. Two OK hands zoom by index-tip
+ * separation. Changing contributors, count or identity restarts acquisition;
+ * the navigation modes never emit each other's event. Open palms do not navigate.
  */
 export class GestureEngine {
   constructor(options = {}) {
@@ -298,6 +299,7 @@ export class GestureEngine {
     this.clickBlocked = false;
     this.hasObservedHand = false;
     this.selectionResetRequested = false;
+    this.observedGeometryInvalid = false;
     this.cancelInteraction();
   }
 
@@ -352,9 +354,12 @@ export class GestureEngine {
     const pointers = this.tracks.map(track => ({ id: track.trackId,
       ...(this.tracks.length === 1 && cursor ? cursor : track.visual.position) }));
     const result = { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
+      navigationCandidateKind: this.navigationCandidate?.kind ?? null,
+      navigationHandIds: mode === 'navigate' ? [...this.navigation.handIds] : [],
       progress: clamp(progress, 0, 1), events, hands,
       resetSelection: this.selectionResetRequested,
-      selectionBlockedReason: this.tracks.some(track => !track.shape.actionGeometryValid) ? 'invalid-geometry'
+      selectionBlockedReason: this.observedGeometryInvalid
+        || this.tracks.some(track => !track.shape.actionGeometryValid) ? 'invalid-geometry'
         : this.tracks.length === 2 ? 'second-hand'
           : this.clickBlocked || this.multiHandLock ? 'release-required' : null };
     this.selectionResetRequested = false;
@@ -424,6 +429,7 @@ export class GestureEngine {
   }
 
   update(hands, timestampMs) {
+    this.observedGeometryInvalid = false;
     if (!Array.isArray(hands) || !Number.isFinite(timestampMs)) {
       this.cancelInteraction();
       this.tracks = [];
@@ -444,6 +450,17 @@ export class GestureEngine {
     this.tracks = this.matchHands(hands, timestampMs);
     const newIds = this.tracks.map(track => track.trackId).sort().join(',');
     const count = this.tracks.length;
+    this.observedGeometryInvalid = count !== hands.length;
+    if (this.observedGeometryInvalid) {
+      // An unclassifiable extra observed hand must not be silently discarded to
+      // enable a single-fist pan or a single-hand selection underneath it.
+      this.cancelInteraction();
+      this.previousCount = count;
+      this.clickBlocked = true;
+      if (count) this.hasObservedHand = true;
+      if (hands.length > 1) this.multiHandLock = true;
+      return this.result();
+    }
     if (count === 0) {
       this.cancelInteraction();
       this.previousCount = 0;
@@ -460,7 +477,25 @@ export class GestureEngine {
       this.multiHandLock = true;
       return this.updateTwoHands(timestampMs);
     }
+    if (this.tracks[0].shape.actionGeometryValid && this.tracks[0].shape.fist) {
+      return this.updateSinglePan(timestampMs);
+    }
+    this.navigationCandidate = null;
+    this.navigation = null;
     return this.updateSingleHand(timestampMs);
+  }
+
+  updateSinglePan(timestampMs) {
+    // Pan does not use the selection arm/rearm state. After two hands or an
+    // interrupted click, a remaining fist may pan immediately after acquiring
+    // again, while a later held OK still requires the existing stable release.
+    if (this.pendingClick || this.confirmedClick) this.cancelClick(true);
+    if (this.preparingClick || this.tracks[0].clickIntent) this.selectionResetRequested = true;
+    this.preparingClick = null;
+    this.tracks[0].clickAim = null;
+    this.tracks[0].clickIntent = null;
+    this.rearmSince = null;
+    return this.updateNavigation(timestampMs, 'pan');
   }
 
   updateTwoHands(timestampMs) {
@@ -470,21 +505,28 @@ export class GestureEngine {
     this.confirmedClick = null;
     this.preparingClick = null;
     for (const track of this.tracks) { track.clickAim = null; track.clickIntent = null; }
-    const [a, b] = this.tracks;
-    const kind = !a.shape.actionGeometryValid || !b.shape.actionGeometryValid ? null
-      : a.shape.fist && b.shape.fist ? 'pan' : a.shape.ok && b.shape.ok ? 'zoom' : null;
+    const fists = this.tracks.filter(track => track.shape.fist);
+    const kind = this.tracks.some(track => !track.shape.actionGeometryValid) ? null
+      : fists.length ? 'pan' : this.tracks.every(track => track.shape.ok) ? 'zoom' : null;
+    return this.updateNavigation(timestampMs, kind, kind === 'pan' ? fists : this.tracks);
+  }
+
+  updateNavigation(timestampMs, kind, contributors = this.tracks) {
     if (!kind) {
       this.navigationCandidate = null;
       this.navigation = null;
       return this.result();
     }
-    if ((this.navigation || this.navigationCandidate)?.kind !== kind) {
+    const handIds = contributors.map(track => track.trackId).sort((a, b) => a - b);
+    const contributorKey = handIds.join(',');
+    const previous = this.navigation || this.navigationCandidate;
+    if (previous?.kind !== kind || previous?.contributorKey !== contributorKey) {
       this.navigation = null;
       this.navigationCandidate = null;
     }
     const source = kind === 'pan' ? 'knuckles' : 'pointer';
-    const rawPoints = this.tracks.map(track => track.shape[source]);
-    const rawSeparation = metricDistance(...rawPoints, this.options.aspectRatio);
+    const rawPoints = contributors.map(track => track.shape[source]);
+    const rawSeparation = kind === 'zoom' ? metricDistance(...rawPoints, this.options.aspectRatio) : null;
     if (kind === 'zoom' && (!Number.isFinite(rawSeparation) || rawSeparation < this.options.zoomMinSeparation)) {
       this.navigation = null;
       this.navigationCandidate = null;
@@ -494,15 +536,18 @@ export class GestureEngine {
       if (!this.navigation) {
         // Navigation filters are separate from visible pointer filters. Each
         // clutch/mode change starts from fresh geometry without moving halos.
-        this.navigationCandidate = { since: timestampMs, kind,
-          filters: new Map(this.tracks.map(track => [track.trackId, new PointFilter(this.options)])) };
+        this.navigationCandidate = { since: timestampMs, kind, handIds, contributorKey,
+          filters: new Map(contributors.map(track => [track.trackId, new PointFilter(this.options)])) };
       }
     }
     const state = this.navigation || this.navigationCandidate;
     // Model array order may reverse without replacing either tracked hand.
-    const points = this.tracks.map(track => state.filters.get(track.trackId).update(track.shape[source], timestampMs));
+    const points = contributors.map(track => state.filters.get(track.trackId).update(track.shape[source], timestampMs));
     const cursor = mean(...points);
-    const separation = metricDistance(...points, this.options.aspectRatio);
+    const separation = kind === 'zoom' ? metricDistance(...points, this.options.aspectRatio) : null;
+    // The single shadow retains its reference transition. Its visual correction
+    // never becomes camera motion: pan uses only the separate knuckle baseline.
+    const feedbackCursor = this.tracks.length === 1 ? this.tracks[0].visual.position : cursor;
     if (kind === 'zoom' && (!Number.isFinite(separation) || separation < this.options.zoomMinSeparation)) {
       this.navigation = null;
       this.navigationCandidate = null;
@@ -526,15 +571,15 @@ export class GestureEngine {
         }
         state.position = cursor;
       }
-      return this.result('navigate', cursor, 1, events);
+      return this.result('navigate', feedbackCursor, 1, events);
     }
     const progress = (timestampMs - this.navigationCandidate.since) / this.options.navigationDwellMs;
     if (progress >= 1) {
       this.navigation = { ...this.navigationCandidate, separation, position: cursor };
       this.navigationCandidate = null;
-      return this.result('navigate', cursor, 1);
+      return this.result('navigate', feedbackCursor, 1);
     }
-    return this.result('idle', cursor, progress);
+    return this.result('idle', feedbackCursor, progress);
   }
 
   handPointer(track, timestampMs, count) {

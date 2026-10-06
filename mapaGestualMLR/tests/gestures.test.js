@@ -378,10 +378,13 @@ test('claw, collapsed, implausibly short and clipped geometry cannot establish f
     assert.ok(shape, 'hand still has a pointer');
     assert.equal(shape.fist, false);
     const engine = new GestureEngine();
-    const pair = [value, hand('fist', { id: 'b', x: 0.18 })];
+    const pair = [value, { ...translatedImage(value, 0.18), id: 'b' }];
     const result = frames(engine, pair, 0, 600);
     assert.ok(result.every(frame => frame.mode === 'idle' && frame.pointers.length === 2));
     assert.equal(events(result).length, 0);
+    const single = frames(new GestureEngine(), [value], 0, 600);
+    assert.ok(single.every(frame => frame.mode !== 'navigate' && frame.pointers.length === 1));
+    assert.equal(events(single).length, 0, 'an incomplete or implausible single fist cannot acquire pan');
   }
 });
 
@@ -1009,8 +1012,8 @@ test('adding any second hand cancels a pending click even without a zoom pose', 
   assert.equal(clicks(results).length, 0);
 });
 
-test('one moving palm or neutral hand never pans or zooms', () => {
-  for (const pose of ['open', 'neutral', 'ok', 'point', 'fist']) {
+test('one moving palm, neutral, OK or pointing hand never pans or zooms', () => {
+  for (const pose of ['open', 'neutral', 'ok', 'point']) {
     const engine = new GestureEngine();
     const results = [];
     for (let time = 0; time <= 600; time += 20) {
@@ -1020,6 +1023,227 @@ test('one moving palm or neutral hand never pans or zooms', () => {
     assert.equal(events(results).length, 0, pose);
     assert.ok(results.every(result => result.mode !== 'navigate'), pose);
   }
+});
+
+test('one closed fist acquires pan after 180 ms in world or fallback front and top-down views', () => {
+  for (const aspectRatio of [1, 16 / 9]) for (const world of [true, false]) {
+    for (const [pitch, yaw] of [[0, 0], [Math.PI / 2, 0], [-Math.PI / 2, 0],
+      [0, Math.PI / 2], [0, -Math.PI / 2]]) {
+      const value = cameraView('fist', { pitch, yaw, aspectRatio, world });
+      const engine = new GestureEngine({ aspectRatio });
+      const candidate = frames(engine, [value], 0, 160);
+      assert.ok(candidate.every(result => result.mode === 'idle' && result.pointers.length === 1));
+      assert.ok(candidate.every(result => result.navigationCandidateKind === 'pan'
+        && result.navigationHandIds.length === 0));
+      assert.equal(engine.update([value], 179).mode, 'idle');
+      const acquired = engine.update([value], 180);
+      assert.equal(acquired.mode, 'navigate');
+      assert.equal(acquired.navigationKind, 'pan');
+      assert.equal(acquired.navigationCandidateKind, null);
+      assert.deepEqual(acquired.navigationHandIds, [acquired.pointers[0].id]);
+      assert.equal(acquired.events.length, 0);
+      assert.deepEqual(acquired.cursor, classifyHand(value, { aspectRatio }).knuckles);
+      const translated = translatedImage(value, 0.04 / aspectRatio, -0.02);
+      const moved = frames(engine, [translated], 200, 320);
+      assert.ok(events(moved).some(event => event.type === 'pan' && event.dx > 0 && event.dy < 0));
+      assert.ok(events(moved).every(event => event.type === 'pan'));
+      assert.ok(moved.every(result => result.mode === 'navigate' && result.navigationKind === 'pan'));
+      assert.equal(clicks([...candidate, acquired, ...moved]).length, 0);
+    }
+  }
+});
+
+test('one-fist motion during acquisition establishes a new baseline instead of dragging on entry', () => {
+  const engine = new GestureEngine();
+  const acquisition = [];
+  for (let time = 0; time <= 180; time += 20) {
+    acquisition.push(engine.update([hand('fist', { x: time / 180 * 0.04 })], time));
+  }
+  assert.equal(events(acquisition).length, 0);
+  assert.equal(acquisition.at(-1).mode, 'navigate');
+  const moved = engine.update([hand('fist', { x: 0.08 })], 200);
+  assert.ok(moved.events.some(event => event.type === 'pan' && event.dx > 0));
+  assert.ok(moved.events.every(event => event.type === 'pan'));
+});
+
+test('opening a single fist clutches pan and a new fist needs another full acquisition', () => {
+  const engine = new GestureEngine();
+  frames(engine, [hand('fist')], 0, 200);
+  assert.ok(engine.update([hand('fist', { x: 0.04 })], 220).events.length > 0);
+  const opened = engine.update([hand('open', { x: 0.04 })], 240);
+  assert.notEqual(opened.mode, 'navigate');
+  assert.equal(opened.events.length, 0);
+  frames(engine, [hand('open', { x: 0.04 })], 260, 380);
+  const closed = hand('fist', { x: -0.02 });
+  const acquisition = frames(engine, [closed], 400, 560);
+  assert.ok(acquisition.every(result => result.mode === 'idle'));
+  const acquired = engine.update([closed], 580);
+  assert.equal(acquired.mode, 'navigate');
+  assert.equal(events([...acquisition, acquired]).length, 0);
+  assert.ok(engine.update([hand('fist', { x: 0.02 })], 600).events.some(event => event.type === 'pan'));
+});
+
+test('one-to-two and two-to-one fists reacquire with fresh baselines, including reordered or anonymous hands', () => {
+  for (const anonymous of [false, true]) for (const keep of [0, 1]) {
+    const pair = x => fistPair({ x }).map(value => {
+      if (anonymous) delete value.id;
+      return value;
+    });
+    const engine = new GestureEngine();
+    frames(engine, [pair(0)[0]], 0, 200);
+    assert.ok(engine.update([pair(0.04)[0]], 220).events.some(event => event.type === 'pan'));
+    const two = pair(0.08).reverse();
+    const enteringTwo = frames(engine, two, 240, 400);
+    assert.ok(enteringTwo.every(result => result.mode === 'idle'));
+    const acquiredTwo = engine.update(pair(0.08), 420);
+    assert.equal(acquiredTwo.mode, 'navigate');
+    assert.equal(events([...enteringTwo, acquiredTwo]).length, 0);
+    assert.ok(engine.update(pair(0.12).reverse(), 440).events.some(event => event.type === 'pan'));
+    const remaining = pair(0.16)[keep];
+    const enteringOne = frames(engine, [remaining], 460, 620);
+    assert.ok(enteringOne.every(result => result.mode === 'idle'));
+    const acquiredOne = engine.update([remaining], 640);
+    assert.equal(acquiredOne.mode, 'navigate');
+    assert.equal(acquiredOne.navigationKind, 'pan');
+    assert.equal(events([...enteringOne, acquiredOne]).length, 0);
+    const moved = engine.update([pair(0.20)[keep]], 660);
+    assert.ok(moved.events.some(event => event.type === 'pan' && event.dx > 0));
+    assert.ok(moved.events.every(event => event.type === 'pan'));
+    const ok = hand('ok', { id: anonymous ? undefined : keep ? 'b' : 'a',
+      x: 0.20 + (keep ? 0.15 : -0.15) });
+    if (anonymous) delete ok.id;
+    const blocked = frames(engine, [ok], 680, 2280);
+    assert.ok(blocked.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
+    assert.equal(clicks(blocked).length, 0, 'returning from two hands cannot turn pan into a selection');
+  }
+});
+
+test('single-fist pan and two-OK zoom switch only after acquiring the new hand-count and pose', () => {
+  const engine = new GestureEngine();
+  frames(engine, [hand('fist', { x: -0.15 })], 0, 200);
+  const zoomAcquisition = frames(engine, okPair(), 220, 380);
+  assert.ok(zoomAcquisition.every(result => result.mode === 'idle'));
+  const zoom = engine.update(okPair(), 400);
+  assert.equal(zoom.navigationKind, 'zoom');
+  assert.equal(events([...zoomAcquisition, zoom]).length, 0);
+  const scaling = engine.update(okPair({ separation: 0.40 }), 420);
+  assert.ok(scaling.events.some(event => event.type === 'zoom'));
+  assert.ok(scaling.events.every(event => event.type === 'zoom'));
+  const single = hand('fist', { x: -0.20 });
+  const panAcquisition = frames(engine, [single], 440, 600);
+  assert.ok(panAcquisition.every(result => result.mode === 'idle'));
+  const pan = engine.update([single], 620);
+  assert.equal(pan.navigationKind, 'pan');
+  assert.equal(events([...panAcquisition, pan]).length, 0);
+  assert.ok(engine.update([hand('fist', { x: -0.16 })], 640).events.every(event => event.type === 'pan'));
+});
+
+test('single pan recovers from tracking, geometry, identity or timing interruptions without inheriting movement', () => {
+  for (const reason of ['loss', 'geometry', 'identity', 'gap']) {
+    const engine = new GestureEngine();
+    frames(engine, [hand('fist')], 0, 200);
+    assert.ok(engine.update([hand('fist', { x: 0.04 })], 220).events.length > 0);
+    const replacement = reason === 'identity' ? 'new' : 'a';
+    const returning = hand('fist', { id: replacement, x: 0.08 });
+    let start = 240;
+    if (reason === 'loss') { engine.update([], 240); start = 260; }
+    if (reason === 'geometry') {
+      const invalid = engine.update([{ ...returning, worldLandmarks: [] }], 240);
+      assert.equal(invalid.selectionBlockedReason, 'invalid-geometry');
+      start = 260;
+    }
+    if (reason === 'gap') start = 400;
+    const acquisition = frames(engine, [returning], start, start + 160);
+    assert.ok(acquisition.every(result => result.mode === 'idle'), reason);
+    const acquired = engine.update([returning], start + 180);
+    assert.equal(acquired.navigationKind, 'pan', reason);
+    assert.equal(events([...acquisition, acquired]).length, 0, reason);
+    const moved = engine.update([hand('fist', { id: replacement, x: 0.12 })], start + 200);
+    assert.ok(moved.events.some(event => event.type === 'pan'), reason);
+    assert.ok(moved.events.every(event => event.type === 'pan'), reason);
+  }
+});
+
+test('a fist interrupting a pending or confirmed single OK pans but does not rearm its cancelled selection', () => {
+  for (const confirmed of [false, true]) {
+    const engine = pointedEngine();
+    const until = confirmed ? 1660 : 600;
+    const held = frames(engine, [hand('ok')], 160, until);
+    assert.equal(clicks(held).length, confirmed ? 1 : 0);
+    const start = until + 20;
+    const panAcquisition = frames(engine, [hand('fist')], start, start + 180);
+    assert.equal(panAcquisition.at(-1).navigationKind, 'pan');
+    assert.equal(events(panAcquisition).length, 0);
+    const moved = engine.update([hand('fist', { x: 0.04 })], start + 200);
+    assert.ok(moved.events.some(event => event.type === 'pan'));
+    const blocked = frames(engine, [hand('ok', { x: 0.04 })], start + 220, start + 1900);
+    assert.ok(blocked.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
+    assert.equal(clicks(blocked).length, 0);
+    frames(engine, [hand('open', { x: 0.04 })], start + 1920, start + 2060);
+    const retry = frames(engine, [hand('ok', { x: 0.04 })], start + 2080, start + 3580);
+    assert.equal(clicks(retry).length, 1);
+  }
+});
+
+test('single-pan deltas exclude the smooth visual reference transition and keep jitter below the deadband', () => {
+  const engine = new GestureEngine();
+  const open = frames(engine, [hand('open')], 0, 200).at(-1);
+  const curled = engine.update([hand('fist')], 220);
+  assert.deepEqual(curled.pointers, open.pointers);
+  const acquisition = frames(engine, [hand('fist')], 240, 400);
+  assert.equal(acquisition.at(-1).navigationKind, 'pan');
+  assert.equal(events(acquisition).length, 0, 'only the halo moves while the physical knuckles stay still');
+  const moved = engine.update([hand('fist', { x: 0.02 })], 420);
+  assert.ok(moved.cursor.y > acquisition.at(-1).cursor.y, 'visual reference is still converging');
+  assert.ok(moved.events.some(event => event.type === 'pan' && event.dx > 0));
+  assert.ok(moved.events.every(event => event.dy === 0), 'visual correction cannot contribute pan');
+  const quiet = new GestureEngine();
+  frames(quiet, [hand('fist')], 0, 200);
+  const noise = [];
+  for (let time = 220; time <= 800; time += 20) {
+    noise.push(quiet.update([hand('fist', { x: time % 40 === 0 ? 0.0004 : -0.0004 })], time));
+  }
+  assert.ok(noise.every(result => result.navigationKind === 'pan'));
+  assert.equal(events(noise).length, 0);
+});
+
+test('single-fist acquisition and exclusive pan are independent of 15, 30 or 60 FPS', () => {
+  for (const fps of [15, 30, 60]) {
+    const engine = new GestureEngine();
+    const step = 1000 / fps;
+    const initial = [];
+    for (let frame = 0; frame <= Math.ceil(240 / step); frame++) {
+      initial.push(engine.update([hand('fist')], frame * step));
+    }
+    const acquired = initial.findIndex(result => result.mode === 'navigate');
+    assert.ok(acquired >= 0, `${fps} FPS`);
+    assert.ok(acquired * step >= 180 && acquired * step < 180 + step, `${fps} FPS`);
+    assert.equal(events(initial).length, 0);
+    const startFrame = initial.length;
+    const moved = [];
+    for (let frame = startFrame; frame <= startFrame + 5; frame++) {
+      moved.push(engine.update([hand('fist', { x: 0.04 })], frame * step));
+    }
+    assert.ok(events(moved).some(event => event.type === 'pan' && event.dx > 0), `${fps} FPS`);
+    assert.ok(events(moved).every(event => event.type === 'pan'), `${fps} FPS`);
+  }
+});
+
+test('initial single-fist pan cannot contribute navigation dwell to a subsequent 1500 ms single-OK selection', () => {
+  const engine = new GestureEngine();
+  frames(engine, [hand('fist')], 0, 200);
+  assert.equal(engine.update([hand('fist', { x: 0.04 })], 220).navigationKind, 'pan');
+  const closed = hand('ok', { x: 0.04 });
+  const pending = engine.update([closed], 240);
+  assert.equal(pending.mode, 'click-pending');
+  assert.equal(pending.navigationKind, null);
+  assert.equal(pending.navigationCandidateKind, null);
+  assert.equal(pending.progress, 0);
+  assert.equal(pending.selectionBlockedReason, null);
+  assert.equal(clicks(frames(engine, [closed], 260, 1720)).length, 0);
+  assert.equal(engine.update([closed], 1739).events.length, 0);
+  assert.deepEqual(engine.update([closed], 1740).events, [{ type: 'click', ...pending.cursor }]);
+  assert.equal(clicks(frames(engine, [closed], 1760, 2220)).length, 0);
 });
 
 test('two fists pan by common palm midpoint movement without changing zoom', () => {
@@ -1106,9 +1330,9 @@ test('two OK hands translate and separate but only emit zoom at their current mi
   assert.equal(zoom.y, result.cursor.y);
 });
 
-test('mixed poses, two open palms or neutral hands never acquire navigation', () => {
+test('two-hand poses without any fist or two OK hands never acquire navigation', () => {
   for (const poses of [['open', 'open'], ['neutral', 'neutral'], ['ok', 'open'], ['ok', 'point'],
-    ['ok', 'neutral'], ['ok', 'fist'], ['fist', 'ok'], ['fist', 'open'], ['fist', 'neutral'], ['fist', 'point']]) {
+    ['ok', 'neutral']]) {
     const engine = new GestureEngine();
     const results = [];
     for (let time = 0; time <= 600; time += 20) {
@@ -1118,6 +1342,102 @@ test('mixed poses, two open palms or neutral hands never acquire navigation', ()
     }
     assert.equal(events(results).length, 0, poses.join('/'));
     assert.ok(results.every(result => result.mode === 'idle'), poses.join('/'));
+  }
+});
+
+test('one fist pans while a detected free hand stays open, points, rests or forms OK without contributing', () => {
+  for (const pose of ['open', 'point', 'neutral', 'ok']) for (const reversed of [false, true]) {
+    const engine = new GestureEngine();
+    const pair = (fistX = -0.15, freeX = 0.15) => {
+      const values = [hand('fist', { id: 'a', x: fistX }), hand(pose, { id: 'b', x: freeX })];
+      return reversed ? values.reverse() : values;
+    };
+    const acquired = frames(engine, pair(), 0, 200).at(-1);
+    const fistId = acquired.pointers[reversed ? 1 : 0].id;
+    assert.equal(acquired.navigationKind, 'pan', pose);
+    assert.equal(acquired.hands, 2);
+    assert.equal(acquired.pointers.length, 2);
+    assert.deepEqual(acquired.navigationHandIds, [fistId]);
+    assert.deepEqual(acquired.cursor, classifyHand(hand('fist', { x: -0.15 })).knuckles);
+    const freeMovement = frames(engine, pair(-0.15, 0.23), 220, 2200);
+    assert.equal(events(freeMovement).length, 0, `${pose}: moving a free hand cannot pan, zoom or click`);
+    assert.ok(freeMovement.every(result => result.navigationKind === 'pan'
+      && result.navigationHandIds.length === 1 && result.navigationHandIds[0] === fistId));
+    const moved = frames(engine, pair(-0.11, 0.23), 2220, 2300);
+    assert.ok(events(moved).some(event => event.type === 'pan' && event.dx > 0));
+    assert.ok(events(moved).every(event => event.type === 'pan'));
+    if (pose === 'ok') {
+      const alone = frames(engine, [hand('ok', { id: 'b', x: 0.23 })], 2320, 4000);
+      assert.ok(alone.every(result => result.mode === 'idle' && result.navigationHandIds.length === 0));
+      assert.equal(clicks(alone).length, 0, 'removing the fist cannot turn the already-held free OK into a click');
+    }
+  }
+});
+
+test('pan reacquires when fist contributors change even though two tracked hands remain present', () => {
+  const engine = new GestureEngine();
+  const values = (aPose, bPose, aX = -0.15, bX = 0.15) => [
+    hand(aPose, { id: 'a', x: aX }), hand(bPose, { id: 'b', x: bX }),
+  ];
+  const original = frames(engine, values('fist', 'open'), 0, 200).at(-1);
+  const [aId, bId] = original.pointers.map(pointer => pointer.id);
+  assert.deepEqual(original.navigationHandIds, [aId]);
+  const replacement = values('open', 'fist');
+  const replaceAcquisition = frames(engine, replacement, 220, 380);
+  assert.ok(replaceAcquisition.every(result => result.mode === 'idle' && result.navigationCandidateKind === 'pan'
+    && result.navigationHandIds.length === 0));
+  const acquiredReplacement = engine.update(replacement.reverse(), 400);
+  assert.deepEqual(acquiredReplacement.navigationHandIds, [bId]);
+  assert.equal(events([...replaceAcquisition, acquiredReplacement]).length, 0);
+  assert.ok(engine.update(values('open', 'fist', -0.15, 0.19), 420).events.some(event => event.type === 'pan'));
+  const both = values('fist', 'fist', -0.15, 0.19);
+  const addAcquisition = frames(engine, both, 440, 600);
+  assert.ok(addAcquisition.every(result => result.mode === 'idle'));
+  const acquiredBoth = engine.update(both, 620);
+  assert.deepEqual(acquiredBoth.navigationHandIds, [aId, bId]);
+  assert.equal(events([...addAcquisition, acquiredBoth]).length, 0);
+  assert.ok(engine.update(values('fist', 'fist', -0.11, 0.23), 640).events.some(event => event.type === 'pan'));
+  const remaining = values('open', 'fist', -0.11, 0.23);
+  const removeAcquisition = frames(engine, remaining, 660, 820);
+  assert.ok(removeAcquisition.every(result => result.mode === 'idle'));
+  const acquiredRemaining = engine.update(remaining, 840);
+  assert.deepEqual(acquiredRemaining.navigationHandIds, [bId]);
+  assert.equal(events([...removeAcquisition, acquiredRemaining]).length, 0);
+  const released = engine.update(values('open', 'open', -0.11, 0.23), 860);
+  assert.equal(released.mode, 'idle');
+  assert.equal(released.navigationKind, null);
+  assert.deepEqual(released.navigationHandIds, []);
+  const zoomAcquisition = frames(engine, values('ok', 'ok', -0.11, 0.23), 880, 1040);
+  assert.ok(zoomAcquisition.every(result => result.mode === 'idle' && result.navigationCandidateKind === 'zoom'
+    && result.navigationHandIds.length === 0));
+  const zoom = engine.update(values('ok', 'ok', -0.11, 0.23), 1060);
+  assert.equal(zoom.navigationKind, 'zoom');
+  assert.deepEqual(zoom.navigationHandIds, [aId, bId]);
+  assert.equal(events([...zoomAcquisition, zoom]).length, 0);
+});
+
+test('a fist cannot pan underneath an extra hand with malformed image or world geometry', () => {
+  const malformed = [
+    { ...hand('open', { id: 'b', x: 0.15 }), worldLandmarks: [] },
+    { id: 'b', landmarks: [] },
+    { id: 'b', landmarks: Array.from({ length: 21 }, () => ({ x: NaN, y: 0.5, z: 0 })) },
+  ];
+  for (const invalid of malformed) {
+    const engine = new GestureEngine();
+    const pair = [hand('fist', { x: -0.15 }), hand('open', { id: 'b', x: 0.15 })];
+    assert.equal(frames(engine, pair, 0, 200).at(-1).navigationKind, 'pan');
+    const rejected = engine.update([pair[0], invalid], 220);
+    assert.equal(rejected.mode, 'idle');
+    assert.equal(rejected.selectionBlockedReason, 'invalid-geometry');
+    assert.deepEqual(rejected.navigationHandIds, []);
+    assert.equal(rejected.events.length, 0);
+    const recovery = frames(engine, pair, 240, 400);
+    assert.ok(recovery.every(result => result.mode === 'idle'));
+    const acquired = engine.update(pair, 420);
+    assert.equal(acquired.navigationKind, 'pan');
+    assert.equal(events([...recovery, acquired]).length, 0);
+    const moved = engine.update([hand('fist', { x: -0.11 }), pair[1]], 440);
+    assert.ok(moved.events.some(event => event.type === 'pan'));
   }
 });
 

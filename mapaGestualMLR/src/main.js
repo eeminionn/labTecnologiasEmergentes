@@ -17,7 +17,7 @@ delete config.corners;
 delete config.showPreview;
 let qualityGate=new FrameQualityGate(),qualityState={allowActions:true,state:'good',reasons:[]};
 let cameraControlsAvailable={ranges:{}},cameraControlReport=null,qualityWarningShown=false;
-let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], previousPan=null, lastFrame=-1;
+let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], lastFrame=-1;
 let engine = new GestureEngine();
 const selection=new SelectionFeedback();
 let hoverElement;
@@ -48,7 +48,7 @@ function updateStatus() {
   if(!active)clearTrackingPreview();
 }
 function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
-function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();highlightTarget(null);previousPan=null;for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
+function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
 function isBlocked() { return paused || !document.hasFocus() || $('settings').open || $('help').open; }
 function mapPoint(p) { return cameraToMap(p,config); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
@@ -91,8 +91,8 @@ function initializeWorker() {
       const blocked=isBlocked() || !qualityState.allowActions;
       if(blocked)cancelGesture(false);
       let result=engine.update(latestHands,data.timestamp);
-      // A second observed hand can never become an individual click merely
-      // because its geometry was rejected by the gesture interpreter.
+      // Reject actions if an observed second hand was filtered out by invalid
+      // geometry. It cannot become either an individual click or one-fist pan.
       if(blocked || (latestHands.length!==result.hands && latestHands.length>1)) {
         engine.cancelInteraction();engine.cancelClick(true);
         result={...result,mode:'idle',progress:0,events:[],navigationKind:null};
@@ -150,7 +150,7 @@ async function finishSmoke(data) {
     && Object.values(indexTrackingFeedback).every(Boolean)
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.8',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.9',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
@@ -375,7 +375,7 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
     lastSelectionReason=reason;
   }
   $('gesture-metric').textContent=blocked?`Control en espera${lastActiveSelectionState?.reason?` · último estado: ${selectionReasonLabels[lastActiveSelectionState.reason]||lastActiveSelectionState.reason}`:''}`:stateLabel;
-  const singleHand=detectedHands===1 && !blocked;
+  const singleHand=detectedHands===1 && !blocked && !navigation && !result.navigationCandidateKind;
   let feedback={point:null,target:null,cancel:false};
   if(singleHand && within(p))feedback=selection.update({x:p.x*rect.width,y:p.y*rect.height},result.mode,selectionTargets(rect),rect);
   else {selection.reset();if(result.mode==='click-pending')engine.cancelClick();}
@@ -387,15 +387,16 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
     cursor.style.display=visible?'block':'none';
     if(visible){const displayed=index===0 && feedback.point?feedback.point:{x:point.x*rect.width,y:point.y*rect.height};cursor.style.left=`${displayed.x}px`;cursor.style.top=`${displayed.y}px`;}
     cursor.dataset.hand=pointers[index]?.id??'';
-    cursor.dataset.navigation=navigation||'';
+    const contributes=!Array.isArray(result.navigationHandIds) || result.navigationHandIds.includes(pointers[index]?.id);
+    cursor.dataset.navigation=contributes?navigation||'':'';
     cursor.dataset.blocked=String(blocked);
     cursor.dataset.state=index===0 && singleHand && !feedback.cancel?
       result.mode==='click-pending'?'loading':result.mode==='click-confirmed'?'confirmed':feedback.target?'hover':'idle':'idle';
-    cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63*(1-(index===0 && singleHand && !feedback.cancel?result.progress:0));
+    const showingDwell=result.mode==='click-pending' || result.mode==='click-confirmed';
+    cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63*(1-(index===0 && singleHand && !feedback.cancel && showingDwell?result.progress:0));
   }
   if(!singleHand)$('click-ripple').classList.remove('play');
   highlightTarget(singleHand && !feedback.cancel?feedback.target:null);
-  if(navigation!=='pan')previousPan=null;
   const actions=[];
   if(blocked)return Promise.resolve(actions);
   for(const event of result.events) {
@@ -407,10 +408,11 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
         else{engine.cancelClick();selection.reset();$('cursor').dataset.state='idle';}
         return ok;
       }).catch(error=>{engine.cancelClick();selection.reset();if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
-    } else if(event.type==='pan' && navigation==='pan' && detectedHands===2 && result.cursor) {
-      const current=mapPoint(result.cursor),old=previousPan || mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
+    } else if(event.type==='pan' && navigation==='pan' && detectedHands===result.hands && (detectedHands===1 || detectedHands===2) && result.cursor) {
+      // The visual halo can ease from index to knuckles independently of the
+      // navigation baseline. Only physical movement supplied by the engine pans.
+      const current=mapPoint(result.cursor),old=mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
       if(within(current) && within(old)){map.pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
-      previousPan=current;
     } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2) {
       const at=mapPoint(event);if(!within(at))continue;
       map.zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
@@ -540,6 +542,11 @@ async function verifyFistViewsFeedback(data) {
     const moved=synthetic.update(pair(.04),220);await renderGesture(moved,2);
     feedback[view.name]=moved.navigationKind==='pan' && moved.events.some(e=>e.type==='pan')
       && moved.events.every(e=>e.type!=='zoom') && map.info().zoom===before.zoom && map.info().center.lng<before.center.lng;
+    const single=new GestureEngine();map.home();cancelGesture();const beforeSingle=map.info();
+    for(const time of [0,100,180])await renderGesture(single.update([hand('single',.5,.5)],time),1);
+    const singleMoved=single.update([hand('single',.54,.5)],220);await renderGesture(singleMoved,1);
+    feedback[`single-${view.name}`]=singleMoved.navigationKind==='pan' && singleMoved.events.some(e=>e.type==='pan')
+      && singleMoved.events.every(e=>e.type==='pan') && map.info().zoom===beforeSingle.zoom && map.info().center.lng<beforeSingle.center.lng;
   }
   // Different orientations of the two fists must also acquire the same mode.
   const views=fixture.handViews.slice(0,2),shapes=views.map(view=>classifyHand(view));
@@ -554,11 +561,30 @@ async function verifyNavigationFeedback() {
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
   const hand=(pose,id,x,y)=>{
     const shape=classifyHand({landmarks:fixture.poses[pose]});
-    if(!shape || (pose==='fist'?!shape.fist:!shape.ok))throw new Error(`Smoke: pose ${pose} inválida`);
-    const source=pose==='fist'?shape.center:shape.pinch;
+    if(!shape || (pose==='fist'&&!shape.fist) || (pose==='ok'&&!shape.ok))throw new Error(`Smoke: pose ${pose} inválida`);
+    const source=pose==='ok'?shape.pinch:shape.center;
     return {id,landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+x-source.x,y:p.y+y-source.y}))};
   };
   const pair=(pose,dx=0,spread=0)=>[hand(pose,'left',.35+dx-spread,.5),hand(pose,'right',.65+dx+spread,.5)];
+  const single=(pose,dx=0)=>[hand(pose,'left',.35+dx,.5)];
+  const singleEngine=new GestureEngine();map.home();cancelGesture();const beforeSingle=map.info();
+  const entry=[];let candidateDoesNotSelect=true;
+  for(const t of [0,100,180]){const r=singleEngine.update(single('fist'),t);entry.push(r);await renderGesture(r,1);candidateDoesNotSelect&&=$('cursor').dataset.state==='idle' && !$('map').querySelector('.gesture-target') && Number($('cursor').querySelector('.cursor-progress').style.strokeDashoffset)===213.63;}
+  const singlePanWaits=entry[0].mode!=='navigate' && entry[1].mode!=='navigate' && entry[2].navigationKind==='pan' && entry.every(r=>r.events.length===0) && sameMapView(beforeSingle,map.info());
+  const movedSingle=singleEngine.update(single('fist',.04),220);await renderGesture(movedSingle,1);
+  const singlePanWorks=movedSingle.navigationKind==='pan' && movedSingle.events.some(e=>e.type==='pan') && map.info().center.lng<beforeSingle.center.lng;
+  const singlePanNoZoomOrClick=movedSingle.events.every(e=>e.type==='pan') && map.info().zoom===beforeSingle.zoom;
+  const singlePanColor=$('cursor').style.display==='block' && $('cursor-secondary').style.display==='none' && $('cursor').dataset.navigation==='pan' && getComputedStyle($('cursor')).getPropertyValue('--cursor-color').trim()==='137,87,229';
+  const singlePanNoSelection=$('cursor').dataset.state==='idle' && !$('map').querySelector('.gesture-target') && Number($('cursor').querySelector('.cursor-progress').style.strokeDashoffset)===213.63;
+  const beforeTwo=map.info(),toTwo=[];
+  for(const t of [260,360,440]){const r=singleEngine.update(pair('fist',.04),t);toTwo.push(r);await renderGesture(r,2);}
+  const oneToTwoReacquires=toTwo[0].mode!=='navigate' && toTwo[1].mode!=='navigate' && toTwo[2].navigationKind==='pan' && toTwo.every(r=>r.events.length===0) && sameMapView(beforeTwo,map.info());
+  await renderGesture(singleEngine.update(pair('fist',.08),480),2);
+  const beforeOne=map.info(),toOne=[];
+  for(const t of [520,620,700]){const r=singleEngine.update(single('fist',.08),t);toOne.push(r);await renderGesture(r,1);}
+  const twoToOneReacquires=toOne[0].mode!=='navigate' && toOne[1].mode!=='navigate' && toOne[2].navigationKind==='pan' && toOne.every(r=>r.events.length===0) && sameMapView(beforeOne,map.info());
+  const beforeOpen=map.info(),opened=singleEngine.update(single('point',.08),740);await renderGesture(opened,1);
+  const openingStopsSinglePan=opened.mode!=='navigate' && opened.events.length===0 && sameMapView(beforeOpen,map.info());
   const panEngine=new GestureEngine();map.home();cancelGesture();
   const beforePan=map.info();
   for(const t of [0,100,180])await renderGesture(panEngine.update(pair('fist'),t),2);
@@ -579,15 +605,29 @@ async function verifyNavigationFeedback() {
   const stillWaiting=zoomEngine.update(pair('fist',.03),1400);await renderGesture(stillWaiting,2);
   const acquired=zoomEngine.update(pair('fist',.03),1480);await renderGesture(acquired,2);
   const modeSwitchReacquires=switched.mode!=='navigate' && stillWaiting.mode!=='navigate' && acquired.mode==='navigate' && acquired.navigationKind==='pan' && [switched,stillWaiting,acquired].every(r=>r.events.length===0);
-  const mixedEngine=new GestureEngine();let mixed;
-  for(const t of [1600,1700,1780])mixed=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.65,.5)],t);
-  const mixedPosesIdle=mixed.mode!=='navigate' && mixed.events.length===0;
+  const mixedEngine=new GestureEngine();let mixed;map.home();cancelGesture();
+  for(const t of [1600,1700,1780]){mixed=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.65,.5)],t);await renderGesture(mixed,2);}
+  const mixedFistPan=mixed.mode==='navigate' && mixed.navigationKind==='pan' && mixed.events.length===0;
+  const fistPointer=mixed.pointers.find(p=>p.id===mixed.navigationHandIds?.[0]);
+  const mixedColors=[$('cursor'),$('cursor-secondary')].map(c=>({id:c.dataset.hand,kind:c.dataset.navigation,color:getComputedStyle(c).getPropertyValue('--cursor-color').trim()}));
+  const freeHandStaysBlue=!!fistPointer && mixedColors.find(c=>c.id===String(fistPointer.id))?.color==='137,87,229' && mixedColors.find(c=>c.id!==String(fistPointer.id))?.color==='33,139,255';
+  const beforeFree=map.info(),freeMoved=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.75,.5)],1820);await renderGesture(freeMoved,2);
+  const freeHandMovementIgnored=freeMoved.navigationKind==='pan' && freeMoved.events.length===0 && sameMapView(beforeFree,map.info());
+  const fistMoved=mixedEngine.update([hand('fist','left',.39,.5),hand('ok','right',.75,.5)],1860);await renderGesture(fistMoved,2);
+  const mixedPanFollowsFist=fistMoved.events.some(e=>e.type==='pan') && fistMoved.events.every(e=>e.type==='pan') && map.info().center.lng<beforeFree.center.lng && map.info().zoom===beforeFree.zoom;
   const beforeGuard=map.info(),pointers=[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}];
   await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'zoom',delta:.2,x:.5,y:.5}]},2);
   await renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
   const crossModeEventsIgnored=sameMapView(beforeGuard,map.info());
+  await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.5,y:.5},pointers:[pointers[0]],hands:1,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
+  const rejectedSecondHandCannotPan=sameMapView(beforeGuard,map.info());
   map.home();cancelGesture();
-  return {panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedPosesIdle,visibleDuringNavigation,crossModeEventsIgnored};
+  const width=$('map').getBoundingClientRect().width;
+  map.pan(.01*width,0);map.pan(.01*width,0);const expectedPan=map.info();map.home();
+  for(const x of [.3,.7])await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x,y:.5},pointers:[{id:1,x,y:.5}],hands:1,progress:1,events:[{type:'pan',dx:.01,dy:0}]},1);
+  const panIgnoresVisualShift=sameMapView(expectedPan,map.info());
+  map.home();cancelGesture();
+  return {singlePanWorks,singlePanWaits,candidateDoesNotSelect,singlePanColor,singlePanNoSelection,singlePanNoZoomOrClick,oneToTwoReacquires,twoToOneReacquires,openingStopsSinglePan,panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedFistPan,freeHandStaysBlue,freeHandMovementIgnored,mixedPanFollowsFist,visibleDuringNavigation,crossModeEventsIgnored,rejectedSecondHandCannotPan,panIgnoresVisualShift};
 }
 function verifyPreviewFeedback(data) {
   const saved={active,paused};active=false;paused=false;updateStatus();
@@ -652,7 +692,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.8',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.9',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{
