@@ -2,8 +2,8 @@
 
 **Fecha:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión:** 0.1.4<br>
-**Estado:** geometría conservada; 94/94 pruebas, runtime y paquetes Mac/Windows 0.1.4 aprobados. 0.1.3 conserva su evidencia histórica<br>
+**Versión:** 0.1.5<br>
+**Estado:** geometría y recorrido conservados; 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados. Google real y ensayo USB cenital/frontal pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
@@ -91,7 +91,21 @@ Diagnóstico disponible mediante `map.info()`:
 }
 ```
 
-## Verificación vigente de 0.1.4
+## Verificación vigente de 0.1.5
+
+La corrección de puños cenitales/frontales cambia la interpretación XYZ de esa postura; no altera el GeoJSON, su fuente, hashes, posiciones, identidades ni avance por clic. Conserva dos puños para pan, dos OK para zoom y OK individual de 1,5 segundos. El reconocimiento del puño y el mapeo de coordenadas de imagen son medidas distintas; el mundo estimado no mueve por sí solo el objetivo. Consultar el [protocolo vigente](./03-protocolo-validacion.md).
+
+La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
+
+También aprueban nueve checks de navegación exclusiva, siete de preview, ocho de punteros y ocho de calidad, además de cuatro clics nativos `isTrusted` de al menos `1500 ms`, sin temprano/repetición, con anclaje/aro y recorrido completo. El botón del popup no duplica el avance; el límite carga una entidad. Estas comprobaciones no miden recall, falsos positivos ni latencia física.
+
+El código comprobado es `a2d778582443e0eea81cf386d5e6219815b99eb8`. Los reportes [Mac 0.1.5](./verificacion-paquete-mac-0.1.5.json) y [Windows 0.1.5](./verificacion-paquete-windows-0.1.5.json) confirman el smoke del contenido empaquetado. La [CI Windows 37417286255](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) terminó con éxito: 104 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Cámara USB cenital/frontal, métricas físicas y Google con key real siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance por plataforma.
+
+La `.app` Mac 0.1.5 se abrió y se verificó la cámara activa. La revisión detallada de Ayuda, Ajustes y skeleton de 0.1.4 queda histórica; esta corrección conserva esa interfaz. No se presenta la apertura ni el panel activo como benchmark físico de puños, precisión o latencia.
+
+Los resultados siguientes de 0.1.4 son antecedentes, no verificación de la corrección actual; el GeoJSON y su hash se conservan.
+
+## Evidencia histórica de 0.1.4
 
 El recorrido mantiene las mismas identidades, posiciones, áreas fijas y fuente del límite. El clic cambia a **OK durante 1,5 segundos**, automático sin soltar. **Dos puños desplazan** y **dos OK hacen zoom**, en modos exclusivos; esa navegación no avanza el recorrido. El preview cenital pequeño permanece visible y sólo dibuja tracking fresco con cámara activa; detenida, muestra el mensaje y limpia los datos anteriores.
 

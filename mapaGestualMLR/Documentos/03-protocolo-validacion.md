@@ -1,8 +1,8 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 6 de octubre de 2026<br>
-**Versión vigente:** 0.1.4<br>
-**Estado:** 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.5<br>
+**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -42,7 +42,8 @@ Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y l
 | Pan exclusivo | Dos puños adquiridos durante `180 ms`; sólo traslación del punto medio. La separación no cambia el zoom. |
 | Zoom exclusivo | Dos OK adquiridos durante `180 ms`; sólo cambio de separación. La traslación común no cambia el centro. |
 | Cambio de modo | Puños ↔ OK exige otros `180 ms`; mezclas no navegan y no conservan anclas anteriores. |
-| Puño | Cuatro dedos flexionados/compactos, pulgar compacto y flexionado en MCP o IP; mano entera dentro del frame y segmentos no degenerados. Comprobación positiva con umbrales experimentales, no mera ausencia de palma/OK. |
+| Puño 0.1.5 | Evidencia positiva XYZ de curvatura/retracción y compactación de los cuatro dedos, exclusión de extensión y pulgar compacto/aducido; DIP recto sólo con cierre fuerte y pulgar sin flexión obligatoria. Segmentos válidos y mano de imagen dentro del frame. Umbrales experimentales descritos abajo; 104 pruebas y paquetes Mac/Windows aprobados. |
+| Fuente del puño | Preferir `worldLandmarks` XYZ válidos de la misma mano/inferencia; fallback a XYZ normalizados con aspecto corregido sólo si world falta. World explícito inválido bloquea clic y navegación y conserva el puntero fresco. No mezclar puntos de distintas manos ni unidades entre fuentes. Cursor y acciones de mapa siguen en coordenadas de imagen. |
 | Una mano abierta | No desplaza ni amplía el mapa. |
 | Sombras | Una por cada mano con datos frescos, hasta dos, incluyendo posturas no elegibles; azul apuntado/reposo, violeta dos puños/pan, ámbar dos OK/zoom y gris bloqueo. |
 | Aro y ripple | Sólo con exactamente una mano detectada; progreso `0→1` durante 1,5 segundos y confirmación verde, sobre el destino anclado. La segunda mano cancela el clic individual sin ocultar punteros. |
@@ -59,13 +60,37 @@ Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y l
 | Segundo destino | Windows x64, `.exe` portable; verificación de cámara por separado. |
 | Mapa | OpenStreetMap para pruebas sin key; Google Maps pendiente de credencial y comprobación. |
 
-Estos números describen el contrato implementado en **0.1.4**. Sus 94 pruebas, runtime y paquetes Mac/Windows están aprobados. El preview Mac se inspeccionó con cámara física; el ensayo cenital USB, los controles reales del driver, Google Maps con key propia y el arranque del envoltorio portable Windows siguen pendientes. Son hipótesis de ingeniería que se ajustan con validación, no valores universalmente correctos ni resultados publicados. Los 1,5 segundos son la preferencia actual del usuario y los tamaños de marcador una decisión 2D propia, no especificaciones Meta. El modelo, SDK y umbrales de detección permanecen iguales. Las investigaciones anteriores conservan antecedentes históricos, no sustituyen esta guía vigente.
+La corrección **0.1.5** conserva tiempos, modelo, SDK y umbrales de detección, y revisa únicamente la interpretación positiva del puño y el transporte de su mundo estimado. Las 104 pruebas, build/runtime y paquetes Mac/Windows están aprobados. Las 94 pruebas y paquetes 0.1.4 son evidencia histórica, no aprobación de esta actualización. El ensayo cenital USB, las métricas físicas, controles reales del driver, Google Maps con key y el envoltorio portable siguen pendientes. Los 1,5 segundos son preferencia del usuario; tamaños y umbrales son decisiones experimentales de la app, no valores Meta ni garantías universales.
 
 El gate de calidad controla si se pueden emitir acciones, no la confianza del detector ni el número de manos. Las sombras siguen basándose en resultados frescos durante bloqueo. Una imagen con brillo y contraste aceptables puede contener landmarks erróneos; no afirmar que el gate garantiza pocos falsos positivos. Los avisos de bajo contraste o poco detalle no bloquean por sí solos. Registrar falsos bloqueos y tiempo habilitado, además de errores de gestos. La [investigación de cámara](./06-camara-y-contraste.md) define las métricas y los umbrales severos.
 
 La distancia pulgar–índice se divide por una escala de palma obtenida de la muñeca–MCP del dedo medio y el ancho entre MCP de índice y meñique. Se corrige la relación ancho/alto de la cámara antes de comparar geometría. El rango entre `0,28` y `0,40` conserva el estado previo y evita alternancias alrededor de un único umbral.
 
-El puño se comprueba positivamente con la misma escala de palma `s`: los cuatro dedos largos deben tener ángulo PIP ≤ `115°`, DIP ≤ `155°`, distancia MCP–punta ≤ `0,65s` y punta–centro de palma ≤ `0,85s`. El pulgar exige punta–centro ≤ `0,75s` y flexión MCP **o** IP ≤ `150°`; su IP puede quedar recto si MCP está flexionado. Cada segmento debe medir entre `0,04s` y `0,75s`. La mano completa debe quedar dentro del frame para habilitar pan; una mano recortada puede conservar su puntero sin establecer esa postura de acción. Estos ángulos se calculan sobre landmarks estimados, no son medidas físicas de articulaciones. Son umbrales experimentales del motor y no una precisión cenital demostrada.
+### Geometría de puños cenitales y frontales
+
+El skeleton de ambas manos permanece visible en el fallo reportado. En la revisión de 0.1.4, los ángulos usaban XYZ pero escala, longitudes y compactación usaban XY: un segmento orientado hacia la cámara puede proyectarse casi a un punto y resultar inválido pese a tener longitud 3D. Una rotación rígida sintética de la misma mano a 90° reprodujo ese rechazo dentro del encuadre; no se presenta como detección física ni como una tasa medida.
+
+En 0.1.5 la geometría del puño se calcula de forma coherente en XYZ. Cada dedo largo debe aportar recogimiento y compactación positivos; se excluye la extensión en la propia geometría 3D. El pulgar debe mantenerse compacto/aducido, sin exigir que una articulación concreta esté doblada. No se define puño como simple ausencia de palma abierta u OK. La escala de palma, segmentos y distancias se calculan en la misma fuente; los parámetros siguientes son el contrato actual de implementación.
+
+MediaPipe devuelve 21 puntos de imagen y 21 de mundo por mano: los primeros tienen x/y normalizados y z relativo a la muñeca; los segundos expresan XYZ en metros respecto al centro geométrico. Son estimaciones del modelo monocular. La fuente world se valida y asocia por índice dentro del mismo resultado; si world falta, el fallback normalizado corrige x/z por la relación ancho/alto. Un world explícito inválido bloquea clic y navegación, sin ocultar el puntero fresco ni inventar otra fuente. El cursor y la navegación utilizan la imagen. No se interpreta world como cámara de profundidad ni evidencia de visibilidad real. [Guía oficial Web, consultada 6-10-2026](https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js), [conversión oficial de resultados](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/tasks/web/components/processors/landmark_result.ts).
+
+| Evidencia positiva de puño 0.1.5 | Umbral experimental implementado |
+|:---|:---|
+| Fuente | 21 puntos XYZ finitos; world válido preferido. World ausente: normalized-3d. World explícito inválido: sin clic ni navegación; puntero fresco conservado. |
+| Escala y segmentos | Palma y huesos medidos en la misma geometría 3D; cada segmento debe medir entre `0,015s` y `0,85s`. Rechazar palma/plano degenerados. |
+| Curvatura de cada dedo largo | PIP ≤ `150°` y cuerda MCP–punta / longitud de cadena MCP→PIP→DIP→punta ≤ `0,72`. Además, DIP ≤ `155°` **o** cierre fuerte: cuerda/cadena ≤ `0,45` y retracción ≤ `0,90`. Un DIP recto no basta para aceptar una garra. |
+| Retracción de cada dedo largo | Distancia punta–muñeca / PIP–muñeca ≤ `1,10`. |
+| Compactación de cada dedo largo | Punta–MCP ≤ `0,90s` y punta–centro de palma ≤ `1,10s`, con escala 3D `s`. |
+| Cercanía al plano de palma | Distancia perpendicular de la punta al plano ≤ `0,45s`; se admite hasta `0,75s` sólo si ese dedo tiene cierre fuerte: cuerda/cadena ≤ `0,45` y retracción ≤ `0,90`. La tolerancia permite grosor con evidencia positiva adicional, sin aceptar una garra sólo por PIP doblado. |
+| Pulgar | Compacto/aducido: punta–centro de palma ≤ `0,85s`. No requiere un ángulo obligatorio de IP o MCP. |
+| Extensión | Exclusión positiva de dedos extendidos en la propia geometría 3D. |
+| Diagnóstico de fuente | `fistGeometrySource`: `world`, `normalized-3d`, `invalid-world` o `invalid-normalized-3d`. |
+
+Si la imagen aporta evidencia positiva de apuntado, palma abierta u OK y el mundo aporta puño, `actionGeometryValid` bloquea clic y navegación conservando punteros: no se elige arbitrariamente entre dos posturas contradictorias.
+
+Estos límites se aplican a landmarks estimados y constituyen hipótesis experimentales del motor. No equivalen a ángulos físicos medidos ni establecen visibilidad de articulaciones; no se añade un gate de `visibility`, otro clasificador ni segunda inferencia.
+
+La mano de imagen completa debe quedar dentro del frame para habilitar pan; una mano recortada puede conservar su puntero fresco sin establecer esa postura de acción. El uso del mundo estimado no elimina pérdidas por oclusión, movimiento o iluminación. Las regresiones de giro fuera del plano, proyección frontal colapsada, datos XYZ ausentes/inválidos y posturas negativas están cubiertas por la suite final. El runtime ya comprueba tres vistas sintéticas; el ensayo físico cenital/frontal y falsos eventos siguen pendientes.
 
 La continuidad se comprueba en el centro de palma **y en la pinza formada por los landmarks 4 y 8**. Un centro estable no debe permitir continuar si pulgar o índice saltan de forma anómala. Ante discontinuidad se cancela la acción de forma segura. Comprobar también que la separación filtrada sea válida y suficientemente alejada de cero antes de dividir o aplicar log2; rechazar esa condición sin generar pan, zoom ni clic residual.
 
@@ -82,7 +107,7 @@ npm run build
 npm run test:app
 ```
 
-La suite de **0.1.4 aprobó 94/94 casos**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Cubre clic a `1500 ms`, no repetición, dos puños sólo para pan, dos OK sólo para zoom, mezclas sin navegación y adquisición nueva al cambiar, además de anclaje, bordes, calidad y recorrido. El preview se comprueba en el runtime. Los **86/86 casos de 0.1.3** se conservan como evidencia histórica y no certifican este cambio. Conservar la salida de cada nueva ejecución; que un test exista no demuestra que siga pasando después de un cambio.
+La suite **0.1.5 aprobó 104/104 pruebas**. Incluye geometría positiva del puño en XYZ coherente, vistas cenitales/frontales, rotaciones fuera del plano, escorzo XY, escala/aspecto, world ausente/inválido, contradicciones de postura, garras rechazadas y cierre fuerte con DIP recto admitido, además de navegación exclusiva y cancelación del clic ante world inválido. La distribución y el runtime se registran más abajo; los resultados 0.1.4 son históricos.
 
 La prueba de aplicación debe comprobar:
 
@@ -123,7 +148,28 @@ Conservar reportes y screenshot técnico si se genera. La prueba de UI puede usa
 
 El fixture positivo PNG tiene transparencia. En el smoke se compone sobre gris `#777` antes de pasar al worker de producción, cuyo análisis de calidad requiere una imagen opaca. Registrar esa condición del fixture. Las cámaras y la entrada real no se preprocesan así; no atribuir a una prueba de imagen compuesta mejoras de precisión en webcam ni de contraste del modelo.
 
-### Verificación vigente: versión 0.1.4
+### Verificación vigente: versión 0.1.5
+
+La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
+
+También aprueban nueve checks de navegación exclusiva, siete de preview, ocho de punteros y ocho de calidad, además de cuatro clics nativos `isTrusted` de al menos `1500 ms`, sin temprano/repetición, con anclaje/aro y recorrido completo. El botón del popup no duplica el avance; el límite carga una entidad. Estas comprobaciones no miden recall, falsos positivos ni latencia física.
+
+El código comprobado es `a2d778582443e0eea81cf386d5e6219815b99eb8`. Los reportes [Mac 0.1.5](./verificacion-paquete-mac-0.1.5.json) y [Windows 0.1.5](./verificacion-paquete-windows-0.1.5.json) confirman el smoke del contenido empaquetado. La [CI Windows 37417286255](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) terminó con éxito: 104 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Cámara USB cenital/frontal, métricas físicas y Google con key real siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance por plataforma.
+
+La `.app` Mac 0.1.5 se abrió y se verificó la cámara activa. La revisión detallada de Ayuda, Ajustes y skeleton de 0.1.4 queda histórica; esta corrección conserva esa interfaz. No se presenta la apertura ni el panel activo como benchmark físico de puños, precisión o latencia.
+
+La revisión geométrica adicional comprobó **1452 casos sintéticos** sin fallos en sus condiciones definidas: 1260 con world, 135 de fallback normalizado, 9 inválidos, 24 posturas negativas, 12 garras y 12 cierres fuertes. Es un barrido de fixtures transformados, no 1452 participantes o capturas independientes; no permite inferir una tasa física de error.
+
+| Mantenimiento nativo de 0.1.5 | Paquete Mac | Contenido empaquetado Windows |
+|:---|:---|:---|
+| Punto 1 | 1541,3 ms | 1521,4 ms |
+| Botón del popup | 1540,9 ms | 1506,2 ms |
+| Punto 2 | 1540,4 ms | 1538,3 ms |
+| Punto 3 | 1537,5 ms | 1528,4 ms |
+
+Son cuatro mantenimientos por plataforma con entradas sintéticas y reloj real, no una distribución de latencia cámara-a-pantalla. Los smoke comprueban la `.app` y `win-unpacked`; no ejecutan el envoltorio portable Windows.
+
+### Evidencia histórica: versión 0.1.4
 
 La suite aprobó **94/94 pruebas**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia.
 
@@ -195,7 +241,7 @@ La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/acti
 
 ### Evidencia histórica disponible: versión 0.1.0
 
-Las comprobaciones siguientes corresponden a **0.1.0** y se conservan como antecedentes. No certifican las funciones ni los paquetes 0.1.4. La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
+Las comprobaciones siguientes corresponden a **0.1.0** y se conservan como antecedentes. No certifican las funciones ni los paquetes 0.1.5. La comprobación inicial en **Apple M5, macOS 26.6.2 y Electron 44.5.1** obtuvo:
 
 | Comprobación | Resultado observado y alcance |
 |:---|:---|
@@ -257,7 +303,7 @@ Registrar intención, acción obtenida, objetivo, hora de inicio/fin, errores y 
 
 ## 4. Periodos sin intención de control
 
-Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Añadir puños casuales al tomar objetos, dos manos recogidas y mezclas puño/OK sin intención de navegar; distinguir reconocimiento de postura de intención real. Dedicar al menos la mitad del material a estas condiciones negativas.
+Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Evaluar por separado cámara cenital y frontal, inclinación de muñeca, pulgar compacto con IP recta, mano abierta de canto, dedos parcialmente recogidos, garra y puño recortado; no aceptar un fallo geométrico por falta de referencia independiente. Añadir puños casuales al tomar objetos, dos manos recogidas y mezclas puño/OK sin intención de navegar; distinguir reconocimiento de postura de intención real. Dedicar al menos la mitad del material a estas condiciones negativas.
 
 Variar iluminación, fondo, altura de mano, anillos y oclusiones de forma registrada. Si guantes u otras condiciones no están cubiertas por el sistema, medir su rechazo y documentar la limitación; no descartarlas silenciosamente del informe.
 
@@ -333,12 +379,18 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite de 0.1.4 | 94/94 aprobadas; distribución de casos descrita arriba. |
-| Runtime Mac y Windows 0.1.4 | Aprobados; clic1500ms, recorrido y checks de navegación, preview, punteros y calidad. |
-| Windows CI 0.1.4 | Ejecución 37415440930 terminada con éxito para fe733f504f64a27cf577bf18a2c91ebd426b9ba2. |
-| Paquete Mac 0.1.4 | ZIP construido y smoke del contenido empaquetado aprobado; cuatro clics nativos, nueve checks de navegación y siete de preview correctos. |
-| Paquete Windows 0.1.4 | Portable construido y smoke del contenido `win-unpacked` aprobado; envoltorio portable sin ensayo de arranque. |
-| Inspección nativa Mac 0.1.4 | Ayuda/Ajustes revisados; preview y landmarks inspeccionados con cámara física, sin guardar imagen personal y sin ensayo USB cenital. |
+| Suite de 0.1.5 | 104/104 aprobadas: 65 gestos, 3 calibración histórica, 9 selección, 4 mapeo, 15 calidad/cámara y 8 secuencia. |
+| Build y runtime Mac 0.1.5 | Aprobados; seis checks de world/vistas, navegación exclusiva, preview, punteros, calidad y cuatro clics nativos. Estímulos de postura sintéticos. |
+| Runtime Windows 0.1.5 | Aprobado en CI 37417286255, incluyendo world21, vistas sintéticas y ciclo de selección nativo. |
+| Paquete Mac 0.1.5 | ZIP y smoke de contenido empaquetado aprobados; world21, seis checks de vistas y cuatro clics nativos. |
+| Paquete Windows 0.1.5 | Portable construido y smoke del contenido `win-unpacked` aprobado; envoltorio de arranque sin ensayo. |
+| Apertura nativa Mac 0.1.5 | `.app` abierta y cámara activa verificadas; sin benchmark físico de puños. |
+| Suite histórica de 0.1.4 | 94/94 aprobadas; distribución de casos descrita arriba. |
+| Runtime histórico Mac y Windows 0.1.4 | Aprobados; clic1500ms, recorrido y checks de navegación, preview, punteros y calidad. |
+| Windows CI histórica 0.1.4 | Ejecución 37415440930 terminada con éxito para fe733f504f64a27cf577bf18a2c91ebd426b9ba2. |
+| Paquete histórico Mac 0.1.4 | ZIP construido y smoke del contenido empaquetado aprobado; cuatro clics nativos, nueve checks de navegación y siete de preview correctos. |
+| Paquete histórico Windows 0.1.4 | Portable construido y smoke del contenido `win-unpacked` aprobado; envoltorio portable sin ensayo de arranque. |
+| Inspección nativa Mac histórica 0.1.4 | Ayuda/Ajustes revisados; preview y landmarks inspeccionados con cámara física, sin guardar imagen personal y sin ensayo USB cenital. |
 | Suite histórica de 0.1.3 | 86/86 pruebas de la suite compartida aprobadas. |
 | Smoke histórico de desarrollo 0.1.3 | Aprobado: cuatro clics nativos de 3 segundos, anclaje/aro/sin clic temprano/sin repetición; recorrido, dos sombras, colores, bordes y bloqueo gris comprobados. |
 | Runtime histórico Windows 0.1.3 | CI 37414071782: 86 pruebas y `test:app` aprobados para el commit f5716f0b134ef15d97f2a727990122b3dbf18e54. |

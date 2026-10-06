@@ -3,15 +3,15 @@
 **Fecha de consulta:** 5 de octubre de 2026<br>
 **Última actualización de implementación:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.4<br>
-**Estado:** 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes. Evidencia histórica de 0.1.2 y 0.1.3 conservada<br>
+**Versión vigente:** 0.1.5<br>
+**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
 
-## Nota de versión vigente: 0.1.4
+## Nota de versión vigente: 0.1.5
 
-El usuario reduce el mantenimiento a **OK continuo durante 1500 ms (1,5 segundos)**. Se conservan objetivo anclado, aro proporcional, un clic automático al completar y rearme tras abrir `120 ms`; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El tiempo es una preferencia de este prototipo, no un valor recomendado por Meta. Las comprobaciones de 0.1.2 y 0.1.3 se conservan como historia y no certifican esta actualización.
+Se conserva **OK continuo durante 1500 ms (1,5 segundos)**, elegido por el usuario en 0.1.4. Se conservan objetivo anclado, aro proporcional, un clic automático al completar y rearme tras abrir `120 ms`; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El tiempo es una preferencia de este prototipo, no un valor recomendado por Meta. Las comprobaciones de 0.1.2 y 0.1.3 se conservan como historia y no certifican esta actualización.
 
 Desde 0.1.3 permanecen visibles las sombras frescas de ambas manos. En 0.1.4 **dos puños cerrados sólo desplazan** por su punto medio y **dos OK sólo hacen zoom** por separación. Cambiar de postura exige adquirir el nuevo modo durante `180 ms`; una mezcla no navega y no se combinan componentes. Azul indica apuntado/reposo; violeta identifica dos puños adquiridos y ámbar dos OK adquiridos, incluso quietos; gris indica acciones bloqueadas. El aro y ripple del clic individual siguen requiriendo exactamente una mano detectada. La regla histórica de ocultar toda sombra con dos manos ya no se aplica.
 
@@ -21,7 +21,19 @@ El control de imágenes casi negras o blancas bloquea acciones y requiere **600 
 
 El preview **Vista cenital** queda siempre visible arriba a la izquierda: unos 200 px de ancho, o 160 px en pantallas pequeñas, con imagen, skeleton fresco y conteo de manos. No incluye casilla ni botón para ocultar. Iniciar/Detener cámara sigue siendo explícito, sin permisos automáticos al abrir; detenida, muestra el mensaje y limpia los datos anteriores. Las métricas, exportación y anotación manual quedan en Ajustes → Diagnóstico de seguimiento.
 
-### Verificación vigente de 0.1.4
+La corrección 0.1.5 aborda puños cuyo skeleton ya aparece pero cuya geometría se rechaza por escorzo frontal. Se utiliza evidencia positiva XYZ consistente, preferentemente del mundo estimado de MediaPipe. Sólo world ausente permite fallback XYZ normalizado; si llega inválido, clic y navegación se bloquean y el puntero permanece. No importa el modelo propietario de Quest, cambia los pesos ni añade una segunda inferencia. Los cuatro dedos deben aportar recogimiento/compactación y el pulgar permanecer compacto, el DIP puede quedar recto sólo con cierre fuerte y el pulgar no requiere flexión obligatoria. Posición de cursor y navegación siguen en la imagen; world no garantiza visibilidad ni precisión física. La definición y fuentes primarias se detallan en el [protocolo](./03-protocolo-validacion.md).
+
+### Verificación vigente de 0.1.5
+
+La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
+
+También aprueban nueve checks de navegación exclusiva, siete de preview, ocho de punteros y ocho de calidad, además de cuatro clics nativos `isTrusted` de al menos `1500 ms`, sin temprano/repetición, con anclaje/aro y recorrido completo. El botón del popup no duplica el avance; el límite carga una entidad. Estas comprobaciones no miden recall, falsos positivos ni latencia física.
+
+El código comprobado es `a2d778582443e0eea81cf386d5e6219815b99eb8`. Los reportes [Mac 0.1.5](./verificacion-paquete-mac-0.1.5.json) y [Windows 0.1.5](./verificacion-paquete-windows-0.1.5.json) confirman el smoke del contenido empaquetado. La [CI Windows 37417286255](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) terminó con éxito: 104 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Cámara USB cenital/frontal, métricas físicas y Google con key real siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance por plataforma.
+
+La `.app` Mac 0.1.5 se abrió y se verificó la cámara activa. La revisión detallada de Ayuda, Ajustes y skeleton de 0.1.4 queda histórica; esta corrección conserva esa interfaz. No se presenta la apertura ni el panel activo como benchmark físico de puños, precisión o latencia.
+
+### Evidencia histórica de 0.1.4
 
 La suite aprobó **94/94 pruebas**: 55 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia.
 

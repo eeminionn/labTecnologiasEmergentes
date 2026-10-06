@@ -2,19 +2,23 @@
 
 **Fecha de consulta:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión de implementación:** 0.1.4<br>
-**Estado:** 15/15 pruebas propias, 94/94 del proyecto, runtime y paquetes Mac/Windows aprobados en 0.1.4; preview físico Mac inspeccionado. Ensayo USB cenital, controles reales y métricas físicas pendientes<br>
+**Versión de implementación:** 0.1.5<br>
+**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar selección](./05-meta-quest-y-seleccion.md)
 
-## Vigencia de 0.1.4
+## Vigencia de 0.1.5
 
-La selección ahora exige **1,5 segundos**, pan usa exclusivamente **dos puños** y zoom exclusivamente **dos OK**. El gate cancela cualquiera de esas acciones ante una imagen inutilizable y no reutiliza el tiempo anterior. Los umbrales de calidad y el modelo se conservan; sus resultados anteriores no certifican por sí solos la nueva integración.
+La selección conserva **1,5 segundos**, pan usa exclusivamente **dos puños** y zoom exclusivamente **dos OK**. El gate cancela cualquiera de esas acciones ante una imagen inutilizable y no reutiliza el tiempo anterior. Los umbrales de calidad y el modelo se conservan; sus resultados anteriores no certifican por sí solos la nueva integración.
 
 El preview pequeño Vista cenital permanece visible arriba a la izquierda, de unos **200 px de ancho** o **160 px** en pantallas pequeñas. Muestra imagen, skeleton y conteo frescos con cámara activa; al detenerla muestra Cámara detenida y limpia el dibujo y datos anteriores. No tiene casilla ni botón para ocultar. La cámara sólo se inicia por acción explícita. Métricas detalladas, exportación y anotación manual de falsos clics se consultan en Ajustes → Diagnóstico de seguimiento. Esta UI aprobó los smoke de runtime y paquete en Mac y Windows; también se inspeccionó el preview físico Mac sin guardar imágenes personales.
 
 La mejora consiste en identificar imágenes claramente inutilizables, cancelar los gestos pendientes y ofrecer ajustes que la cámara realmente admite. No consiste en garantizar que una imagen con buen contraste contiene landmarks correctos. Un detector puede equivocarse con iluminación normal; una mano puede seguir siendo visible sobre una mesa casi uniforme. El gate complementa la geometría, continuidad y temporizadores del motor.
+
+La corrección 0.1.5 distingue tracking de clasificación: el usuario ve el skeleton de ambas manos cerradas, de modo que el fallo reportado está en aceptar la postura. La geometría del puño utiliza XYZ consistente para resistir escorzo frontal, preferentemente `worldLandmarks` estimados; si faltan, utiliza XYZ normalizado con aspecto corregido, y si llegan inválidos bloquea clic y navegación. Conserva el puntero fresco. Cursor y navegación siguen usando la imagen. Ese dato ya lo produce la misma inferencia; no cambia el bitmap, modelo, SDK, umbrales del task ni añade preprocesamiento o segundo detector. La definición y fuentes están en el [protocolo](./03-protocolo-validacion.md).
+
+Una geometría sintética más robusta no acredita mejor iluminación, enfoque ni precisión de cámara. Mantener la evaluación del gate y medir por separado manos cenitales/frontales, pérdidas, falsos bloqueos y falsos eventos.
 
 ## Evidencia que guía la decisión
 
@@ -113,7 +117,17 @@ Los paquetes históricos **0.1.3** Mac y Windows están aprobados; sus resultado
 
 La validación física debe comparar versión con y sin gate sobre secuencias equivalentes: reposo, un OK, dos puños, dos OK, mezclas y cambios de modo, transiciones, manos cruzadas, objetos sin manos, entradas/salidas y pausas. Variar iluminación, fondo, tono de piel, distancia, movimiento y controles admitidos. Etiquetar falsos clics y pan/zoom accidentales por minuto, recuperaciones, falsos bloqueos y fracción del tiempo bloqueada. Incluir el tiempo total y el tiempo habilitado en los denominadores para que pausar mucho no parezca una mejora de precisión. Separar `qualityMs`, inferencia y captura a resultado; ninguno sustituye por sí solo latencia cámara-a-pantalla.
 
-## Verificación de 0.1.4
+## Verificación vigente de 0.1.5
+
+La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
+
+También aprueban nueve checks de navegación exclusiva, siete de preview, ocho de punteros y ocho de calidad, además de cuatro clics nativos `isTrusted` de al menos `1500 ms`, sin temprano/repetición, con anclaje/aro y recorrido completo. El botón del popup no duplica el avance; el límite carga una entidad. Estas comprobaciones no miden recall, falsos positivos ni latencia física.
+
+El código comprobado es `a2d778582443e0eea81cf386d5e6219815b99eb8`. Los reportes [Mac 0.1.5](./verificacion-paquete-mac-0.1.5.json) y [Windows 0.1.5](./verificacion-paquete-windows-0.1.5.json) confirman el smoke del contenido empaquetado. La [CI Windows 37417286255](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) terminó con éxito: 104 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Cámara USB cenital/frontal, métricas físicas y Google con key real siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance por plataforma.
+
+La `.app` Mac 0.1.5 se abrió y se verificó la cámara activa. La revisión detallada de Ayuda, Ajustes y skeleton de 0.1.4 queda histórica; esta corrección conserva esa interfaz. No se presenta la apertura ni el panel activo como benchmark físico de puños, precisión o latencia.
+
+## Evidencia histórica de 0.1.4
 
 Las 15 pruebas de calidad/cámara se incluyen en la suite **94/94 aprobada**. El runtime Mac aprobó ocho checks de calidad y siete de preview: panel detenido/activo/pausado, compacto, dibujo fresco, limpieza y ausencia de casilla. También pasaron ocho de punteros y nueve de navegación exclusiva usando el motor real con entradas sintéticas. El ciclo de selección aprobó cuatro clics nativos tras al menos `1500 ms`, sin temprano/repetición y con anclaje/aro correctos.
 
@@ -121,7 +135,7 @@ El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquete
 
 La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física.
 
-Los controles simulados no demuestran capacidades de una USB física; ese ensayo sigue pendiente, junto con falsos positivos y latencia física. Los reportes anteriores no certifican el nuevo preview ni los modos de 0.1.4.
+Los controles simulados no demuestran capacidades de una USB física; ese ensayo sigue pendiente, junto con falsos positivos y latencia física. Los reportes anteriores no certifican la corrección de puños de 0.1.5.
 
 ## CLAHE y siguientes investigaciones
 

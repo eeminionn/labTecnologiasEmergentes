@@ -4,7 +4,7 @@
 **Última actualización:** 6 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.4 · 94/94 pruebas, runtime y paquetes Mac/Windows aprobados; ensayo cenital USB, controles del driver real, Google con key y envoltorio portable pendientes
+**Versión vigente:** 0.1.5 · 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -74,7 +74,7 @@ Los ocho checks de calidad incluyen `conditionalCameraControls`: sin capacidades
 
 El fixture PNG positivo se compone sobre gris `#777` porque tiene transparencia, únicamente en el smoke; la cámara y la entrada real no se preprocesan así. La ejecución usa fixtures, gestos sintéticos y fondo de mapa de prueba: no valida precisión cenital física ni Google Maps con key real. Las comprobaciones de 0.1.2 se conservan como historia y no certifican las nuevas funciones. Sigue pendiente el ensayo con cámara USB, Google Maps propio y la medición de acciones accidentales y latencia física.
 
-## 6 de octubre - Modos exclusivos y preview en versión 0.1.4
+## 6 de octubre - Evidencia histórica: modos exclusivos y preview en 0.1.4
 
 El usuario reduce la confirmación de OK de 3 segundos a **1,5 segundos** y separa las acciones de navegación. **Dos puños cerrados desplazan** el mapa según el movimiento de su punto medio; cambiar su separación no hace zoom. **Dos OK hacen zoom** por separación; trasladarlos juntos no desplaza el mapa. Una mezcla de posturas no navega. La nueva postura requiere `180 ms` de adquisición, también al cambiar de modo. El puño se reconoce por dedos flexionados y compactos y pulgar cercano a la palma; no basta con que la mano deje de parecer abierta u OK.
 
@@ -90,10 +90,27 @@ El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquete
 
 La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física. Las 86 pruebas y los paquetes de 0.1.3 permanecen identificados como antecedentes.
 
+## 6 de octubre - Corrección de puños cenitales/frontales en 0.1.5
+
+El usuario confirma que el skeleton aparece en ambas manos cerradas, pero el programa no adquiere el desplazamiento. Se investiga la interpretación de la postura: en 0.1.4 se combinaban ángulos XYZ con longitudes, escala y compactación XY, que el escorzo frontal puede colapsar. Una rotación rígida sintética de la misma mano reprodujo un rechazo a 90° sin cambiar su forma 3D ni salir del encuadre; ese caso identifica un defecto geométrico, no un benchmark de cámara.
+
+La corrección utiliza evidencia positiva del puño en XYZ: curvatura/retracción y compactación de los cuatro dedos, exclusión de extensión y pulgar compacto/aducido. Un DIP recto exige cierre fuerte con cuerda/cadena ≤ `0,45` y retracción ≤ `0,90`; no se acepta una garra sólo por PIP doblado. Prefiere `worldLandmarks` válidos, asociados por índice a los landmarks de imagen del mismo resultado; si world falta, utiliza fallback XYZ normalizado con corrección de aspecto. Un world explícito inválido bloquea clic y navegación, sin ocultar el puntero fresco. El mundo es estimado por MediaPipe, no una medición de profundidad ni una garantía de visibilidad. Cursor, pan y zoom conservan su geometría de imagen.
+
+No cambia Hand Landmarker full, su SDK, pesos ni los umbrales del task, y no añade una segunda inferencia. Se conservan clic de 1,5 segundos, dos puños exclusivamente para pan, dos OK exclusivamente para zoom y preview permanente. Los parámetros y la cobertura final se registran en el [protocolo](../Documentos/03-protocolo-validacion.md). Las 94 pruebas y entregas 0.1.4 son antecedentes y no certifican esta corrección.
+
+La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
+
+También aprueban nueve checks de navegación exclusiva, siete de preview, ocho de punteros y ocho de calidad, además de cuatro clics nativos `isTrusted` de al menos `1500 ms`, sin temprano/repetición, con anclaje/aro y recorrido completo. El botón del popup no duplica el avance; el límite carga una entidad. Estas comprobaciones no miden recall, falsos positivos ni latencia física.
+
+El código comprobado es `a2d778582443e0eea81cf386d5e6219815b99eb8`. Los reportes [Mac 0.1.5](../Documentos/verificacion-paquete-mac-0.1.5.json) y [Windows 0.1.5](../Documentos/verificacion-paquete-windows-0.1.5.json) confirman el smoke del contenido empaquetado. La [CI Windows 37417286255](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) terminó con éxito: 104 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Cámara USB cenital/frontal, métricas físicas y Google con key real siguen pendientes; la [entrega](../Documentos/04-entrega-y-verificacion.md) identifica archivos y alcance por plataforma.
+
+La `.app` Mac 0.1.5 se abrió y se verificó la cámara activa. La revisión detallada de Ayuda, Ajustes y skeleton de 0.1.4 queda histórica; esta corrección conserva esa interfaz. No se presenta la apertura ni el panel activo como benchmark físico de puños, precisión o latencia.
+
 ## Decisiones de interacción vigentes
 
 - Índice para apuntar, un OK de una mano para seleccionar, dos puños para desplazar y dos OK exclusivamente para zoom.
 - La palma abierta ya no desplaza el mapa.
+- El puño exige evidencia positiva XYZ de recogimiento y compactación, preferentemente del mundo estimado; la posición del control sigue usando la imagen. Escorzo frontal y vista cenital deben evaluarse por separado.
 - Un OK estable de una mano ejecuta el clic automáticamente al completar `1500 ms`, sin soltar.
 - La posición seleccionada se conserva entre posturas y se ancla antes de cerrar el OK; el aro y clic comparten objetivo.
 - Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
