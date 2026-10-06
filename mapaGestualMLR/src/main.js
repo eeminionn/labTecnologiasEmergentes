@@ -210,7 +210,14 @@ async function verifyQualityFeedback() {
   const warning=gapGate.update(dark,500);showQuality(dark,warning);
   const warningAfterGap=warning.showWarning && !warning.changed && !$('notice').hidden && noticeKind==='quality';
   showQuality(normal,initial);cancelGesture();
-  return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap};
+  // Check actual CSS visibility inside an open dialog, not only the hidden flag.
+  populateCameraControls();$('settings').showModal();
+  const rows=Object.values(cameraRangeIds).map(id=>$(id+'-label'));
+  const unavailableHidden=rows.every(row=>getComputedStyle(row).display==='none');
+  rows[0].hidden=false;
+  const availableVisible=getComputedStyle(rows[0]).display!=='none';
+  populateCameraControls();$('settings').close();
+  return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap,conditionalCameraControls:unavailableHidden&&availableVisible};
 }
 async function startCamera() {
   if(active) return;
