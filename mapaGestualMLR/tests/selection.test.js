@@ -60,3 +60,33 @@ test('browser viewport dimensions inherited from DOMRect do not cancel the hold'
   assert.equal(feedback.update(a,'click-pending',[a],rect).cancel,false);
   assert.equal(feedback.update(a,'click-confirmed',[a],rect).cancel,false);
 });
+
+test('closing a pinch acquires the hovered target before OK and retains it through dwell',()=>{
+  const feedback=new SelectionFeedback();
+  feedback.update({x:130,y:180},'point',[a,b],viewport);
+  const preparing=feedback.update({x:130,y:180},'click-preparing',[a,b],viewport);
+  assert.equal(preparing.target.id,a.id);
+  assert.deepEqual(preparing.point,{x:a.x,y:a.y});
+  const moved=feedback.update({x:144,y:180},'click-pending',[a,b],viewport);
+  assert.equal(moved.target.id,a.id);
+  assert.deepEqual(moved.point,preparing.point);
+  assert.equal(feedback.update({x:144,y:180},'click-confirmed',[a,b],viewport).target.id,a.id);
+});
+
+test('an invalidated target or resized viewport cancels preparation before any dwell',()=>{
+  for(const [targets,size] of [[[],viewport],[[{...a,x:150}],viewport],[[a],{...viewport,height:640}]]){
+    const feedback=new SelectionFeedback();
+    feedback.update(a,'click-preparing',[a],viewport);
+    assert.equal(feedback.update(a,'click-preparing',targets,size).cancel,true);
+  }
+});
+
+test('aborting preparation releases the old target and acquires a newly hovered target',()=>{
+  const feedback=new SelectionFeedback();
+  feedback.update(a,'click-preparing',[a,b],viewport);
+  feedback.update({x:450,y:300},'idle',[a,b],viewport);
+  assert.equal(feedback.held,null);
+  const next=feedback.update(b,'click-preparing',[a,b],viewport);
+  assert.equal(next.target.id,b.id);
+  assert.deepEqual(next.point,{x:b.x,y:b.y});
+});

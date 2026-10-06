@@ -26,7 +26,7 @@ const timings=[], inferenceTimes=[],qualityTimes=[];
 const counters={frames:0,clicks:0,panEvents:0,zoomEvents:0,markedFalseClicks:0};
 const startedAt=new Date().toISOString();
 const linePairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-const labels={idle:'En reposo',point:'Apuntando','click-pending':'Mantén OK · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
+const labels={idle:'En reposo',point:'Apuntando','click-preparing':'Forma OK','click-pending':'Mantén OK · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
 let noticeTimer,noticeKind;
 let telemetryBlocked=false;
 const resultTimes=[];
@@ -139,12 +139,13 @@ async function finishSmoke(data) {
   const ok=emptyFrameResult.hands===0 && emptyFrameResult.qualityValid && data.quality?.valid && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
     && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
-    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint && nativeSelection.sequenceHolds.every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked)
+    && nativeSelection.buttonClickAccepted && nativeSelection.buttonHold.stationaryThumb && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint
+    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.gradualClosure && h.preparingObserved && h.noClickBeforeOk && h.retainedTargetAtOk)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && Object.values(fistViewsFeedback).every(Boolean)
     && Object.values(indexTrackingFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.6',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.7',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifyNativeSelection() {
   map.resetSequence();map.home();map.pan(180,90);cancelGesture();
@@ -157,7 +158,7 @@ async function verifyNativeSelection() {
   cancelGesture();
   const buttonTarget=selectionTargets($('map').getBoundingClientRect()).find(t=>t.element===button);
   if(!buttonTarget)throw new Error('Smoke: botón de popup no disponible');
-  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks);
+  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks,false,true);
   await waitFor(()=>button.textContent==='Punto seleccionado',2000,'selección de botón');
   const advancesOnlyOnPoint=map.info().sequence.completedCount===1;
   const sequenceHolds=[];
@@ -174,14 +175,42 @@ async function verifyNativeSelection() {
   cancelGesture();map.resetSequence();map.home();
   return result;
 }
-async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false) {
+async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,stationaryThumb=false) {
   const rect=$('map').getBoundingClientRect();
   const dx=target.x/rect.width-fixture.poses.point[8].x,dy=target.y/rect.height-fixture.poses.point[8].y;
-  const hand=pose=>({id:'smoke-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+dx,y:p.y+dy}))});
+  const finalOk=fixture.poses.ok.map(p=>({...p}));
+  if(stationaryThumb){
+    for(let index=1;index<=4;index++)finalOk[index]={...fixture.poses.point[index]};
+    const palmSize=classifyHand({landmarks:fixture.poses.point}).palmSize;
+    finalOk[8]={...finalOk[8],x:finalOk[4].x+0.15*palmSize,y:finalOk[4].y};
+    if(!classifyHand({landmarks:finalOk})?.ok)throw new Error('Smoke: cierre con pulgar quieto inválido');
+  }
+  const hand=pose=>({id:'smoke-hand',landmarks:(pose==='ok'?finalOk:fixture.poses[pose]).map(p=>({...p,x:p.x+dx,y:p.y+dy}))});
   const synthetic=new GestureEngine();
   await renderGesture(synthetic.update([hand('point')],performance.now()),1);
-  await sleep(40);
-  const start=performance.now(),beforeClicks=trustedCount();
+  for(let frame=0;frame<5;frame++){
+    await sleep(40);
+    await renderGesture(synthetic.update([hand('point')],performance.now()),1);
+  }
+  const beforeClicks=trustedCount(),closureStarted=performance.now();
+  let start=null,closureFrames=0,preparingObserved=false,noClickBeforeOk=true,retainedTargetAtOk=false;
+  // Gradual 600 ms closure reproduces the user's index retraction, rather
+  // than skipping from an extended tip to a completed OK in a single frame.
+  for(let step=1;step<=15;step++){
+    const t=step/15,point=hand('point'),ok=hand('ok');
+    const closing={id:'smoke-hand',landmarks:point.landmarks.map((p,i)=>Object.fromEntries(['x','y','z'].map(axis=>[axis,p[axis]+(ok.landmarks[i][axis]-p[axis])*t])))};
+    await sleep(40);
+    const now=performance.now(),result=synthetic.update([closing],now);
+    const accepted=await renderGesture(result,1);closureFrames++;
+    preparingObserved ||= result.mode==='click-preparing';
+    if(start===null && result.mode==='click-pending'){
+      start=now;
+      retainedTargetAtOk=Math.abs(parseFloat($('cursor').style.left)-target.x)<.5 && Math.abs(parseFloat($('cursor').style.top)-target.y)<.5;
+    }
+    if(start===null && (result.progress!==0 || result.events.length || accepted.length || trustedCount()!==beforeClicks || $('cursor').dataset.state==='loading'))noClickBeforeOk=false;
+  }
+  if(start===null)throw new Error('Smoke: cierre gradual no inició la selección');
+  const closureDurationMs=performance.now()-closureStarted;
   let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false;
   const anchor={x:target.x,y:target.y};
   while(performance.now()-start<1800){
@@ -197,7 +226,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false) {
     if(result.events.some(event=>event.type==='click')){clicks++;elapsedMs=now-start;clickAccepted=accepted[0]===true;}
     await sleep(40);
   }
-  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks};
+  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,gradualClosure:true,stationaryThumb,closureFrames,closureDurationMs,firstOkElapsedMs:start-closureStarted,preparingObserved,noClickBeforeOk,retainedTargetAtOk};
 }
 async function verifyQualityFeedback() {
   const image=value=>({width:4,height:4,data:Uint8ClampedArray.from(Array.from({length:16},()=>[value,value,value,255]).flat())});

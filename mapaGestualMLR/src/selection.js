@@ -20,7 +20,9 @@ export class SelectionFeedback {
   reset(){this.hoverId=null;this.held=null;}
   update(point,mode,targets,viewport) {
     if(!finitePoint(point)){const cancel=!!this.held;this.reset();return {point:null,target:null,cancel};}
-    const holding=mode==='click-pending' || mode==='click-confirmed';
+    // Acquire at the beginning of the closing motion; the engine still emits
+    // no action or dwell progress until it recognizes a completed OK.
+    const holding=mode==='click-preparing' || mode==='click-pending' || mode==='click-confirmed';
     if(!holding){
       this.held=null;
       const target=hoverTarget(point,targets,this.hoverId);

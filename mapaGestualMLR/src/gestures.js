@@ -21,6 +21,13 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   rearmMs: 120,
   clickCooldownMs: 400,
   maxClickDrift: 0.055, // Camera metric units, before orientation.
+  clickAimDwellMs: 100, // A recent quiet pointer can preserve selection intent.
+  clickAimRadius: 0.012,
+  clickPrepareApproach: 0.08, // Positive reduction in thumb-index/palm ratio.
+  clickPrepareTimeoutMs: 1200, // Preparing never counts toward the OK dwell.
+  clickPalmStability: 0.018,
+  clickClosureGraceMs: 300, // Bounded finger settlement while the palm stays still.
+  clickClosureMaxDrift: 0.12,
   navigationDwellMs: 180, // Two fists acquire pan; two OK hands acquire zoom.
   maxFrameGapMs: 180, // A paused inference loop never counts as dwell.
   trackingJumpRadius: 0.22,
@@ -158,6 +165,8 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   if (palmSize < 0.025 || palmSize > 0.65 * Math.max(1, settings.aspectRatio)) return null;
   const extended = [5, 9, 13, 17].map(mcp => fingerExtended(metricPoints, mcp));
   const center = mean(points[0], points[5], points[9], points[13], points[17]);
+  const lateralAxis = subtract3D(metricPoints[5], metricPoints[17]);
+  const lateralLength = Math.hypot(...lateralAxis);
   const pinchRatio = distance(metricPoints[4], metricPoints[8]) / palmSize;
   const pinched = pinchRatio <= (wasPinched ? settings.pinchExit : settings.pinchEnter);
   const otherExtended = extended.slice(1).filter(Boolean).length;
@@ -171,7 +180,12 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   return {
     center,
     pointer: copy(points[8]),
+    thumb: copy(points[4]),
     knuckles: mean(points[5], points[9], points[13], points[17]),
+    palmAnchors: [0, 5, 9, 13, 17].map(index => copy(points[index])),
+    indexCurl: jointAngle(metricPoints[5], metricPoints[6], metricPoints[7]),
+    indexLateral: lateralLength > 1e-6
+      ? dot3D(subtract3D(metricPoints[8], metricPoints[5]), lateralAxis.map(value => value / lateralLength)) : 0,
     pinch: mean(points[4], points[8]),
     palmSize,
     pinchRatio,
@@ -249,6 +263,8 @@ class PointFilter {
  *
  * At most two hands are accepted. One stable OK clicks automatically after
  * clickDwellMs and remains click-confirmed until released, without repeating.
+ * A recent quiet aim plus positive pinch approach preserves the target during
+ * click-preparing, with zero progress/events; only valid OK starts the dwell.
  * Initial OK is allowed. Drift, loss, a second hand, a model pause or identity
  * replacement cancels the hold and requires a stable release before retrying.
  * Visible pointers follow index tip 8, or the four MCP knuckles for a fist.
@@ -288,6 +304,8 @@ export class GestureEngine {
     this.rearmSince = null;
     this.pendingClick = null;
     this.confirmedClick = null;
+    this.preparingClick = null;
+    for (const track of this.tracks) { track.clickAim = null; track.clickIntent = null; }
     this.navigationCandidate = null;
     this.navigation = null;
   }
@@ -296,6 +314,8 @@ export class GestureEngine {
   cancelClick() {
     this.pendingClick = null;
     this.confirmedClick = null;
+    this.preparingClick = null;
+    for (const track of this.tracks) { track.clickAim = null; track.clickIntent = null; }
     this.clickBlocked = true;
     this.rearmSince = null;
   }
@@ -417,6 +437,8 @@ export class GestureEngine {
     this.rearmSince = null;
     this.pendingClick = null;
     this.confirmedClick = null;
+    this.preparingClick = null;
+    for (const track of this.tracks) { track.clickAim = null; track.clickIntent = null; }
     const [a, b] = this.tracks;
     const kind = !a.shape.actionGeometryValid || !b.shape.actionGeometryValid ? null
       : a.shape.fist && b.shape.fist ? 'pan' : a.shape.ok && b.shape.ok ? 'zoom' : null;
@@ -490,9 +512,10 @@ export class GestureEngine {
     const previous = track.visual;
     const recent = previous && timestampMs >= previous.time
       && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
-    const hold = this.pendingClick || this.confirmedClick;
+    const hold = this.pendingClick || this.confirmedClick || this.preparingClick;
     const locked = count === 1 && hold?.trackId === track.trackId
-      && track.shape.ok && track.shape.actionGeometryValid;
+      && (track.shape.ok || (hold === this.preparingClick && !track.shape.fist))
+      && track.shape.actionGeometryValid;
     let transition = null;
     let edgeMotion = false;
     if (recent) {
@@ -544,16 +567,55 @@ export class GestureEngine {
       return this.result(hand.point ? 'point' : 'idle', cursor);
     }
     const released = hand.pinchRatio >= this.options.pinchExit;
+    const intent = track.clickIntent;
+    if (intent) {
+      const reversed = hand.pinchRatio > intent.minimumRatio
+        + this.options.pinchExit - this.options.pinchEnter;
+      if (timestampMs - intent.since >= this.options.clickPrepareTimeoutMs
+        || this.palmDrift(hand, intent.rawPalm) > this.options.clickPalmStability
+        || hand.fist || reversed) {
+        this.cancelClick();
+        return this.result('idle', cursor);
+      }
+      intent.minimumRatio = Math.min(intent.minimumRatio, hand.pinchRatio);
+    }
+    const preparation = this.preparingClick;
+    if (preparation) {
+      const reversed = hand.pinchRatio > preparation.minimumRatio
+        + this.options.pinchExit - this.options.pinchEnter;
+      if (timestampMs - preparation.since >= this.options.clickPrepareTimeoutMs
+        || this.palmDrift(hand, preparation.rawPalm) > this.options.clickPalmStability
+        || hand.fist || reversed) {
+        this.cancelClick();
+        return this.result('idle', cursor);
+      }
+      preparation.minimumRatio = Math.min(preparation.minimumRatio, hand.pinchRatio);
+      if (!hand.ok) return this.result('click-preparing', preparation.anchor);
+    }
     const hold = this.pendingClick || this.confirmedClick;
     if (hold) {
       if (hand.ok) {
-        if (metricDistance(hand.pinch, hold.rawPinch, this.options.aspectRatio) > this.options.maxClickDrift) {
-          this.pendingClick = null;
-          this.confirmedClick = null;
-          this.clickBlocked = true;
-          this.rearmSince = null;
+        const palmMovement = this.palmDrift(hand, hold.rawPalm);
+        const pinchMovement = metricDistance(hand.pinch, hold.rawPinch, this.options.aspectRatio);
+        const closureMovement = metricDistance(hand.pinch, hold.initialPinch, this.options.aspectRatio);
+        // Forming the ring articulates the tips even after OK first becomes
+        // valid. Allow only a short, bounded settlement with fixed palm anchors
+        // and a gap that is not reopening. Whole-hand drift never accumulates
+        // into this allowance; its baseline remains the initial OK frame.
+        const settling = !this.confirmedClick
+          && timestampMs - hold.since <= this.options.clickClosureGraceMs
+          && palmMovement <= this.options.clickPalmStability
+          && closureMovement <= this.options.clickClosureMaxDrift
+          && hand.pinchRatio <= hold.minimumRatio + 0.04;
+        if (palmMovement > this.options.maxClickDrift
+          || (timestampMs - hold.since <= this.options.clickClosureGraceMs
+            && closureMovement > this.options.clickClosureMaxDrift)
+          || (pinchMovement > this.options.maxClickDrift && !settling)) {
+          this.cancelClick();
           return this.result('idle', cursor);
         }
+        if (settling) hold.rawPinch = copy(hand.pinch);
+        hold.minimumRatio = Math.min(hold.minimumRatio, hand.pinchRatio);
         if (this.confirmedClick) return this.result('click-confirmed', hold.anchor, 1);
         const progress = (timestampMs - hold.since) / this.options.clickDwellMs;
         if (progress >= 1 && timestampMs >= this.cooldownUntil) {
@@ -581,9 +643,15 @@ export class GestureEngine {
         this.pendingClick = {
           since: timestampMs,
           rawPinch: copy(hand.pinch),
-          anchor: copy(recent ? previous.position : cursor),
+          initialPinch: copy(hand.pinch),
+          minimumRatio: hand.pinchRatio,
+          rawPalm: hand.palmAnchors.map(copy),
+          anchor: copy(preparation ? preparation.anchor : intent ? intent.anchor : recent ? previous.position : cursor),
           trackId: track.trackId,
         };
+        this.preparingClick = null;
+        track.clickAim = null;
+        track.clickIntent = null;
         track.visual.position = copy(this.pendingClick.anchor);
         track.visual.locked = true;
         return this.result('click-pending', this.pendingClick.anchor, 0);
@@ -600,6 +668,52 @@ export class GestureEngine {
     } else {
       this.rearmSince = null;
     }
+    if (!this.clickBlocked && !this.multiHandLock && !hand.fist) {
+      const aim = track.clickAim;
+      const palmStable = aim && this.palmDrift(hand, aim.rawPalm) <= this.options.clickPalmStability;
+      const recent = aim && (intent || timestampMs - aim.lastSteady <= this.options.cursorAnchorMaxAgeMs);
+      const approached = aim && aim.pinchRatio - hand.pinchRatio >= this.options.clickPrepareApproach;
+      const thumbApproach = aim && metricDistance(hand.thumb, aim.thumb, this.options.aspectRatio) >= 0.004
+        && metricDistance(hand.thumb, aim.pointer, this.options.aspectRatio)
+          < metricDistance(aim.thumb, aim.pointer, this.options.aspectRatio) - 0.002;
+      const curlingIndex = aim && hand.indexCurl < aim.indexCurl - 5;
+      const lateralApproach = aim && hand.indexLateral > aim.indexLateral + 0.002;
+      if (aim && timestampMs - aim.since >= this.options.clickAimDwellMs
+        && recent && palmStable && approached) {
+        // A stationary thumb can still receive a curling index. Keep that
+        // intent privately until OK is valid; curling alone must not freeze a
+        // normal pointing finger. Positive lateral approach can show preparing
+        // earlier without waiting for the other fingers to finish extending.
+        if (curlingIndex && !intent) {
+          track.clickIntent = { since: timestampMs, anchor: copy(aim.anchor),
+            rawPalm: aim.rawPalm.map(copy), minimumRatio: hand.pinchRatio };
+        }
+        if (thumbApproach || (curlingIndex && lateralApproach)) {
+          const candidate = track.clickIntent;
+          this.preparingClick = { since: candidate ? candidate.since : timestampMs, trackId: track.trackId,
+            anchor: copy(candidate ? candidate.anchor : aim.anchor), rawPalm: aim.rawPalm.map(copy),
+            minimumRatio: hand.pinchRatio };
+          track.visual.position = copy(this.preparingClick.anchor);
+          track.visual.locked = true;
+          return this.result('click-preparing', this.preparingClick.anchor);
+        }
+      }
+      const pointerSteady = aim
+        && metricDistance(hand.pointer, aim.pointer, this.options.aspectRatio) <= this.options.clickAimRadius;
+      if (!aim || !palmStable || !recent) {
+        track.clickAim = { since: timestampMs, lastSteady: timestampMs, anchor: copy(cursor),
+          pointer: copy(hand.pointer), thumb: copy(hand.thumb), pinchRatio: hand.pinchRatio,
+          indexCurl: hand.indexCurl, indexLateral: hand.indexLateral, rawPalm: hand.palmAnchors.map(copy) };
+      } else if (pointerSteady) {
+        aim.lastSteady = timestampMs;
+        aim.anchor = copy(cursor);
+      }
+    } else track.clickAim = null;
     return this.result(hand.point ? 'point' : 'idle', cursor);
+  }
+
+  palmDrift(hand, baseline) {
+    return Math.max(...hand.palmAnchors.map((point, index) =>
+      metricDistance(point, baseline[index], this.options.aspectRatio)));
   }
 }

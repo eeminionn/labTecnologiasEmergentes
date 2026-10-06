@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GestureEngine, OneEuroFilter, classifyHand, pointerReference } from '../src/gestures.js';
+import { hoverTarget } from '../src/selection.js';
 
 // Synthetic landmarks exercise the interpreter; they are not detector accuracy
 // measurements. Camera recordings and user trials remain necessary for that.
@@ -74,6 +75,10 @@ function cameraView(value, { pitch = 0, yaw = 0, roll = 0, aspectRatio = 1,
 
 const translatedImage = (value, x, y = 0) => ({ ...value,
   landmarks: value.landmarks.map(point => ({ ...point, x: point.x + x, y: point.y + y })) });
+
+const blendHand = (from, to, progress) => ({ id: from.id,
+  landmarks: from.landmarks.map((point, index) => Object.fromEntries(['x', 'y', 'z']
+    .map(axis => [axis, (point[axis] ?? 0) * (1 - progress) + (to.landmarks[index][axis] ?? 0) * progress]))) });
 
 function frames(engine, hands, from, until, step = 20) {
   const results = [];
@@ -426,6 +431,217 @@ test('point, palm and neutral targets stay anchored when fingers close into OK',
     assert.deepEqual(hold[0].cursor, target, pose);
     assert.ok(hold.every(result => Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12));
     assert.deepEqual(clicks(hold), [{ type: 'click', ...target }], pose);
+  }
+});
+
+test('gradual pointing or open-to-OK closure preserves the original target before index retraction', () => {
+  for (const pose of ['point', 'open']) for (const duration of [200, 600, 1000]) {
+    const engine = new GestureEngine();
+    const from = hand(pose), to = hand('ok');
+    const before = frames(engine, [from], 0, 200).at(-1);
+    const target = { id: 'original', x: before.cursor.x * 1000, y: before.cursor.y * 1000,
+      width: 44, height: 44 };
+    const results = [];
+    let firstOK, firstPreparing;
+    for (let elapsed = 20; elapsed <= duration; elapsed += 20) {
+      const result = engine.update([blendHand(from, to, elapsed / duration)], 200 + elapsed);
+      if (result.mode === 'click-preparing' && firstPreparing === undefined) firstPreparing = 200 + elapsed;
+      if (result.mode === 'click-pending' && firstOK === undefined) firstOK = 200 + elapsed;
+      if (result.mode === 'click-preparing') {
+        assert.equal(result.progress, 0);
+        assert.equal(result.events.length, 0);
+        assert.equal(hoverTarget({ x: result.cursor.x * 1000, y: result.cursor.y * 1000 }, [target])?.id,
+          'original', `${pose}, closing=${duration}`);
+      }
+      results.push(result);
+    }
+    assert.ok(firstPreparing < firstOK, `${pose}, closing=${duration}`);
+    assert.equal(events(results).length, 0, 'preparation never produces a click');
+    const atOK = results.find(result => result.mode === 'click-pending');
+    assert.equal(atOK.progress, 0);
+    assert.equal(hoverTarget({ x: atOK.cursor.x * 1000, y: atOK.cursor.y * 1000 }, [target])?.id, 'original');
+    results.push(...frames(engine, [to], 220 + duration, firstOK + 1480));
+    const deadline = engine.update([to], firstOK + 1500);
+    assert.equal(deadline.mode, 'click-confirmed');
+    assert.equal(deadline.events.length, 1);
+    assert.equal(hoverTarget({ x: deadline.events[0].x * 1000, y: deadline.events[0].y * 1000 }, [target])?.id,
+      'original');
+    assert.equal(events(frames(engine, [to], firstOK + 1520, firstOK + 2100)).length, 0);
+  }
+});
+
+test('a stationary thumb can receive a gradually curling index without losing the pointed target', () => {
+  for (const vertical of [false, true]) for (const duration of [200, 600, 1000]) {
+    for (const roll of [0, 0.8, 1.9]) for (const aspectRatio of [1, 4 / 3, 16 / 9]) {
+      const start = hand('point');
+      if (vertical) start.landmarks[4].x = start.landmarks[5].x;
+      const finish = hand('ok');
+      for (let index = 1; index <= 4; index++) finish.landmarks[index] = { ...start.landmarks[index] };
+      finish.landmarks[8] = { x: start.landmarks[4].x + classifyHand(start).palmSize * 0.15,
+        y: start.landmarks[4].y, z: 0 };
+      const from = cameraView(start, { roll, aspectRatio, world: false });
+      const to = cameraView(finish, { roll, aspectRatio, world: false });
+      assert.equal(classifyHand(to, { aspectRatio }).ok, true);
+      const engine = new GestureEngine({ aspectRatio });
+      const initial = frames(engine, [from], 0, 200).at(-1);
+      const target = { id: 'original', x: initial.cursor.x * 1000, y: initial.cursor.y * 1000,
+        width: 44, height: 44 };
+      const closure = [];
+      let started;
+      for (let elapsed = 20; elapsed <= duration; elapsed += 20) {
+        const result = engine.update([blendHand(from, to, elapsed / duration)], 200 + elapsed);
+        if (result.mode === 'click-pending' && started === undefined) started = 200 + elapsed;
+        closure.push(result);
+      }
+      assert.equal(events(closure).length, 0);
+      assert.ok(started, `vertical=${vertical}, duration=${duration}, roll=${roll}, aspect=${aspectRatio}`);
+      const pending = closure.find(result => result.mode === 'click-pending');
+      assert.equal(hoverTarget({ x: pending.cursor.x * 1000, y: pending.cursor.y * 1000 }, [target])?.id,
+        'original', `vertical=${vertical}, duration=${duration}, roll=${roll}, aspect=${aspectRatio}`);
+      const held = frames(engine, [to], 220 + duration, started + 1500);
+      assert.equal(clicks(held).length, 1);
+      assert.equal(hoverTarget({ x: clicks(held)[0].x * 1000, y: clicks(held)[0].y * 1000 }, [target])?.id,
+        'original');
+    }
+  }
+});
+
+test('moving or flexing only the pointing index without thumb approach never prepares a click', () => {
+  for (const motion of ['tip', 'curl', 'vertical']) for (const roll of [0, 0.8, 1.9]) {
+    for (const aspectRatio of [1, 4 / 3, 16 / 9]) {
+    const engine = new GestureEngine({ aspectRatio });
+    const raw = hand('point');
+    const from = cameraView(raw, { roll, aspectRatio, world: false });
+    const initial = frames(engine, [from], 0, 200).at(-1);
+    const results = [];
+    for (let elapsed = 20; elapsed <= 600; elapsed += 20) {
+      const progress = elapsed / 600;
+      const moved = structuredClone(raw);
+      if (motion === 'tip') moved.landmarks[8].x -= progress * 0.06;
+      else for (let index = 5; index <= 8; index++) {
+        const closed = hand('neutral').landmarks[index];
+        moved.landmarks[index] = Object.fromEntries(['x', 'y', 'z'].map(axis =>
+          [axis, raw.landmarks[index][axis] * (1 - progress) + closed[axis] * progress]));
+        if (motion === 'vertical') moved.landmarks[index].x = raw.landmarks[index].x;
+      }
+      results.push(engine.update([cameraView(moved, { roll, aspectRatio, world: false })], 200 + elapsed));
+    }
+    assert.ok(results.every(result => result.mode !== 'click-preparing' && result.mode !== 'click-pending'));
+    assert.equal(events(results).length, 0);
+    assert.ok(Math.hypot((results.at(-1).cursor.x - initial.cursor.x) * aspectRatio,
+      results.at(-1).cursor.y - initial.cursor.y) > 0.03);
+    }
+  }
+});
+
+test('a private curling intent expires or cancels on palm movement without freezing or clicking', () => {
+  for (const moved of [false, true]) {
+    const engine = new GestureEngine();
+    const from = hand('point'), neutral = hand('neutral');
+    frames(engine, [from], 0, 200);
+    const partial = blendHand(from, neutral, 0.5);
+    const latent = engine.update([partial], 240);
+    assert.ok(engine.tracks[0].clickIntent);
+    assert.notEqual(latent.mode, 'click-preparing');
+    assert.ok(latent.cursor.y > from.landmarks[8].y);
+    if (moved) assert.equal(engine.update([translatedImage(partial, 0.03)], 260).mode, 'idle');
+    else {
+      frames(engine, [partial], 260, 1420);
+      assert.equal(engine.update([partial], 1440).mode, 'idle');
+    }
+    assert.equal(engine.tracks[0].clickIntent, null);
+    const held = frames(engine, [hand('ok')], moved ? 280 : 1460, moved ? 2200 : 3380);
+    assert.equal(clicks(held).length, 0);
+  }
+});
+
+test('preparation expires without acting and a fresh aim cannot inherit its old target', () => {
+  const engine = new GestureEngine();
+  const from = hand('point'), to = hand('ok');
+  const initial = frames(engine, [from], 0, 200).at(-1);
+  const partial = blendHand(from, to, 0.2);
+  const preparing = engine.update([partial], 240);
+  assert.equal(preparing.mode, 'click-preparing');
+  const expired = frames(engine, [partial], 260, 1420);
+  assert.ok(expired.every(result => result.mode === 'click-preparing'));
+  expired.push(engine.update([partial], 1440));
+  assert.equal(events(expired).length, 0);
+  assert.equal(expired.at(-1).mode, 'idle', 'expires exactly 1200 ms after preparing begins');
+  frames(engine, [partial], 1460, 1600);
+  const newFrom = hand('point', { x: 0.12 });
+  const newTo = hand('ok', { x: 0.12 });
+  const fresh = frames(engine, [newFrom], 1620, 2220).at(-1);
+  assert.ok(fresh.cursor.x > initial.cursor.x + 0.10);
+  const closure = [];
+  for (let elapsed = 20; elapsed <= 600; elapsed += 20) {
+    closure.push(engine.update([blendHand(newFrom, newTo, elapsed / 600)], 2220 + elapsed));
+  }
+  const firstOK = closure.findIndex(result => result.mode === 'click-pending');
+  assert.ok(firstOK >= 0);
+  const started = 2240 + firstOK * 20;
+  const held = frames(engine, [newTo], 2840, started + 1500);
+  assert.equal(clicks(held).length, 1);
+  assert.ok(clicks(held)[0].x > initial.cursor.x + 0.10);
+});
+
+test('opening, palm motion, lost tracking, a second hand or invalid geometry cancel preparation', () => {
+  for (const reason of ['open', 'palm', 'loss', 'second', 'geometry', 'identity', 'gap']) {
+    const engine = new GestureEngine();
+    const from = hand('point'), to = hand('ok');
+    frames(engine, [from], 0, 200);
+    const partial = blendHand(from, to, 0.2);
+    assert.equal(engine.update([partial], 240).mode, 'click-preparing');
+    const time = reason === 'gap' ? 420 : 260;
+    const invalid = reason === 'open' ? [from] : reason === 'palm' ? [translatedImage(partial, 0.03)]
+      : reason === 'loss' ? [] : reason === 'second' ? [partial, hand('open', { id: 'b', x: 0.30 })]
+        : reason === 'geometry' ? [{ ...partial, worldLandmarks: [] }]
+          : reason === 'identity' ? [{ ...partial, id: 'replacement' }] : [partial];
+    const cancelled = engine.update(invalid, time);
+    assert.notEqual(cancelled.mode, 'click-preparing', reason);
+    assert.equal(cancelled.events.length, 0, reason);
+    const held = frames(engine, [reason === 'identity' ? { ...to, id: 'replacement' } : to], time + 20, time + 1900);
+    assert.equal(clicks(held).length, 0, reason);
+  }
+});
+
+test('a quiet-palm OK can finish its bounded finger closure while retaining the target and dwell', () => {
+  const engine = pointedEngine();
+  const anchor = engine.update([hand('ok')], 160).cursor;
+  let closed;
+  const results = [];
+  for (let elapsed = 20; elapsed <= 200; elapsed += 20) {
+    closed = hand('ok');
+    for (const index of [4, 8]) closed.landmarks[index].y += elapsed / 200 * 0.10;
+    results.push(engine.update([closed], 160 + elapsed));
+  }
+  assert.ok(results.every(result => result.mode === 'click-pending'));
+  results.push(...frames(engine, [closed], 380, 1660));
+  assert.deepEqual(clicks(results), [{ type: 'click', ...anchor }]);
+});
+
+test('slow accumulated palm translation cancels an OK even during closing settlement', () => {
+  const engine = pointedEngine();
+  engine.update([hand('ok')], 160);
+  const moving = [];
+  for (let elapsed = 20; elapsed <= 300; elapsed += 20) {
+    moving.push(engine.update([hand('ok', { x: elapsed / 300 * 0.07 })], 160 + elapsed));
+  }
+  assert.ok(moving.some(result => result.mode === 'idle'));
+  assert.equal(events(moving).length, 0);
+  assert.equal(clicks(frames(engine, [hand('ok', { x: 0.07 })], 480, 2500)).length, 0);
+});
+
+test('finger settlement cannot exceed its cap or restart after the closing grace interval', () => {
+  for (const late of [false, true]) {
+    const engine = pointedEngine();
+    engine.update([hand('ok')], 160);
+    frames(engine, [hand('ok')], 180, late ? 480 : 240);
+    const moved = hand('ok');
+    for (const index of [4, 8]) moved.landmarks[index].y += late ? 0.07 : 0.13;
+    const result = engine.update([moved], late ? 500 : 260);
+    assert.equal(result.mode, 'idle');
+    assert.equal(result.events.length, 0);
+    assert.equal(clicks(frames(engine, [moved], late ? 520 : 280, 2200)).length, 0);
   }
 });
 
