@@ -1,0 +1,110 @@
+{
+  "version": "0.1.3",
+  "ok": true,
+  "provider": "OpenStreetMap",
+  "wasmLoaded": true,
+  "telemetryBlockedByWorkerCsp": true,
+  "emptyFrame": {
+    "hands": 0,
+    "inferenceMs": 64.29999995231628,
+    "qualityValid": true
+  },
+  "positiveFixture": {
+    "hands": 1,
+    "landmarks": 21,
+    "inferenceMs": 57.10000002384186,
+    "qualityValid": true,
+    "qualityMs": 11.699999928474426
+  },
+  "zoomWorks": true,
+  "popupWorks": true,
+  "selectionWorks": true,
+  "pointerFeedback": {
+    "oneHand": true,
+    "twoHands": true,
+    "panColor": true,
+    "zoomColor": true,
+    "blockedVisible": true,
+    "noHands": true,
+    "fullFrameEdges": true,
+    "clearedRipple": true
+  },
+  "navigationFeedback": {
+    "panWorks": true,
+    "combinedZoomWorks": true,
+    "visibleDuringNavigation": true
+  },
+  "qualityFeedback": {
+    "normalAllows": true,
+    "darkCancels": true,
+    "heldBlocks": true,
+    "recoveryWaits": true,
+    "recovered": true,
+    "noBlockedInput": true,
+    "warningAfterGap": true,
+    "conditionalCameraControls": true
+  },
+  "nativeSelection": {
+    "gestureClickAccepted": true,
+    "popupOpened": true,
+    "buttonClickAccepted": true,
+    "selectionWorks": true,
+    "trustedClicks": 4,
+    "advancesOnlyOnPoint": true,
+    "sequenceCompleted": true,
+    "sequenceHolds": [
+      {
+        "clickAccepted": true,
+        "elapsedMs": 3032.600000023842,
+        "cursorLocked": true,
+        "ringHalfVisible": true,
+        "noEarlyClick": true,
+        "clicks": 1
+      },
+      {
+        "clickAccepted": true,
+        "elapsedMs": 3031.4000000953674,
+        "cursorLocked": true,
+        "ringHalfVisible": true,
+        "noEarlyClick": true,
+        "clicks": 1
+      }
+    ],
+    "holdElapsedMs": 3029.600000023842,
+    "cursorLocked": true,
+    "ringHalfVisible": true,
+    "noEarlyClick": true,
+    "oneClickWhileHeld": true,
+    "pointHold": {
+      "clickAccepted": true,
+      "elapsedMs": 3038.5,
+      "cursorLocked": true,
+      "ringHalfVisible": true,
+      "noEarlyClick": true,
+      "clicks": 1
+    },
+    "buttonHold": {
+      "clickAccepted": true,
+      "elapsedMs": 3029.600000023842,
+      "cursorLocked": true,
+      "ringHalfVisible": true,
+      "noEarlyClick": true,
+      "clicks": 1
+    }
+  },
+  "mapView": {
+    "zoom": 14.198931903756487,
+    "center": {
+      "lat": -33.447106860690866,
+      "lng": -70.53547584683395
+    },
+    "sequence": {
+      "activeIndex": 0,
+      "completed": false,
+      "completedCount": 0,
+      "total": 3
+    },
+    "boundaryLoaded": true,
+    "boundaryFeatureCount": 1
+  }
+}

@@ -1,12 +1,31 @@
 # Meta Quest y selección estable con las manos
 
 **Fecha de consulta:** 5 de octubre de 2026<br>
+**Última actualización de implementación:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.2<br>
-**Estado:** interacción implementada; 49/49 pruebas y smoke Mac/Windows aprobados en modo OpenStreetMap de prueba<br>
+**Versión vigente:** 0.1.3<br>
+**Estado:** 86/86 pruebas y paquetes Mac/Windows aprobados; cámara física, driver real, Google con key y envoltorio portable pendientes. La sección histórica de comprobaciones pertenece a 0.1.2<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
+
+## Nota de versión vigente: 0.1.3
+
+La selección conserva el contrato de **OK continuo durante 3000 ms**, objetivo anclado, aro proporcional, un clic automático al completar y rearme tras apertura; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El cuerpo de esta investigación y sus comprobaciones se conserva como historia de **0.1.2**. Sus 49/49 pruebas y paquetes no certifican la nueva versión.
+
+En 0.1.3 permanecen visibles las sombras frescas de ambas manos, incluso en reposo, durante clic y con dos OK. Azul indica apuntado/reposo; violeta, navegación adquirida o desplazamiento; ámbar, zoom dominante con histéresis; gris, acciones bloqueadas. El aro y ripple del clic individual siguen requiriendo exactamente una mano detectada. La regla histórica de ocultar toda sombra con dos manos ya no se aplica.
+
+Todo el encuadre se corresponde con todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. La continuidad breve de postura conserva el destino de clic sin dejar un offset permanente al desplazarse. Los tres puntos ficticios miden 40 px nominales y 56 px cuando están activos, con área exterior fija de 56 × 56 px. Un clic nativo sobre el activo avanza **1→2→3**; tras el tercero se detiene el pulso y Ajustes permite reiniciar. Estos tamaños, colores y tiempos son decisiones de la app, no especificaciones Meta.
+
+El control de imágenes casi negras o blancas bloquea acciones y requiere **600 ms** continuos de recuperación, conservando punteros frescos en gris. No garantiza landmarks correctos ni una tasa baja de falsos positivos. Brillo, contraste, compensación de exposición y modos continuos dependen de las capacidades anunciadas por la cámara. Los detalles vigentes están en el [protocolo](./03-protocolo-validacion.md), la [investigación de cámara](./06-camara-y-contraste.md) y el [recorrido y límite SUBDERE DPA 2023](./07-limite-la-reina.md).
+
+La comprobación actual del commit `f5716f0b134ef15d97f2a727990122b3dbf18e54` aprobó **cuatro clics nativos**: punto 1, botón de popup, punto 2 y punto 3; al menos 3 segundos por mantenimiento, sin clic temprano ni repetición, con anclaje y aro correctos. Se completó el recorrido y aprobaron ambas sombras, colores, bordes y punteros grises sin acciones al bloquear la imagen. El [smoke de la `.app` Mac final](./verificacion-paquete-mac-0.1.3.json) también aprobó esos resultados; la apertura real, Ajustes y ayuda se revisaron en la app.
+
+Los ocho checks de calidad incluyen controles ocultos cuando no hay capacidades y visibles/habilitados dentro de Ajustes al anunciar rangos válidos. Se comprueba la UI con capacidades simuladas, no el hardware USB. La [CI Windows 0.1.3](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37414071782) terminó correctamente para el commit final: `npm ci`, 86 pruebas, build, runtime, portable y smoke del contenido empaquetado aprobados. El [reporte Windows 0.1.3](./verificacion-paquete-windows-0.1.3.json) corresponde a `release/win-unpacked/Mapa Gestual MLR.exe`; no prueba el arranque de su envoltorio portable.
+
+El PNG transparente se compone sobre gris `#777` sólo en el smoke. La cámara y entrada real no reciben ese preprocesamiento. Los fixtures/gestos sintéticos y el fondo de mapa de prueba comprueban integración y selección, no precisión física cenital ni el SDK Google Maps con key real. La evidencia final de paquetes se registra en [Entrega y verificación](./04-entrega-y-verificacion.md).
+
+## Alcance investigado e implementado en 0.1.2
 
 El usuario solicita mantener un OK durante **3 segundos** y ejecutar el clic al completar ese tiempo, sin tener que soltar. También reporta que el cursor se desplaza al centro al formar OK. La versión 0.1.2 conserva el objetivo, muestra un aro azul de progreso y confirma en verde al ejecutar el clic. Permite cancelar antes del umbral y comenzar directamente con OK, anclando la posición válida actual sin exigir apuntado previo.
 

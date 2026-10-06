@@ -1,10 +1,10 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 5 de octubre de 2026<br>
+**Última actualización:** 6 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.2 · 49/49 pruebas y paquetes Mac/Windows aprobados
+**Versión vigente:** 0.1.3 · 86/86 pruebas y paquetes Mac/Windows aprobados; cámara física, driver real, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -23,6 +23,8 @@ La pregunta actual es concreta: ¿podemos controlar un mapa con manos observadas
 | [Gestos y UX](../Documentos/02-gestos-y-ux.md) | Papers, vocabulario de interacción y criterios de interfaz. |
 | [Protocolo de validación](../Documentos/03-protocolo-validacion.md) | Pruebas que faltan para evaluar precisión y latencia. |
 | [Meta Quest y selección](../Documentos/05-meta-quest-y-seleccion.md) | Referentes oficiales sobre cursor estable, hover, confirmación y pérdida de tracking. |
+| [Cámara y contraste](../Documentos/06-camara-y-contraste.md) | Fuentes y límites del control de calidad y de los ajustes disponibles según la cámara. |
+| [Límite de La Reina y recorrido](../Documentos/07-limite-la-reina.md) | Procedencia SUBDERE DPA 2023 y lógica de los tres puntos ficticios. |
 
 ## 5 de octubre - Primer alcance
 
@@ -54,6 +56,24 @@ La selección incorpora hover y resolución first/best de un candidato visible, 
 
 La investigación de [Meta Quest](../Documentos/05-meta-quest-y-seleccion.md) toma como referentes apuntado estable, objetivos tolerantes y cancelación ante pérdida de tracking. No incorpora el modelo propietario de Quest ni traslada sus poses 3D a nuestra cámara RGB.
 
+## 6 de octubre - Visibilidad y recorrido en versión 0.1.3
+
+El usuario solicita ver ambas manos durante la navegación, distinguir desplazamiento y zoom por color y alcanzar los extremos del mapa desde los extremos del encuadre. Se conserva una sombra fresca por mano, también en reposo y con palma abierta. Azul indica apuntado/reposo; violeta tenue, navegación adquirida; violeta, desplazamiento; ámbar, zoom dominante. La histéresis evita cambios por jitter. Pausa o bloqueo de acciones muestran las sombras en gris. El aro y ripple del clic individual siguen limitados a una sola mano detectada.
+
+El mapeo pasa a usar toda la cámara para todo el mapa, con espejo, rotación y límites `0..1`. Se eliminan la homografía y las esquinas guardadas de versiones anteriores. La continuidad al cambiar de postura conserva el destino durante OK, pero la corrección se consume al mover la mano y permite alcanzar los bordes sin un desplazamiento permanente.
+
+Los puntos ficticios se numeran 1, 2 y 3. El dibujo nominal mide 40 px y el activo 56 px, con pulso suave; el área exterior permanece fija en 56 × 56 px para no mover el objetivo durante los 3 segundos. Un clic nativo sobre el activo avanza una posición. Tras el tercero cesa el pulso; Ajustes permite reiniciar en el punto 1. El botón del popup no duplica el avance e Inicio conserva el recorrido. El contorno de la comuna procede de **SUBDERE, DPA 2023** y se documenta con su procedencia; no convierte los puntos de prueba en información municipal real.
+
+La [investigación de cámara y contraste](../Documentos/06-camara-y-contraste.md) fundamenta un control conservador para frames casi totalmente negros o blancos. Cancela y bloquea acciones inmediatamente; exige 600 ms continuos de recuperación, manteniendo visibles los punteros frescos en gris. No constituye una garantía de precisión ni mide intención. Los controles de brillo, contraste y compensación de exposición aparecen sólo cuando el track de cámara declara capacidades válidas. Los modos automáticos continuos se solicitan únicamente si están anunciados y se distingue solicitud de ajuste confirmado.
+
+La suite compartida de 0.1.3 aprobó **86/86 pruebas**. El smoke de desarrollo comprobó cuatro clics nativos (`trustedClicks=4`): punto 1, botón de popup, punto 2 y punto 3. Los mantenimientos completaron al menos 3 segundos, sin clic temprano ni repetición, con anclaje y aro correctos. El recorrido terminó en orden y el botón no produjo un segundo avance. También aprobaron dos sombras, colores de desplazamiento/zoom, bordes y punteros grises sin acciones al bloquearse la imagen.
+
+El código se conserva en el commit `f5716f0b134ef15d97f2a727990122b3dbf18e54`. El ZIP Mac arm64 y la `.app` final aprobaron su smoke de paquete: cuatro clics nativos y todos los checks de puntero, navegación y calidad correctos. El [reporte Mac 0.1.3](../Documentos/verificacion-paquete-mac-0.1.3.json) conserva los resultados. También se abrió realmente la aplicación y se revisaron Ajustes y ayuda.
+
+Los ocho checks de calidad incluyen `conditionalCameraControls`: sin capacidades, los controles se mantienen ocultos; al anunciar rangos válidos, aparecen habilitados dentro de Ajustes. Es una comprobación de UI con capacidades simuladas, no evidencia de soporte en cualquier USB. La [CI Windows 0.1.3](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37414071782) terminó correctamente para el commit final: `npm ci`, 86 pruebas, build, runtime, construcción del portable y smoke del contenido empaquetado aprobados. El [reporte Windows 0.1.3](../Documentos/verificacion-paquete-windows-0.1.3.json) registra la ejecución de `release/win-unpacked/Mapa Gestual MLR.exe`; el envoltorio portable no se abrió en ese ensayo. La [guía de entrega](../Documentos/04-entrega-y-verificacion.md) reúne la evidencia de ambas plataformas.
+
+El fixture PNG positivo se compone sobre gris `#777` porque tiene transparencia, únicamente en el smoke; la cámara y la entrada real no se preprocesan así. La ejecución usa fixtures, gestos sintéticos y fondo de mapa de prueba: no valida precisión cenital física ni Google Maps con key real. Las comprobaciones de 0.1.2 se conservan como historia y no certifican las nuevas funciones. Sigue pendiente el ensayo con cámara USB, Google Maps propio y la medición de acciones accidentales y latencia física.
+
 ## Decisiones de interacción vigentes
 
 - Índice para apuntar, un OK para seleccionar y dos OK para desplazar y hacer zoom.
@@ -63,14 +83,17 @@ La investigación de [Meta Quest](../Documentos/05-meta-quest-y-seleccion.md) to
 - Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
 - Abrir antes del umbral cancela el mantenimiento. El aro azul confirma en verde cuando se ejecuta el clic.
 - La segunda mano y la navegación con dos OK cancelan la selección individual pendiente.
+- Una sombra por mano conserva feedback en reposo, clic y dos OK; el color distingue apuntado, desplazamiento, zoom dominante y acciones bloqueadas.
 - Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.
-- La calibración de cuatro esquinas adapta la mesa a la vista del mapa; se puede corregir espejo y orientación.
+- Todo el encuadre de cámara corresponde a todo el mapa con espejo, orientación y límites `0..1`, sin calibración de esquinas.
+- El recorrido avanza por clic nativo sobre el punto activo; tras completar 1→2→3 se reinicia desde Ajustes.
+- Una imagen extrema cancela acciones sin ocultar los punteros frescos; se exigen 600 ms continuos de recuperación.
 
 Los tiempos elegidos son valores iniciales para probar. No se registran todavía como una solución validada por usuarios.
 
 ## Interfaz y mapas
 
-La interfaz usa controles sobrios, bordes finos y tipografía de sistema, tomando Primer de GitHub como referente. El mapa ocupa el espacio principal; ajustes y diagnóstico aparecen cuando se necesitan. La sombra azul sirve como feedback del puntero y de la confirmación.
+La interfaz usa controles sobrios, bordes finos y tipografía de sistema, tomando Primer de GitHub como referente. El mapa ocupa el espacio principal; ajustes y diagnóstico aparecen cuando se necesitan. Las sombras comunican posición y estado de control, mientras el aro indica el tiempo de confirmación.
 
 Los materiales de Stanford orientan una evaluación de usabilidad, prototipado y accesibilidad. No se asume que exista una lista única de leyes que permita certificar automáticamente esta interfaz. La revisión con usuarios deberá comprobar comprensión, control, recuperación y confort.
 
@@ -102,9 +125,9 @@ La [CI Windows 0.1.1](https://github.com/eeminionn/labTecnologiasEmergentes/acti
 
 Estos reportes pertenecen a 0.1.1 y no certifican el nuevo clic de 0.1.2.
 
-## Verificación técnica - Versión 0.1.2
+## Evidencia histórica - Versión 0.1.2
 
-La suite actual aprobó **49/49 casos: 37 de gestos, 3 de calibración y 9 de selección**. El smoke de desarrollo y el de la `.app` Mac empaquetada aprobaron el ciclo completo de 3 segundos sobre un punto azul y el botón de su popup. Registraron `trustedClicks=2`, anclaje y aro intermedio correctos, sin clic temprano ni repetición. Los mantenimientos fueron `3018,2 ms` y `3018,6 ms`, con reloj real. El [reporte Mac 0.1.2](../Documentos/verificacion-paquete-mac-0.1.2.json) conserva estos resultados.
+La suite de 0.1.2 aprobó **49/49 casos: 37 de gestos, 3 de calibración y 9 de selección**. El smoke de desarrollo y el de la `.app` Mac empaquetada aprobaron el ciclo completo de 3 segundos sobre un punto azul y el botón de su popup. Registraron `trustedClicks=2`, anclaje y aro intermedio correctos, sin clic temprano ni repetición. Los mantenimientos fueron `3018,2 ms` y `3018,6 ms`, con reloj real. El [reporte Mac 0.1.2](../Documentos/verificacion-paquete-mac-0.1.2.json) conserva estos resultados.
 
 La verificación corresponde al código `eb23ff4de28d6a1cea8fe12de576dce7737bec85`. La [CI Windows 0.1.2](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37267138909) aprobó 49 tests, build, runtime, distribución portable y smoke del contenido empaquetado. El [reporte Windows 0.1.2](../Documentos/verificacion-paquete-windows-0.1.2.json) registró dos clics nativos, anclaje/aro intermedio correctos y ausencia de clic temprano/repetición, con intervalos de `3040,1 ms` y `3021 ms`. Se ejecutó `release/win-unpacked/Mapa Gestual MLR.exe`; no el envoltorio portable. El modo OpenStreetMap de prueba usa entradas sintéticas; no equivale a validar una webcam física ni Google Maps. La ayuda de la `.app` Mac entregada también se comprobó visualmente.
 
@@ -113,7 +136,7 @@ Todavía falta medir la cámara USB cenital, las acciones accidentales durante a
 ## Próximos pasos
 
 1. Conservar reportes por versión y comprobar el arranque del envoltorio portable en Windows.
-2. Fijar cámara, iluminación y calibración para un montaje repetible.
+2. Fijar cámara, iluminación, orientación y encuadre completo para un montaje repetible.
 3. Registrar tareas intencionales y periodos largos sin intención de control.
 4. Medir errores por acción, estabilidad, pérdidas de tracking y latencia.
 5. Probar comprensión de gestos y esfuerzo con participantes representativos.
