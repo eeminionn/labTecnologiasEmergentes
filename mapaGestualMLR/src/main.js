@@ -1,5 +1,5 @@
 import './style.css';
-import { GestureEngine, classifyHand } from './gestures.js';
+import { GestureEngine, classifyHand, pointerReference } from './gestures.js';
 import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
 import { getCameraControls, applyCameraControls } from './camera-quality.js';
@@ -127,6 +127,7 @@ async function finishSmoke(data) {
   await waitFor(()=>document.hasFocus(),2000,'foco de ventana');
   const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
   const pointerFeedback=verifyPointerFeedback(),navigationFeedback=await verifyNavigationFeedback();
+  const indexTrackingFeedback=await verifyIndexTrackingFeedback(data);
   const fistViewsFeedback=await verifyFistViewsFeedback(data);
   const previewFeedback=verifyPreviewFeedback(data);
   renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers:[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}],hands:2,progress:1,events:[]},2);
@@ -141,8 +142,9 @@ async function finishSmoke(data) {
     && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint && nativeSelection.sequenceHolds.every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && Object.values(fistViewsFeedback).every(Boolean)
+    && Object.values(indexTrackingFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.5',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.6',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifyNativeSelection() {
   map.resetSequence();map.home();map.pan(180,90);cancelGesture();
@@ -292,8 +294,7 @@ function displayPointers(result,detectedHands) {
     const points=hand.landmarks;
     if(!Array.isArray(points) || points.length!==21 || points.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)))return [];
     const shape=classifyHand(hand,engine.options);
-    const p=shape?(shape.point?shape.pointer:shape.ok?shape.pinch:shape.center):
-      [0,5,9,13,17].reduce((a,i)=>({x:a.x+points[i].x/5,y:a.y+points[i].y/5}),{x:0,y:0});
+    const p=shape?pointerReference(shape):points[8];
     return [{id:`detected-${index}`,...p}];
   });
 }
@@ -390,6 +391,62 @@ function verifyPointerFeedback() {
   cancelGesture();return {oneHand,twoHands,panColor,zoomColor,blockedVisible,noHands,fullFrameEdges,clearedRipple};
 }
 function sameMapView(a,b) {return a.zoom===b.zoom && Math.abs(a.center.lat-b.center.lat)<1e-8 && Math.abs(a.center.lng-b.center.lng)<1e-8;}
+async function verifyIndexTrackingFeedback(data) {
+  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const clone=points=>points.map(p=>({...p}));
+  const open=clone(fixture.poses.point);
+  for(const mcp of [9,13,17])for(let offset=1;offset<4;offset++)for(const axis of ['x','y','z'])
+    open[mcp+offset][axis]=open[mcp][axis]+open[5+offset][axis]-open[5][axis];
+  const neutral=clone(fixture.poses.fist);
+  for(let index=1;index<=4;index++)neutral[index]={...fixture.poses.point[index]};
+  const shapes={point:{landmarks:fixture.poses.point},open:{landmarks:open},neutral:{landmarks:neutral},ok:{landmarks:fixture.poses.ok},
+    fist:{landmarks:fixture.poses.fist},model:{landmarks:data.landmarks[0],worldLandmarks:data.worldLandmarks[0]}};
+  if(!classifyHand(shapes.open)?.open || classifyHand(shapes.neutral)?.fist)throw new Error('Smoke: referencias de reposo inválidas');
+  const pair=(hand,dx=0)=>[.35,.65].map((x,index)=>({...hand,id:`index-${index}`,landmarks:hand.landmarks.map(p=>({...p,x:p.x+x-.5+dx}))}));
+  const shownAt=(result,hands,fist=false)=>{
+    const rect=$('map').getBoundingClientRect();
+    return [$('cursor'),$('cursor-secondary')].every((cursor,index)=>{
+      const points=hands[index].landmarks;
+      const reference=fist?[5,9,13,17].reduce((p,i)=>({x:p.x+points[i].x/4,y:p.y+points[i].y/4}),{x:0,y:0}):points[8];
+      const point=mapPoint(reference);
+      return cursor.style.display==='block' && Math.abs(parseFloat(cursor.style.left)-point.x*rect.width)<.5
+        && Math.abs(parseFloat(cursor.style.top)-point.y*rect.height)<.5;
+    });
+  };
+  const feedback={};
+  for(const [name,hand] of Object.entries(shapes)) {
+    const hands=pair(hand),synthetic=new GestureEngine();
+    const result=synthetic.update(hands,0);await renderGesture(result,2);
+    feedback[`${name}Reference`]=shownAt(result,hands,name==='fist');
+  }
+  const synthetic=new GestureEngine(),initial=synthetic.update(pair(shapes.open),0);await renderGesture(initial,2);
+  const before=initial.pointers.map(p=>({...p}));
+  const closed=synthetic.update(pair(shapes.fist),40);await renderGesture(closed,2);
+  feedback.closeWithoutJump=closed.pointers.every((p,i)=>Math.hypot(p.x-before[i].x,p.y-before[i].y)<1e-8);
+  let held;
+  for(const time of [140,240,340]){held=synthetic.update(pair(shapes.fist),time);await renderGesture(held,2);}
+  feedback.stationaryFistConverges=shownAt(held,pair(shapes.fist),true) && held.navigationKind==='pan';
+  const beforeOpen=held.pointers.map(p=>({...p}));
+  const opened=synthetic.update(pair(shapes.open),380);await renderGesture(opened,2);
+  feedback.openWithoutJump=opened.pointers.every((p,i)=>Math.hypot(p.x-beforeOpen[i].x,p.y-beforeOpen[i].y)<1e-8) && opened.events.length===0;
+  let settled;
+  for(const time of [480,580,680]){settled=synthetic.update(pair(shapes.open),time);await renderGesture(settled,2);}
+  feedback.stationaryIndexConverges=shownAt(settled,pair(shapes.open));
+  const saved=latestHands;
+  try {
+    latestHands=pair(shapes.open);const empty={mode:'idle',cursor:null,pointers:[],hands:0,events:[],progress:0};
+    await renderGesture(empty,2,{blocked:true});feedback.fallbackIndex=shownAt(empty,latestHands);
+    latestHands=pair(shapes.fist);await renderGesture(empty,2,{blocked:true});feedback.fallbackKnuckles=shownAt(empty,latestHands,true);
+    latestHands=pair(shapes.open).map(hand=>({...hand,landmarks:hand.landmarks.map(p=>({...p,z:NaN}))}));
+    await renderGesture(empty,2,{blocked:true});
+    const rect=$('map').getBoundingClientRect();
+    feedback.unknownGeometryUsesIndex=[$('cursor'),$('cursor-secondary')].every((cursor,i)=>{
+      const point=mapPoint(latestHands[i].landmarks[8]);
+      return Math.abs(parseFloat(cursor.style.left)-point.x*rect.width)<.5 && Math.abs(parseFloat(cursor.style.top)-point.y*rect.height)<.5;
+    });
+  } finally {latestHands=saved;cancelGesture();}
+  return feedback;
+}
 async function verifyFistViewsFeedback(data) {
   const worldLandmarksLoaded=Array.isArray(data.worldLandmarks) && data.worldLandmarks.length===data.landmarks.length
     && data.worldLandmarks.every(points=>points.length===21 && points.every(p=>['x','y','z'].every(key=>Number.isFinite(p[key]))));
@@ -523,7 +580,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.5',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.6',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

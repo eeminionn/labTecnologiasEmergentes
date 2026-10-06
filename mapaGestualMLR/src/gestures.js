@@ -31,8 +31,7 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   zoomMinSeparation: 0.10,
   zoomGain: 1,
   cursorAnchorMaxAgeMs: 350, // Preserve the last single-hand target across poses.
-  cursorRecoveryStart: 0.015, // Ignore palm jitter when recovering absolute mapping.
-  cursorRecoveryDistance: 0.12, // Movement consumes the temporary pose correction.
+  cursorTransitionMs: 300, // Reference changes converge even with a stationary hand.
   fistPipMaxAngle: 150, // Positive proximal curvature; DIP need not be visible.
   fistDipMaxAngle: 155, // Distal curvature OR strong compact/retracted closure.
   fistChainMaxRatio: 0.72, // MCP-tip chord / three-bone chain, all in 3D.
@@ -172,6 +171,7 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   return {
     center,
     pointer: copy(points[8]),
+    knuckles: mean(points[5], points[9], points[13], points[17]),
     pinch: mean(points[4], points[8]),
     palmSize,
     pinchRatio,
@@ -189,6 +189,11 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
     extended,
     folded: geometry.folded || [false, false, false, false],
   };
+}
+
+/** Absolute camera reference for a visible halo; selection may anchor it. */
+export function pointerReference(shape) {
+  return copy(shape.fist ? shape.knuckles : shape.pointer);
 }
 
 const alpha = (cutoff, dt) => 1 / (1 + 1 / (2 * Math.PI * cutoff * dt));
@@ -246,8 +251,9 @@ class PointFilter {
  * clickDwellMs and remains click-confirmed until released, without repeating.
  * Initial OK is allowed. Drift, loss, a second hand, a model pause or identity
  * replacement cancels the hold and requires a stable release before retrying.
- * Navigation requires two matching poses: fists pan by their palm midpoint;
- * OK hands zoom by pinch separation. The modes never emit each other's event.
+ * Visible pointers follow index tip 8, or the four MCP knuckles for a fist.
+ * Navigation requires two matching poses: fists pan by their knuckle midpoint;
+ * OK hands zoom by index-tip separation. The modes never emit each other's event.
  * Changing pose restarts acquisition; a single fist/palm never moves the map.
  */
 export class GestureEngine {
@@ -295,6 +301,9 @@ export class GestureEngine {
   }
 
   result(mode = 'idle', cursor = null, progress = 0, events = [], hands = this.tracks.length) {
+    if (this.tracks.length === 1 && cursor) {
+      this.tracks[0].lastSingleCursor = { position: copy(cursor), time: this.lastTimestamp };
+    }
     const pointers = this.tracks.map(track => ({ id: track.trackId,
       ...(this.tracks.length === 1 && cursor ? cursor : track.visual.position) }));
     return { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
@@ -313,10 +322,19 @@ export class GestureEngine {
         if (explicitIds && entry.hand.id !== track.externalId) return;
         const separation = metricDistance(entry.shape.center, track.shape.center, this.options.aspectRatio);
         const pinchJump = metricDistance(entry.shape.pinch, track.shape.pinch, this.options.aspectRatio);
+        const matchedShape = classifyHand(entry.hand, this.options, track.pinched);
+        // A legitimate curl can move tip 8 substantially with a stable palm.
+        // Check tip continuity within the same pose, not across that curl.
+        const sameReference = ['fist', 'ok', 'point', 'open']
+          .every(key => matchedShape[key] === track.shape[key]);
+        const reference = entry.shape.fist ? 'knuckles' : 'pointer';
+        const pointerJump = sameReference
+          ? metricDistance(entry.shape[reference], track.shape[reference], this.options.aspectRatio) : 0;
         // A landmark outlier can move fingertips while leaving every palm
         // landmark/ID intact. Such a jump must not inherit live navigation or
         // enter its filters, where opposing jumps could collapse separation.
-        if (separation <= this.options.trackingJumpRadius && pinchJump <= this.options.trackingJumpRadius) {
+        if (separation <= this.options.trackingJumpRadius && pinchJump <= this.options.trackingJumpRadius
+          && pointerJump <= this.options.trackingJumpRadius) {
           candidates.push({ newIndex, oldIndex, separation });
         }
       });
@@ -341,14 +359,15 @@ export class GestureEngine {
         trackId: this.nextTrackId++,
         externalId: entry.hand.id,
         pinched: false,
-        filters: Object.fromEntries(['pointer', 'pinch', 'center'].map(key => [key, new PointFilter(this.options)])),
+        filters: Object.fromEntries(['pointer', 'pinch', 'center', 'knuckles']
+          .map(key => [key, new PointFilter(this.options)])),
       };
       if (entry.hand.id !== undefined) track.externalId = entry.hand.id;
       track.shape = classifyHand(entry.hand, this.options, track.pinched);
       track.pinched = track.shape.pinched;
-      track.filtered = Object.fromEntries(['pointer', 'pinch', 'center']
+      track.filtered = Object.fromEntries(['pointer', 'pinch', 'center', 'knuckles']
         .map(key => [key, track.filters[key].update(track.shape[key], timestampMs)]));
-      track.visual = this.handPointer(track, timestampMs);
+      track.visual = this.handPointer(track, timestampMs, valid.length);
       return track;
     });
   }
@@ -410,7 +429,7 @@ export class GestureEngine {
       this.navigation = null;
       this.navigationCandidate = null;
     }
-    const source = kind === 'pan' ? 'center' : 'pinch';
+    const source = kind === 'pan' ? 'knuckles' : 'pointer';
     const rawPoints = this.tracks.map(track => track.shape[source]);
     const rawSeparation = metricDistance(...rawPoints, this.options.aspectRatio);
     if (kind === 'zoom' && (!Number.isFinite(rawSeparation) || rawSeparation < this.options.zoomMinSeparation)) {
@@ -465,52 +484,55 @@ export class GestureEngine {
     return this.result('idle', cursor, progress);
   }
 
-  handPointer(track, timestampMs) {
-    const kind = track.shape.point ? 'pointer' : track.shape.ok ? 'pinch' : 'center';
+  handPointer(track, timestampMs, count) {
+    const kind = track.shape.fist ? 'knuckles' : 'pointer';
     let source = track.filtered[kind];
     const previous = track.visual;
     const recent = previous && timestampMs >= previous.time
       && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
-    let offset = { x: 0, y: 0 };
-    let originCenter = copy(track.shape.center);
-    let excursion = 0;
+    const hold = this.pendingClick || this.confirmedClick;
+    const locked = count === 1 && hold?.trackId === track.trackId
+      && track.shape.ok && track.shape.actionGeometryValid;
+    let transition = null;
     let edgeMotion = false;
     if (recent) {
-      // Fingers curling into OK change the landmark used as reference. Keep
-      // the displayed target and interpret subsequent motion relative to it.
       const sameReference = previous.kind === kind;
       edgeMotion = metricDistance(previous.center, track.shape.center, this.options.aspectRatio) > 1e-6
         || (sameReference && metricDistance(previous.rawSource, track.shape[kind], this.options.aspectRatio) > 1e-6);
-      if (!sameReference) {
-        // Old pose geometry must not keep settling underneath the new offset
-        // and move a stationary cursor after cancellation or release.
+      if (!sameReference || (previous.locked && !locked)) {
+        // New references start at the previous displayed position. The short
+        // correction decays with time, so still fingers reach absolute tip/MCP
+        // coordinates without needing a palm excursion to consume an offset.
         track.filters[kind] = new PointFilter(this.options);
         source = track.filters[kind].update(track.shape[kind], timestampMs);
         track.filtered[kind] = source;
-      }
-      if (sameReference) {
-        offset = copy(previous.offset);
-        originCenter = previous.originCenter;
-        excursion = Math.max(previous.excursion,
-          metricDistance(originCenter, track.shape.center, this.options.aspectRatio));
-      } else offset = { x: previous.position.x - source.x, y: previous.position.y - source.y };
+        // Two OK pointers start from index positions rather than inheriting
+        // the UI target of a cancelled one-hand selection.
+        if (!(count === 2 && previous.locked && kind === 'pointer')) {
+          transition = { since: timestampMs,
+            offset: { x: previous.position.x - source.x, y: previous.position.y - source.y } };
+        }
+      } else transition = previous.transition;
     }
-    // A pose change initially preserves the target. Meaningful hand movement
-    // then consumes that correction permanently, restoring full camera space.
-    const recovery = this.options.cursorRecoveryDistance > 0
-      ? clamp((excursion - this.options.cursorRecoveryStart) / this.options.cursorRecoveryDistance, 0, 1) : 1;
+    const progress = transition && this.options.cursorTransitionMs > 0
+      ? clamp((timestampMs - transition.since) / this.options.cursorTransitionMs, 0, 1) : 1;
+    const correction = transition ? 1 - progress * progress * (3 - 2 * progress) : 0;
     const raw = track.shape[kind];
-    // Reaching an image boundary while moving consumes that axis correction
-    // immediately, even when the trip is shorter than the recovery distance.
-    // A stationary pose change at the boundary still preserves its click target.
-    if (edgeMotion && (raw.x <= 0 || raw.x >= 1)) offset.x = 0;
-    if (edgeMotion && (raw.y <= 0 || raw.y >= 1)) offset.y = 0;
-    const position = { x: clamp(source.x + offset.x * (1 - recovery), 0, 1),
-      y: clamp(source.y + offset.y * (1 - recovery), 0, 1) };
-    if ((recovery >= 1 || offset.x === 0) && (raw.x <= 0 || raw.x >= 1)) position.x = clamp(raw.x, 0, 1);
-    if ((recovery >= 1 || offset.y === 0) && (raw.y <= 0 || raw.y >= 1)) position.y = clamp(raw.y, 0, 1);
-    return { kind, source, offset, position, originCenter, excursion, rawSource: copy(raw),
-      center: copy(track.shape.center), time: timestampMs };
+    const position = locked ? copy(hold.anchor) : {
+      x: clamp(source.x + (transition?.offset.x || 0) * correction, 0, 1),
+      y: clamp(source.y + (transition?.offset.y || 0) * correction, 0, 1),
+    };
+    // Moving to a camera edge reaches it exactly, even during a short reference
+    // transition. A stationary held OK keeps its selection anchor instead.
+    if (!locked) for (const axis of ['x', 'y']) {
+      if ((edgeMotion || correction === 0 || transition?.offset[axis] === 0)
+        && (raw[axis] <= 0 || raw[axis] >= 1)) {
+        position[axis] = clamp(raw[axis], 0, 1);
+        if (transition) transition.offset[axis] = 0;
+      }
+    }
+    return { kind, source, transition: progress >= 1 ? null : transition, position,
+      locked, rawSource: copy(raw), center: copy(track.shape.center), time: timestampMs };
   }
 
   updateSingleHand(timestampMs) {
@@ -553,11 +575,17 @@ export class GestureEngine {
     if (hand.ok) {
       this.rearmSince = null;
       if (!this.clickBlocked && !this.multiHandLock) {
+        const previous = track.lastSingleCursor;
+        const recent = previous && timestampMs >= previous.time
+          && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
         this.pendingClick = {
           since: timestampMs,
           rawPinch: copy(hand.pinch),
-          anchor: copy(cursor),
+          anchor: copy(recent ? previous.position : cursor),
+          trackId: track.trackId,
         };
+        track.visual.position = copy(this.pendingClick.anchor);
+        track.visual.locked = true;
         return this.result('click-pending', this.pendingClick.anchor, 0);
       }
       return this.result('idle', cursor);

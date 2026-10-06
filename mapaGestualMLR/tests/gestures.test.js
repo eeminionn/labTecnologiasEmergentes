@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { GestureEngine, OneEuroFilter, classifyHand } from '../src/gestures.js';
+import { GestureEngine, OneEuroFilter, classifyHand, pointerReference } from '../src/gestures.js';
 
 // Synthetic landmarks exercise the interpreter; they are not detector accuracy
 // measurements. Camera recordings and user trials remain necessary for that.
@@ -325,6 +325,10 @@ test('packaged 3D views pan only from camera XY, preserve halos and never zoom',
     const acquisition = frames(engine, [left, right], 0, 180);
     assert.equal(events(acquisition).length, 0);
     assert.equal(acquisition.at(-1).navigationKind, 'pan');
+    for (const [index, value] of [left, right].entries()) {
+      const knuckles = classifyHand(value).knuckles;
+      assert.deepEqual({ x: acquisition[0].pointers[index].x, y: acquisition[0].pointers[index].y }, knuckles);
+    }
     // World coordinates stay local/unchanged while the hands translate.
     const moved = engine.update([translatedImage(left, 0.04), translatedImage(right, 0.04)], 200);
     assert.ok(moved.events.length > 0);
@@ -430,20 +434,22 @@ test('pose changes and OK release preserve cursor continuity without a center fl
   const location = { x: -0.20, y: -0.20 };
   const target = engine.update([hand('point', location)], 0).cursor;
   assert.ok(Math.hypot(target.x - 0.5, target.y - 0.5) > 0.20);
-  for (const [time, pose] of [[20, 'neutral'], [40, 'open'], [60, 'point'], [80, 'ok']]) {
+  let previous = target;
+  for (const [time, pose] of [[20, 'neutral'], [40, 'open'], [60, 'point']]) {
     const result = engine.update([hand(pose, location)], time);
-    assert.ok(Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12, pose);
+    assert.ok(Math.hypot(result.cursor.x - 0.5, result.cursor.y - 0.5) > 0.20, pose);
+    assert.equal(result.events.length, 0);
+    previous = result.cursor;
   }
+  const start = engine.update([hand('ok', location)], 80);
+  assert.deepEqual(start.cursor, previous, 'closing index anchors the last displayed target');
   const hold = frames(engine, [hand('ok', location)], 100, 1580);
-  assert.deepEqual(clicks(hold), [{ type: 'click', ...target }]);
+  assert.deepEqual(clicks(hold), [{ type: 'click', ...previous }]);
   const release = engine.update([hand('open', location)], 1600);
-  assert.deepEqual(release.cursor, target);
-  const moved = engine.update([hand('open', { ...location, x: location.x + 0.02 })], 1620);
-  assert.ok(moved.cursor.x > target.x && moved.cursor.x < target.x + 0.02);
-  // Motion starts consuming the pose correction smoothly, rather than keeping
-  // an absolute-map-breaking offset permanently after the release.
-  assert.ok(Math.abs(moved.cursor.y - target.y) < 0.02);
-  assert.equal(moved.events.length, 0);
+  assert.deepEqual(release.cursor, previous);
+  const settled = frames(engine, [hand('open', location)], 1620, 1900);
+  assert.equal(events(settled).length, 0);
+  assert.deepEqual(settled.at(-1).cursor, classifyHand(hand('open', location)).pointer);
 });
 
 test('cancelClick blocks an invalidated target until a stable opening, without resetting cursor', () => {
@@ -454,7 +460,8 @@ test('cancelClick blocks an invalidated target until a stable opening, without r
   engine.cancelClick();
   const blocked = frames(engine, [hand('ok')], 1040, 5600);
   assert.ok(blocked.every(result => result.mode === 'idle'));
-  assert.ok(blocked.every(result => Math.hypot(result.cursor.x - target.x, result.cursor.y - target.y) < 1e-12));
+  assert.deepEqual(blocked[0].cursor, target);
+  assert.deepEqual(blocked.at(-1).cursor, classifyHand(hand('ok')).pointer);
   assert.equal(clicks(blocked).length, 0);
   engine.update([hand('open')], 5620);
   assert.equal(clicks(frames(engine, [hand('ok')], 5640, 9000)).length, 0);
@@ -759,7 +766,8 @@ test('opening either hand clutches navigation and reacquisition starts without j
 });
 
 test('a single hand cursor follows pose geometry without moving the map', () => {
-  for (const [pose, key] of [['point', 'pointer'], ['ok', 'pinch'], ['open', 'center'], ['neutral', 'center']]) {
+  for (const [pose, key] of [['point', 'pointer'], ['ok', 'pointer'], ['open', 'pointer'],
+    ['neutral', 'pointer'], ['fist', 'knuckles']]) {
     const engine = new GestureEngine();
     const value = hand(pose);
     const result = engine.update([value], 0);
@@ -770,6 +778,195 @@ test('a single hand cursor follows pose geometry without moving the map', () => 
     else assert.ok(moved.cursor.x > result.cursor.x);
     assert.equal(moved.events.length, 0);
   }
+});
+
+test('open, neutral, pointing and two OK hands track index tip 8 instead of palm or pinch', () => {
+  for (const pose of ['open', 'neutral', 'point', 'ok']) {
+    const engine = new GestureEngine();
+    const pair = [hand(pose, { id: 'a', x: -0.15 }), hand(pose, { id: 'b', x: 0.15 })];
+    const result = engine.update(pair, 0);
+    for (let index = 0; index < 2; index++) {
+      const shape = classifyHand(pair[index]);
+      assert.deepEqual(pointerReference(shape), shape.pointer);
+      assert.deepEqual({ x: result.pointers[index].x, y: result.pointers[index].y }, shape.pointer, pose);
+      assert.notDeepEqual(shape.pointer, shape.center);
+      assert.notDeepEqual(shape.pointer, shape.pinch);
+    }
+  }
+});
+
+test('knuckle and fingertip reference transitions have no first-frame jump and converge while still', () => {
+  for (const count of [1, 2]) {
+    const engine = new GestureEngine();
+    const values = pose => Array.from({ length: count }, (_, index) => hand(pose,
+      { id: index ? 'b' : 'a', x: count === 2 ? (index ? 0.15 : -0.15) : 0 }));
+    const initial = frames(engine, values('open'), 0, 200).at(-1);
+    const curled = engine.update(values('fist'), 220);
+    assert.deepEqual(curled.pointers, initial.pointers);
+    assert.equal(curled.events.length, 0);
+    const closing = frames(engine, values('fist'), 240, 520);
+    assert.equal(events(closing).length, 0);
+    const closed = closing.at(-1);
+    for (let index = 0; index < count; index++) {
+      const shape = classifyHand(values('fist')[index]);
+      assert.deepEqual({ x: closed.pointers[index].x, y: closed.pointers[index].y }, shape.knuckles);
+      assert.deepEqual(pointerReference(shape), shape.knuckles);
+      assert.notDeepEqual(shape.knuckles, shape.center, 'wrist is excluded from the visible knuckle reference');
+    }
+    const opened = engine.update(values('open'), 540);
+    assert.deepEqual(opened.pointers, closed.pointers);
+    let previous = opened;
+    const opening = frames(engine, values('open'), 560, 840);
+    for (const result of opening) {
+      for (let index = 0; index < count; index++) {
+        assert.ok(Math.hypot(result.pointers[index].x - previous.pointers[index].x,
+          result.pointers[index].y - previous.pointers[index].y) < 0.022);
+      }
+      previous = result;
+    }
+    assert.equal(events(opening).length, 0);
+    for (let index = 0; index < count; index++) {
+      const point = classifyHand(values('open')[index]).pointer;
+      assert.deepEqual({ x: previous.pointers[index].x, y: previous.pointers[index].y }, point);
+    }
+  }
+});
+
+test('two fist-to-OK shadows converge to both indices without causing acquisition or zoom jumps', () => {
+  const engine = navigationEngine({}, 'fist');
+  const prior = engine.update(fistPair(), 220);
+  const change = engine.update(okPair(), 240);
+  assert.deepEqual(change.pointers, prior.pointers);
+  assert.equal(change.mode, 'idle');
+  const transition = frames(engine, okPair(), 260, 540);
+  assert.equal(events(transition).length, 0);
+  assert.equal(transition.at(-1).navigationKind, 'zoom');
+  for (let index = 0; index < 2; index++) {
+    const pointer = classifyHand(okPair()[index]).pointer;
+    assert.deepEqual({ x: transition.at(-1).pointers[index].x,
+      y: transition.at(-1).pointers[index].y }, pointer);
+  }
+});
+
+test('two OK hands discard a one-hand selection anchor and track both index tips without clicking', () => {
+  const engine = new GestureEngine();
+  const prior = engine.update([hand('open')], 0);
+  const held = frames(engine, [hand('ok')], 20, 500);
+  assert.deepEqual(held.at(-1).cursor, prior.cursor);
+  const pair = [hand('ok'), hand('ok', { id: 'b', x: 0.30 })];
+  const second = engine.update(pair, 520);
+  assert.equal(second.mode, 'idle');
+  assert.equal(second.events.length, 0);
+  for (let index = 0; index < 2; index++) {
+    const tip = classifyHand(pair[index]).pointer;
+    assert.deepEqual({ x: second.pointers[index].x, y: second.pointers[index].y }, tip);
+  }
+  assert.notDeepEqual({ x: second.pointers[0].x, y: second.pointers[0].y }, prior.cursor);
+  assert.equal(events(frames(engine, pair, 540, 2400)).length, 0);
+  assert.equal(events(frames(engine, [pair[0]], 2420, 4300)).length, 0);
+});
+
+test('pointer reference transitions stay with each identity through input order swaps', () => {
+  for (const anonymous of [false, true]) {
+    const engine = new GestureEngine();
+    const values = pose => (pose === 'fist' ? fistPair() : okPair()).map(value => {
+      if (anonymous) delete value.id;
+      return value;
+    });
+    const initial = frames(engine, values('fist'), 0, 200).at(-1);
+    const transition = engine.update(values('ok'), 220);
+    assert.deepEqual(transition.pointers, initial.pointers);
+    const previous = new Map(transition.pointers.map(pointer => [pointer.id, pointer]));
+    for (let time = 240; time <= 520; time += 20) {
+      const pair = values('ok');
+      if (time % 40 === 0) pair.reverse();
+      const result = engine.update(pair, time);
+      assert.equal(result.events.length, 0);
+      for (const pointer of result.pointers) {
+        const before = previous.get(pointer.id);
+        assert.ok(before, 'each pointer keeps its own tracking identity');
+        assert.ok(Math.hypot(pointer.x - before.x, pointer.y - before.y) < 0.022);
+        previous.set(pointer.id, pointer);
+      }
+    }
+    const final = engine.update(values('ok'), 540);
+    for (let index = 0; index < 2; index++) {
+      assert.equal(final.pointers[index].id, initial.pointers[index].id);
+      const tip = classifyHand(values('ok')[index]).pointer;
+      assert.deepEqual({ x: final.pointers[index].x, y: final.pointers[index].y }, tip);
+    }
+  }
+});
+
+test('a large legitimate curl into OK keeps its identity, previous index target and 1500 ms click', () => {
+  for (const pose of ['open', 'point']) for (const scale of [1.1, 1.3]) {
+    const engine = new GestureEngine();
+    const before = engine.update([hand(pose, { scale })], 0);
+    const held = frames(engine, [hand('ok', { scale })], 20, 1520);
+    assert.ok(held.every(result => result.pointers[0].id === before.pointers[0].id));
+    assert.ok(held.every(result => result.cursor.x === before.cursor.x && result.cursor.y === before.cursor.y));
+    assert.deepEqual(clicks(held), [{ type: 'click', ...before.cursor }]);
+    assert.equal(events(frames(engine, [hand('ok', { scale })], 1540, 3000)).length, 0);
+  }
+});
+
+test('only moving an index in a resting hand moves its shadow and settles absolutely', () => {
+  const engine = new GestureEngine();
+  const resting = hand('neutral');
+  const initial = engine.update([resting], 0);
+  const moved = structuredClone(resting);
+  moved.landmarks[8].x += 0.03;
+  assert.deepEqual(classifyHand(moved).center, classifyHand(resting).center);
+  const tracking = frames(engine, [moved], 20, 1000);
+  assert.ok(tracking[0].cursor.x > initial.cursor.x);
+  assert.ok(Math.abs(tracking.at(-1).cursor.x - moved.landmarks[8].x) < 1e-5);
+  assert.ok(Math.abs(tracking.at(-1).cursor.y - moved.landmarks[8].y) < 1e-5);
+  assert.equal(events(tracking).length, 0);
+});
+
+test('zoom uses index separation and midpoint, unaffected by thumb-only motion inside OK', () => {
+  const engine = navigationEngine();
+  const thumbs = okPair();
+  thumbs[0].landmarks[4].x -= 0.016;
+  thumbs[1].landmarks[4].x += 0.016;
+  assert.ok(thumbs.every(value => classifyHand(value).ok));
+  const thumbMotion = frames(engine, thumbs, 220, 500);
+  assert.equal(events(thumbMotion).length, 0);
+  const indices = thumbs.map((value, index) => translatedImage(value, index ? 0.03 : -0.03));
+  const moved = engine.update(indices, 520);
+  assert.equal(moved.navigationKind, 'zoom');
+  assert.ok(moved.events.some(event => event.type === 'zoom' && event.delta > 0));
+  const midpoint = { x: (indices[0].landmarks[8].x + indices[1].landmarks[8].x) / 2,
+    y: (indices[0].landmarks[8].y + indices[1].landmarks[8].y) / 2 };
+  for (const event of moved.events) {
+    assert.equal(event.type, 'zoom');
+    assert.ok(Math.hypot(event.x - midpoint.x, event.y - midpoint.y) < 1e-12);
+  }
+});
+
+test('index outliers cannot bypass the pinch hysteresis continuity guard or create a zoom jump', () => {
+  const engine = new GestureEngine();
+  const pair = [hand('ok', { id: 'a', x: -0.15, scale: 2 }),
+    hand('ok', { id: 'b', x: 0.15, scale: 2 })];
+  const acquired = frames(engine, pair, 0, 200).at(-1);
+  assert.equal(acquired.navigationKind, 'zoom');
+  const outliers = structuredClone(pair);
+  outliers.forEach((value, index) => {
+    const sign = index ? -1 : 1;
+    value.landmarks[8].x += sign * 0.24;
+    value.landmarks[4].x += sign * 0.17;
+    const original = classifyHand(pair[index]);
+    const shape = classifyHand(value, undefined, true);
+    assert.equal(shape.ok, true, 'continuing OK uses exit hysteresis');
+    assert.ok(Math.hypot(shape.pinch.x - original.pinch.x, shape.pinch.y - original.pinch.y) < 0.22);
+    assert.ok(Math.abs(shape.pointer.x - original.pointer.x) > 0.22);
+  });
+  const cancelled = engine.update(outliers, 220);
+  assert.equal(cancelled.navigationKind, null);
+  assert.equal(cancelled.events.length, 0);
+  const recovered = frames(engine, pair, 240, 600);
+  assert.equal(events(recovered).length, 0);
+  assert.equal(recovered.at(-1).navigationKind, 'zoom');
 });
 
 test('each navigation mode needs 180 ms of two matching observed poses', () => {
@@ -970,7 +1167,7 @@ test('pointer filtering reduces jitter for both non-eligible hands without actio
     assert.equal(result.pointers.length, 2);
     assert.equal(result.navigationKind, null);
     assert.equal(result.events.length, 0);
-    if (frame > 20) { raw.push(classifyHand(values[0]).center.x); filtered.push(result.pointers[0].x); }
+    if (frame > 20) { raw.push(classifyHand(values[0]).pointer.x); filtered.push(result.pointers[0].x); }
   }
   const range = values => Math.max(...values) - Math.min(...values);
   assert.ok(range(filtered) < range(raw) / 2);
@@ -1028,42 +1225,40 @@ test('small navigation jitter keeps the acquired pose color without any map even
   }
 });
 
-test('motion consumes pose offsets and smoothly recovers absolute camera coordinates', () => {
+test('index tracking recovers absolute tip coordinates without a palm excursion', () => {
   const engine = new GestureEngine();
   const first = engine.update([hand('point')], 0);
   const changed = engine.update([hand('neutral')], 20);
-  assert.deepEqual(changed.cursor, first.cursor);
+  assert.ok(changed.cursor.y > first.cursor.y && changed.cursor.y < hand('neutral').landmarks[8].y);
   let previous = changed.cursor;
   for (let step = 1; step <= 20; step++) {
     const result = engine.update([hand('neutral', { x: step * 0.01 })], 20 + step * 20);
-    assert.ok(Math.hypot(result.cursor.x - previous.x, result.cursor.y - previous.y) < 0.04);
+    assert.ok(Math.hypot(result.cursor.x - previous.x, result.cursor.y - previous.y) < 0.055);
     previous = result.cursor;
   }
   const final = frames(engine, [hand('neutral', { x: 0.20 })], 440, 1000).at(-1);
-  const absolute = classifyHand(hand('neutral', { x: 0.20 })).center;
+  const absolute = classifyHand(hand('neutral', { x: 0.20 })).pointer;
   assert.ok(Math.hypot(final.cursor.x - absolute.x, final.cursor.y - absolute.y) < 0.0001);
   assert.deepEqual({ x: final.pointers[0].x, y: final.pointers[0].y }, final.cursor);
 });
 
-test('short moves to every camera edge consume residual pose offsets without rebounding', () => {
+test('short moves to every camera edge consume temporary knuckle offsets without rebounding', () => {
   const cases = [
-    { axis: 'x', edge: 0, pose: 'neutral', next: 'point', start: 0.05 },
-    { axis: 'x', edge: 1, pose: 'point', next: 'neutral', start: 0.90 },
-    { axis: 'y', edge: 0, pose: 'open', next: 'point', start: 0.05 },
-    { axis: 'y', edge: 1, pose: 'point', next: 'neutral', start: 0.75 },
+    { axis: 'x', edge: 0, start: 0.10 }, { axis: 'x', edge: 1, start: 0.95 },
+    { axis: 'y', edge: 0, start: 0.10 }, { axis: 'y', edge: 1, start: 0.95 },
   ];
-  const reference = value => value.point ? value.pointer : value.ok ? value.pinch : value.center;
   for (const value of cases) {
     const engine = new GestureEngine();
-    const shift = { [value.axis]: value.start - reference(classifyHand(hand(value.pose)))[value.axis] };
-    const first = engine.update([hand(value.pose, shift)], 0);
+    const shift = { scale: 0.25,
+      [value.axis]: value.start - pointerReference(classifyHand(hand('fist', { scale: 0.25 })))[value.axis] };
+    const first = engine.update([hand('fist', shift)], 0);
     assert.ok(Math.abs(first.cursor[value.axis] - value.start) < 1e-12);
-    const changed = engine.update([hand(value.next, shift)], 20);
+    const changed = engine.update([hand('point', shift)], 20);
     assert.deepEqual(changed.cursor, first.cursor);
-    const raw = reference(classifyHand(hand(value.next, shift)))[value.axis];
+    const raw = pointerReference(classifyHand(hand('point', shift)))[value.axis];
     const movement = value.edge === 0 ? Math.min(-0.005, -raw - 0.005) : Math.max(0.005, 1 - raw + 0.005);
     assert.ok(Math.abs(movement) < 0.135);
-    const atEdge = hand(value.next, { ...shift, [value.axis]: shift[value.axis] + movement });
+    const atEdge = hand('point', { ...shift, [value.axis]: shift[value.axis] + movement });
     const result = engine.update([atEdge], 40);
     assert.equal(result.cursor[value.axis], value.edge);
     assert.equal(result.pointers[0][value.axis], value.edge);
@@ -1074,7 +1269,7 @@ test('short moves to every camera edge consume residual pose offsets without reb
 
 test('a stationary OK at the image edge preserves the previous target for all 1.5 seconds', () => {
   const engine = new GestureEngine();
-  const x = -classifyHand(hand('ok')).pinch.x;
+  const x = -classifyHand(hand('ok')).pointer.x;
   const target = engine.update([hand('open', { x })], 0).cursor;
   const results = frames(engine, [hand('ok', { x })], 20, 1520);
   assert.deepEqual(clicks(results), [{ type: 'click', ...target }]);
