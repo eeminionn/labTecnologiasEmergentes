@@ -3,8 +3,8 @@
  *
  * Input and output coordinates use the camera's original 0..1 image space.
  * Set aspectRatio = camera width / height for distance and joint geometry. The
- * renderer then projects cursor positions and pan deltas into the calibrated
- * interaction area. Pan deltas follow the hand; the adapter chooses drag sign.
+ * renderer then orients cursor positions and pan deltas into the full map
+ * viewport. Pan deltas follow the hand; the adapter chooses drag sign.
  * Zoom delta is in log2 units: +1 means twice the scale / one map zoom level.
  *
  * The thresholds below are experimental starting values, not measured accuracy
@@ -14,14 +14,14 @@
  */
 
 export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
-  aspectRatio: 1, // Set from actual videoWidth / videoHeight, before calibration.
+  aspectRatio: 1, // Set from actual videoWidth / videoHeight.
   pinchEnter: 0.28, // Thumb-index distance divided by palm size.
   pinchExit: 0.40, // Wider release threshold prevents boundary chatter.
-  clickDwellMs: 3000,
+  clickDwellMs: 1500,
   rearmMs: 120,
   clickCooldownMs: 400,
-  maxClickDrift: 0.055, // Camera metric units, before homography.
-  navigationDwellMs: 180, // Both hands in OK acquire pan and zoom together.
+  maxClickDrift: 0.055, // Camera metric units, before orientation.
+  navigationDwellMs: 180, // Two fists acquire pan; two OK hands acquire zoom.
   maxFrameGapMs: 180, // A paused inference loop never counts as dwell.
   trackingJumpRadius: 0.22,
   ambiguousMatchMargin: 0.025,
@@ -33,10 +33,13 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   cursorAnchorMaxAgeMs: 350, // Preserve the last single-hand target across poses.
   cursorRecoveryStart: 0.015, // Ignore palm jitter when recovering absolute mapping.
   cursorRecoveryDistance: 0.12, // Movement consumes the temporary pose correction.
-  navigationKindDwellMs: 100,
-  navigationKindHoldMs: 280,
-  navigationKindMotion: 0.006,
-  navigationDominanceRatio: 1.35,
+  fistPipMaxAngle: 115, // Positive four-finger flexion, not merely !extended.
+  fistDipMaxAngle: 155, // Reject claws with straight distal joints.
+  fistTipBaseRatio: 0.65,
+  fistTipPalmRatio: 0.85,
+  fistThumbMaxAngle: 150, // Flexion at MCP or IP plus a compact thumb tip.
+  fistThumbPalmRatio: 0.75,
+  fistBoneMinRatio: 0.04, // Reject collapsed/missing finger segments.
   minCutoff: 1.4,
   beta: 6,
   derivativeCutoff: 1,
@@ -69,6 +72,17 @@ function fingerExtended(points, mcp) {
     && distance(points[0], tip) > distance(points[0], pip) * 1.12;
 }
 
+function fingerFolded(points, mcp, center, palmSize, settings) {
+  const [base, pip, dip, tip] = points.slice(mcp, mcp + 4);
+  const lengths = [distance(base, pip), distance(pip, dip), distance(dip, tip)];
+  return lengths.every(length => length >= palmSize * settings.fistBoneMinRatio
+      && length <= palmSize * 0.75)
+    && jointAngle(base, pip, dip) <= settings.fistPipMaxAngle
+    && jointAngle(pip, dip, tip) <= settings.fistDipMaxAngle
+    && distance(base, tip) <= palmSize * settings.fistTipBaseRatio
+    && distance(center, tip) <= palmSize * settings.fistTipPalmRatio;
+}
+
 /** Rotation-invariant geometry; no image-up or left/right hand assumption. */
 export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched = false) {
   const settings = { ...DEFAULT_GESTURE_OPTIONS, ...options };
@@ -85,11 +99,24 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   const palmSize = Math.max(distance(metricPoints[0], metricPoints[9]), distance(metricPoints[5], metricPoints[17]));
   if (palmSize < 0.025 || palmSize > 0.65 * Math.max(1, settings.aspectRatio)) return null;
   const extended = [5, 9, 13, 17].map(mcp => fingerExtended(metricPoints, mcp));
+  const center = mean(points[0], points[5], points[9], points[13], points[17]);
+  const metricCenter = mean(metricPoints[0], metricPoints[5], metricPoints[9], metricPoints[13], metricPoints[17]);
   const pinchRatio = distance(metricPoints[4], metricPoints[8]) / palmSize;
   const pinched = pinchRatio <= (wasPinched ? settings.pinchExit : settings.pinchEnter);
   const otherExtended = extended.slice(1).filter(Boolean).length;
+  const folded = [5, 9, 13, 17].map(mcp => fingerFolded(metricPoints, mcp, metricCenter, palmSize, settings));
+  const thumbLengths = [distance(metricPoints[1], metricPoints[2]),
+    distance(metricPoints[2], metricPoints[3]), distance(metricPoints[3], metricPoints[4])];
+  const thumbCompact = thumbLengths.every(length => length >= palmSize * settings.fistBoneMinRatio
+      && length <= palmSize * 0.75)
+    && distance(metricPoints[4], metricCenter) <= palmSize * settings.fistThumbPalmRatio
+    && Math.min(jointAngle(metricPoints[1], metricPoints[2], metricPoints[3]),
+      jointAngle(metricPoints[2], metricPoints[3], metricPoints[4])) <= settings.fistThumbMaxAngle;
+  // A clipped finger cannot establish a fully closed fist. This rejects only
+  // the action pose; its hand/pointer remains available at the image edges.
+  const handInFrame = points.every(p => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
   return {
-    center: mean(points[0], points[5], points[9], points[13], points[17]),
+    center,
     pointer: copy(points[8]),
     pinch: mean(points[4], points[8]),
     palmSize,
@@ -98,7 +125,9 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
     ok: pinched && otherExtended >= 2,
     point: extended[0] && otherExtended === 0 && !pinched,
     open: extended.every(Boolean) && !pinched,
+    fist: folded.every(Boolean) && !extended.some(Boolean) && thumbCompact && handInFrame,
     extended,
+    folded,
   };
 }
 
@@ -157,8 +186,9 @@ class PointFilter {
  * clickDwellMs and remains click-confirmed until released, without repeating.
  * Initial OK is allowed. Drift, loss, a second hand, a model pause or identity
  * replacement cancels the hold and requires a stable release before retrying.
- * Navigation requires two OK hands: midpoint motion pans, separation zooms.
- * A single hand only points/clicks; an open palm never moves the map.
+ * Navigation requires two matching poses: fists pan by their palm midpoint;
+ * OK hands zoom by pinch separation. The modes never emit each other's event.
+ * Changing pose restarts acquisition; a single fist/palm never moves the map.
  */
 export class GestureEngine {
   constructor(options = {}) {
@@ -309,94 +339,69 @@ export class GestureEngine {
     this.pendingClick = null;
     this.confirmedClick = null;
     const [a, b] = this.tracks;
-    let separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
-    const rawSeparation = metricDistance(a.shape.pinch, b.shape.pinch, this.options.aspectRatio);
-    if (!a.shape.ok || !b.shape.ok || !Number.isFinite(rawSeparation)
-      || rawSeparation < this.options.zoomMinSeparation
-      || !Number.isFinite(separation) || separation < this.options.zoomMinSeparation) {
+    const kind = a.shape.fist && b.shape.fist ? 'pan' : a.shape.ok && b.shape.ok ? 'zoom' : null;
+    if (!kind) {
       this.navigationCandidate = null;
       this.navigation = null;
       return this.result();
     }
-    let cursor = mean(a.filtered.pinch, b.filtered.pinch);
-    if (this.navigation) {
-      const dx = cursor.x - this.navigation.position.x;
-      const dy = cursor.y - this.navigation.position.y;
-      const delta = Math.log2(separation / this.navigation.separation) * this.options.zoomGain;
-      const zoomMotion = Math.abs(separation - this.navigation.separation) / 2;
-      const events = [];
-      if (Math.hypot(dx * this.options.aspectRatio, dy) >= this.options.panDeadband) {
-        events.push({ type: 'pan', dx, dy });
-        this.navigation.position = cursor;
-      }
-      if (Math.abs(delta) >= this.options.zoomDeadband
-        && Math.abs(separation - this.navigation.separation) >= this.options.zoomDistanceDeadband) {
-        // Translate first, then scale around the current hand midpoint.
-        events.push({ type: 'zoom', delta, ...cursor });
-        this.navigation.separation = separation;
-      }
-      this.updateNavigationKind(events, Math.hypot(dx * this.options.aspectRatio, dy),
-        zoomMotion, timestampMs);
-      return this.result('navigate', cursor, 1, events);
+    if ((this.navigation || this.navigationCandidate)?.kind !== kind) {
+      this.navigation = null;
+      this.navigationCandidate = null;
+    }
+    const source = kind === 'pan' ? 'center' : 'pinch';
+    const rawPoints = this.tracks.map(track => track.shape[source]);
+    const rawSeparation = metricDistance(...rawPoints, this.options.aspectRatio);
+    if (kind === 'zoom' && (!Number.isFinite(rawSeparation) || rawSeparation < this.options.zoomMinSeparation)) {
+      this.navigation = null;
+      this.navigationCandidate = null;
+      return this.result();
     }
     if (!this.navigationCandidate) {
-      this.navigationCandidate = { since: timestampMs };
-      // Discard history from the clutch, then let the 180 ms dwell smooth any
-      // jitter before capturing baselines. Old positions cannot pull the map
-      // on reacquisition, nor can a single noisy activation frame set scale.
-      for (const track of this.tracks) {
-        track.filters.pinch = new PointFilter(this.options);
-        track.filtered.pinch = track.filters.pinch.update(track.shape.pinch, timestampMs);
+      if (!this.navigation) {
+        // Navigation filters are separate from visible pointer filters. Each
+        // clutch/mode change starts from fresh geometry without moving halos.
+        this.navigationCandidate = { since: timestampMs, kind,
+          filters: new Map(this.tracks.map(track => [track.trackId, new PointFilter(this.options)])) };
       }
-      cursor = mean(a.filtered.pinch, b.filtered.pinch);
-      separation = metricDistance(a.filtered.pinch, b.filtered.pinch, this.options.aspectRatio);
+    }
+    const state = this.navigation || this.navigationCandidate;
+    // Model array order may reverse without replacing either tracked hand.
+    const points = this.tracks.map(track => state.filters.get(track.trackId).update(track.shape[source], timestampMs));
+    const cursor = mean(...points);
+    const separation = metricDistance(...points, this.options.aspectRatio);
+    if (kind === 'zoom' && (!Number.isFinite(separation) || separation < this.options.zoomMinSeparation)) {
+      this.navigation = null;
+      this.navigationCandidate = null;
+      return this.result();
+    }
+    if (this.navigation) {
+      const events = [];
+      if (kind === 'pan') {
+        const dx = cursor.x - state.position.x;
+        const dy = cursor.y - state.position.y;
+        if (Math.hypot(dx * this.options.aspectRatio, dy) >= this.options.panDeadband) {
+          events.push({ type: 'pan', dx, dy });
+          state.position = cursor;
+        }
+      } else {
+        const delta = Math.log2(separation / state.separation) * this.options.zoomGain;
+        if (Math.abs(delta) >= this.options.zoomDeadband
+          && Math.abs(separation - state.separation) >= this.options.zoomDistanceDeadband) {
+          events.push({ type: 'zoom', delta, ...cursor });
+          state.separation = separation;
+        }
+        state.position = cursor;
+      }
+      return this.result('navigate', cursor, 1, events);
     }
     const progress = (timestampMs - this.navigationCandidate.since) / this.options.navigationDwellMs;
     if (progress >= 1) {
-      this.navigation = { separation, position: cursor,
-        kind: 'ready', kindCandidate: null, kindSamples: [], lastKindMotion: timestampMs };
+      this.navigation = { ...this.navigationCandidate, separation, position: cursor };
       this.navigationCandidate = null;
       return this.result('navigate', cursor, 1);
     }
     return this.result('idle', cursor, progress);
-  }
-
-  updateNavigationKind(events, panMotion, zoomMotion, timestampMs) {
-    const nav = this.navigation;
-    const pan = events.some(event => event.type === 'pan');
-    const zoom = events.some(event => event.type === 'zoom');
-    nav.kindSamples = nav.kindSamples.filter(sample => sample.time >= timestampMs - this.options.navigationKindDwellMs);
-    if (pan || zoom) nav.kindSamples.push({ time: timestampMs, pan: pan ? panMotion : 0, zoom: zoom ? zoomMotion : 0 });
-    const panStrength = nav.kindSamples.reduce((sum, sample) => sum + sample.pan, 0);
-    const zoomStrength = nav.kindSamples.reduce((sum, sample) => sum + sample.zoom, 0);
-    let desired = null;
-    if (pan || zoom) {
-      if (panStrength === 0) desired = 'zoom';
-      else if (zoomStrength === 0) desired = 'pan';
-      else if (nav.kind === 'pan' && zoomStrength <= panStrength * this.options.navigationDominanceRatio) desired = 'pan';
-      else if (nav.kind === 'zoom' && panStrength <= zoomStrength * this.options.navigationDominanceRatio) desired = 'zoom';
-      else desired = panStrength >= zoomStrength ? 'pan' : 'zoom';
-    }
-    if (!desired) {
-      if (timestampMs - nav.lastKindMotion >= this.options.navigationKindHoldMs) {
-        nav.kind = 'ready';
-        nav.kindCandidate = null;
-      }
-      return;
-    }
-    nav.lastKindMotion = timestampMs;
-    if (desired === nav.kind) { nav.kindCandidate = null; return; }
-    const motion = desired === 'pan' ? panMotion : zoomMotion;
-    if (!nav.kindCandidate || nav.kindCandidate.kind !== desired) {
-      nav.kindCandidate = { kind: desired, since: timestampMs, motion: 0 };
-    }
-    nav.kindCandidate.motion += motion;
-    const deliberate = nav.kindCandidate.motion >= this.options.navigationKindMotion;
-    if (deliberate && (nav.kind === 'ready'
-      || timestampMs - nav.kindCandidate.since >= this.options.navigationKindDwellMs)) {
-      nav.kind = desired;
-      nav.kindCandidate = null;
-    }
   }
 
   handPointer(track, timestampMs) {

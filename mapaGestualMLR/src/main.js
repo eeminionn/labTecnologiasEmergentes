@@ -8,12 +8,13 @@ import { SelectionFeedback } from './selection.js';
 
 const $ = id => document.getElementById(id);
 const smoke = new URLSearchParams(location.search).has('smoke');
-const defaults = { cameraId:'', mirror:false, rotation:0, provider:'osm', googleKey:'', confidence:.7, showPreview:false, cameraAuto:true, cameraControls:{} };
+const defaults = { cameraId:'', mirror:false, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
 let config;
 try { config = { ...defaults, ...JSON.parse(localStorage.getItem('mlr-config') || '{}') }; } catch { config={...defaults}; }
 if (smoke) config={...defaults};
 // Full-frame mapping replaces saved table calibration in every session.
 delete config.corners;
+delete config.showPreview;
 let qualityGate=new FrameQualityGate(),qualityState={allowActions:true,state:'good',reasons:[]};
 let cameraControlsAvailable={ranges:{}},cameraControlReport=null,qualityWarningShown=false;
 let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], previousPan=null, lastFrame=-1;
@@ -25,12 +26,12 @@ const timings=[], inferenceTimes=[],qualityTimes=[];
 const counters={frames:0,clicks:0,panEvents:0,zoomEvents:0,markedFalseClicks:0};
 const startedAt=new Date().toISOString();
 const linePairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-const labels={idle:'En reposo',point:'Apuntando','click-pending':'Mantén OK · 3 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
+const labels={idle:'En reposo',point:'Apuntando','click-pending':'Mantén OK · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
 let noticeTimer,noticeKind;
 let telemetryBlocked=false;
 const resultTimes=[];
 let lastFreshResult=0;
-let smokeStage='empty',emptyFrameResult;
+let smokeStage='empty',emptyFrameResult,smokeFixtureDimensions;
 let cameraGeneration=0;
 let hasFreshCameraResult=false;
 function notify(message,kind='general') { noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
@@ -39,7 +40,9 @@ function updateStatus() {
   $('status').className=active ? (paused?'paused':'active') : '';
   $('status').innerHTML=`<i></i>${active ? (paused?'Control pausado':'Cámara activa') : 'Cámara detenida'}`;
   $('camera-toggle').textContent=active?'Detener cámara':'Iniciar cámara';
-  $('diagnostics').hidden=!config.showPreview || !active;
+  $('diagnostics').hidden=false;
+  $('camera-preview-state').hidden=active;
+  if(!active)clearTrackingPreview();
 }
 function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
 function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick();selection.reset();highlightTarget(null);previousPan=null;for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
@@ -70,7 +73,7 @@ function initializeWorker() {
       }
       if(!active) return;
       lastFreshResult=performance.now();
-      if(performance.now()-data.capturedAt>150) {if(hasFreshCameraResult)cancelGesture();return;}
+      if(performance.now()-data.capturedAt>150) {if(hasFreshCameraResult)cancelGesture();clearTrackingPreview();return;}
       hasFreshCameraResult=true;
       counters.frames++; timings.push(performance.now()-data.capturedAt); inferenceTimes.push(data.inferenceMs);qualityTimes.push(data.qualityMs);
       if(timings.length>10000) { timings.shift(); inferenceTimes.shift();qualityTimes.shift(); }
@@ -106,6 +109,7 @@ async function smokeFrame() {
 async function smokePositive() {
   try {
     const response=await fetch('/fixtures/thumbs-up.png');const source=await createImageBitmap(await response.blob());
+    smokeFixtureDimensions={width:source.width,height:source.height};
     // Static PNG has transparency; a camera supplies opaque RGB. Composite
     // only this smoke fixture on a matte background before passing it through
     // the unchanged production worker, including its quality measurement.
@@ -122,7 +126,8 @@ async function waitFor(test,timeoutMs=2000,label='condición') {
 async function finishSmoke(data) {
   await waitFor(()=>document.hasFocus(),2000,'foco de ventana');
   const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
-  const pointerFeedback=verifyPointerFeedback(),navigationFeedback=verifyNavigationFeedback();
+  const pointerFeedback=verifyPointerFeedback(),navigationFeedback=await verifyNavigationFeedback();
+  const previewFeedback=verifyPreviewFeedback(data);
   renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers:[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}],hands:2,progress:1,events:[]},2);
   // Let Chromium paint both halos before capturing this transient test state.
   await sleep(150);
@@ -132,10 +137,10 @@ async function finishSmoke(data) {
   const ok=emptyFrameResult.hands===0 && emptyFrameResult.qualityValid && data.quality?.valid && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
     && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
-    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint && nativeSelection.sequenceHolds.every(h=>h.clickAccepted && h.elapsedMs>=3000 && h.clicks===1 && h.noEarlyClick && h.cursorLocked)
-    && Object.values(qualityFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=3000
+    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint && nativeSelection.sequenceHolds.every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked)
+    && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.3',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,qualityFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.4',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifyNativeSelection() {
   map.resetSequence();map.home();map.pan(180,90);cancelGesture();
@@ -175,7 +180,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false) {
   const start=performance.now(),beforeClicks=trustedCount();
   let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false;
   const anchor={x:target.x,y:target.y};
-  while(performance.now()-start<3300){
+  while(performance.now()-start<1800){
     const now=performance.now(),result=synthetic.update([hand('ok')],now);
     const accepted=await renderGesture(result,1);
     cursorLocked &&= Math.abs(parseFloat($('cursor').style.left)-anchor.x)<.5 && Math.abs(parseFloat($('cursor').style.top)-anchor.y)<.5;
@@ -184,7 +189,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false) {
       ringHalfVisible ||= style.opacity==='1' && Math.abs(parseFloat(style.strokeDashoffset)-213.63*(1-result.progress))<.2;
       if(captureProgress && !progressCaptured){progressCaptured=true;window.desktop.reportSmoke({phase:'progress',progress:result.progress});}
     }
-    if(now-start<3000 && (result.events.length || trustedCount()!==beforeClicks))noEarlyClick=false;
+    if(now-start<1500 && (result.events.length || trustedCount()!==beforeClicks))noEarlyClick=false;
     if(result.events.some(event=>event.type==='click')){clicks++;elapsedMs=now-start;clickAccepted=accepted[0]===true;}
     await sleep(40);
   }
@@ -233,6 +238,7 @@ async function startCamera() {
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
     if(['failed','invalid','mismatch'].includes(controls.status))notify('La cámara no confirmó los ajustes solicitados. Revisa el diagnóstico.');
     const aspect=$('video').videoWidth/$('video').videoHeight;
+    $('video').parentElement.style.aspectRatio=String(aspect);
     engine=new GestureEngine({aspectRatio:aspect});
     qualityGate=new FrameQualityGate();qualityState={allowActions:true,state:'good',reasons:[]};qualityWarningShown=false;
     active=true;paused=false;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
@@ -250,7 +256,7 @@ function stopCamera() {
 async function frameLoop(generation) {
   if(!active || generation!==cameraGeneration) return;
   const video=$('video');
-  if(hasFreshCameraResult && performance.now()-lastFreshResult>180) {cancelGesture();}
+  if(hasFreshCameraResult && performance.now()-lastFreshResult>180) {cancelGesture();clearTrackingPreview();}
   if(workerReady && !busy && video.readyState>=2 && video.currentTime!==lastFrame) {
     busy=true;lastFrame=video.currentTime;
     const capturedAt=performance.now();
@@ -262,11 +268,15 @@ async function frameLoop(generation) {
   }
   requestAnimationFrame(()=>frameLoop(generation));
 }
-function drawSkeleton(hands) {
-  if(!config.showPreview) return;
-  const canvas=$('skeleton'), video=$('video');canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+function clearTrackingPreview() {
+  const canvas=$('skeleton');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
+  $('hands-metric').textContent='0 manos';$('fps-metric').textContent='— FPS';
+}
+function drawSkeleton(hands,width=$('video').videoWidth||640,height=$('video').videoHeight||480) {
+  const canvas=$('skeleton');canvas.width=width;canvas.height=height;
   const ctx=canvas.getContext('2d');ctx.lineWidth=2;ctx.strokeStyle='#58a6ff';ctx.fillStyle='#a5d6ff';
   for(const hand of hands) {
+    if(!Array.isArray(hand) || hand.length!==21 || hand.some(p=>!p || !Number.isFinite(p.x) || !Number.isFinite(p.y)))continue;
     for(const [a,b] of linePairs) {ctx.beginPath();ctx.moveTo(hand[a].x*canvas.width,hand[a].y*canvas.height);ctx.lineTo(hand[b].x*canvas.width,hand[b].y*canvas.height);ctx.stroke();}
     for(const p of hand) {ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,Math.PI*2);ctx.fill();}
   }
@@ -289,7 +299,7 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
   const rect=$('map').getBoundingClientRect();
   const p=result.cursor && mapPoint(result.cursor);
   const navigation=result.mode==='navigate'?result.navigationKind||'ready':null;
-  $('gesture-metric').textContent=blocked?'Control en espera':navigation==='pan'?'Desplazando':navigation==='zoom'?'Ampliando':labels[result.mode]||result.mode;
+  $('gesture-metric').textContent=blocked?'Control en espera':navigation==='pan'?'Desplazando':navigation==='zoom'?'Zoom':labels[result.mode]||result.mode;
   const singleHand=detectedHands===1 && !blocked;
   let feedback={point:null,target:null,cancel:false};
   if(singleHand && within(p))feedback=selection.update({x:p.x*rect.width,y:p.y*rect.height},result.mode,selectionTargets(rect),rect);
@@ -310,7 +320,7 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
   }
   if(!singleHand)$('click-ripple').classList.remove('play');
   highlightTarget(singleHand && !feedback.cancel?feedback.target:null);
-  if(result.mode!=='navigate')previousPan=null;
+  if(navigation!=='pan')previousPan=null;
   const actions=[];
   if(blocked)return Promise.resolve(actions);
   for(const event of result.events) {
@@ -322,11 +332,11 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
         else{engine.cancelClick();selection.reset();$('cursor').dataset.state='idle';}
         return ok;
       }).catch(error=>{engine.cancelClick();selection.reset();if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
-    } else if(event.type==='pan' && result.cursor) {
+    } else if(event.type==='pan' && navigation==='pan' && detectedHands===2 && result.cursor) {
       const current=mapPoint(result.cursor),old=previousPan || mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
       if(within(current) && within(old)){map.pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
       previousPan=current;
-    } else if(event.type==='zoom') {
+    } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2) {
       const at=mapPoint(event);if(!within(at))continue;
       map.zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
     }
@@ -377,16 +387,61 @@ function verifyPointerFeedback() {
   const fullFrameEdges=parseFloat($('cursor').style.left)===0 && parseFloat($('cursor').style.top)===$('map').clientHeight;
   cancelGesture();return {oneHand,twoHands,panColor,zoomColor,blockedVisible,noHands,fullFrameEdges,clearedRipple};
 }
-function verifyNavigationFeedback() {
-  map.home();cancelGesture();const before=map.info();
-  const pointers=[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}];
-  renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.54,y:.48},pointers,progress:1,hands:2,events:[{type:'pan',dx:.04,dy:-.02}]},2);
+function sameMapView(a,b) {return a.zoom===b.zoom && Math.abs(a.center.lat-b.center.lat)<1e-8 && Math.abs(a.center.lng-b.center.lng)<1e-8;}
+async function verifyNavigationFeedback() {
+  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const hand=(pose,id,x,y)=>{
+    const shape=classifyHand({landmarks:fixture.poses[pose]});
+    if(!shape || (pose==='fist'?!shape.fist:!shape.ok))throw new Error(`Smoke: pose ${pose} inválida`);
+    const source=pose==='fist'?shape.center:shape.pinch;
+    return {id,landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+x-source.x,y:p.y+y-source.y}))};
+  };
+  const pair=(pose,dx=0,spread=0)=>[hand(pose,'left',.35+dx-spread,.5),hand(pose,'right',.65+dx+spread,.5)];
+  const panEngine=new GestureEngine();map.home();cancelGesture();
+  const beforePan=map.info();
+  for(const t of [0,100,180])await renderGesture(panEngine.update(pair('fist'),t),2);
+  const panResult=panEngine.update(pair('fist',.04),220);await renderGesture(panResult,2);
   const afterPan=map.info();
-  const panWorks=afterPan.center.lng<before.center.lng && afterPan.center.lat<before.center.lat && afterPan.zoom===before.zoom;
-  renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.56,y:.46},pointers,progress:1,hands:2,events:[{type:'pan',dx:.02,dy:-.02},{type:'zoom',delta:.2,x:.56,y:.46}]},2);
-  const combinedZoomWorks=map.info().zoom>afterPan.zoom;
+  const panWorks=panResult.navigationKind==='pan' && panResult.events.some(e=>e.type==='pan') && afterPan.center.lng<beforePan.center.lng;
+  const panSpread=panEngine.update(pair('fist',.04,.03),260);await renderGesture(panSpread,2);
+  const noZoomDuringPan=[...panResult.events,...panSpread.events].every(e=>e.type!=='zoom') && map.info().zoom===beforePan.zoom;
   const visibleDuringNavigation=[$('cursor'),$('cursor-secondary')].every(c=>c.style.display==='block');
-  map.home();cancelGesture();return {panWorks,combinedZoomWorks,visibleDuringNavigation};
+  const zoomEngine=new GestureEngine();map.home();cancelGesture();const beforeZoom=map.info();
+  for(const t of [1000,1100,1180])await renderGesture(zoomEngine.update(pair('ok'),t),2);
+  const translation=zoomEngine.update(pair('ok',.03),1220);await renderGesture(translation,2);
+  const translationInZoomIgnored=translation.events.length===0 && sameMapView(beforeZoom,map.info());
+  const zoomResult=zoomEngine.update(pair('ok',.03,.04),1260);await renderGesture(zoomResult,2);
+  const zoomWorks=zoomResult.navigationKind==='zoom' && zoomResult.events.some(e=>e.type==='zoom') && map.info().zoom>beforeZoom.zoom;
+  const noPanDuringZoom=[...translation.events,...zoomResult.events].every(e=>e.type!=='pan');
+  const switched=zoomEngine.update(pair('fist',.03),1300);await renderGesture(switched,2);
+  const stillWaiting=zoomEngine.update(pair('fist',.03),1400);await renderGesture(stillWaiting,2);
+  const acquired=zoomEngine.update(pair('fist',.03),1480);await renderGesture(acquired,2);
+  const modeSwitchReacquires=switched.mode!=='navigate' && stillWaiting.mode!=='navigate' && acquired.mode==='navigate' && acquired.navigationKind==='pan' && [switched,stillWaiting,acquired].every(r=>r.events.length===0);
+  const mixedEngine=new GestureEngine();let mixed;
+  for(const t of [1600,1700,1780])mixed=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.65,.5)],t);
+  const mixedPosesIdle=mixed.mode!=='navigate' && mixed.events.length===0;
+  const beforeGuard=map.info(),pointers=[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}];
+  await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'zoom',delta:.2,x:.5,y:.5}]},2);
+  await renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
+  const crossModeEventsIgnored=sameMapView(beforeGuard,map.info());
+  map.home();cancelGesture();
+  return {panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedPosesIdle,visibleDuringNavigation,crossModeEventsIgnored};
+}
+function verifyPreviewFeedback(data) {
+  const saved={active,paused};active=false;paused=false;updateStatus();
+  const visible=()=>!$('diagnostics').hidden && getComputedStyle($('diagnostics')).display!=='none';
+  const previewVisibleStopped=visible() && !$('camera-preview-state').hidden;
+  active=true;updateStatus();const previewVisibleActive=visible() && $('camera-preview-state').hidden;
+  paused=true;updateStatus();const previewVisiblePaused=visible();
+  const panel=$('diagnostics').getBoundingClientRect(),workspace=$('workspace').getBoundingClientRect();
+  const compactPlacement=panel.width<=200 && panel.left-workspace.left===12 && panel.top-workspace.top===12;
+  drawSkeleton(data.landmarks,smokeFixtureDimensions.width,smokeFixtureDimensions.height);
+  const canvas=$('skeleton'),ctx=canvas.getContext('2d');
+  const hasTracking=()=>ctx.getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3 && value>0);
+  const trackingDrawn=hasTracking();clearTrackingPreview();const staleTrackingCleared=!hasTracking();
+  const noPreviewToggle=!$('show-preview') && !$('preview-close');
+  active=saved.active;paused=saved.paused;updateStatus();
+  return {previewVisibleStopped,previewVisibleActive,previewVisiblePaused,compactPlacement,trackingDrawn,staleTrackingCleared,noPreviewToggle};
 }
 async function enumerateCameras() {
   const devices=await navigator.mediaDevices.enumerateDevices();
@@ -396,18 +451,17 @@ async function enumerateCameras() {
 }
 function openSettings() {
   cancelGesture();enumerateCameras();
-  $('mirror').checked=config.mirror;$('rotation').value=config.rotation;$('provider').value=config.provider;$('google-key').value=config.googleKey;$('confidence').value=config.confidence;$('show-preview').checked=config.showPreview;
+  $('mirror').checked=config.mirror;$('rotation').value=config.rotation;$('provider').value=config.provider;$('google-key').value=config.googleKey;$('confidence').value=config.confidence;
   $('camera-auto').checked=config.cameraAuto;populateCameraControls();$('settings').showModal();
 }
 $('camera-toggle').onclick=()=>active?stopCamera():startCamera();
 $('settings-open').onclick=openSettings;
 $('help-open').onclick=()=>{cancelGesture();$('help').showModal();};$('help-close').onclick=()=>$('help').close();
-$('preview-close').onclick=()=>{config.showPreview=false;save();updateStatus();};
 $('settings').addEventListener('close',async()=>{
   if($('settings').returnValue!=='save')return;
   const wasActive=active;stopCamera();
   const oldKey=config.googleKey,oldProvider=config.provider,oldCamera=config.cameraId;
-  Object.assign(config,{cameraId:$('camera-select').value,mirror:$('mirror').checked,rotation:+$('rotation').value,provider:$('provider').value,googleKey:$('google-key').value.trim(),confidence:+$('confidence').value,showPreview:$('show-preview').checked,cameraAuto:$('camera-auto').checked,cameraControls:readCameraControls()});
+  Object.assign(config,{cameraId:$('camera-select').value,mirror:$('mirror').checked,rotation:+$('rotation').value,provider:$('provider').value,googleKey:$('google-key').value.trim(),confidence:+$('confidence').value,cameraAuto:$('camera-auto').checked,cameraControls:readCameraControls()});
   if(oldCamera!==config.cameraId)config.cameraControls={};
   save();
   // Reload clears Google SDK and credentials when switching/changing key.
@@ -436,7 +490,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.3',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.4',startedAt,exportedAt:new Date().toISOString(),...counters,configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

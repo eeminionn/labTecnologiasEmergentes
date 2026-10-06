@@ -17,17 +17,14 @@
       <div id="cursor-secondary" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>
       <div id="click-ripple" aria-hidden="true"></div>
       <div id="notice" role="status" hidden></div>
-      <section id="diagnostics" class="panel" hidden aria-label="Diagnóstico de cámara">
-        <div class="panel-heading">Vista cenital <button id="preview-close" aria-label="Ocultar diagnóstico">×</button></div>
-        <div class="video-frame"><video id="video" autoplay playsinline muted></video><canvas id="skeleton"></canvas></div>
-        <div class="metrics"><span id="hands-metric">0 manos</span><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
-        <div class="metrics"><span id="quality-metric">Iluminación: —</span></div>
-        <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics">Exportar sesión</button></div>
-        <div class="metrics"><button id="mark-false-click">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+      <section id="diagnostics" class="panel" aria-label="Cámara con tracking de manos">
+        <div class="panel-heading">Vista cenital</div>
+        <div class="video-frame"><video id="video" autoplay playsinline muted></video><canvas id="skeleton"></canvas><span id="camera-preview-state" class="preview-state">Cámara detenida</span></div>
+        <div class="preview-footer"><span id="hands-metric">0 manos</span></div>
       </section>
       <div class="map-tools"><button id="zoom-in" aria-label="Acercar">+</button><button id="zoom-out" aria-label="Alejar">−</button><button id="home" aria-label="Volver a La Reina">⌂</button></div>
     </main>
-    <footer><span id="gesture-hint">Índice: apuntar · OK 3 s: clic · <span class="hint-pan">Dos OK: mover</span> · <span class="hint-zoom">Separar: zoom</span></span><span>Espacio: pausar · Esc: cancelar</span></footer>
+    <footer><span id="gesture-hint">Índice: apuntar · OK 1,5 s: clic · <span class="hint-pan">Dos puños: mover</span> · <span class="hint-zoom">Dos OK: zoom</span></span><span>Espacio: pausar · Esc: cancelar</span></footer>
     <dialog id="settings">
       <form method="dialog" id="settings-form">
         <div class="dialog-heading"><h1>Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
@@ -44,14 +41,19 @@
         <label id="key-label">API key de Google Maps<input id="google-key" type="password" autocomplete="off" placeholder="Configúrala cuando habilites Google Maps Platform" /></label>
         <p class="field-note">Google Maps requiere Maps JavaScript API y facturación. La clave se guarda solo en este equipo. Referrer: http://127.0.0.1:47831/*</p>
         <label>Sensibilidad del detector<select id="confidence"><option value="0.7">Equilibrada · 0,70</option><option value="0.8">Conservadora · 0,80</option><option value="0.6">Más sensible · 0,60</option></select></label>
-        <label><input id="show-preview" type="checkbox" /> Mostrar diagnóstico de cámara</label>
+        <details class="tracking-details"><summary>Diagnóstico de seguimiento</summary>
+          <div class="metrics"><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
+          <div class="metrics"><span id="quality-metric">Iluminación: —</span></div>
+          <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics" type="button">Exportar sesión</button></div>
+          <div class="metrics"><button id="mark-false-click" type="button">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+        </details>
         <button id="reset-sequence" type="button">Reiniciar recorrido 1 → 3</button>
         <p class="field-note">Toda la imagen de cámara corresponde a todo el mapa. El procesamiento de manos es local. Los tres puntos contienen datos ficticios.</p>
         <div class="dialog-actions"><button value="cancel">Cancelar</button><button value="save" class="primary">Guardar</button></div>
       </form>
     </dialog>
     <dialog id="help"><div class="dialog-heading"><h1>Gestos</h1><button id="help-close" aria-label="Cerrar ayuda">×</button></div>
-      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Extiende solo el índice y mueve la mano sobre la mesa. Las sombras de ambas manos siguen su posición. El punto con pulso indica el siguiente paso del recorrido.</p></li><li><strong>Clic</strong><p>Coloca la sombra en el punto o botón y forma OK: une pulgar e índice con los otros dedos extendidos. Mantén la mano quieta 3 segundos. El aro se completa y selecciona automáticamente; no hace falta soltar. Abre la pinza antes de seleccionar otra vez. Soltar antes, mover la mano o añadir otra cancela la carga.</p></li><li><strong>Mover</strong><p>Forma OK con ambas manos, espera un instante y muévelas juntas. Las sombras se vuelven violetas al desplazar. Suelta cualquiera de las pinzas para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar y júntalas para alejar. Las sombras se vuelven ámbar durante el zoom. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
+      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Extiende solo el índice y mueve la mano sobre la mesa. Las sombras de ambas manos siguen su posición. El punto con pulso indica el siguiente paso del recorrido.</p></li><li><strong>Clic</strong><p>Coloca la sombra en el punto o botón y forma OK: une pulgar e índice con los otros dedos extendidos. Mantén la mano quieta 1,5 segundos. El aro se completa y selecciona automáticamente; no hace falta soltar. Abre la pinza antes de seleccionar otra vez. Soltar antes, mover la mano o añadir otra cancela la carga.</p></li><li><strong>Mover</strong><p>Cierra completamente ambas manos formando dos puños, espera un instante y muévelos juntos. Las sombras se vuelven violetas. Abre cualquiera de las manos para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar y júntalas para alejar. Las sombras se vuelven ámbar durante el zoom. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
       <p class="field-note">Manos separadas, cámara fija, iluminación uniforme y fondo mate. Usa Ajustes para elegir tu USB y revisar orientación y exposición. Los extremos de cámara corresponden a los extremos del mapa. Espacio pausa; Esc cancela cualquier acción.</p>
       <p class="field-note">Servicios de mapa: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank">Términos Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank">Privacidad Google</a>. Los mapas usan Internet; este prototipo no envía frames de cámara al proveedor del mapa.</p>
     </dialog>
