@@ -124,6 +124,8 @@ async function finishSmoke(data) {
   const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
   const pointerFeedback=verifyPointerFeedback(),navigationFeedback=verifyNavigationFeedback();
   renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers:[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}],hands:2,progress:1,events:[]},2);
+  // Let Chromium paint both halos before capturing this transient test state.
+  await sleep(150);
   window.desktop.reportSmoke({phase:'navigation'});await sleep(150);cancelGesture();
   const qualityFeedback=await verifyQualityFeedback();
   const nativeSelection=await verifyNativeSelection();
