@@ -31,6 +31,12 @@ export const DEFAULT_GESTURE_OPTIONS = Object.freeze({
   zoomMinSeparation: 0.10,
   zoomGain: 1,
   cursorAnchorMaxAgeMs: 350, // Preserve the last single-hand target across poses.
+  cursorRecoveryStart: 0.015, // Ignore palm jitter when recovering absolute mapping.
+  cursorRecoveryDistance: 0.12, // Movement consumes the temporary pose correction.
+  navigationKindDwellMs: 100,
+  navigationKindHoldMs: 280,
+  navigationKindMotion: 0.006,
+  navigationDominanceRatio: 1.35,
   minCutoff: 1.4,
   beta: 6,
   derivativeCutoff: 1,
@@ -145,7 +151,7 @@ class PointFilter {
 
 /**
  * update([{ landmarks: [{x,y,z}, ...21], id?: stableCameraId }], timestampMs)
- * -> { mode, cursor, progress, events, hands }
+ * -> { mode, cursor, pointers:[{id,x,y}], navigationKind, progress, events, hands }
  *
  * At most two hands are accepted. One stable OK clicks automatically after
  * clickDwellMs and remains click-confirmed until released, without repeating.
@@ -179,7 +185,6 @@ export class GestureEngine {
     this.multiHandLock = false;
     this.clickBlocked = false;
     this.hasObservedHand = false;
-    this.cursorState = null;
     this.cancelInteraction();
   }
 
@@ -200,7 +205,10 @@ export class GestureEngine {
   }
 
   result(mode = 'idle', cursor = null, progress = 0, events = [], hands = this.tracks.length) {
-    return { mode, cursor, progress: clamp(progress, 0, 1), events, hands };
+    const pointers = this.tracks.map(track => ({ id: track.trackId,
+      ...(this.tracks.length === 1 && cursor ? cursor : track.visual.position) }));
+    return { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
+      progress: clamp(progress, 0, 1), events, hands };
   }
 
   matchHands(hands, timestampMs) {
@@ -250,6 +258,7 @@ export class GestureEngine {
       track.pinched = track.shape.pinched;
       track.filtered = Object.fromEntries(['pointer', 'pinch', 'center']
         .map(key => [key, track.filters[key].update(track.shape[key], timestampMs)]));
+      track.visual = this.handPointer(track, timestampMs);
       return track;
     });
   }
@@ -314,6 +323,7 @@ export class GestureEngine {
       const dx = cursor.x - this.navigation.position.x;
       const dy = cursor.y - this.navigation.position.y;
       const delta = Math.log2(separation / this.navigation.separation) * this.options.zoomGain;
+      const zoomMotion = Math.abs(separation - this.navigation.separation) / 2;
       const events = [];
       if (Math.hypot(dx * this.options.aspectRatio, dy) >= this.options.panDeadband) {
         events.push({ type: 'pan', dx, dy });
@@ -325,6 +335,8 @@ export class GestureEngine {
         events.push({ type: 'zoom', delta, ...cursor });
         this.navigation.separation = separation;
       }
+      this.updateNavigationKind(events, Math.hypot(dx * this.options.aspectRatio, dy),
+        zoomMotion, timestampMs);
       return this.result('navigate', cursor, 1, events);
     }
     if (!this.navigationCandidate) {
@@ -341,24 +353,68 @@ export class GestureEngine {
     }
     const progress = (timestampMs - this.navigationCandidate.since) / this.options.navigationDwellMs;
     if (progress >= 1) {
-      this.navigation = { separation, position: cursor };
+      this.navigation = { separation, position: cursor,
+        kind: 'ready', kindCandidate: null, kindSamples: [], lastKindMotion: timestampMs };
       this.navigationCandidate = null;
       return this.result('navigate', cursor, 1);
     }
     return this.result('idle', cursor, progress);
   }
 
-  singleHandCursor(track, timestampMs) {
+  updateNavigationKind(events, panMotion, zoomMotion, timestampMs) {
+    const nav = this.navigation;
+    const pan = events.some(event => event.type === 'pan');
+    const zoom = events.some(event => event.type === 'zoom');
+    nav.kindSamples = nav.kindSamples.filter(sample => sample.time >= timestampMs - this.options.navigationKindDwellMs);
+    if (pan || zoom) nav.kindSamples.push({ time: timestampMs, pan: pan ? panMotion : 0, zoom: zoom ? zoomMotion : 0 });
+    const panStrength = nav.kindSamples.reduce((sum, sample) => sum + sample.pan, 0);
+    const zoomStrength = nav.kindSamples.reduce((sum, sample) => sum + sample.zoom, 0);
+    let desired = null;
+    if (pan || zoom) {
+      if (panStrength === 0) desired = 'zoom';
+      else if (zoomStrength === 0) desired = 'pan';
+      else if (nav.kind === 'pan' && zoomStrength <= panStrength * this.options.navigationDominanceRatio) desired = 'pan';
+      else if (nav.kind === 'zoom' && panStrength <= zoomStrength * this.options.navigationDominanceRatio) desired = 'zoom';
+      else desired = panStrength >= zoomStrength ? 'pan' : 'zoom';
+    }
+    if (!desired) {
+      if (timestampMs - nav.lastKindMotion >= this.options.navigationKindHoldMs) {
+        nav.kind = 'ready';
+        nav.kindCandidate = null;
+      }
+      return;
+    }
+    nav.lastKindMotion = timestampMs;
+    if (desired === nav.kind) { nav.kindCandidate = null; return; }
+    const motion = desired === 'pan' ? panMotion : zoomMotion;
+    if (!nav.kindCandidate || nav.kindCandidate.kind !== desired) {
+      nav.kindCandidate = { kind: desired, since: timestampMs, motion: 0 };
+    }
+    nav.kindCandidate.motion += motion;
+    const deliberate = nav.kindCandidate.motion >= this.options.navigationKindMotion;
+    if (deliberate && (nav.kind === 'ready'
+      || timestampMs - nav.kindCandidate.since >= this.options.navigationKindDwellMs)) {
+      nav.kind = desired;
+      nav.kindCandidate = null;
+    }
+  }
+
+  handPointer(track, timestampMs) {
     const kind = track.shape.point ? 'pointer' : track.shape.ok ? 'pinch' : 'center';
     let source = track.filtered[kind];
-    const previous = this.cursorState;
+    const previous = track.visual;
     const recent = previous && timestampMs >= previous.time
       && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
     let offset = { x: 0, y: 0 };
+    let originCenter = copy(track.shape.center);
+    let excursion = 0;
+    let edgeMotion = false;
     if (recent) {
       // Fingers curling into OK change the landmark used as reference. Keep
       // the displayed target and interpret subsequent motion relative to it.
-      const sameReference = previous.trackId === track.trackId && previous.kind === kind;
+      const sameReference = previous.kind === kind;
+      edgeMotion = metricDistance(previous.center, track.shape.center, this.options.aspectRatio) > 1e-6
+        || (sameReference && metricDistance(previous.rawSource, track.shape[kind], this.options.aspectRatio) > 1e-6);
       if (!sameReference) {
         // Old pose geometry must not keep settling underneath the new offset
         // and move a stationary cursor after cancellation or release.
@@ -366,26 +422,35 @@ export class GestureEngine {
         source = track.filters[kind].update(track.shape[kind], timestampMs);
         track.filtered[kind] = source;
       }
-      offset = sameReference ? previous.offset
-        : { x: previous.position.x - source.x, y: previous.position.y - source.y };
+      if (sameReference) {
+        offset = copy(previous.offset);
+        originCenter = previous.originCenter;
+        excursion = Math.max(previous.excursion,
+          metricDistance(originCenter, track.shape.center, this.options.aspectRatio));
+      } else offset = { x: previous.position.x - source.x, y: previous.position.y - source.y };
     }
-    const position = { x: source.x + offset.x, y: source.y + offset.y };
-    this.cursorState = { trackId: track.trackId, kind, source, offset, position, time: timestampMs };
-    return position;
-  }
-
-  holdCursor(anchor) {
-    // The state records what is actually visible, so cancellation/release can
-    // continue from the held target rather than snapping to another landmark.
-    this.cursorState.position = copy(anchor);
-    this.cursorState.offset = { x: anchor.x - this.cursorState.source.x,
-      y: anchor.y - this.cursorState.source.y };
+    // A pose change initially preserves the target. Meaningful hand movement
+    // then consumes that correction permanently, restoring full camera space.
+    const recovery = this.options.cursorRecoveryDistance > 0
+      ? clamp((excursion - this.options.cursorRecoveryStart) / this.options.cursorRecoveryDistance, 0, 1) : 1;
+    const raw = track.shape[kind];
+    // Reaching an image boundary while moving consumes that axis correction
+    // immediately, even when the trip is shorter than the recovery distance.
+    // A stationary pose change at the boundary still preserves its click target.
+    if (edgeMotion && (raw.x <= 0 || raw.x >= 1)) offset.x = 0;
+    if (edgeMotion && (raw.y <= 0 || raw.y >= 1)) offset.y = 0;
+    const position = { x: clamp(source.x + offset.x * (1 - recovery), 0, 1),
+      y: clamp(source.y + offset.y * (1 - recovery), 0, 1) };
+    if ((recovery >= 1 || offset.x === 0) && (raw.x <= 0 || raw.x >= 1)) position.x = clamp(raw.x, 0, 1);
+    if ((recovery >= 1 || offset.y === 0) && (raw.y <= 0 || raw.y >= 1)) position.y = clamp(raw.y, 0, 1);
+    return { kind, source, offset, position, originCenter, excursion, rawSource: copy(raw),
+      center: copy(track.shape.center), time: timestampMs };
   }
 
   updateSingleHand(timestampMs) {
     const track = this.tracks[0];
     const hand = track.shape;
-    const cursor = this.singleHandCursor(track, timestampMs);
+    const cursor = copy(track.visual.position);
     const released = hand.pinchRatio >= this.options.pinchExit;
     const hold = this.pendingClick || this.confirmedClick;
     if (hold) {
@@ -397,7 +462,6 @@ export class GestureEngine {
           this.rearmSince = null;
           return this.result('idle', cursor);
         }
-        this.holdCursor(hold.anchor);
         if (this.confirmedClick) return this.result('click-confirmed', hold.anchor, 1);
         const progress = (timestampMs - hold.since) / this.options.clickDwellMs;
         if (progress >= 1 && timestampMs >= this.cooldownUntil) {
@@ -424,7 +488,6 @@ export class GestureEngine {
           rawPinch: copy(hand.pinch),
           anchor: copy(cursor),
         };
-        this.holdCursor(this.pendingClick.anchor);
         return this.result('click-pending', this.pendingClick.anchor, 0);
       }
       return this.result('idle', cursor);

@@ -143,7 +143,9 @@ test('pose changes and OK release preserve cursor continuity without a center fl
   assert.deepEqual(release.cursor, target);
   const moved = engine.update([hand('open', { ...location, x: location.x + 0.02 })], 3120);
   assert.ok(moved.cursor.x > target.x && moved.cursor.x < target.x + 0.02);
-  assert.ok(Math.abs(moved.cursor.y - target.y) < 1e-12);
+  // Motion starts consuming the pose correction smoothly, rather than keeping
+  // an absolute-map-breaking offset permanently after the release.
+  assert.ok(Math.abs(moved.cursor.y - target.y) < 0.02);
   assert.equal(moved.events.length, 0);
 });
 
@@ -564,4 +566,157 @@ test('invalid timestamps reset the interpreter; three hands produce no events', 
   assert.equal(engine.update([hand('open'), hand('open', { id: 'b' }), hand('open', { id: 'c' })], 420).events.length, 0);
   assert.throws(() => new GestureEngine({ pinchExit: 0.1 }), RangeError);
   assert.throws(() => new GestureEngine({ clickDwellMs: -1 }), TypeError);
+});
+
+test('two geometrically valid hands always have independent pointers with stable IDs', () => {
+  const engine = new GestureEngine();
+  const left = hand('open', { id: 'a', x: -0.15 });
+  const right = hand('neutral', { id: 'b', x: 0.15 });
+  const first = engine.update([left, right], 0);
+  assert.equal(first.pointers.length, 2);
+  assert.equal(first.navigationKind, null);
+  assert.equal(first.events.length, 0);
+  assert.ok(first.pointers[0].x < first.pointers[1].x);
+  const reversed = engine.update([right, left], 20);
+  assert.deepEqual(reversed.pointers, [...first.pointers].reverse());
+  const ok = frames(engine, okPair(), 40, 240).at(-1);
+  assert.equal(ok.pointers.length, 2);
+  assert.equal(ok.mode, 'navigate');
+  assert.ok(ok.pointers[0].x < ok.cursor.x && ok.pointers[1].x > ok.cursor.x);
+  assert.notDeepEqual(ok.pointers[0], ok.pointers[1]);
+  assert.deepEqual(engine.update([], 260).pointers, []);
+});
+
+test('single pointer agrees with cursor throughout pose changes, hold and confirmation', () => {
+  const engine = new GestureEngine();
+  const results = frames(engine, [hand('open')], 0, 140);
+  results.push(...frames(engine, [hand('ok')], 160, 3400));
+  results.push(...frames(engine, [hand('point')], 3420, 3580));
+  for (const result of results) {
+    assert.equal(result.pointers.length, 1);
+    assert.deepEqual({ x: result.pointers[0].x, y: result.pointers[0].y }, result.cursor);
+  }
+  assert.equal(clicks(results).length, 1);
+});
+
+test('pointer filtering reduces jitter for both non-eligible hands without action colors', () => {
+  const engine = new GestureEngine();
+  const raw = [], filtered = [];
+  for (let frame = 0; frame < 160; frame++) {
+    const jitter = (frame % 2 === 0 ? 1 : -1) * 0.003;
+    const values = [hand('open', { id: 'a', x: -0.15 + jitter }),
+      hand('neutral', { id: 'b', x: 0.15 - jitter })];
+    const result = engine.update(values, frame * 20);
+    assert.equal(result.pointers.length, 2);
+    assert.equal(result.navigationKind, null);
+    assert.equal(result.events.length, 0);
+    if (frame > 20) { raw.push(classifyHand(values[0]).center.x); filtered.push(result.pointers[0].x); }
+  }
+  const range = values => Math.max(...values) - Math.min(...values);
+  assert.ok(range(filtered) < range(raw) / 2);
+});
+
+test('navigation colors distinguish translation and separation, then return to ready', () => {
+  const pan = navigationEngine();
+  assert.equal(pan.update(okPair(), 220).navigationKind, 'ready');
+  assert.equal(pan.update(okPair({ x: 0.05 }), 240).navigationKind, 'pan');
+  assert.equal(frames(pan, okPair({ x: 0.05 }), 260, 1000).at(-1).navigationKind, 'ready');
+  const zoom = navigationEngine();
+  assert.equal(zoom.update(okPair({ separation: 0.44 }), 220).navigationKind, 'zoom');
+  assert.equal(frames(zoom, okPair({ separation: 0.44 }), 240, 1000).at(-1).navigationKind, 'ready');
+  assert.equal(zoom.update([hand('open', { x: -0.15 }), hand('open', { id: 'b', x: 0.15 })], 1020).navigationKind, null);
+});
+
+test('motion colors use dominance for mixed transformations and dwell before switching', () => {
+  const mostlyPan = navigationEngine();
+  assert.equal(mostlyPan.update(okPair({ x: 0.07, separation: 0.32 }), 220).navigationKind, 'pan');
+  const mostlyZoom = navigationEngine();
+  assert.equal(mostlyZoom.update(okPair({ x: 0.01, separation: 0.50 }), 220).navigationKind, 'zoom');
+  const switched = navigationEngine();
+  assert.equal(switched.update(okPair({ x: 0.05 }), 220).navigationKind, 'pan');
+  const changing = [];
+  for (let time = 240; time <= 440; time += 20) {
+    changing.push(switched.update(okPair({ x: 0.05, separation: 0.42 + (time - 240) * 0.0003 }), time));
+  }
+  assert.ok(changing.slice(0, 5).every(result => result.navigationKind === 'pan'));
+  assert.equal(changing.at(-1).navigationKind, 'zoom');
+});
+
+test('small navigation jitter leaves ready colors and emits neither pan nor zoom', () => {
+  const engine = navigationEngine();
+  for (let frame = 0; frame < 120; frame++) {
+    const jitter = (frame % 2 === 0 ? 1 : -1) * 0.001;
+    const result = engine.update(okPair({ x: jitter, separation: 0.30 + jitter }), 220 + frame * 20);
+    assert.equal(result.navigationKind, 'ready');
+    assert.equal(result.events.length, 0);
+    assert.equal(result.pointers.length, 2);
+  }
+});
+
+test('motion consumes pose offsets and smoothly recovers absolute camera coordinates', () => {
+  const engine = new GestureEngine();
+  const first = engine.update([hand('point')], 0);
+  const changed = engine.update([hand('neutral')], 20);
+  assert.deepEqual(changed.cursor, first.cursor);
+  let previous = changed.cursor;
+  for (let step = 1; step <= 20; step++) {
+    const result = engine.update([hand('neutral', { x: step * 0.01 })], 20 + step * 20);
+    assert.ok(Math.hypot(result.cursor.x - previous.x, result.cursor.y - previous.y) < 0.04);
+    previous = result.cursor;
+  }
+  const final = frames(engine, [hand('neutral', { x: 0.20 })], 440, 1000).at(-1);
+  const absolute = classifyHand(hand('neutral', { x: 0.20 })).center;
+  assert.ok(Math.hypot(final.cursor.x - absolute.x, final.cursor.y - absolute.y) < 0.0001);
+  assert.deepEqual({ x: final.pointers[0].x, y: final.pointers[0].y }, final.cursor);
+});
+
+test('short moves to every camera edge consume residual pose offsets without rebounding', () => {
+  const cases = [
+    { axis: 'x', edge: 0, pose: 'neutral', next: 'point', start: 0.05 },
+    { axis: 'x', edge: 1, pose: 'point', next: 'neutral', start: 0.90 },
+    { axis: 'y', edge: 0, pose: 'open', next: 'point', start: 0.05 },
+    { axis: 'y', edge: 1, pose: 'point', next: 'neutral', start: 0.75 },
+  ];
+  const reference = value => value.point ? value.pointer : value.ok ? value.pinch : value.center;
+  for (const value of cases) {
+    const engine = new GestureEngine();
+    const shift = { [value.axis]: value.start - reference(classifyHand(hand(value.pose)))[value.axis] };
+    const first = engine.update([hand(value.pose, shift)], 0);
+    assert.ok(Math.abs(first.cursor[value.axis] - value.start) < 1e-12);
+    const changed = engine.update([hand(value.next, shift)], 20);
+    assert.deepEqual(changed.cursor, first.cursor);
+    const raw = reference(classifyHand(hand(value.next, shift)))[value.axis];
+    const movement = value.edge === 0 ? Math.min(-0.005, -raw - 0.005) : Math.max(0.005, 1 - raw + 0.005);
+    assert.ok(Math.abs(movement) < 0.135);
+    const atEdge = hand(value.next, { ...shift, [value.axis]: shift[value.axis] + movement });
+    const result = engine.update([atEdge], 40);
+    assert.equal(result.cursor[value.axis], value.edge);
+    assert.equal(result.pointers[0][value.axis], value.edge);
+    assert.equal(engine.update([atEdge], 60).cursor[value.axis], value.edge);
+    assert.equal(result.events.length, 0);
+  }
+});
+
+test('a stationary OK at the image edge preserves the previous target for all three seconds', () => {
+  const engine = new GestureEngine();
+  const x = -classifyHand(hand('ok')).pinch.x;
+  const target = engine.update([hand('open', { x })], 0).cursor;
+  const results = frames(engine, [hand('ok', { x })], 20, 3020);
+  assert.deepEqual(clicks(results), [{ type: 'click', ...target }]);
+  assert.ok(results.every(result => result.cursor.x === target.x && result.pointers[0].x === target.x));
+});
+
+test('two-to-one keeps the remaining pointer coherent and still reaches the camera border', () => {
+  const engine = navigationEngine();
+  const pair = engine.update(okPair(), 220);
+  const one = engine.update([okPair()[0]], 240);
+  assert.deepEqual(one.pointers[0], pair.pointers[0]);
+  assert.equal(one.mode, 'idle');
+  let atEdge;
+  for (let step = 1; step <= 44; step++) {
+    atEdge = engine.update([hand('ok', { x: -0.15 - step * 0.01 })], 240 + step * 20);
+    assert.equal(atEdge.events.length, 0);
+  }
+  assert.equal(atEdge.cursor.x, 0);
+  assert.equal(atEdge.pointers[0].x, 0);
 });

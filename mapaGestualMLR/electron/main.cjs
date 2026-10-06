@@ -8,6 +8,7 @@ const smoke = process.argv.includes('--smoke');
 const smokeReport = process.argv.find(v => v.startsWith('--smoke-report='))?.slice(15);
 const screenshot = process.argv.find(v => v.startsWith('--screenshot='))?.slice(13);
 const progressScreenshot = process.argv.find(v=>v.startsWith('--progress-screenshot='))?.slice(22);
+const navigationScreenshot = process.argv.find(v=>v.startsWith('--navigation-screenshot='))?.slice(24);
 let win, server, timeout;
 const trusted = sender => sender === win?.webContents && sender.getURL().startsWith(`${origin}/`);
 function openMapLink(url) {
@@ -68,6 +69,10 @@ else {
     });
     ipcMain.on('smoke-result', async (event, report) => {
       if (!smoke || !trusted(event.sender)) return;
+      if(report.phase==='navigation'){
+        if(navigationScreenshot){const picture=await win.webContents.capturePage();fs.writeFileSync(navigationScreenshot,picture.toPNG());}
+        return;
+      }
       if(report.phase==='progress'){
         if(progressScreenshot){fs.mkdirSync(path.dirname(progressScreenshot),{recursive:true});fs.writeFileSync(progressScreenshot,(await win.webContents.capturePage()).toPNG());}
         return;
