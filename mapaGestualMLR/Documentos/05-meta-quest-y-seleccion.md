@@ -3,19 +3,19 @@
 **Fecha de consulta:** 5 de octubre de 2026<br>
 **Última actualización de implementación:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.5<br>
-**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.6<br>
+**Estado:** 113/113 pruebas, build/runtime y paquetes Mac/Windows 0.1.6 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
 
-## Nota de versión vigente: 0.1.5
+## Nota de versión vigente: 0.1.6
 
 Se conserva **OK continuo durante 1500 ms (1,5 segundos)**, elegido por el usuario en 0.1.4. Se conservan objetivo anclado, aro proporcional, un clic automático al completar y rearme tras abrir `120 ms`; no se confirma al soltar ni se reutiliza un mantenimiento cancelado. El tiempo es una preferencia de este prototipo, no un valor recomendado por Meta. Las comprobaciones de 0.1.2 y 0.1.3 se conservan como historia y no certifican esta actualización.
 
 Desde 0.1.3 permanecen visibles las sombras frescas de ambas manos. En 0.1.4 **dos puños cerrados sólo desplazan** por su punto medio y **dos OK sólo hacen zoom** por separación. Cambiar de postura exige adquirir el nuevo modo durante `180 ms`; una mezcla no navega y no se combinan componentes. Azul indica apuntado/reposo; violeta identifica dos puños adquiridos y ámbar dos OK adquiridos, incluso quietos; gris indica acciones bloqueadas. El aro y ripple del clic individual siguen requiriendo exactamente una mano detectada. La regla histórica de ocultar toda sombra con dos manos ya no se aplica.
 
-Todo el encuadre se corresponde con todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. La continuidad breve de postura conserva el destino de clic sin dejar un offset permanente al desplazarse. Los tres puntos ficticios miden 40 px nominales y 56 px cuando están activos, con área exterior fija de 56 × 56 px. Un clic nativo sobre el activo avanza **1→2→3**; tras el tercero se detiene el pulso y Ajustes permite reiniciar. Estos tamaños, colores y tiempos son decisiones de la app, no especificaciones Meta.
+Todo el encuadre se corresponde con todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. La selección conserva el destino durante el clic; fuera de ese mantenimiento, la transición temporal elimina correcciones aun con la mano quieta. Los tres puntos ficticios miden 40 px nominales y 56 px cuando están activos, con área exterior fija de 56 × 56 px. Un clic nativo sobre el activo avanza **1→2→3**; tras el tercero se detiene el pulso y Ajustes permite reiniciar. Estos tamaños, colores y tiempos son decisiones de la app, no especificaciones Meta.
 
 El control de imágenes casi negras o blancas bloquea acciones y requiere **600 ms** continuos de recuperación, conservando punteros frescos en gris. No garantiza landmarks correctos ni una tasa baja de falsos positivos. Brillo, contraste, compensación de exposición y modos continuos dependen de las capacidades anunciadas por la cámara. Los detalles vigentes están en el [protocolo](./03-protocolo-validacion.md), la [investigación de cámara](./06-camara-y-contraste.md) y el [recorrido y límite SUBDERE DPA 2023](./07-limite-la-reina.md).
 
@@ -23,7 +23,27 @@ El preview **Vista cenital** queda siempre visible arriba a la izquierda: unos 2
 
 La corrección 0.1.5 aborda puños cuyo skeleton ya aparece pero cuya geometría se rechaza por escorzo frontal. Se utiliza evidencia positiva XYZ consistente, preferentemente del mundo estimado de MediaPipe. Sólo world ausente permite fallback XYZ normalizado; si llega inválido, clic y navegación se bloquean y el puntero permanece. No importa el modelo propietario de Quest, cambia los pesos ni añade una segunda inferencia. Los cuatro dedos deben aportar recogimiento/compactación y el pulgar permanecer compacto, el DIP puede quedar recto sólo con cierre fuerte y el pulgar no requiere flexión obligatoria. Posición de cursor y navegación siguen en la imagen; world no garantiza visibilidad ni precisión física. La definición y fuentes primarias se detallan en el [protocolo](./03-protocolo-validacion.md).
 
-### Verificación vigente de 0.1.5
+## Seguimiento de índice y nudillos en 0.1.6
+
+Cada sombra sigue la **punta del índice, landmark 8**, en reposo, palma abierta, apuntado, OK y zoom. Cuando la postura se reconoce como puño, utiliza la media de los **MCP 5, 9, 13 y 17**, sin muñeca: un punto de nudillos estimado por el modelo, no garantía de visibilidad física de cada articulación. `pointerReference()` comparte esa elección con el fallback del renderer; sin geometría clasificable, éste conserva el índice 8 fresco sin habilitar acciones.
+
+Cambiar entre índice y nudillos conserva inicialmente la posición mostrada y elimina su corrección durante **300 ms** con `smoothstep`, incluso si la mano queda quieta. La referencia vuelve a su posición absoluta, sin un offset que sólo desaparezca al mover la palma. Continúa el filtro 1€; pérdida de tracking no permite animar ni seleccionar con datos antiguos.
+
+**Excepción de selección individual:** objetivo, aro y halo permanecen anclados durante el OK de `1500 ms`. Se puede iniciar con OK directo; al entrar se conserva una posición reciente cuando existe. Abrir antes del umbral cancela y completar produce un único clic hasta abrir `120 ms`. Cancelar/liberar regresa suavemente desde la posición mostrada al índice. Dos OK no heredan un offset del clic individual.
+
+La navegación sigue exclusiva y exige `180 ms`: **dos puños desplazan por el punto medio de sus referencias de nudillos**; **dos OK hacen zoom por separación de los índices 8**, con ancla en su punto medio. La pinza 4/8 conserva la detección de OK, el control de drift y la comprobación de continuidad/identidad; ya no define la posición del halo ni la distancia de zoom. Modelo, SDK, umbrales de puño XYZ, mapa, recorrido y UI se conservan.
+
+### Verificación vigente de 0.1.6
+
+La suite **0.1.6 aprobó 113/113 pruebas**: 74 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Los build, runtime y paquetes Mac/Windows están aprobados. Los **13 checks `indexTrackingFeedback`** verifican referencias de apuntado/palma abierta/reposo/OK/puño y mano del modelo real con 21 puntos, cambios sin salto, convergencia quieta a nudillos/índice y tres fallbacks: índice, nudillos y geometría desconocida con landmark 8.
+
+También aprueban seis checks de fuente/vistas de puño, nueve de navegación, siete de preview, ocho de punteros y ocho de calidad. La selección registra cuatro clics nativos `isTrusted` de al menos `1500 ms`, objetivo/aro anclados, sin temprano/repetición, botón sin doble avance y recorrido completo. Las posturas de esos checks son sintéticas; el PNG positivo verifica la inferencia real, sin acreditar puños físicos ni una tasa de falsos positivos.
+
+El código comprobado es `0c79d38b4aa65486553011495d9695acc6dec9b7`. Los reportes [Mac 0.1.6](./verificacion-paquete-mac-0.1.6.json) y [Windows 0.1.6](./verificacion-paquete-windows-0.1.6.json) confirman el smoke del contenido empaquetado y 13 checks de seguimiento con coordenadas esperadas calculadas directamente del índice 8 y la media MCP. La [CI Windows 37418725259](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37418725259) terminó con éxito: 113 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Google con key, cámara USB cenital/frontal y métricas físicas siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance.
+
+La `.app` Mac 0.1.6 abrió correctamente; la ayuda de índice/nudillos se verificó en la interfaz nativa y se observó la cámara activa. Esa revisión de UI no es un benchmark físico de gestos, skeleton, falsos positivos o latencia.
+
+### Evidencia histórica de 0.1.5
 
 La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
 

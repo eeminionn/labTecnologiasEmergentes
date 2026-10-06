@@ -2,8 +2,8 @@
 
 **Fecha:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión:** 0.1.5<br>
-**Estado:** geometría y recorrido conservados; 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados. Google real y ensayo USB cenital/frontal pendientes<br>
+**Versión:** 0.1.6<br>
+**Estado:** geometría y recorrido conservados; 113/113 pruebas, build/runtime y paquetes Mac/Windows 0.1.6 aprobados. Google real y ensayo USB cenital/frontal pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
@@ -91,7 +91,19 @@ Diagnóstico disponible mediante `map.info()`:
 }
 ```
 
-## Verificación vigente de 0.1.5
+## Verificación vigente de 0.1.6
+
+El seguimiento cambia a índice 8 excepto puño, cuya referencia es media MCP 5/9/13/17. La transición temporal de 300 ms conserva continuidad; durante OK individual, objetivo, aro y halo mantienen su ancla 1500 ms. Pan usa punto medio de nudillos y zoom separación/punto medio de índices. No cambian el GeoJSON, hash, posiciones, identidades, tamaños ni avance por clic. Los puntos MCP son estimados, sin garantía de visibilidad física individual.
+
+La suite **0.1.6 aprobó 113/113 pruebas**: 74 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Los build, runtime y paquetes Mac/Windows están aprobados. Los **13 checks `indexTrackingFeedback`** verifican referencias de apuntado/palma abierta/reposo/OK/puño y mano del modelo real con 21 puntos, cambios sin salto, convergencia quieta a nudillos/índice y tres fallbacks: índice, nudillos y geometría desconocida con landmark 8.
+
+También aprueban seis checks de fuente/vistas de puño, nueve de navegación, siete de preview, ocho de punteros y ocho de calidad. La selección registra cuatro clics nativos `isTrusted` de al menos `1500 ms`, objetivo/aro anclados, sin temprano/repetición, botón sin doble avance y recorrido completo. Las posturas de esos checks son sintéticas; el PNG positivo verifica la inferencia real, sin acreditar puños físicos ni una tasa de falsos positivos.
+
+El código comprobado es `0c79d38b4aa65486553011495d9695acc6dec9b7`. Los reportes [Mac 0.1.6](./verificacion-paquete-mac-0.1.6.json) y [Windows 0.1.6](./verificacion-paquete-windows-0.1.6.json) confirman el smoke del contenido empaquetado y 13 checks de seguimiento con coordenadas esperadas calculadas directamente del índice 8 y la media MCP. La [CI Windows 37418725259](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37418725259) terminó con éxito: 113 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Google con key, cámara USB cenital/frontal y métricas físicas siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance.
+
+La `.app` Mac 0.1.6 abrió correctamente; la ayuda de índice/nudillos se verificó en la interfaz nativa y se observó la cámara activa. Esa revisión de UI no es un benchmark físico de gestos, skeleton, falsos positivos o latencia.
+
+## Evidencia histórica de 0.1.5
 
 La corrección de puños cenitales/frontales cambia la interpretación XYZ de esa postura; no altera el GeoJSON, su fuente, hashes, posiciones, identidades ni avance por clic. Conserva dos puños para pan, dos OK para zoom y OK individual de 1,5 segundos. El reconocimiento del puño y el mapeo de coordenadas de imagen son medidas distintas; el mundo estimado no mueve por sí solo el objetivo. Consultar el [protocolo vigente](./03-protocolo-validacion.md).
 

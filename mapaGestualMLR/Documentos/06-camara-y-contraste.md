@@ -2,23 +2,25 @@
 
 **Fecha de consulta:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión de implementación:** 0.1.5<br>
-**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión de implementación:** 0.1.6<br>
+**Estado:** 113/113 pruebas, build/runtime y paquetes Mac/Windows 0.1.6 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar selección](./05-meta-quest-y-seleccion.md)
 
-## Vigencia de 0.1.5
+## Vigencia de 0.1.6
 
 La selección conserva **1,5 segundos**, pan usa exclusivamente **dos puños** y zoom exclusivamente **dos OK**. El gate cancela cualquiera de esas acciones ante una imagen inutilizable y no reutiliza el tiempo anterior. Los umbrales de calidad y el modelo se conservan; sus resultados anteriores no certifican por sí solos la nueva integración.
 
-El preview pequeño Vista cenital permanece visible arriba a la izquierda, de unos **200 px de ancho** o **160 px** en pantallas pequeñas. Muestra imagen, skeleton y conteo frescos con cámara activa; al detenerla muestra Cámara detenida y limpia el dibujo y datos anteriores. No tiene casilla ni botón para ocultar. La cámara sólo se inicia por acción explícita. Métricas detalladas, exportación y anotación manual de falsos clics se consultan en Ajustes → Diagnóstico de seguimiento. Esta UI aprobó los smoke de runtime y paquete en Mac y Windows; también se inspeccionó el preview físico Mac sin guardar imágenes personales.
+El preview pequeño Vista cenital permanece visible arriba a la izquierda, de unos **200 px de ancho** o **160 px** en pantallas pequeñas. Muestra imagen, skeleton y conteo frescos con cámara activa; al detenerla muestra Cámara detenida y limpia el dibujo y datos anteriores. No tiene casilla ni botón para ocultar. La cámara sólo se inicia por acción explícita. Métricas detalladas, exportación y anotación manual de falsos clics se consultan en Ajustes → Diagnóstico de seguimiento. La UI hasta 0.1.5 aprobó los smoke Mac/Windows; la inspección física del preview anterior queda histórica, sin imágenes personales guardadas. El seguimiento 0.1.6 aprobó runtime y paquetes Mac/Windows; las métricas físicas siguen pendientes.
 
 La mejora consiste en identificar imágenes claramente inutilizables, cancelar los gestos pendientes y ofrecer ajustes que la cámara realmente admite. No consiste en garantizar que una imagen con buen contraste contiene landmarks correctos. Un detector puede equivocarse con iluminación normal; una mano puede seguir siendo visible sobre una mesa casi uniforme. El gate complementa la geometría, continuidad y temporizadores del motor.
 
 La corrección 0.1.5 distingue tracking de clasificación: el usuario ve el skeleton de ambas manos cerradas, de modo que el fallo reportado está en aceptar la postura. La geometría del puño utiliza XYZ consistente para resistir escorzo frontal, preferentemente `worldLandmarks` estimados; si faltan, utiliza XYZ normalizado con aspecto corregido, y si llegan inválidos bloquea clic y navegación. Conserva el puntero fresco. Cursor y navegación siguen usando la imagen. Ese dato ya lo produce la misma inferencia; no cambia el bitmap, modelo, SDK, umbrales del task ni añade preprocesamiento o segundo detector. La definición y fuentes están en el [protocolo](./03-protocolo-validacion.md).
 
 Una geometría sintética más robusta no acredita mejor iluminación, enfoque ni precisión de cámara. Mantener la evaluación del gate y medir por separado manos cenitales/frontales, pérdidas, falsos bloqueos y falsos eventos.
+
+El seguimiento 0.1.6 usa índice 8 salvo puño reconocido, que usa media MCP 5/9/13/17 en la imagen. La transición converge en 300 ms aun quieto; durante selección individual conserva objetivo/aro/halo 1500 ms. El fallback del renderer también usa índice para geometría desconocida, sin habilitar acciones. Son estimaciones: no afirmar que cada MCP es directamente visible ni que cambiar referencia mejora la precisión física. Los umbrales de calidad, modelo y entrada RGB se conservan.
 
 ## Evidencia que guía la decisión
 
@@ -117,7 +119,17 @@ Los paquetes históricos **0.1.3** Mac y Windows están aprobados; sus resultado
 
 La validación física debe comparar versión con y sin gate sobre secuencias equivalentes: reposo, un OK, dos puños, dos OK, mezclas y cambios de modo, transiciones, manos cruzadas, objetos sin manos, entradas/salidas y pausas. Variar iluminación, fondo, tono de piel, distancia, movimiento y controles admitidos. Etiquetar falsos clics y pan/zoom accidentales por minuto, recuperaciones, falsos bloqueos y fracción del tiempo bloqueada. Incluir el tiempo total y el tiempo habilitado en los denominadores para que pausar mucho no parezca una mejora de precisión. Separar `qualityMs`, inferencia y captura a resultado; ninguno sustituye por sí solo latencia cámara-a-pantalla.
 
-## Verificación vigente de 0.1.5
+## Verificación vigente de 0.1.6
+
+La suite **0.1.6 aprobó 113/113 pruebas**: 74 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Los build, runtime y paquetes Mac/Windows están aprobados. Los **13 checks `indexTrackingFeedback`** verifican referencias de apuntado/palma abierta/reposo/OK/puño y mano del modelo real con 21 puntos, cambios sin salto, convergencia quieta a nudillos/índice y tres fallbacks: índice, nudillos y geometría desconocida con landmark 8.
+
+También aprueban seis checks de fuente/vistas de puño, nueve de navegación, siete de preview, ocho de punteros y ocho de calidad. La selección registra cuatro clics nativos `isTrusted` de al menos `1500 ms`, objetivo/aro anclados, sin temprano/repetición, botón sin doble avance y recorrido completo. Las posturas de esos checks son sintéticas; el PNG positivo verifica la inferencia real, sin acreditar puños físicos ni una tasa de falsos positivos.
+
+El código comprobado es `0c79d38b4aa65486553011495d9695acc6dec9b7`. Los reportes [Mac 0.1.6](./verificacion-paquete-mac-0.1.6.json) y [Windows 0.1.6](./verificacion-paquete-windows-0.1.6.json) confirman el smoke del contenido empaquetado y 13 checks de seguimiento con coordenadas esperadas calculadas directamente del índice 8 y la media MCP. La [CI Windows 37418725259](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37418725259) terminó con éxito: 113 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Google con key, cámara USB cenital/frontal y métricas físicas siguen pendientes; la [entrega](./04-entrega-y-verificacion.md) identifica archivos y alcance.
+
+La `.app` Mac 0.1.6 abrió correctamente; la ayuda de índice/nudillos se verificó en la interfaz nativa y se observó la cámara activa. Esa revisión de UI no es un benchmark físico de gestos, skeleton, falsos positivos o latencia.
+
+## Evidencia histórica de 0.1.5
 
 La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
 
@@ -135,7 +147,7 @@ El código comprobado es `fe733f504f64a27cf577bf18a2c91ebd426b9ba2`. Los paquete
 
 La inspección nativa Mac confirmó la ayuda de 1,5 segundos, dos puños para pan, dos OK para zoom y Ajustes sin casilla de preview. También se inspeccionó el preview con una cámara física y sus landmarks, sin guardar imágenes personales. Esa revisión visual no es un ensayo USB cenital ni un benchmark de gestos, falsos positivos o latencia física.
 
-Los controles simulados no demuestran capacidades de una USB física; ese ensayo sigue pendiente, junto con falsos positivos y latencia física. Los reportes anteriores no certifican la corrección de puños de 0.1.5.
+Los controles simulados no demuestran capacidades de una USB física; ese ensayo sigue pendiente, junto con falsos positivos y latencia física. Los reportes anteriores no certifican el seguimiento nuevo de 0.1.6.
 
 ## CLAHE y siguientes investigaciones
 

@@ -5,8 +5,8 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 **Inicio:** 5 de octubre de 2026<br>
 **Última actualización:** 6 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Versión vigente:** 0.1.5<br>
-**Estado:** 104/104 pruebas, build/runtime y paquetes Mac/Windows 0.1.5 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.6<br>
+**Estado:** 113/113 pruebas, build/runtime y paquetes Mac/Windows 0.1.6 aprobados; ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
@@ -49,13 +49,13 @@ La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Lo
 
 ## Abrir el programa empaquetado
 
-La suite **104/104**, los build/runtime y los paquetes **Mac y Windows 0.1.5 están aprobados**. Los paquetes **0.1.4** conservaron su verificación histórica; no incorporan esta corrección. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) indica qué versión corresponde a cada archivo disponible.
+La suite **113/113**, build/runtime y paquetes **Mac/Windows 0.1.6 están aprobados**. Los paquetes **0.1.5** conservaron su verificación histórica; no incorporan este ajuste. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) indica qué versión corresponde a cada archivo disponible.
 
 Como evidencia histórica, la `.app` Mac **0.1.3** aprobó el smoke del paquete y su apertura real, Ajustes y ayuda se revisaron en la aplicación. Windows **0.1.3** aprobó pruebas, build, runtime, construcción del portable y smoke del contenido empaquetado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y resultados por plataforma.
 
 **macOS Apple Silicon:** descomprimir el ZIP para obtener `Mapa Gestual MLR.app` y abrirla. Elegir la cámara USB y conceder el acceso a cámara cuando macOS lo solicite. Esta versión de desarrollo no tiene firma ni notarización. Si Gatekeeper bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación de macOS; no desactivar la protección global del equipo.
 
-**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI 0.1.5](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37417286255) aprobó el smoke del contenido ejecutando `release/win-unpacked/Mapa Gestual MLR.exe`. El arranque mediante el envoltorio portable y la cámara USB/driver físicos siguen pendientes.
+**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI 0.1.6](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37418725259) aprobó el smoke del contenido ejecutando `release/win-unpacked/Mapa Gestual MLR.exe`. El arranque mediante el envoltorio portable y la cámara USB/driver físicos siguen pendientes.
 
 La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y plataforma de cada entrega junto con los resultados de verificación. Construir un archivo no demuestra por sí solo que la detección funcione con la cámara de la instalación.
 
@@ -63,10 +63,10 @@ La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y pl
 
 | Acción | Cómo se realiza |
 |:---|:---|
-| Apuntar | Extender solamente el índice y mover la mano dentro del encuadre de cámara. La sombra también permanece visible en reposo y con palma abierta. |
+| Apuntar | Mover la punta del índice dentro del encuadre. La sombra sigue el índice 8 también en reposo y con palma abierta. |
 | Clic | Formar OK con pulgar e índice y otros dedos extendidos sobre el objetivo y mantenerlo durante **1,5 segundos**. El clic ocurre automáticamente al completar el aro; no hay que soltar para confirmar. También se puede apuntar con el índice antes de cerrar OK. |
-| Desplazar | Formar **dos puños cerrados**, uno por mano, y mantener durante `180 ms`. Moverlos en paralelo desplaza el mapa según su punto medio. Cambiar su separación no hace zoom. |
-| Zoom | Formar **OK con ambas manos** y mantener durante `180 ms`. Separarlas acerca y juntarlas aleja. Moverlas juntas sin cambiar separación no desplaza el mapa. |
+| Desplazar | Formar **dos puños cerrados**, uno por mano, y mantener durante `180 ms`. Moverlos en paralelo desplaza el mapa según el punto medio de sus referencias de nudillos. Cambiar su separación no hace zoom. |
+| Zoom | Formar **OK con ambas manos** y mantener durante `180 ms`. Separar sus índices 8 acerca y juntarlos aleja. Moverlas juntas sin cambiar separación no desplaza el mapa. |
 
 **Pausa:** pulsar Espacio. La pérdida de foco detiene la interacción. Esc cancela la acción en curso.
 
@@ -74,7 +74,7 @@ La versión 0.1.1 eliminó el desplazamiento con una palma abierta por una obser
 
 La **0.1.5 corrige el reconocimiento de puños** cuando el skeleton está presente pero la postura no habilita pan. Una vista frontal puede acortar las longitudes proyectadas de dedos recogidos hasta casi cero. La corrección interpreta la flexión y compactación del puño en geometría XYZ consistente, preferentemente con `worldLandmarks` estimados por la misma inferencia. Si faltan, utiliza XYZ normalizado con aspecto corregido; si llegan explícitamente inválidos, bloquea clic y navegación y conserva el puntero fresco. Mantiene las coordenadas de imagen para cursor, movimiento y zoom. Tolera un DIP recto sólo con evidencia adicional de cierre fuerte; el pulgar puede permanecer recto si está compacto/aducido. No incorpora otro modelo ni demuestra por sí sola precisión física: la comprobación cenital/frontal sigue el [protocolo](./Documentos/03-protocolo-validacion.md).
 
-El objetivo se conserva entre la postura de apuntado y OK para que el cursor no vuelva al centro al cerrar los dedos. **Se puede comenzar directamente con OK**: se ancla la posición válida actual, sin exigir una postura previa de apuntado. El hover indica un solo candidato visible. El destino y el aro permanecen fijos durante los 1,5 segundos; fuera del mantenimiento, la corrección breve de postura se consume al mover la mano para recuperar la posición absoluta y alcanzar los bordes.
+El seguimiento **0.1.6** usa índice 8 en reposo, abierta, apuntado, OK y zoom; al reconocer puño cambia a la media de MCP 5, 9, 13 y 17, sin muñeca. La transición converge durante `300 ms` incluso quieto. Es un punto estimado por el modelo, no una promesa de observar cada nudillo. **Durante selección**, objetivo, aro y halo permanecen anclados durante los 1,5 segundos; se permite OK directo y se conserva una posición reciente al entrar cuando existe. Cancelar o liberar regresa suavemente al índice. Dos OK no heredan el offset del clic individual. El hover indica un único candidato visible.
 
 El aro azul avanza de `0` a `1` durante los 1,5 segundos y confirma en verde al ejecutar el clic. Un OK sostenido produce **un solo clic hasta volver a abrir durante `120 ms`**; mantenerlo cerrado o soltar después no repite. Abrir antes del umbral cancela. Si se pierde una mano o aparece la segunda, se cancela la selección pendiente; cualquiera de los modos de dos manos tiene prioridad sobre los clics individuales.
 
@@ -127,7 +127,17 @@ npm run build
 npm run test:app
 ```
 
-### Verificación vigente: versión 0.1.5
+### Verificación vigente: versión 0.1.6
+
+La suite **0.1.6 aprobó 113/113 pruebas**: 74 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. Los build, runtime y paquetes Mac/Windows están aprobados. Los **13 checks `indexTrackingFeedback`** verifican referencias de apuntado/palma abierta/reposo/OK/puño y mano del modelo real con 21 puntos, cambios sin salto, convergencia quieta a nudillos/índice y tres fallbacks: índice, nudillos y geometría desconocida con landmark 8.
+
+También aprueban seis checks de fuente/vistas de puño, nueve de navegación, siete de preview, ocho de punteros y ocho de calidad. La selección registra cuatro clics nativos `isTrusted` de al menos `1500 ms`, objetivo/aro anclados, sin temprano/repetición, botón sin doble avance y recorrido completo. Las posturas de esos checks son sintéticas; el PNG positivo verifica la inferencia real, sin acreditar puños físicos ni una tasa de falsos positivos.
+
+El código comprobado es `0c79d38b4aa65486553011495d9695acc6dec9b7`. Los reportes [Mac 0.1.6](./Documentos/verificacion-paquete-mac-0.1.6.json) y [Windows 0.1.6](./Documentos/verificacion-paquete-windows-0.1.6.json) confirman el smoke del contenido empaquetado y 13 checks de seguimiento con coordenadas esperadas calculadas directamente del índice 8 y la media MCP. La [CI Windows 37418725259](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37418725259) terminó con éxito: 113 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El envoltorio portable no se ejecutó como tal. Google con key, cámara USB cenital/frontal y métricas físicas siguen pendientes; la [entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos y alcance.
+
+La `.app` Mac 0.1.6 abrió correctamente; la ayuda de índice/nudillos se verificó en la interfaz nativa y se observó la cámara activa. Esa revisión de UI no es un benchmark físico de gestos, skeleton, falsos positivos o latencia.
+
+### Evidencia histórica: versión 0.1.5
 
 La suite **0.1.5 aprobó 104/104 pruebas**: 65 de gestos, 3 de calibración histórica, 9 de selección, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia. El build Vite, runtime Mac/Windows y smoke del contenido de ambos paquetes están aprobados. El PNG positivo procesado por el modelo real entrega **21 `worldLandmarks`**; el clasificador integrado utiliza esa fuente. Los **seis checks `fistViewsFeedback`** aprueban carga y uso de world, `cenital-dorso`, `frontal-nudillos`, `frontal-palma` y `mixedOrientationsPan`: las vistas de puño son XYZ sintético, no puños capturados por cámara. El motor real adquiere pan sin zoom; mover coordenadas de imagen con un mundo local fijo por mano desplaza el mapa sin usar world como posición global.
 
@@ -217,7 +227,7 @@ npm run dist:win
 
 MediaPipe Tasks Vision `1.0.1`, Hand Landmarker full, modo video, hasta dos manos y delegate CPU en worker local. Umbrales iniciales de detección, presencia y tracking: `0,70`.
 
-El motor usa histéresis del pinch `0,28/0,40`, confirmación de OK de una mano de `1500 ms`, rearme por apertura de `120 ms`, cooldown de `400 ms` y adquisición de cada modo de dos manos de `180 ms`. Pan reconoce positivamente dos puños; zoom reconoce dos OK. Filtro 1€ para reducir temblor. La versión 0.1.5 conserva el modelo, runtime, umbrales de detección y tiempos de interacción; corrige la geometría positiva del puño y transmite los puntos de mundo de la misma inferencia, sin reentrenar ni ejecutar un segundo detector. La configuración completa y la definición de cada medida están en el protocolo; los ejemplos históricos de la investigación no sustituyen estos defaults.
+El motor usa histéresis del pinch `0,28/0,40`, confirmación de OK de una mano de `1500 ms`, rearme por apertura de `120 ms`, cooldown de `400 ms` y adquisición de cada modo de dos manos de `180 ms`. Pan reconoce positivamente dos puños; zoom reconoce dos OK. Filtro 1€ para reducir temblor. La versión 0.1.6 conserva modelo, runtime, umbrales y tiempos de interacción; modifica las referencias del seguimiento y navegación con convergencia temporal de `300 ms`. Conserva la geometría positiva XYZ del puño incorporada en 0.1.5, sin reentrenar ni ejecutar un segundo detector. La configuración completa y la definición de cada medida están en el protocolo; los ejemplos históricos de la investigación no sustituyen estos defaults.
 
 El diagnóstico muestra tiempos de inferencia y captura→resultado del worker. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado de hasta 10.000 muestras recientes. El botón **Marcar falso clic** suma una anotación manual; no detecta errores ni calcula una tasa de falsos positivos automáticamente. Para medir esa tasa se requiere tiempo negativo e intención anotados.
 
