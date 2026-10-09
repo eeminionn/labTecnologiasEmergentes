@@ -12,4 +12,4 @@ const code = await new Promise(resolve => child.on('exit', resolve));
 if (code !== 0) process.exit(code || 1);
 const result = JSON.parse(await readFile(report, 'utf8'));
 if (!result.ok) throw new Error(JSON.stringify(result));
-console.log('Smoke: modelo WASM/world 3D, índice/nudillos, puños cenital/frontal, sombras/colores, navegación exclusiva, preview/bordes/calidad, diagnóstico/rearme y recorrido 1 → 2 → 3 con cierre gradual, variación MCP, pulgar quieto y clic nativo de 1,5 s: OK');
+console.log('Smoke: modelo WASM/world 3D, índice/nudillos, puños cenital/frontal, prioridad dos OK → un OK → puños, preview/bordes/calidad, diagnóstico/rearme y recorrido 1 → 2 → 3 con clic nativo de 1,5 s; compañero entra/sale, cambia a puño y selección en el segundo halo: OK');

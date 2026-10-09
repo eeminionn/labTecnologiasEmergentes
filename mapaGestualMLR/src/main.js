@@ -20,6 +20,7 @@ let cameraControlsAvailable={ranges:{}},cameraControlReport=null,qualityWarningS
 let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], lastFrame=-1;
 let engine = new GestureEngine();
 const selection=new SelectionFeedback();
+let renderedSelectionHandId=null;
 let hoverElement;
 const controlIds=new WeakMap();let nextControlId=0;
 const timings=[], inferenceTimes=[],qualityTimes=[];
@@ -27,7 +28,7 @@ const counters={frames:0,clicks:0,panEvents:0,zoomEvents:0,markedFalseClicks:0};
 const startedAt=new Date().toISOString();
 const linePairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
 const labels={idle:'En reposo',point:'Apuntando','click-preparing':'Forma OK','click-pending':'Mantén OK · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
-const selectionReasonLabels={'release-required':'Abre la pinza para habilitar la selección','second-hand':'Usa una sola mano para seleccionar','invalid-geometry':'Postura no válida para seleccionar'};
+const selectionReasonLabels={'release-required':'Abre la pinza para habilitar la selección','invalid-geometry':'Postura no válida para seleccionar'};
 let lastActiveSelectionState=null,lastSelectionReason=null;
 const selectionReasonCounts={};
 let noticeTimer,noticeKind;
@@ -48,7 +49,7 @@ function updateStatus() {
   if(!active)clearTrackingPreview();
 }
 function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
-function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
+function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();renderedSelectionHandId=null;highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
 function isBlocked() { return paused || !document.hasFocus() || $('settings').open || $('help').open; }
 function mapPoint(p) { return cameraToMap(p,config); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
@@ -91,9 +92,9 @@ function initializeWorker() {
       const blocked=isBlocked() || !qualityState.allowActions;
       if(blocked)cancelGesture(false);
       let result=engine.update(latestHands,data.timestamp);
-      // Reject actions if an observed second hand was filtered out by invalid
-      // geometry. It cannot become either an individual click or one-fist pan.
-      if(blocked || (latestHands.length!==result.hands && latestHands.length>1)) {
+      // The engine validates each participating hand. A free hand must not
+      // cancel an otherwise valid action by changing the observed count.
+      if(blocked) {
         engine.cancelInteraction();engine.cancelClick(true);
         result={...result,mode:'idle',progress:0,events:[],navigationKind:null};
       }
@@ -144,13 +145,14 @@ async function finishSmoke(data) {
     && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
     && nativeSelection.buttonClickAccepted && nativeSelection.pointHold.deformedPalm && nativeSelection.buttonHold.stationaryThumb && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint
-    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.gradualClosure && h.preparingObserved && h.noClickBeforeOk && h.retainedTargetAtOk)
+    && nativeSelection.pointHold.companionContinuity && nativeSelection.buttonHold.companionContinuity
+    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.gradualClosure && (h.preparingObserved || h.companionMode==='always') && h.noClickBeforeOk && h.retainedTargetAtOk)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && Object.values(fistViewsFeedback).every(Boolean)
     && Object.values(indexTrackingFeedback).every(Boolean)
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.9',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.10',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
@@ -178,13 +180,13 @@ async function verifyNativeSelection() {
   const target=map.targets()[0];
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
   let trustedClicks=0;const observe=event=>{if(event.isTrusted)trustedClicks++;};$('map').addEventListener('click',observe,true);
-  const pointHold=await verifyHoldAt(target,fixture,()=>trustedClicks,true,false,true);
+  const pointHold=await verifyHoldAt(target,fixture,()=>trustedClicks,true,false,true,'changing');
   await waitFor(()=>$('map').querySelector('.demo-popup button'),2000,`popup (clicks=${pointHold.clicks}, accepted=${pointHold.clickAccepted})`);
   const button=$('map').querySelector('.demo-popup button');
   cancelGesture();
   const buttonTarget=selectionTargets($('map').getBoundingClientRect()).find(t=>t.element===button);
   if(!buttonTarget)throw new Error('Smoke: botón de popup no disponible');
-  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks,false,true);
+  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks,false,true,false,'always');
   await waitFor(()=>button.textContent==='Punto seleccionado',2000,`selección de botón (accepted=${buttonHold.clickAccepted}, clicks=${buttonHold.clicks}, elapsed=${buttonHold.elapsedMs}, locked=${buttonHold.cursorLocked}, trusted=${trustedClicks})`);
   const advancesOnlyOnPoint=map.info().sequence.completedCount===1;
   const sequenceHolds=[];
@@ -201,7 +203,7 @@ async function verifyNativeSelection() {
   cancelGesture();map.resetSequence();map.home();
   return result;
 }
-async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,stationaryThumb=false,deformedPalm=false) {
+async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,stationaryThumb=false,deformedPalm=false,companionMode=null) {
   const rect=$('map').getBoundingClientRect();
   const dx=target.x/rect.width-fixture.poses.point[8].x,dy=target.y/rect.height-fixture.poses.point[8].y;
   const finalOk=fixture.poses.ok.map(p=>({...p}));
@@ -217,10 +219,30 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,st
     return value;
   };
   const synthetic=new GestureEngine();
-  await renderGesture(synthetic.update([hand('point')],performance.now()),1);
-  for(let frame=0;frame<5;frame++){
+  const freeX=target.x/rect.width<.5?.8:.2;
+  const companion=pose=>({id:'free-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+freeX-fixture.poses[pose][8].x,y:p.y+.5-fixture.poses[pose][8].y}))});
+  const currentCursor=result=>[$('cursor'),$('cursor-secondary')].find(cursor=>cursor.dataset.hand===String(result.selectionHandId))||$('cursor');
+  let companionFrames=0,companionFistFrames=0,selectionOnSecondary=false,companionExited=false,hadCompanion=false,lastProgress=0,continued=true,orderReversedDuringHold=false;
+  const frame=async (selected,time,elapsed=0)=>{
+    const present=companionMode==='always' || (companionMode==='changing' && elapsed>=250 && !(elapsed>=900 && elapsed<1200));
+    const pose=companionMode==='always' || elapsed>=650?'fist':'point';
+    const reverse=companionMode==='changing' && elapsed>=450 && elapsed<650;
+    const hands=present?(reverse?[selected,companion(pose)]:[companion(pose),selected]):[selected];
+    const result=synthetic.update(hands,time),accepted=await renderGesture(result,hands.length);
+    if(present){companionFrames++;companionFistFrames+=pose==='fist';hadCompanion=true;}
+    else if(hadCompanion)companionExited=true;
+    selectionOnSecondary ||= currentCursor(result)===$('cursor-secondary') && result.mode==='click-pending';
+    if(result.mode==='click-pending' || result.mode==='click-confirmed'){
+      orderReversedDuringHold ||= present && reverse;
+      continued &&= result.progress>=lastProgress && !result.events.some(event=>event.type==='pan'||event.type==='zoom');
+      lastProgress=result.progress;
+    }
+    return {result,accepted,cursor:currentCursor(result)};
+  };
+  await frame(hand('point'),performance.now());
+  for(let warmupFrame=0;warmupFrame<5;warmupFrame++){
     await sleep(40);
-    await renderGesture(synthetic.update([hand('point')],performance.now()),1);
+    await frame(hand('point'),performance.now());
   }
   const beforeClicks=trustedCount(),closureStarted=performance.now();
   let start=null,closureFrames=0,preparingObserved=false,noClickBeforeOk=true,retainedTargetAtOk=false;
@@ -233,25 +255,23 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,st
     // turn a valid OK into a sticky "release required" before dwell starts.
     if(deformedPalm && classifyHand(closing)?.ok)closing.landmarks[5].y+=.03;
     await sleep(40);
-    const now=performance.now(),result=synthetic.update([closing],now);
-    const accepted=await renderGesture(result,1);closureFrames++;
+    const now=performance.now(),{result,accepted,cursor}=await frame(closing,now);closureFrames++;
     preparingObserved ||= result.mode==='click-preparing';
     if(start===null && result.mode==='click-pending'){
       start=now;
-      retainedTargetAtOk=Math.abs(parseFloat($('cursor').style.left)-target.x)<.5 && Math.abs(parseFloat($('cursor').style.top)-target.y)<.5;
+      retainedTargetAtOk=Math.abs(parseFloat(cursor.style.left)-target.x)<.5 && Math.abs(parseFloat(cursor.style.top)-target.y)<.5;
     }
-    if(start===null && (result.progress!==0 || result.events.length || accepted.length || trustedCount()!==beforeClicks || $('cursor').dataset.state==='loading'))noClickBeforeOk=false;
+    if(start===null && ((result.mode.startsWith('click-') && result.progress!==0) || result.events.some(event=>event.type==='click') || accepted.length || trustedCount()!==beforeClicks || cursor.dataset.state==='loading'))noClickBeforeOk=false;
   }
   if(start===null)throw new Error('Smoke: cierre gradual no inició la selección');
   const closureDurationMs=performance.now()-closureStarted;
   let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false;
   const anchor={x:target.x,y:target.y};
   while(performance.now()-start<1800){
-    const now=performance.now(),result=synthetic.update([hand('ok')],now);
-    const accepted=await renderGesture(result,1);
-    cursorLocked &&= Math.abs(parseFloat($('cursor').style.left)-anchor.x)<.5 && Math.abs(parseFloat($('cursor').style.top)-anchor.y)<.5;
+    const now=performance.now(),{result,accepted,cursor}=await frame(hand('ok'),now,now-start);
+    cursorLocked &&= Math.abs(parseFloat(cursor.style.left)-anchor.x)<.5 && Math.abs(parseFloat(cursor.style.top)-anchor.y)<.5;
     if(result.progress>=.45 && result.progress<=.65){
-      const ring=$('cursor').querySelector('.cursor-progress'),style=getComputedStyle(ring);
+      const ring=cursor.querySelector('.cursor-progress'),style=getComputedStyle(ring);
       ringHalfVisible ||= style.opacity==='1' && Math.abs(parseFloat(style.strokeDashoffset)-213.63*(1-result.progress))<.2;
       if(captureProgress && !progressCaptured){progressCaptured=true;window.desktop.reportSmoke({phase:'progress',progress:result.progress});}
     }
@@ -259,7 +279,9 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,st
     if(result.events.some(event=>event.type==='click')){clicks++;elapsedMs=now-start;clickAccepted=accepted[0]===true;}
     await sleep(40);
   }
-  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,gradualClosure:true,stationaryThumb,deformedPalm,closureFrames,closureDurationMs,firstOkElapsedMs:start-closureStarted,preparingObserved,noClickBeforeOk,retainedTargetAtOk};
+  const companionContinuity=!companionMode || (continued && companionFrames>0 && companionFistFrames>0 && selectionOnSecondary
+    && (companionMode!=='changing' || (companionExited && orderReversedDuringHold)) && clicks===1 && clickAccepted);
+  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,gradualClosure:true,stationaryThumb,deformedPalm,closureFrames,closureDurationMs,firstOkElapsedMs:start-closureStarted,preparingObserved,noClickBeforeOk,retainedTargetAtOk,companionMode,companionContinuity,companionFrames,companionFistFrames,selectionOnSecondary,companionExited,orderReversedDuringHold};
 }
 async function verifyQualityFeedback() {
   const image=value=>({width:4,height:4,data:Uint8ClampedArray.from(Array.from({length:16},()=>[value,value,value,255]).flat())});
@@ -352,18 +374,22 @@ function displayPointers(result,detectedHands) {
   if(detectedHands===1 && result.cursor)return [{id:'single',...result.cursor}];
   // Fresh model landmarks can remain visible while a pose is ineligible for
   // actions. These fallback positions never arm a click or navigation.
-  return latestHands.slice(0,2).flatMap((hand,index)=>{
+  const pointers=[...(result.pointers||[])];
+  const represented=new Set(pointers.map(pointer=>pointer.handIndex));
+  return [...pointers,...latestHands.slice(0,2).flatMap((hand,index)=>{
+    if(represented.has(index))return [];
     const points=hand.landmarks;
     if(!Array.isArray(points) || points.length!==21 || points.some(p=>!p||!Number.isFinite(p.x)||!Number.isFinite(p.y)))return [];
     const shape=classifyHand(hand,engine.options);
     const p=shape?pointerReference(shape):points[8];
-    return [{id:`detected-${index}`,...p}];
-  });
+    return [{id:`detected-${index}`,handIndex:index,...p}];
+  })].slice(0,2);
 }
 function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={}) {
   const rect=$('map').getBoundingClientRect();
   if(result.resetSelection){selection.reset();highlightTarget(null);$('click-ripple').classList.remove('play');}
-  const p=result.cursor && mapPoint(result.cursor);
+  const selectionCursor=result.selectionCursor??result.cursor;
+  const p=selectionCursor && mapPoint(selectionCursor);
   const navigation=result.mode==='navigate'?result.navigationKind||'ready':null;
   const reason=result.selectionBlockedReason||null;
   const stateLabel=navigation==='pan'?'Desplazando':navigation==='zoom'?'Zoom':selectionReasonLabels[reason]||labels[result.mode]||result.mode;
@@ -375,45 +401,51 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
     lastSelectionReason=reason;
   }
   $('gesture-metric').textContent=blocked?`Control en espera${lastActiveSelectionState?.reason?` · último estado: ${selectionReasonLabels[lastActiveSelectionState.reason]||lastActiveSelectionState.reason}`:''}`:stateLabel;
-  const singleHand=detectedHands===1 && !blocked && !navigation && !result.navigationCandidateKind;
+  const pointers=displayPointers(result,detectedHands);
+  const selectionHandId=result.selectionHandId??null;
+  if(selectionHandId!==renderedSelectionHandId){selection.reset();renderedSelectionHandId=selectionHandId;}
+  const selecting=selectionHandId!==null && selectionHandId!==undefined && !blocked && !navigation && !result.navigationCandidateKind
+    && pointers.some(pointer=>pointer.id===selectionHandId);
   let feedback={point:null,target:null,cancel:false};
-  if(singleHand && within(p))feedback=selection.update({x:p.x*rect.width,y:p.y*rect.height},result.mode,selectionTargets(rect),rect);
+  if(selecting && within(p))feedback=selection.update({x:p.x*rect.width,y:p.y*rect.height},result.mode,selectionTargets(rect),rect);
   else {selection.reset();if(result.mode==='click-pending')engine.cancelClick();}
   if(feedback.cancel){engine.cancelClick();selection.reset();}
-  const pointers=displayPointers(result,detectedHands);
   for(const [index,cursor] of [$('cursor'),$('cursor-secondary')].entries()) {
+    const selectionPointer=selecting && pointers[index]?.id===selectionHandId;
     const point=pointers[index] && mapPoint(pointers[index]);
     const visible=within(point);
     cursor.style.display=visible?'block':'none';
-    if(visible){const displayed=index===0 && feedback.point?feedback.point:{x:point.x*rect.width,y:point.y*rect.height};cursor.style.left=`${displayed.x}px`;cursor.style.top=`${displayed.y}px`;}
+    if(visible){const displayed=selectionPointer && feedback.point?feedback.point:{x:point.x*rect.width,y:point.y*rect.height};cursor.style.left=`${displayed.x}px`;cursor.style.top=`${displayed.y}px`;}
     cursor.dataset.hand=pointers[index]?.id??'';
     const contributes=!Array.isArray(result.navigationHandIds) || result.navigationHandIds.includes(pointers[index]?.id);
     cursor.dataset.navigation=contributes?navigation||'':'';
     cursor.dataset.blocked=String(blocked);
-    cursor.dataset.state=index===0 && singleHand && !feedback.cancel?
+    cursor.dataset.state=selectionPointer && !feedback.cancel?
       result.mode==='click-pending'?'loading':result.mode==='click-confirmed'?'confirmed':feedback.target?'hover':'idle':'idle';
     const showingDwell=result.mode==='click-pending' || result.mode==='click-confirmed';
-    cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63*(1-(index===0 && singleHand && !feedback.cancel && showingDwell?result.progress:0));
+    cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63*(1-(selectionPointer && !feedback.cancel && showingDwell?result.progress:0));
   }
-  if(!singleHand)$('click-ripple').classList.remove('play');
-  highlightTarget(singleHand && !feedback.cancel?feedback.target:null);
+  if(!selecting)$('click-ripple').classList.remove('play');
+  highlightTarget(selecting && !feedback.cancel?feedback.target:null);
   const actions=[];
   if(blocked)return Promise.resolve(actions);
   for(const event of result.events) {
     if(event.type==='click') {
-      if(!singleHand || !feedback.point || feedback.cancel)continue;
+      if(!selecting || !feedback.point || feedback.cancel)continue;
       const {x,y}=feedback.point;
       actions.push(window.desktop.click({x:rect.left+x,y:rect.top+y}).then(ok=>{
-        if(ok){counters.clicks++;if(smoke || (active && !isBlocked() && latestHands.length===1))pulse(x,y);}
-        else{engine.cancelClick();selection.reset();$('cursor').dataset.state='idle';}
+        if(ok){counters.clicks++;if(smoke || (active && !isBlocked()))pulse(x,y);}
+        else{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';}
         return ok;
-      }).catch(error=>{engine.cancelClick();selection.reset();if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
-    } else if(event.type==='pan' && navigation==='pan' && detectedHands===result.hands && (detectedHands===1 || detectedHands===2) && result.cursor) {
+      }).catch(error=>{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
+    } else if(event.type==='pan' && navigation==='pan' && (detectedHands===1 || detectedHands===2) && result.cursor
+      && result.navigationHandIds?.length && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       // The visual halo can ease from index to knuckles independently of the
       // navigation baseline. Only physical movement supplied by the engine pans.
       const current=mapPoint(result.cursor),old=mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
       if(within(current) && within(old)){map.pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
-    } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2) {
+    } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2 && result.navigationHandIds?.length===2
+      && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       const at=mapPoint(event);if(!within(at))continue;
       map.zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
     }
@@ -606,21 +638,27 @@ async function verifyNavigationFeedback() {
   const acquired=zoomEngine.update(pair('fist',.03),1480);await renderGesture(acquired,2);
   const modeSwitchReacquires=switched.mode!=='navigate' && stillWaiting.mode!=='navigate' && acquired.mode==='navigate' && acquired.navigationKind==='pan' && [switched,stillWaiting,acquired].every(r=>r.events.length===0);
   const mixedEngine=new GestureEngine();let mixed;map.home();cancelGesture();
-  for(const t of [1600,1700,1780]){mixed=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.65,.5)],t);await renderGesture(mixed,2);}
+  for(const t of [1600,1700,1780]){mixed=mixedEngine.update([hand('fist','left',.35,.5),hand('point','right',.65,.5)],t);await renderGesture(mixed,2);}
   const mixedFistPan=mixed.mode==='navigate' && mixed.navigationKind==='pan' && mixed.events.length===0;
   const fistPointer=mixed.pointers.find(p=>p.id===mixed.navigationHandIds?.[0]);
   const mixedColors=[$('cursor'),$('cursor-secondary')].map(c=>({id:c.dataset.hand,kind:c.dataset.navigation,color:getComputedStyle(c).getPropertyValue('--cursor-color').trim()}));
   const freeHandStaysBlue=!!fistPointer && mixedColors.find(c=>c.id===String(fistPointer.id))?.color==='137,87,229' && mixedColors.find(c=>c.id!==String(fistPointer.id))?.color==='33,139,255';
-  const beforeFree=map.info(),freeMoved=mixedEngine.update([hand('fist','left',.35,.5),hand('ok','right',.75,.5)],1820);await renderGesture(freeMoved,2);
+  const beforeFree=map.info(),freeMoved=mixedEngine.update([hand('fist','left',.35,.5),hand('point','right',.75,.5)],1820);await renderGesture(freeMoved,2);
   const freeHandMovementIgnored=freeMoved.navigationKind==='pan' && freeMoved.events.length===0 && sameMapView(beforeFree,map.info());
-  const fistMoved=mixedEngine.update([hand('fist','left',.39,.5),hand('ok','right',.75,.5)],1860);await renderGesture(fistMoved,2);
+  const fistMoved=mixedEngine.update([hand('fist','left',.39,.5),hand('point','right',.75,.5)],1860);await renderGesture(fistMoved,2);
   const mixedPanFollowsFist=fistMoved.events.some(e=>e.type==='pan') && fistMoved.events.every(e=>e.type==='pan') && map.info().center.lng<beforeFree.center.lng && map.info().zoom===beforeFree.zoom;
+  const okPriorityEngine=new GestureEngine(),beforeOkPriority=map.info();
+  const okPriority=okPriorityEngine.update([hand('fist','left',.35,.5),hand('ok','right',.65,.5)],2000);
+  await renderGesture(okPriority,2);
+  const okWithFistSelects=okPriority.mode==='click-pending' && okPriority.navigationKind===null
+    && $('cursor-secondary').dataset.hand===String(okPriority.selectionHandId) && $('cursor-secondary').dataset.state==='loading'
+    && $('cursor').dataset.state==='idle' && sameMapView(beforeOkPriority,map.info());
   const beforeGuard=map.info(),pointers=[{id:1,x:.3,y:.4},{id:2,x:.7,y:.6}];
   await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'zoom',delta:.2,x:.5,y:.5}]},2);
   await renderGesture({mode:'navigate',navigationKind:'zoom',cursor:{x:.5,y:.5},pointers,hands:2,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
   const crossModeEventsIgnored=sameMapView(beforeGuard,map.info());
-  await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x:.5,y:.5},pointers:[pointers[0]],hands:1,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
-  const rejectedSecondHandCannotPan=sameMapView(beforeGuard,map.info());
+  await renderGesture({mode:'navigate',navigationKind:'pan',navigationHandIds:[2],cursor:{x:.5,y:.5},pointers:[pointers[0]],hands:1,progress:1,events:[{type:'pan',dx:.05,dy:0}]},2);
+  const missingParticipantCannotPan=sameMapView(beforeGuard,map.info());
   map.home();cancelGesture();
   const width=$('map').getBoundingClientRect().width;
   // Verify the adapter's physical pixel deltas before Leaflet rounds them.
@@ -628,11 +666,11 @@ async function verifyNavigationFeedback() {
   const originalPan=map.pan,panCalls=[];
   map.pan=(dx,dy)=>{panCalls.push({dx,dy});return originalPan(dx,dy);};
   try {
-    for(const x of [.3,.7])await renderGesture({mode:'navigate',navigationKind:'pan',cursor:{x,y:.5},pointers:[{id:1,x,y:.5}],hands:1,progress:1,events:[{type:'pan',dx:.01,dy:0}]},1);
+    for(const x of [.3,.7])await renderGesture({mode:'navigate',navigationKind:'pan',navigationHandIds:[1],cursor:{x,y:.5},pointers:[{id:1,x,y:.5}],hands:1,progress:1,events:[{type:'pan',dx:.01,dy:0}]},1);
   } finally {map.pan=originalPan;}
   const panIgnoresVisualShift=panCalls.length===2 && panCalls.every(p=>Math.abs(p.dx-.01*width)<1e-6 && Math.abs(p.dy)<1e-6);
   map.home();cancelGesture();
-  return {singlePanWorks,singlePanWaits,candidateDoesNotSelect,singlePanColor,singlePanNoSelection,singlePanNoZoomOrClick,oneToTwoReacquires,twoToOneReacquires,openingStopsSinglePan,panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedFistPan,freeHandStaysBlue,freeHandMovementIgnored,mixedPanFollowsFist,visibleDuringNavigation,crossModeEventsIgnored,rejectedSecondHandCannotPan,panIgnoresVisualShift};
+  return {singlePanWorks,singlePanWaits,candidateDoesNotSelect,singlePanColor,singlePanNoSelection,singlePanNoZoomOrClick,oneToTwoReacquires,twoToOneReacquires,openingStopsSinglePan,panWorks,zoomWorks,noZoomDuringPan,translationInZoomIgnored,noPanDuringZoom,modeSwitchReacquires,mixedFistPan,freeHandStaysBlue,freeHandMovementIgnored,mixedPanFollowsFist,okWithFistSelects,visibleDuringNavigation,crossModeEventsIgnored,missingParticipantCannotPan,panIgnoresVisualShift};
 }
 function verifyPreviewFeedback(data) {
   const saved={active,paused};active=false;paused=false;updateStatus();
@@ -697,7 +735,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.9',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.10',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{
