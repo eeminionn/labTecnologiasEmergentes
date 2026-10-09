@@ -536,6 +536,15 @@ export class GestureEngine {
       }
       if (lostSelection) this.setSelectionTrack(null);
     }
+    for (const track of this.tracks) {
+      if (previousParticipants.includes(track.trackId) && !track.shape.actionGeometryValid) {
+        // A participant's geometry interruption requires its own release,
+        // even when a valid free hand becomes the displayed selection candidate.
+        this.blockTrack(track);
+        track.clickAim = null;
+        track.clickIntent = null;
+      }
+    }
     this.hasObservedHand = true;
     const eligible = this.tracks.filter(track => track.shape.actionGeometryValid);
     for (const track of eligible) this.rearmTrack(track, timestampMs);

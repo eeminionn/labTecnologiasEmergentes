@@ -1206,6 +1206,78 @@ test('invalid geometry cancels only its actor and a different valid OK can selec
   assert.deepEqual(engine.update([invalidA, b], 1920).events, [{ type: 'click', x: target.x, y: target.y }]);
 });
 
+test('a panning participant losing geometry must release before selecting, with or without a valid free hand', () => {
+  for (const withCompanion of [false, true]) for (const anonymous of [false, true]) {
+    const actor = pose => hand(pose, { id: 'a', x: -0.17 });
+    const buddy = hand('open', { id: 'b', x: 0.17 });
+    const input = value => {
+      const pair = withCompanion ? [buddy, value] : [value];
+      return anonymous ? pair.map(({ id, ...rest }) => rest) : pair;
+    };
+    const engine = new GestureEngine();
+    const acquired = frames(engine, input(actor('fist')), 0, 200).at(-1);
+    const actorId = acquired.navigationHandIds[0];
+    const invalid = engine.update(input({ ...actor('fist'), worldLandmarks: [] }), 220);
+    assert.notEqual(invalid.mode, 'navigate');
+    assert.equal(invalid.events.length, 0);
+    const blocked = frames(engine, input(actor('ok')), 240, 1800);
+    assert.ok(blocked.every(result => result.mode === 'idle'
+      && result.selectionHandId === actorId && result.selectionBlockedReason === 'release-required'));
+    assert.equal(events(blocked).length, 0);
+    const opening = frames(engine, input(actor('open')), 1820, 1940);
+    assert.equal(events(opening).length, 0);
+    const pending = engine.update(input(actor('ok')), 1960);
+    assert.equal(pending.mode, 'click-pending');
+    assert.equal(pending.progress, 0);
+    assert.equal(pending.selectionHandId, actorId);
+    assert.equal(events(frames(engine, input(actor('ok')), 1980, 3440)).length, 0);
+    assert.equal(engine.update(input(actor('ok')), 3460).events.length, 1);
+  }
+});
+
+test('a geometry interruption blocks only the previous pan participant, leaving a valid OK companion free to select', () => {
+  const engine = new GestureEngine();
+  const fist = hand('fist', { id: 'a', x: -0.17 });
+  const bPoint = hand('point', { id: 'b', x: 0.17 });
+  const acquired = frames(engine, [fist, bPoint], 0, 200).at(-1);
+  const target = acquired.pointers.find(pointer => pointer.handIndex === 1);
+  const invalid = { ...fist, worldLandmarks: [] };
+  engine.update([invalid, bPoint], 220);
+  const bOK = hand('ok', { id: 'b', x: 0.17 });
+  const pending = engine.update([bOK, invalid], 240);
+  assert.equal(pending.mode, 'click-pending');
+  assert.equal(pending.progress, 0);
+  assert.equal(pending.selectionHandId, target.id);
+  assert.equal(pending.selectionBlockedReason, null);
+  assert.deepEqual(pending.selectionCursor, { x: target.x, y: target.y });
+  assert.equal(events(frames(engine, [invalid, bOK], 260, 1720)).length, 0);
+  assert.deepEqual(engine.update([invalid, bOK], 1740).events,
+    [{ type: 'click', ...pending.selectionCursor }]);
+});
+
+test('a fist returning after its own invalid geometry reacquires pan without opening or inheriting motion', () => {
+  for (const withCompanion of [false, true]) {
+    const engine = new GestureEngine();
+    const fist = hand('fist', { id: 'a', x: -0.17 });
+    const buddy = hand('open', { id: 'b', x: 0.17 });
+    const input = value => withCompanion ? [value, buddy] : [value];
+    const acquired = frames(engine, input(fist), 0, 200).at(-1);
+    engine.update(input({ ...fist, worldLandmarks: [] }), 220);
+    const returning = translatedImage(fist, 0.04);
+    const candidate = frames(engine, input(returning), 240, 400);
+    assert.ok(candidate.every(result => result.navigationCandidateKind === 'pan'
+      && result.mode === 'idle' && result.events.length === 0));
+    assert.equal(engine.update(input(returning), 419).mode, 'idle');
+    const reacquired = engine.update(input(returning), 420);
+    assert.equal(reacquired.mode, 'navigate');
+    assert.deepEqual(reacquired.navigationHandIds, acquired.navigationHandIds);
+    assert.equal(reacquired.events.length, 0);
+    const moved = engine.update(input(translatedImage(returning, 0.04)), 440);
+    assert.ok(moved.events.some(event => event.type === 'pan' && event.dx > 0));
+    assert.ok(moved.events.every(event => event.type === 'pan'));
+  }
+});
+
 test('two matched hysteretic OK hands cancel selection for zoom and never retain its anchored halo', () => {
   const engine = new GestureEngine();
   const aPoint = hand('point', { id: 'a', x: -0.15 }), bNeutral = hand('neutral', { id: 'b', x: 0.15 });
