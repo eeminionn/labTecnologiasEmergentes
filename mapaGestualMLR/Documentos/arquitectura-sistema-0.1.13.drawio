@@ -1,0 +1,944 @@
+<?xml version='1.0' encoding='utf-8'?>
+<mxfile host="app.diagrams.net" agent="Mapa Gestual MLR" version="29.0.0">
+  <diagram id="arquitectura-mlr-013" name="Mapa gestual · Arquitectura completa">
+    <mxGraphModel dx="2500" dy="4600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="2500" pageHeight="4600" math="0" shadow="0" background="#ffffff">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="title" value="Mapa gestual MLR · Arquitectura del sistema" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=34;" vertex="1" parent="1">
+          <mxGeometry x="30" y="20" width="2440" height="58" as="geometry" />
+        </mxCell>
+        <mxCell id="subtitle" value="Implementación 0.1.13 · Cámara FRONTAL hacia la persona · Diagrama del código actual (09/10/2026)&#10;Flecha continua = flujo/control · Rombo = decisión · Etiquetas 1–9 = módulos detallados abajo · Procesamiento de manos local" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="30" y="88" width="2440" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="o1" value="1 · Arranque y mapa&#10;Electron + configuración" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="30" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="o2" value="2 · Cámara frontal&#10;Captura de video" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="445" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e1" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="o1" target="o2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o3" value="3 · Worker de visión&#10;MediaPipe HandLandmarker" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="860" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e2" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="o2" target="o3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o4" value="4–5 · Validación y motor&#10;Calidad, identidad y reglas" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1275" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e3" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="o3" target="o4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o5" value="6–7 · Interacción&#10;Selección / pan / zoom" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e4" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="o4" target="o5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o6" value="8 · Salida&#10;Feedback + mapa" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="2105" y="190" width="365" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="e5" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="o5" target="o6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e6" value="Siguiente frame · una inferencia en vuelo" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#087f6e;exitX=0.5;exitY=1;entryX=0.5;entryY=0;dashed=1;" edge="1" parent="1" source="o6" target="o2">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2287" y="320" />
+              <mxPoint x="628" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="legend" value="9 · Configuración, cancelaciones, errores, métricas y privacidad se aplican a todo el flujo.&#10;Modelo neural → puntos de mano. Gestos → análisis geométrico + máquinas de estados propias. No se usa Gesture Recognizer." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=17;" vertex="1" parent="1">
+          <mxGeometry x="30" y="345" width="2440" height="65" as="geometry" />
+        </mxCell>
+        <mxCell id="panel1" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="430" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt1" value="1  Arranque, recursos y mapa" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="50" y="445" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps1" value="Electron principal → renderer/UI → proveedor cartográfico" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="50" y="491" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="1.1" value="Preparación del ejecutable (antes de usarlo)&#10;Copiar WASM y modelo .task local; descargar sólo si falta. Verificar SHA-256; Vite + Electron empaquetan." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="556" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="1.2" value="Abrir app → instancia única&#10;¿Servidor local disponible?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="667" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e7" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.1" target="1.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.3" value="Servir dist en 127.0.0.1:47831&#10;Crear BrowserWindow + preload. Aislamiento de contexto, sandbox, sin Node en renderer." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="778" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e8" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.2" target="1.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.4" value="Leer localStorage mlr-config&#10;Si JSON inválido: defaults. Crear PointSequence con 3 puntos propios." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="889" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e9" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.3" target="1.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.5" value="¿Proveedor Google elegido&#10;y API key configurada?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1000" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e10" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.4" target="1.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.6" value="Cargar Maps JavaScript SDK + importLibrary&#10;Timeout 12 s; mapa vectorial y zoom fraccional." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1111" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e11" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.5" target="1.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.7" value="¿Google inicializa y autentica?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1222" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e12" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.6" target="1.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.8" value="Adaptador de mapa listo&#10;Google: zoom 3–20. OSM/Leaflet: 3–19. Misma interfaz pan/zoom/home/targets." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1333" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e13" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.7" target="1.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.9" value="Dibujar límite local La Reina (GeoJSON SUBDERE DPA 2023), créditos y 3 puntos ficticios. Ajustar encuadre." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1444" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e14" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.8" target="1.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.10" value="Interfaz lista · cámara detenida&#10;Usuario pulsa Iniciar cámara → módulo 2" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1555" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e15" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="1.9" target="1.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.resources" value="Hash distinto → abortar build.&#10;Otra instancia → enfocar existente.&#10;Puerto ocupado → aviso y salir." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="655" width="255" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="e16" value="Error" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="1.2" target="1.resources">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e17" value="Hash inválido" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="1.1" target="1.resources">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.osm" value="Crear Leaflet/OpenStreetMap&#10;Teselas de Internet. Si faltó key o falló Google: avisar y conservar secuencia." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="998" width="255" height="116" as="geometry" />
+        </mxCell>
+        <mxCell id="e18" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#087f6e;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="1.5" target="1.osm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e19" value="Continuar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#087f6e;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="1.osm" target="1.8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="515" y="1056.0" />
+              <mxPoint x="515" y="1377.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e20" value="No / error" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="1.7" target="1.osm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="1.net" value="Google y OSM necesitan Internet.&#10;Google raster: aviso de menor fluidez.&#10;Error de tesela OSM: aviso, mapa sigue.&#10;No se controla el sitio google.com/maps." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="1415" width="255" height="154" as="geometry" />
+        </mxCell>
+        <mxCell id="panel2" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="860" y="430" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt2" value="2  Cámara frontal y captura" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="880" y="445" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps2" value="Cámara / sistema operativo → renderer → worker. Audio desactivado." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="880" y="491" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="2.1" value="getUserMedia: cámara elegida por ID&#10;Video ideal 640×480, hasta 30 FPS; audio false." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="556" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="2.2" value="¿Permiso y cámara disponibles?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="667" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e21" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.1" target="2.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.3" value="Asignar stream → video.play()&#10;Consultar capacidades; aplicar sólo controles soportados. Leer resolución/aspecto reales." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="778" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e22" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.2" target="2.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.4" value="Crear GestureEngine y FrameQualityGate&#10;Nueva generación de sesión. Iniciar worker + init. Esperar ready del módulo 3." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="889" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e23" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.3" target="2.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.5" value="requestAnimationFrame&#10;¿Sesión y generación vigentes?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1000" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e24" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.4" target="2.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.6" value="Watchdog: &gt;180 ms sin resultado fresco&#10;Cancelar acción y borrar tracking obsoleto; mantener bucle activo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1111" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e25" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.5" target="2.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.7" value="¿Worker ready, no busy, video listo&#10;y currentTime nuevo?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1222" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e26" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.6" target="2.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.8" value="busy=true; capturedAt=performance.now()&#10;Crear ImageBitmap de ancho 640; alto proporcional, sin deformar ni ajustar contraste." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1333" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e27" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.7" target="2.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.9" value="¿Sesión/worker siguen vigentes?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1444" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e28" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.8" target="2.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.10" value="Transferir bitmap + timestamp al worker&#10;→ módulo 3 · volver al próximo rAF" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1555" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e29" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="2.9" target="2.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.denied" value="Avisar error → detener sesión&#10;Cerrar tracks/worker y limpiar UI (9)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="668" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e30" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="2.2" target="2.denied">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.end" value="Terminar bucle de esta sesión.&#10;Nueva cámara crea otra generación." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="995" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e31" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="2.5" target="2.end">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.skip" value="Esperar siguiente rAF.&#10;No capturar ni encolar frames mientras busy=true." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1215" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e32" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="2.7" target="2.skip">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.close" value="Cerrar bitmap y terminar.&#10;Si createImageBitmap falla: busy=false y reintentar próximo frame." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1440" width="255" height="128" as="geometry" />
+        </mxCell>
+        <mxCell id="e33" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="2.9" target="2.close">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="2.one" value="Sólo un frame en vuelo.&#10;No existe cola de bitmaps.&#10;Espejo/rotación se aplican a las coordenadas, no al bitmap del modelo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1620" width="255" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="panel3" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="430" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt3" value="3  Modelo y puntos de la mano" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="445" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps3" value="Worker local · @mediapipe/tasks-vision · HandLandmarker Full" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="491" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="3.1" value="init: FilesetResolver de WASM local&#10;SIMD si disponible; variante nosimd si no. Cargar hand_landmarker.task local." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="556" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="3.2" value="Crear HandLandmarker una vez&#10;CPU · runningMode VIDEO · numHands=2&#10;Detección/presencia/tracking: mismo umbral (default 0,70). Enviar ready → 2." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="667" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e34" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.1" target="3.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.3" value="Recibir ImageBitmap del módulo 2&#10;Medir calidad en OffscreenCanvas: ancho 160, alto proporcional. Leer RGB." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="778" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e35" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.2" target="3.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.4" value="analyzeFrameQuality&#10;Histograma, luminancia, p5/p95, contraste, clipping negro/blanco, desviación, Laplaciano/gradiente." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="889" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e36" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.3" target="3.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.5" value="model.detectForVideo(bitmap, timestamp)&#10;Inferencia síncrona dentro del worker; no bloquea la UI." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1000" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e37" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.4" target="3.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.6" value="Interior del SDK:&#10;¿Región de mano seguida válida?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1111" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e38" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.5" target="3.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.7" value="Región de mano elegida (seguida o detectada)&#10;Recorte y preprocesamiento interno de MediaPipe." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1222" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e39" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.6" target="3.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.8" value="Red Full de landmarks&#10;hand_landmarks_detector.tflite&#10;Actualizar seguimiento temporal de video." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1333" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e40" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.7" target="3.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.9" value="Salida enviada: 0–2 manos&#10;21 XYZ normalizados + 21 world XYZ por mano, quality, qualityMs, inferenceMs, timestamp, capturedAt." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1444" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e41" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.8" target="3.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.10" value="postMessage resultado → módulo 4&#10;finally: cerrar bitmap. No enviar handedness ni categorías de gestos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#f2ecff;strokeColor=#8250df;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1555" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e42" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="3.9" target="3.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="3.palm" value="Red Full de detección de palma&#10;hand_detector.tflite&#10;Localizar región; después recortar." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="1223" width="255" height="126" as="geometry" />
+        </mxCell>
+        <mxCell id="e43" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#8250df;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="3.6" target="3.palm">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e44" value="Continuar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#8250df;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="3.palm" target="3.7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2175" y="1286.0" />
+              <mxPoint x="2175" y="1266.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="3.neural" value="Dos redes Full incluidas en el .task:&#10;Detector de palma → región de mano.&#10;Red de landmarks → 21 puntos.&#10;Metadatos exactos en la nota técnica.&#10;La palma se detecta cuando hace falta, no siempre en cada frame." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f2ecff;strokeColor=#8250df;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="660" width="255" height="226" as="geometry" />
+        </mxCell>
+        <mxCell id="3.errors" value="Error init/inferencia → mensaje error&#10;Renderer detiene cámara (9).&#10;Frames y landmarks se procesan localmente. CSP worker bloquea servicios externos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="1420" width="255" height="158" as="geometry" />
+        </mxCell>
+        <mxCell id="panel4" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="1830" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt4" value="4  Recepción, calidad y continuidad" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1845" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps4" value="Renderer/UI. Los controles se bloquean sin ocultar manos frescas." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="50" y="1891" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="4.1" value="Recibir result: busy=false&#10;¿Cámara activa? Si no, ignorar." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="1956" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="4.2" value="¿capturedAt tiene más de 150 ms?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2067" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e45" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.1" target="4.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.3" value="Emparejar landmarks[i]/worldLandmarks[i]&#10;Guardar latestHands. Actualizar skeleton, conteo, FPS y tiempos; marcar resultado fresco." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2178" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e46" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.2" target="4.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.4" value="FrameQualityGate.update(quality,timestamp)&#10;unknown / good / suspect / blocked / recovering." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2289" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e47" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.3" target="4.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.5" value="¿Pausa, sin foco, Ajustes, Ayuda&#10;o calidad no habilitada?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2400" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e48" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.4" target="4.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.6" value="Preparar objetivos visibles (módulo 5)&#10;engine.update(hands,timestamp,context).&#10;Si bloqueado: context vacío para seguir posiciones." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2511" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e49" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.5" target="4.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.7" value="Segunda barrera global&#10;Bloqueado → cancelar interacción; eventos=[], progreso=0, mode idle. No clic ni navegación." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2622" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e50" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.6" target="4.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.8" value="Salida motor → renderer (8)&#10;Sombras grises si bloqueado; colores de acción si habilitado." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2733" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e51" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="4.7" target="4.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.old" value="Descartar resultado, cancelar acción previa y limpiar skeleton/conteo. Volver al bucle (2)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2068" width="255" height="114" as="geometry" />
+        </mxCell>
+        <mxCell id="e52" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="4.2" target="4.old">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="4.block" value="cancelGesture(false)&#10;Sin callback de selección.&#10;Pausa/foco requieren nueva intención; no heredar tiempo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2398" width="255" height="121" as="geometry" />
+        </mxCell>
+        <mxCell id="e53" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="4.5" target="4.block">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e54" value="Continuar" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=0;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="4.block" target="4.6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="515" y="2458.5" />
+              <mxPoint x="515" y="2555.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4.quality" value="Bloqueo inmediato: imagen inválida o saturación severa.&#10;Negro: media≤12 y ≥98% luminancia≤5.&#10;Blanco: media≥248 y ≥98% luminancia≥250.&#10;Aviso tras 200 ms; recuperar con 600 ms saludables.&#10;Contraste/luz/detalle: diagnósticos; blur aislado no bloquea." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#fff6dd;strokeColor=#b77900;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="2700" width="255" height="282" as="geometry" />
+        </mxCell>
+        <mxCell id="4.times" value="Tiempos diferentes:&#10;Resultado viejo &gt;150 ms.&#10;Watchdog renderer &gt;180 ms.&#10;Gap motor ≥180 ms.&#10;Gap calidad &gt;250 ms o timestamp no creciente → bloquear continuidad." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="55" y="2940" width="430" height="164" as="geometry" />
+        </mxCell>
+        <mxCell id="panel5" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="860" y="1830" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt5" value="5  Puntos, identidades y gestos" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1845" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps5" value="Geometría y estados propios. No hay modelo neural de gestos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="880" y="1891" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="5.1" value="Crear lista de objetivos&#10;map.targets(): sólo marcador propio activo. Añadir botones visibles/habilitados y cierre de popup; descartar tapados/fuera de mapa." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="1956" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="5.2" value="Validar 21 puntos XYZ y timestamp&#10;Gap≥180 ms, tiempo inválido/no creciente: cancelar y reconstruir tracks; no transferir reloj." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2067" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e55" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.1" target="5.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.3" value="Clasificar y emparejar manos&#10;Centro de palma + continuidad espacial. ID interno estable; sin handedness. Rechazar saltos/cruces ambiguos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2178" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e56" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.2" target="5.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.4" value="Geometría: world válido preferido&#10;Si ausente: XYZ de imagen corregidos por aspecto. World explícito inválido impide navegación; no veta índice usable." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2289" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e57" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.3" target="5.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.5" value="Reclasificar con histéresis + filtrar&#10;One Euro por índice/pinza/centro/nudillos. Referencia visual índice 8; puño → MCP 5/9/13/17 (transición 300 ms)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2400" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e58" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.4" target="5.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.6" value="Callback por mano con índice BRUTO&#10;Espejo → rotación 0/90/180/270 → clamp01 → CSS px. Todo el frame ocupa todo el mapa. Hit-test + región retenida + rearme." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2511" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e59" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.5" target="5.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.7" value="¿Dos manos con OK válidos?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2622" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e60" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.6" target="5.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.8" value="Si no: ¿mano no puño con índice&#10;sobre objetivo disponible?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2733" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e61" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.7" target="5.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.9" value="Si no: ¿al menos un puño&#10;completamente cerrado válido?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2844" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e62" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.8" target="5.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.10" value="Si no: reposo&#10;Seguir mostrando ambas sombras → 8" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="2955" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e63" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="5.9" target="5.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.zoom" value="ZOOM → módulo 7&#10;Mayor separación acerca; menor aleja. Cancela dwell." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="2622" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e64" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#b77900;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="5.7" target="5.zoom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.select" value="SELECCIÓN → módulo 6&#10;Otros dedos pueden estar extendidos. Conservar dueño válido aunque entre otra mano." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="2733" width="255" height="102" as="geometry" />
+        </mxCell>
+        <mxCell id="e65" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="5.8" target="5.select">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.pan" value="PAN → módulo 7&#10;Uno o dos puños.&#10;Mano libre no participa." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="2854" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e66" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#8250df;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="5.9" target="5.pan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="5.rules" value="OK: proximidad 4–8/palma&#10;entrada≤0,28; salida≤0,40; apoyo de ≥2 dedos + cierre de índice u oposición de pulgar.&#10;Puño: flexión positiva de 4 dedos, compacidad y pulgar; imagen completa. No equivale a “no abierta”.&#10;Índice extendido contradice falso puño world.&#10;Sin tracks o &gt;2 manos → cancelar/reposo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="1965" width="255" height="362" as="geometry" />
+        </mxCell>
+        <mxCell id="5.targets" value="Área mínima de objetivo: 44 CSS px.&#10;POI propio: 56 px. Botones tienen prioridad.&#10;POIs arbitrarios del SDK no son objetivos gestuales automáticos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="2364" width="255" height="173" as="geometry" />
+        </mxCell>
+        <mxCell id="panel6" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="1830" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt6" value="6  Selección estable · 1,5 segundos" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="1845" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps6" value="Índice sobre objetivo. La postura de los otros dedos no condiciona el dwell." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="1891" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="6.1" value="Elegir actor: mantener dueño válido&#10;Hold existente → seguir pending/confirmed. Nuevo destino → comprobar disponibilidad. Otro candidato disponible puede tomar turno." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="1956" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="6.2" value="Sólo NUEVO dwell:&#10;¿Destino rearmado y disponible?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2067" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e67" value="Nuevo destino" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.1" target="6.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.3" value="Nuevo actor/destino: iniciar reloj fresco&#10;Ancla motor = índice inicial. SelectionFeedback retiene centro y bounds del objetivo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2178" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e68" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.2" target="6.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.4" value="click-pending: aro proporcional a t/1500&#10;Halo en centro retenido; índice vivo sigue verificando pertenencia." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2289" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e69" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.3" target="6.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.5" value="¿Dentro de región, deriva≤0,15&#10;y contexto válido?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2400" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e70" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.4" target="6.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.6" value="¿Tiempo continuo≥1500 ms&#10;y cooldown cumplido?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2511" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e71" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.5" target="6.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.7" value="Emitir un único evento click&#10;click-confirmed; bloquear ese destino para esa mano. Renderer debe validar y aceptar → 8." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2622" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e72" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.6" target="6.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.8" value="Mantener confirmado sin repetición&#10;Cambio A→B disponible: empezar B con 1500 ms nuevos; rearme de A ocurre en paralelo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2733" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e73" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.7" target="6.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.9" value="¿Fuera del destino original≥120 ms?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2844" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e74" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.8" target="6.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.10" value="Rearmar destino → módulo 5&#10;A→B empieza 1,5 s completos inmediatamente; retorno temprano a A no repite." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="2955" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e75" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.9" target="6.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.release" value="release-required / reposo&#10;Otro actor habilitado puede seleccionar. Esperar salida ≥120 ms." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="2284" width="255" height="101" as="geometry" />
+        </mxCell>
+        <mxCell id="e76" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="6.2" target="6.release">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.cancel" value="Cancelar dwell y feedback&#10;Salida/cambio → nuevo reloj.&#10;Pérdida/gap/foco/calidad/2OK → protección de rearme; sin heredar tiempo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="2398" width="255" height="159" as="geometry" />
+        </mxCell>
+        <mxCell id="e77" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="6.5" target="6.cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.wait" value="Seguir pending&#10;Actualizar aro; no clic aún.&#10;Volver al próximo resultado (2→3→4→5)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="2617" width="255" height="122" as="geometry" />
+        </mxCell>
+        <mxCell id="e78" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="6.6" target="6.wait">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.hold" value="Seguir confirmado.&#10;No emitir otro clic." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="2855" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e79" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="6.9" target="6.hold">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="6.range" value="Región fija = objetivo ≥44 px + 36 px por cada lado.&#10;POI activo: 128×128 CSS px.&#10;Deriva bruta adicional ≤0,15 (métrica de cámara).&#10;Pending cancela si target se mueve &gt;8 px, desaparece o cambia viewport.&#10;Confirmado conserva región original aunque avance el punto." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="1945" width="255" height="306" as="geometry" />
+        </mxCell>
+        <mxCell id="e80" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.1" target="6.4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1698" y="2069" />
+              <mxPoint x="1698" y="2268" />
+              <mxPoint x="1930" y="2268" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e81" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.1" target="6.8">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1707" y="2069" />
+              <mxPoint x="1707" y="2712" />
+              <mxPoint x="1930" y="2712" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e82" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="6.8" target="6.3">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1694" y="2831" />
+              <mxPoint x="1694" y="2161" />
+              <mxPoint x="1930" y="2161" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="panel7" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="30" y="3230" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt7" value="7  Navegación: desplazar o zoom" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="50" y="3245" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps7" value="Adquisición 180 ms. Baseline nuevo evita saltos al cambiar participantes." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="50" y="3291" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="7.1" value="Recibir modo elegido e IDs (5)&#10;Cambio de modo/participantes: reiniciar adquisición y filtros de navegación." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3356" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="7.2" value="¿Modo pan o zoom?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3467" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e83" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.1" target="7.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.3" value="PAN: media de nudillos MCP 5/9/13/17&#10;Un puño → su referencia. Dos → media. Mano libre ignorada. Deltas por movimiento incremental." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3578" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="7.4" value="ZOOM: separación de índices en imagen&#10;Corregir aspecto; punto medio = ancla. No comparar world entre manos. No zoom por traslación común." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3689" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="7.5" value="¿Referencias válidas y, para zoom,&#10;separación bruta/filtrada≥0,10?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3800" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="7.6" value="¿Adquisición continua≥180 ms?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="3911" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e87" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.5" target="7.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.7" value="Al adquirir: fijar base actual; mode navigate&#10;Pan: emitir si distancia≥0,003.&#10;Zoom: log2(separación/base)×gain; cambio≥0,008 y distancia≥0,003. Quieto mantiene modo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="4022" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e88" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.6" target="7.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.8" value="Al emitir: actualizar base&#10;Renderer valida modo e IDs → 8.&#10;Pan y zoom no generan eventos cruzados." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="4133" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e89" value="Evento emitido" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.7" target="7.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.9" value="¿Continúan postura, participantes&#10;y seguimiento sin discontinuidad?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="4244" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e90" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.8" target="7.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.10" value="Próximo resultado mantiene navegación&#10;Continuar bucle → 2" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="55" y="4355" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e91" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.9" target="7.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e92" value="Pan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.2" target="7.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e93" value="Zoom" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#b77900;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="7.2" target="7.4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="515" y="3511" />
+              <mxPoint x="515" y="3733" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e94" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#8250df;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.3" target="7.5">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="40" y="3666" />
+              <mxPoint x="40" y="3786" />
+              <mxPoint x="270" y="3786" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e95" value="Zoom listo" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#b77900;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.4" target="7.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.invalid" value="Cancelar navegación/adquisición&#10;No emitir movimientos. Próximo resultado vuelve al arbitraje (5)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="3798" width="255" height="125" as="geometry" />
+        </mxCell>
+        <mxCell id="e96" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="7.5" target="7.invalid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7.color" value="Colores tras adquirir:&#10;PAN → violeta (sólo puños participantes).&#10;ZOOM → ámbar (ambas manos OK).&#10;Reposo/selección → azul.&#10;Bloqueo global → gris." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#fff6dd;strokeColor=#b77900;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="550" y="4180" width="255" height="206" as="geometry" />
+        </mxCell>
+        <mxCell id="7.filter" value="One Euro: minCutoff 1,4 / beta 6 / derivativeCutoff 1.&#10;Cambio de referencia visual dura 300 ms.&#10;Mover halo no produce un delta artificial del mapa." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="3410" width="255" height="181" as="geometry" />
+        </mxCell>
+        <mxCell id="7.wait" value="Esperar próximo resultado&#10;mode idle + candidato; sin aro ni movimiento hasta ≥180 ms." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="3963" width="255" height="105" as="geometry" />
+        </mxCell>
+        <mxCell id="e97" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="7.6" target="7.wait">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e98" value="Sin evento" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="7.7" target="7.9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="40" y="4112" />
+              <mxPoint x="40" y="4240" />
+              <mxPoint x="270" y="4240" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7.clutch" value="Clutch / cancelar navegación&#10;Volver a arbitraje (5); nuevo modo/participantes adquieren desde base nueva." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="550" y="4410" width="255" height="113" as="geometry" />
+        </mxCell>
+        <mxCell id="e99" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="7.9" target="7.clutch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="panel8" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="860" y="3230" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt8" value="8  Feedback, acciones y mapa" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="880" y="3245" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps8" value="Renderer → adaptador cartográfico o preload/IPC → Electron principal" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="880" y="3291" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="8.1" value="renderGesture: validar actor y objetivos&#10;Aplicar cancelaciones. Completar hasta dos halos usando landmarks frescos; fallback sólo visual." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3356" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="8.2" value="Sólo selección: SelectionFeedback&#10;Verifica índice vivo/región/ancla/viewport. Si falla, cancelar clic. Pan/zoom omiten esta validación de target." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3467" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e100" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.1" target="8.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.3" value="Dibujar sombras + preview frontal pequeño&#10;Azul / violeta / ámbar / gris. Skeleton de 21 puntos; aro sólo selección y confirmación." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3578" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e101" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.2" target="8.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.4" value="¿Control habilitado&#10;y evento válido?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3689" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e102" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.3" target="8.4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.5" value="¿click, pan o zoom?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3800" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e103" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.4" target="8.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.6" value="CLICK: centro RETENIDO del objetivo&#10;Añadir offset viewport; desktop.click → preload → ipcRenderer.invoke(map-click)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="3911" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e104" value="Click" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.5" target="8.6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.7" value="Electron: ¿emisor/origen confiable,&#10;foco y coordenadas dentro del mapa?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="4022" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e105" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.6" target="8.7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.8" value="sendInputEvent nativo en propia ventana&#10;mouseMove → mouseDown → mouseUp.&#10;El manejador DOM ejecuta la acción; IPC responde ack en paralelo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="4133" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e106" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.7" target="8.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.9" value="¿Destino del manejador DOM&#10;= marcador activo?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="4244" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e107" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.8" target="8.9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.10" value="Abrir popup + avanzar PointSequence 1→2→3&#10;Sólo siguiente activo pulsa. Al completar: sin activo.&#10;Fin del resultado → próximo frame (2)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="885" y="4355" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e108" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="8.9" target="8.10">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.none" value="Sin evento o bloqueado&#10;Conservar feedback fresco; volver al bucle (2)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="3687" width="255" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e109" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.4" target="8.none">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.pan" value="PAN: transformar event.dx/dy por espejo/rotación; mapa.pan(dx,dy). OSM panBy; Google adapta centro." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f2ecff;strokeColor=#8250df;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="3798" width="255" height="123" as="geometry" />
+        </mxCell>
+        <mxCell id="e110" value="Pan" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#8250df;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.5" target="8.pan">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.zoom" value="ZOOM: transformar punto medio&#10;mapa.zoom(delta,x,y). Limitar zoom y conservar ancla. Actualizar cartografía." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff6dd;strokeColor=#b77900;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="3960" width="255" height="124" as="geometry" />
+        </mxCell>
+        <mxCell id="e111" value="Zoom" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#b77900;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.5" target="8.zoom">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.reject" value="Respuesta IPC (feedback)&#10;Ack true: contar clic + ripple. False/error: limpiar selección.&#10;Si falla validación, no enviar entrada. Excluye barra superior 56 px y footer 28 px." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#fff0ee;strokeColor=#cf3c33;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="4150" width="255" height="176" as="geometry" />
+        </mxCell>
+        <mxCell id="e112" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.7" target="8.reject">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.button" value="Botón/herramienta: ejecutar su acción. Popup cambia texto y se deshabilita; no avanza recorrido. Fin → próximo frame (2)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="4360" width="255" height="138" as="geometry" />
+        </mxCell>
+        <mxCell id="e113" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#087f6e;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.9" target="8.button">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e114" value="Ack → feedback" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="8.8" target="8.reject">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="8.note" value="Evento válido:&#10;Click: actor/target. Pan/zoom: modo/IDs.&#10;El manejador DOM recibe entrada nativa y ejecuta acción; ack informa envío aceptado, no gobierna recorrido.&#10;Home encuadra sin reset. Entrada sólo ventana propia, sin cursor global." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1380" y="3368" width="255" height="245" as="geometry" />
+        </mxCell>
+        <mxCell id="panel9" value="" style="rounded=1;arcSize=2;fillColor=#ffffff;strokeColor=#d0d7de;strokeWidth=1.5;container=0;" vertex="1" parent="1">
+          <mxGeometry x="1690" y="3230" width="800" height="1370" as="geometry" />
+        </mxCell>
+        <mxCell id="pt9" value="9  Opciones, errores y cierre" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=23;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="3245" width="760" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="ps9" value="Flujos laterales aplicables a todo el ciclo; nunca recuperan un dwell viejo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1710" y="3291" width="760" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="9.1" value="¿Qué evento de usuario/sistema?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3356" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="9.2" value="Ajustes: cámara, espejo, rotación, proveedor/key, confianza 0,60/0,70/0,80, auto y controles disponibles." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3467" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e115" value="Ajustes" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="9.1" target="9.2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.3" value="¿Guardar Ajustes?" style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rhombus;perimeter=rhombusPerimeter;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3578" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e116" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="9.2" target="9.3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.4" value="Espacio: pausa/reanuda · Escape: cancela&#10;Blur/documento oculto: pausa y cancela. Recuperar foco no reanuda automáticamente." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3689" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="9.5" value="Durante pausa/Ajustes/Ayuda&#10;Mantener cámara, inferencia y preview frescos; bloquear clic/pan/zoom (4)." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3800" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e118" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="9.4" target="9.5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.6" value="Detener / desconectar / worker error&#10;Invalidar generación, parar tracks, terminar worker, loop y preview; cancelar acciones." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="3911" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="9.7" value="Métricas: frames/FPS, clics aceptados, pan/zoom, razones de selección, marca humana de falso clic y tiempos p50/p95." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="4022" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="9.8" value="Exportar JSON local (≤10.000 muestras)&#10;Sin imágenes ni landmarks. Captura→resultado no incluye buffer físico ni presentación; no es latencia extremo a extremo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="4133" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e121" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="9.7" target="9.8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.9" value="Cerrar aplicación → liberar recursos&#10;Iniciar otra sesión comienza seguimiento y tiempos nuevos." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=14;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="4244" width="430" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="e123" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="9.1" target="9.4">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1704" y="3400" />
+              <mxPoint x="1704" y="3733.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e124" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="9.1" target="9.7">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1696" y="3400" />
+              <mxPoint x="1696" y="4066.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e125" value="" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=0;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="9.1" target="9.9">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1712" y="3400" />
+              <mxPoint x="1712" y="4288.0" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e126" value="Detener/error" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#cf3c33;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="1" source="9.1" target="9.6">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="2195" y="3400" />
+              <mxPoint x="2195" y="3955" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="9.controls" value="Controles de track sólo si soportados:&#10;brillo, contraste, compensación exposición; auto exposición/enfoque/balance de blancos continuos si disponibles.&#10;applyConstraints + comprobar getSettings: soportado/ inválido/ fallo/ mismatch/ sin verificar.&#10;No CLAHE ni retoque RGB antes del modelo." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="3688" width="255" height="255" as="geometry" />
+        </mxCell>
+        <mxCell id="9.private" value="PRIVACIDAD Y SEGURIDAD&#10;Video/modelo/reglas: locales.&#10;Worker CSP connect-src self; bloqueo adicional odml.pa.googleapis.com.&#10;Renderer permite red de mapas.&#10;API key en configuración local.&#10;Permiso media sólo ventana/origen local; sin audio.&#10;Ningún frame se publica en repositorio ni servidor de inferencia." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#e6f6f3;strokeColor=#087f6e;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="4012" width="255" height="314" as="geometry" />
+        </mxCell>
+        <mxCell id="9.cancel" value="Cancelar Ajustes: cerrar diálogo&#10;Sin persistir ni reiniciar cámara. Volver al flujo (4) respetando pausa y foco." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=10;fillColor=#f6f8fa;strokeColor=#57606a;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="3578" width="255" height="94" as="geometry" />
+        </mxCell>
+        <mxCell id="e127" value="No" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#57606a;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="9.3" target="9.cancel">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.save" value="Persistir localStorage&#10;Proveedor/key cambian: recargar renderer (cámara detenida) → 1.&#10;Si no: reiniciar sólo si cámara activa → 2; si detenida, mantener detenida." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;rounded=1;arcSize=50;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="2210" y="3356" width="255" height="194" as="geometry" />
+        </mxCell>
+        <mxCell id="e128" value="Sí" style="edgeStyle=orthogonalEdgeStyle;rounded=1;orthogonalLoop=1;jettySize=auto;html=0;endArrow=block;endFill=1;fontFamily=Helvetica;fontSize=13;fontColor=#1f2328;labelBackgroundColor=#ffffff;strokeWidth=1.5;strokeColor=#0969da;exitX=1;exitY=0.5;entryX=0;entryY=0.5;" edge="1" parent="1" source="9.3" target="9.save">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="9.reset" value="Reset recorrido: cerrar popup, volver al punto 1.&#10;Ajustes/Ayuda abiertos bloquean acciones, incluido el dwell.&#10;Pruebas smoke con fixtures pertenecen a validación, no al flujo de uso real." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;shape=note;size=18;align=left;fillColor=#eaf3ff;strokeColor=#0969da;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="1715" y="4380" width="430" height="156" as="geometry" />
+        </mxCell>
+        <mxCell id="foot" value="Fuentes: electron/main.cjs, src/main.js, vision.worker.js, gestures.js, ok-geometry.js, point-geometry.js, selection.js, mapping.js, frame-quality.js, camera-quality.js, map.js y sequence.js.&#10;Arquitectura funcional del prototipo: los puntos son ficticios y la cámara es frontal. El SDK neural entrega landmarks; la lógica de gestos, identidad, adquisición, dwell y rearme es código propio." style="whiteSpace=wrap;html=0;align=center;verticalAlign=middle;fontFamily=Helvetica;fontColor=#1f2328;spacing=10;strokeWidth=1.5;text;strokeColor=none;fillColor=none;align=left;fontSize=16;" vertex="1" parent="1">
+          <mxGeometry x="30" y="4660" width="2440" height="110" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

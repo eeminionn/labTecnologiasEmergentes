@@ -51,8 +51,21 @@ Dejamos una sombra por mano y colores distintos para desplazamiento y zoom, para
   </tr>
 </table>
 
+Armamos una arquitectura para entender el recorrido de la imagen hasta la acción en el mapa y ubicar dónde pueden aparecer errores. Separar el modelo de las reglas nos ayudó a aclarar que MediaPipe entrega los puntos de las manos, mientras nuestro programa decide qué gesto hacer.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="../Imagenes/04-arquitectura-resumen.jpg" alt="Resumen del flujo desde la cámara frontal hasta la interacción con el mapa" width="640" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 4.</strong> Resumen de la arquitectura. El <a href="../Documentos/09-arquitectura-del-sistema.md">diagrama completo</a> incluye gestos, tiempos, ajustes y errores. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el código del prototipo.</td>
+  </tr>
+</table>
+
 ## Cómo seguimos
 
 Después de estos ajustes, el usuario confirmó que el control funciona bien. Ahora queremos evaluar ese montaje frontal, medir errores y comodidad, y luego incorporar información municipal real.
 
-[Investigación de visión](../Documentos/01-investigacion-vision.md) · [Detalle de los avances](../Documentos/08-historial-tecnico.md) · [Pruebas y entrega](../Documentos/04-entrega-y-verificacion.md)
+[Investigación de visión](../Documentos/01-investigacion-vision.md) · [Arquitectura completa](../Documentos/09-arquitectura-del-sistema.md) · [Detalle de los avances](../Documentos/08-historial-tecnico.md) · [Pruebas y entrega](../Documentos/04-entrega-y-verificacion.md)
