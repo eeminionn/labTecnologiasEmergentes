@@ -189,3 +189,16 @@ Los renders muestran cómo se relacionan la mesa, los asientos, los paneles, el 
     <td colspan="2"><strong>Figura 13.</strong> Vistas de los paneles, los asientos y la circulación. <strong>Fuente:</strong> presentación del equipo, diapositiva 39.</td>
   </tr>
 </table>
+
+## BOM inicial de compras
+
+Armamos un BOM inicial, una primera lista de materiales y compras para ordenar lo que necesitamos para el montaje. La planilla todavía está en elaboración y la seguiremos ajustando mientras definimos los componentes del proyecto.
+
+<table>
+  <tr>
+    <td align="center"><a href="./Imagenes/bom-inicial.jpg"><img src="./Imagenes/bom-inicial.jpg" alt="Vista general de la planilla del BOM inicial con componentes y cotizaciones pendientes" width="640" /></a></td>
+  </tr>
+  <tr>
+    <td><strong>Figura 14.</strong> Vista general del BOM inicial, aún pendiente de completar y ajustar. <strong>Fuente:</strong> captura de la planilla del equipo en Excel, 10 de octubre de 2026. <a href="https://uddcl-my.sharepoint.com/:x:/g/personal/e_abarcar_udd_cl/IQAc8mpdWqylSIe4nzp1_H6QAfAAKdRIH4mL303e424sOVI">Abrir la planilla de compras</a>.</td>
+  </tr>
+</table>
