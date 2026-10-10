@@ -1,14 +1,46 @@
 # Arquitectura del sistema - Mapa Gestual MLR
 
-**Fecha:** 9 de octubre de 2026<br>
+**Última actualización:** 10 de octubre de 2026<br>
 **Versión:** 0.1.13 · cámara frontal<br>
 **Estado:** descripción de la implementación actual; evidencia de ejecución y paquetes en [Entrega y verificación](./04-entrega-y-verificacion.md). Precisión, falsos positivos y latencia física del montaje frontal pendientes de medir.<br>
 
 [Volver al prototipo](../README.md) · [Protocolo de validación](./03-protocolo-validacion.md) · [Investigación de visión](./01-investigacion-vision.md)
 
-## Diagrama y alcance
+## Arquitectura por módulos
+
+La imagen de la cámara frontal pasa por detección, validación e interpretación antes de producir una acción en el mapa. MediaPipe entrega los puntos; nuestras reglas deciden el gesto. El seguimiento se procesa en el equipo y el mapa necesita Internet.
+
+| Módulo del diagrama | Función y salida |
+|:---|:---|
+| **1. Arranque y mapa** | Electron abre la ventana propia y carga preferencias y mapa. La cámara espera a que la iniciemos. |
+| **2. Cámara frontal y captura** | Obtiene permiso, configura la cámara y envía una imagen por vez al worker. |
+| **3. Modelo y puntos** | Hand Landmarker Full de MediaPipe estima 21 puntos de imagen y 21 de mundo por mano, hasta dos manos. |
+| **4. Calidad y continuidad** | Descarta datos antiguos y comprueba calidad, pausa y foco antes de permitir acciones. |
+| **5. Identidades y gestos** | Mantiene la identidad de cada mano, suaviza el seguimiento y aplica reglas propias. Prioridad: dos OK → selección de una mano no puño → puños. |
+| **6. Selección estable** | Retiene el objetivo durante el pulso y confirma tras 1,5 segundos. Evita repetir el clic sin salir del objetivo. |
+| **7. Desplazamiento o zoom** | Uno o dos puños desplazan; la separación de dos manos en OK controla el zoom. |
+| **8. Feedback y salida** | Muestra sombras, colores y aro; mueve el mapa o envía un clic validado dentro de la aplicación. |
+| **9. Ajustes, errores y cierre** | Configura cámara y proveedor, registra métricas y cancela o limpia la sesión cuando corresponde. |
+
+Los módulos 6 y 7 son alternativas de interacción, no pasos consecutivos. El módulo 9 acompaña todo el flujo.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="../Imagenes/04-arquitectura-resumen.jpg" alt="Flujo general de la arquitectura desde la cámara frontal hasta el mapa" width="640" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 1.</strong> Vista general. Los números corresponden a los módulos de la tabla y del diagrama completo. <strong>Fuente:</strong> diagrama propio basado en el prototipo 0.1.13.</td>
+  </tr>
+</table>
+
+## Diagrama completo
 
 [Diagrama editable draw.io](./arquitectura-sistema-0.1.13.drawio) · [Vista SVG](./arquitectura-sistema-0.1.13.svg) · [Vista en imagen](./arquitectura-sistema-0.1.13.jpg) · [Página del diagrama en diagrams.net](https://app.diagrams.net/#G1zH-QVmRpldlNZucDmFmq9p4cygZ1nvYE#%7B%22pageId%22%3A%22CZj6euw5avdMBHTIqb5E%22%7D)
+
+<details>
+<summary>Detalle técnico completo de la implementación</summary>
 
 La aplicación tiene una ventana Electron propia. Una cámara **frontal mirando hacia la persona** entrega imágenes RGB; las manos deben aparecer completas y con iluminación uniforme. El renderer muestra mapa, video y feedback; un worker ejecuta la visión; el proceso principal valida permisos y clics nativos. OpenStreetMap o Google Maps aportan el mapa por Internet. El programa no automatiza un navegador externo.
 
@@ -71,3 +103,5 @@ Preferencias locales: cámara, espejo, orientación 0/90/180/270°, proveedor y 
 El frame completo se mapea al mapa con espejo/orientación, sin homografía activa. Imágenes, bitmaps y landmarks se procesan en el equipo; la exportación de diagnóstico no incluye frames RGB. El worker recibe una CSP exclusiva con `connect-src 'self'`, y Electron bloquea además el endpoint de métricas de MediaPipe `odml.pa.googleapis.com`. La CSP del renderer permite los proveedores de mapas: **la aplicación completa requiere conexiones externas**. El proceso principal limita permisos a media desde su ventana/origen local, excluye audio y valida los clics dentro del viewport, fuera de barra superior y footer.
 
 El diagnóstico exporta contadores, anotaciones manuales de falsos clics y p50/p95 separados de **calidad**, **inferencia** y **captura→resultado**, con hasta 10.000 muestras recientes. El último incluye creación del bitmap y traslado entre hilos; excluye buffer físico de cámara y presentación en pantalla. No es latencia extremo a extremo ni una tasa de falsos positivos medida. La evidencia de pruebas y sus límites se mantienen en [Entrega y verificación](./04-entrega-y-verificacion.md).
+
+</details>

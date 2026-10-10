@@ -3,7 +3,7 @@
 Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando una cámara frontal apuntando hacia la persona. Las manos completas quedan dentro del encuadre, con iluminación uniforme; todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial. En esta etapa probamos la detección, la selección y el movimiento; la interfaz y la integración municipal se ajustarán después.
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 9 de octubre de 2026<br>
+**Última actualización:** 10 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
 **Versión vigente:** 0.1.13 · corrección del montaje frontal<br>
 **Estado:** gestos y detector conservados; verificación y paquetes de 0.1.13 en la [entrega](./Documentos/04-entrega-y-verificacion.md). Los resultados de 0.1.12 quedan históricos. Ensayo frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
@@ -262,6 +262,7 @@ npm run dist:win
 | [Meta Quest y selección](./Documentos/05-meta-quest-y-seleccion.md) | Referentes oficiales para estabilización, hover y cancelación; el tiempo de clic se define en la app. |
 | [Cámara y contraste](./Documentos/06-camara-y-contraste.md) | Calidad de imagen, recuperación y controles disponibles según la cámara. |
 | [Límite de La Reina y recorrido](./Documentos/07-limite-la-reina.md) | Geometría SUBDERE DPA 2023 y secuencia de los tres puntos ficticios. |
+| [Arquitectura del sistema](./Documentos/09-arquitectura-del-sistema.md) | Resumen por módulos, diagrama editable y detalle técnico desplegable. |
 
 ## Configuración técnica inicial
 

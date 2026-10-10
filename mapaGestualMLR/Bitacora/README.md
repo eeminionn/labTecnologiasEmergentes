@@ -1,7 +1,7 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 9 de octubre de 2026<br>
+**Última actualización:** 10 de octubre de 2026<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
@@ -25,7 +25,7 @@ En la etapa anterior planteamos reunir información municipal en un mismo mapa. 
 
 La palma abierta a veces movía el mapa sin querer. Por eso cambiamos el desplazamiento a un puño cerrado y permitimos hacerlo con una sola mano. Mantuvimos dos OK para el zoom: separar las manos acerca el mapa y juntarlas lo aleja.
 
-El OK fallaba para seleccionar en algunos ángulos. Probamos señalar con el índice, pero exigir los demás dedos retraídos también bloqueaba la selección. Finalmente dejamos que baste con mantener la punta del índice sobre el punto durante **1,5 segundos**, sin importar los otros dedos. Acortamos la espera para que sea más ágil y dejamos un margen amplio para el pulso. El aro muestra cuánto falta y la segunda mano no interrumpe la selección.
+El OK fallaba para seleccionar en algunos ángulos. Probamos señalar con el índice, pero exigir los demás dedos retraídos también bloqueaba la selección. Finalmente dejamos que baste con mantener la punta del índice sobre el punto durante **1,5 segundos**, sin importar los otros dedos. Acortamos la espera para que sea más ágil y dejamos un margen amplio para el pulso. El aro muestra cuánto falta y una segunda mano puede acompañar la selección; dos OK cambian al zoom.
 
 <table>
   <tr>
@@ -51,7 +51,23 @@ Dejamos una sombra por mano y colores distintos para desplazamiento y zoom, para
   </tr>
 </table>
 
-Armamos una arquitectura para entender el recorrido de la imagen hasta la acción en el mapa y ubicar dónde pueden aparecer errores. Separar el modelo de las reglas nos ayudó a aclarar que MediaPipe entrega los puntos de las manos, mientras nuestro programa decide qué gesto hacer.
+## Arquitectura por módulos
+
+Ordenamos el recorrido de la imagen en nueve módulos, con la misma numeración del diagrama completo. Esto nos ayudó a separar la detección de las manos de las reglas que deciden qué hacer en el mapa.
+
+| Módulo | Qué hace |
+|:---|:---|
+| **1. Inicio y mapa** | Abre la aplicación y carga el mapa y las preferencias. |
+| **2. Cámara frontal** | Pide permiso y captura una imagen por vez. |
+| **3. Detección de manos** | MediaPipe estima los 21 puntos de cada mano en el equipo. |
+| **4. Validación** | Revisa calidad, datos recientes y pausa antes de permitir acciones. |
+| **5. Interpretación** | Sigue cada mano y aplica nuestras reglas de gestos. |
+| **6. Selección** | Mantener el índice sobre un objetivo durante 1,5 segundos confirma el clic. |
+| **7. Navegación** | Uno o dos puños desplazan; dos OK hacen zoom. |
+| **8. Salida al mapa** | Ejecuta las acciones y muestra sombras, colores, aro e información. |
+| **9. Ajustes y cierre** | Configura la cámara, registra métricas y limpia el seguimiento al detenerse. |
+
+El módulo 5 decide entre selección y navegación: dos OK tienen prioridad de zoom. Los ajustes y controles de seguridad se aplican durante toda la sesión.
 
 <table>
   <tr>
@@ -60,7 +76,7 @@ Armamos una arquitectura para entender el recorrido de la imagen hasta la acció
     </td>
   </tr>
   <tr>
-    <td><strong>Figura 4.</strong> Resumen de la arquitectura. El <a href="../Documentos/09-arquitectura-del-sistema.md">diagrama completo</a> incluye gestos, tiempos, ajustes y errores. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el código del prototipo.</td>
+    <td><strong>Figura 4.</strong> Flujo general de los módulos. La <a href="../Documentos/09-arquitectura-del-sistema.md">arquitectura del sistema</a> reúne el resumen y el detalle completo. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el código del prototipo.</td>
   </tr>
 </table>
 
