@@ -1,6 +1,6 @@
 # Historial técnico del prototipo
 
-Registro de los avances hasta el 9 de octubre de 2026, conservado antes de resumir la bitácora. **El montaje vigente es frontal**, con cámara apuntando hacia la persona, manos completas en encuadre, luz uniforme y mapeo de todo el encuadre al mapa; las referencias cenitales de este historial corresponden al planteamiento anterior. No se cambian sus fixtures ni resultados por versión. La narración actual está en la [bitácora del prototipo](../Bitacora/README.md); este archivo guarda el detalle por versión y sus comprobaciones.
+Registro de los avances hasta el 9 de octubre de 2026, conservado antes de resumir la bitácora. **El montaje vigente es frontal**, con cámara apuntando hacia la persona, manos completas en encuadre, luz uniforme y mapeo de todo el encuadre al mapa; las referencias cenitales de este historial corresponden al planteamiento anterior. No se cambian sus fixtures ni resultados por versión. La narración actual está en la [bitácora del prototipo](../README.md); este archivo guarda el detalle por versión y sus comprobaciones.
 
 ---
 

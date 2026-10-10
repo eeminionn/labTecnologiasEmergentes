@@ -8,7 +8,7 @@
 
 El montaje actual usa una **cámara frontal mirando hacia la persona**. La ventana pequeña se llama **Vista frontal**, el selector de Ajustes dice **Cámara frontal** y la ayuda explica cómo mantener las manos completas en el encuadre. Cambian los textos y metadatos; se conserva el modelo, los gestos y la configuración de espejo/orientación existente.
 
-La aplicación 0.1.13 quedó instalada y abierta en esta Mac, con copia de 0.1.12. Se comprobaron Vista frontal y el selector en la interfaz nativa, sin iniciar la cámara. Las [tres capturas de la bitácora](../Bitacora/README.md) se renovaron; el aro corresponde a una prueba automatizada identificada como tal.
+La aplicación 0.1.13 quedó instalada y abierta en esta Mac, con copia de 0.1.12. Se comprobaron Vista frontal y el selector en la interfaz nativa, sin iniciar la cámara. Las [tres capturas de la bitácora](../README.md) se renovaron; el aro corresponde a una prueba automatizada identificada como tal.
 
 ## Verificación y archivos
 
@@ -18,6 +18,26 @@ Los [reportes Mac](./verificacion-paquete-mac-0.1.13.json) y [Windows](./verific
 |:---|---:|:---|
 | `MapaGestualMLR-0.1.13-mac-arm64.zip` | 156760716 | `a56d1a40ec45ab3c0bb49b420fd57bd498f1e9d180d154782b643c0256f4b828` |
 | `MapaGestualMLR-0.1.13-windows-x64.exe` | 109777639 | `b11d46b13246e63c2904633ecf178a5ff77c821eb65c7bbfec09da7520db33ca` |
+
+## Preparación y apertura del prototipo
+
+Instrucciones técnicas conservadas el 10 de octubre de 2026. El registro del proceso se consulta directamente en la [bitácora del prototipo](../README.md).
+
+- **macOS Apple Silicon:** descomprimir `MapaGestualMLR-0.1.13-mac-arm64.zip` y abrir `Mapa Gestual MLR.app`.
+- **Windows x64:** abrir `MapaGestualMLR-0.1.13-windows-x64.exe`.
+
+La cámara se inicia desde la aplicación. Elegirla en Ajustes, conceder el permiso y mantener las manos completas en el encuadre, con iluminación uniforme. Comprobar que las sombras llegan a los bordes; Ajustes permite reflejar o rotar la imagen.
+
+**Espacio** pausa el control y **Esc** cancela la acción. La pérdida de foco también pausa. Se conservan los controles de mouse y teclado para configurar y recuperar la interacción.
+
+La distribución de desarrollo no tiene firma ni notarización. Si macOS bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación del sistema.
+
+Para ejecutar desde el código, con Node y npm instalados, usar la carpeta `mapaGestualMLR` del repositorio:
+
+```bash
+npm ci
+npm start
+```
 
 ## Registro histórico de 0.1.12
 

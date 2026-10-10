@@ -10,9 +10,7 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 
 Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina con las manos frente a una cámara frontal. Permite desplazarse, hacer zoom y seleccionar puntos de interés. Por ahora trabajamos con tres puntos demostrativos, antes de incorporar información municipal real.
 
-**[README principal del prototipo: qué hace y cómo usarlo](./mapaGestualMLR/README.md)**
-
-**[Bitácora del prototipo: decisiones, avances e imágenes](./mapaGestualMLR/Bitacora/README.md)**
+**[Bitácora del Mapa Gestual MLR: proceso, decisiones e imágenes](./mapaGestualMLR/)**
 
 La bitácora reúne el recorrido del proyecto y explica por qué fuimos cambiando los gestos y la interacción.
 
