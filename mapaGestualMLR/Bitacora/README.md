@@ -4,7 +4,7 @@
 **Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.11: suite 180/180, build, runtime y contenido de paquetes Mac/Windows aprobados. La evidencia de 0.1.10 queda histórica. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
+**Versión vigente:** 0.1.12 · 192/192 pruebas, build y runtime aprobados; contenido de paquetes Mac/Windows aprobado. Los 180 casos y paquetes aprobados de 0.1.11 quedan históricos. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -192,7 +192,7 @@ La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geome
 
 Los **paquetes finales Mac y Windows 0.1.10 están aprobados**: [reporte Mac](../Documentos/verificacion-paquete-mac-0.1.10.json) y [reporte Windows](../Documentos/verificacion-paquete-windows-0.1.10.json), ambos `ok:true` con cuatro clics nativos. Intervalos Mac **1503,7 / 1500,6 / 1500,5 / 1541,0 ms**; Windows **1526,5 / 1516,7 / 1524,2 / 1509,2 ms**. Acompañante cambiante, reorden y salida conservan actor/objetivo/aro; el botón mantiene compañero puño desde el inicio y actor secundario. Ambos reportes aprueban **24 checks de navegación** y todos los grupos Feedback. La [CI Windows 38006516067](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38006516067) terminó con éxito para la misma fuente, incluido portable y smoke de `win-unpacked`; el envoltorio NSIS no se ejecutó como tal. La `.app` final abrió sin iniciar cámara. La [entrega](../Documentos/04-entrega-y-verificacion.md) registra archivos, tamaños, hashes y capturas finales. Las **145/145 pruebas y paquetes Mac/Windows 0.1.9** permanecen históricos; esta evidencia nueva sigue siendo sintética y no mide gestos físicos.
 
-## 9 de octubre - Selección con índice exclusivo en 0.1.11
+## 9 de octubre - Selección con índice exclusivo en 0.1.11 (histórica)
 
 El usuario elige seleccionar señalando: **sólo el índice extendido**, con pulgar, medio, anular y meñique recogidos mediante evidencia geométrica positiva. Si cualquiera de esos dedos está extendido, no se habilita selección. OK individual deja de ser el gesto de clic; dos OK conservan el zoom y los puños, el desplazamiento.
 
@@ -204,23 +204,36 @@ No cambian Hand Landmarker, pesos, SDK ni número de inferencias. Los puntos XYZ
 
 La **0.1.11 aprobó 180/180 pruebas**: 95 de motor de gestos, 15 de OK en perspectiva, 21 de índice exclusivo 3D, 4 de participantes, 15 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. El runtime emitió cuatro clics nativos `isTrusted` tras al menos **1500 ms**, con temblor de índice de **42 × 32 CSS px** y continuidad del acompañante; aprobó **24 checks de navegación** y los siete `selectionToleranceFeedback`, incluidos espacio vacío, salida/reinicio, otros dedos y pulgar. Son entradas sintéticas interpretadas por el motor real y eventos nativos dentro de la app; no un ensayo físico de gestos.
 
-Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. Los [reportes Mac](../Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](../Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](../Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. El [reporte Mac](../Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](../Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](../Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+
+## 9 de octubre - Selección por permanencia sobre objetivo en 0.1.12
+
+El usuario reporta que, aun situando el índice sobre el punto 1, no aparece el aro en 0.1.11 y plantea un posible veto de otros dedos. Sin logs de landmarks de la captura, no se demuestra la condición exacta que la bloqueó. Esa versión aprobó comprobaciones sintéticas, runtime y contenido empaquetado, pero no acreditó selección física en esa postura. Se conserva su evidencia sin convertirla en una medida de precisión real.
+
+La nueva regla es **punta del índice, landmark 8, sobre un objetivo durante 1500 ms**. No se exige índice extendido ni pulgar, medio, anular o meñique recogidos. Sus cambios no cancelan por postura de selección. Una mano clasificada como puño se reserva para pan; **dos OK conservan prioridad para zoom**. Después, una mano no puño sobre objetivo puede seleccionar antes que un puño acompañante; pan funciona sólo cuando no hay esa selección ni dos OK.
+
+El motor recibe objetivos mediante callback y no inicia dwell sobre mapa vacío. Al adquirir un destino, aro y clic conservan su región amplia de retención; no se cambia silenciosamente a un vecino. Salir reinicia el reloj. Tras confirmar, salir del **ID del destino original durante 120 ms** lo rearma para esa mano, sin retraer índice; otro destino puede iniciar **1500 ms** propios enseguida y no hereda el tiempo ni permite repetir el original al volver antes de 120 ms. El tiempo pertenece al actor; entrada/salida/reorden del acompañante no lo transfiere ni reinicia.
+
+No cambian Hand Landmarker, pesos, SDK ni número de inferencias. Foco, pausa, calidad global y pérdida/invalidez del actor continúan como guardas. La [vigencia del protocolo](../Documentos/03-protocolo-validacion.md) concentra detalles y comprobaciones; la [investigación de selección](../Documentos/05-meta-quest-y-seleccion.md) conserva TouchFree/ISS como referentes de hardware diferente.
+
+La **0.1.12 aprobó 192/192 casos, build y runtime** sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`. Cuatro clics nativos completaron al menos **1500 ms**, con todos los grupos Feedback aprobados, incluidos siete de recuperación y siete de tolerancia. Son comprobaciones sintéticas de lógica e integración; no prueban la selección física del caso reportado.
+
+Los **contenidos de paquetes Mac y Windows 0.1.12 están aprobados**. Los [reportes Mac](../Documentos/verificacion-paquete-mac-0.1.12.json) y [Windows](../Documentos/verificacion-paquete-windows-0.1.12.json) confirman `ok:true`, cuatro clics nativos por plataforma y todos los grupos Feedback. La [CI Windows 38011189028](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38011189028) terminó con éxito para `3bfd3c50bce3abbaafb145096a3d00403b199701`: 192 pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió con **Cámara detenida**, footer/ayuda de hover revisados y respaldo 0.1.11 conservado. La [entrega](../Documentos/04-entrega-y-verificacion.md) concentra reportes, capturas, hashes e intervalos. **El envoltorio portable Windows no se ejecutó como tal; ensayo USB, métricas físicas y Google con key siguen pendientes.**
 
 ## Decisiones de interacción vigentes
 
-- Dos OK válidos hacen zoom; índice exclusivo selecciona; sin esas prioridades, uno o dos puños desplazan. OK individual no selecciona.
-- El índice debe estar extendido y los otros cuatro dedos recogidos positivamente. Otro dedo extendido veta esa selección.
-- Un mantenimiento válido de **1500 ms** ejecuta un clic automático; destino y aro permanecen anclados.
-- Retener un destino adquirido admite temblor acotado desde origen fijo y en su hitrect ampliado. Salir reinicia tiempo sin bloqueo de postura; después del clic, soltar **120 ms** rearma.
-- El acompañante no participante no reinicia el actor válido. Pérdida/invalidez del actor, pausa, foco y calidad global siguen siendo guardas.
-- La sombra sigue índice 8 salvo puño, que usa media MCP 5/9/13/17; transición temporal de **300 ms** incluso quieto. Una sombra fresca por mano, hasta dos.
-- Sólo puños participantes adquiridos son violetas; mano libre azul y dos OK adquiridos ámbar. No se ejecutan pan y zoom simultáneamente.
-- Preview pequeño permanente; skeleton sólo fresco y cámara explícita. Métricas, exportación y anotación manual en Ajustes.
-- Todo el frame corresponde a todo el mapa, con espejo, orientación y límites `0..1`, sin calibración de esquinas.
-- El recorrido avanza una vez por clic nativo del activo y se reinicia desde Ajustes; Inicio conserva progreso.
-- Imagen extrema cancela sin ocultar punteros frescos; recuperación continua de **600 ms**.
+- Dos OK hacen zoom; después landmark 8 de mano no puño sobre objetivo selecciona; después uno o dos puños desplazan.
+- No exigir postura del índice ni recoger los otros cuatro dedos para seleccionar. No iniciar tiempo ni clic sobre mapa vacío.
+- Mantenimiento de **1500 ms**, destino y aro anclados; región amplia de retención sin cambiar de objetivo por temblor.
+- Salir de la región reinicia el reloj. Después de confirmar, salir del destino original **120 ms** rearma; no exigir retraer el índice.
+- El acompañante no participante no reinicia al actor válido. Pérdida/invalidez del actor, pausa, foco y calidad global siguen guardas.
+- Sombra por mano fresca: índice 8 cuando no es puño y media MCP 5/9/13/17 en puño; transición temporal de **300 ms**. Sólo puños participantes adquiridos violetas; mano libre azul y dos OK ámbar.
+- Preview permanente pequeño, inicio de cámara explícito y datos antiguos limpios al detener. Diagnóstico detallado en Ajustes.
+- Todo el frame corresponde a todo el mapa, con orientación y límites `0..1`; no homografía ni calibración de esquinas.
+- Recorrido avanza una vez por clic nativo del activo; popup no duplica, Home conserva y Ajustes reinicia.
+- Imagen extrema cancela; recuperación continua de **600 ms**, sin ocultar punteros frescos ni reutilizar el tiempo anterior.
 
-Los tiempos y tolerancias son decisiones experimentales. La revisión aprobó pruebas de software y runtime; contenido de paquetes aprobado; ensayo con usuarios pendiente.
+Las tolerancias y tiempos siguen siendo parámetros experimentales. Suite, build/runtime y contenido de paquetes aprobados; ensayo con usuarios pendiente.
 
 ## Interfaz y mapas
 

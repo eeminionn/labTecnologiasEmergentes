@@ -3,8 +3,8 @@
 **Fecha:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Actualización de implementación:** 9 de octubre de 2026<br>
-**Versión:** 0.1.11<br>
-**Estado:** reglas vigentes 0.1.11; ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión:** 0.1.12<br>
+**Estado:** reglas vigentes 0.1.12; suite/build/runtime y contenido de paquetes Mac/Windows aprobados. Ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
@@ -69,7 +69,7 @@ La geometría no procede de OpenStreetMap; no se le atribuye licencia ODbL. Las 
 
 Los tres puntos mantienen identidades estables `point-0`, `point-1` y `point-2`, con números visibles **1, 2 y 3**. Su apariencia nominal mide 40 px y el siguiente punto activo mide 56 px. Sólo el activo tiene un pulso suave; al completar el tercero, los tres quedan completos y dejan de pulsar.
 
-El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante el mantenimiento de índice exclusivo por **1500 ms**. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
+El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante la permanencia del landmark 8 sobre el destino por **1500 ms**. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
 
 El aro de mantenimiento usa un contenedor de **96 × 96 px**, radio de **34 px** y trazo de 3 px. Su perímetro queda fuera del círculo activo de 56 px, de modo que el punto no oculta el progreso. Conserva el azul durante el mantenimiento y el verde al confirmar.
 
@@ -92,11 +92,13 @@ Diagnóstico disponible mediante `map.info()`:
 }
 ```
 
-## Vigencia de 0.1.11
+## Vigencia de 0.1.12
 
-La selección cambia a **índice exclusivo**: índice extendido y pulgar/medio/anular/meñique recogidos positivamente. Prioridad **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Se conservan actor por identidad y continuidad con acompañante. El [protocolo](./03-protocolo-validacion.md) concentra dwell de **1500 ms**, objetivo anclado, tolerancia desde origen fijo y retención; la [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión. Suite, build y runtime 0.1.11 aprobados; consultar el alcance y estado de los paquetes en [Entrega y verificación](./04-entrega-y-verificacion.md). La evidencia de 0.1.10 de abajo es histórica.
+Selección por **landmark 8 sobre objetivo durante 1500 ms**, sin exigir postura del índice ni de los demás dedos. No hay dwell sobre mapa vacío. Prioridad **dos OK → zoom; mano no puño sobre objetivo → selección; después puños → pan**. El aro conserva destino y región amplia; salir reinicia el reloj y, tras un clic, salir del destino original **120 ms** rearma sin retraer el índice. El [protocolo](./03-protocolo-validacion.md) concentra el contrato y la [bitácora](../Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra la decisión. Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados. Alcance de entrega en [04](./04-entrega-y-verificacion.md).
 
-La fuente SUBDERE DPA 2023, GeoJSON, contorno, posiciones y recorrido no cambian. Sólo un clic confirmado del actor sobre el punto activo avanza una vez. Su caja exterior fija de **56 × 56 CSS px** conserva la hitarea; el margen de retención no cambia el dibujo ni permite avanzar por otro marcador superpuesto. Home conserva progreso y el botón del popup no duplica el avance. La integración vigente aprobó selección/recorrido; consultar el [alcance de verificación](./04-entrega-y-verificacion.md).
+La exigencia de índice exclusivo de **0.1.11 es histórica**. Su suite/runtime/paquetes sintéticos aprobados no cubrieron el fallo físico reportado por el usuario: índice sobre punto 1 sin aro, con posible veto de otros dedos. No hay logs de esa captura que demuestren la causa exacta. [Reportes Mac](./verificacion-paquete-mac-0.1.11.json) y [Windows](./verificacion-paquete-windows-0.1.11.json). No se registra precisión física nueva ni se modifica el modelo.
+
+La fuente SUBDERE DPA 2023, GeoJSON, contorno, posiciones y recorrido no cambian. Sólo un clic confirmado del actor sobre el punto activo avanza una vez. Su caja exterior fija de **56 × 56 CSS px** conserva la hitarea; el margen de retención no cambia el dibujo ni permite avanzar por otro marcador superpuesto. Home conserva progreso y el botón del popup no duplica el avance. Runtime y contenido de paquetes Mac/Windows nuevos aprobaron selección/recorrido. Consultar el [alcance](./04-entrega-y-verificacion.md).
 
 ## Interacción histórica de 0.1.10
 

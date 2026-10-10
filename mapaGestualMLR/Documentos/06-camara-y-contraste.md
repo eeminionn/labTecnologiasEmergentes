@@ -3,17 +3,19 @@
 **Fecha de consulta:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Actualización de implementación:** 9 de octubre de 2026<br>
-**Versión de implementación:** 0.1.11<br>
-**Estado:** reglas vigentes 0.1.11; ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión de implementación:** 0.1.12<br>
+**Estado:** reglas vigentes 0.1.12; suite/build/runtime y contenido de paquetes Mac/Windows aprobados. Ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar selección](./05-meta-quest-y-seleccion.md)
 
-## Vigencia de 0.1.11
+## Vigencia de 0.1.12
 
-La selección cambia a **índice exclusivo**: índice extendido y pulgar/medio/anular/meñique recogidos positivamente. Prioridad **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Se conservan actor por identidad y continuidad con acompañante. El [protocolo](./03-protocolo-validacion.md) concentra dwell de **1500 ms**, objetivo anclado, tolerancia desde origen fijo y retención; la [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión. Suite, build y runtime 0.1.11 aprobados; consultar el alcance y estado de los paquetes en [Entrega y verificación](./04-entrega-y-verificacion.md). La evidencia de 0.1.10 de abajo es histórica.
+Selección por **landmark 8 sobre objetivo durante 1500 ms**, sin exigir postura del índice ni de los demás dedos. No hay dwell sobre mapa vacío. Prioridad **dos OK → zoom; mano no puño sobre objetivo → selección; después puños → pan**. El aro conserva destino y región amplia; salir reinicia el reloj y, tras un clic, salir del destino original **120 ms** rearma sin retraer el índice. El [protocolo](./03-protocolo-validacion.md) concentra el contrato y la [bitácora](../Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra la decisión. Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados. Alcance de entrega en [04](./04-entrega-y-verificacion.md).
 
-Esta revisión no cambia el gate global, las capacidades de cámara ni el preview: cámara detenida limpia los datos antiguos, sin ocultar el panel; inicio explícito. La tolerancia de selección no sustituye calidad de imagen ni validez del actor. Un acompañante inválido/neutro no veta por sí solo al actor válido. No hay nueva inspección física, benchmark de cámara ni cambio de modelo registrado para 0.1.11.
+La exigencia de índice exclusivo de **0.1.11 es histórica**. Su suite/runtime/paquetes sintéticos aprobados no cubrieron el fallo físico reportado por el usuario: índice sobre punto 1 sin aro, con posible veto de otros dedos. No hay logs de esa captura que demuestren la causa exacta. [Reportes Mac](./verificacion-paquete-mac-0.1.11.json) y [Windows](./verificacion-paquete-windows-0.1.11.json). No se registra precisión física nueva ni se modifica el modelo.
+
+Esta revisión no cambia el gate global, las capacidades de cámara ni el preview: cámara detenida limpia los datos antiguos, sin ocultar el panel; inicio explícito. La tolerancia de selección no sustituye calidad de imagen ni validez del actor. Un acompañante inválido/neutro no veta por sí solo al actor válido. No hay nueva inspección física, benchmark de cámara ni cambio de modelo registrado para 0.1.12.
 
 ## Antecedente de interacción de 0.1.10
 
@@ -79,7 +81,7 @@ El recorte extremo actúa inmediatamente: no se completa un clic de 1,5 segundos
 
 `FrameQualityGate.update(analysis, capturedAt)` devuelve `allowActions`, `cancelInteraction`, `state`, `showWarning`, `reasons` y `warnings`. Sus estados son `good`, `suspect`, `blocked` y `recovering`; `unknown` existe antes de la primera actualización. Un resultado inicial válido permite comenzar sin una espera artificial. Un salto de captura superior a 250 ms o un reloj inválido invalida la continuidad y obliga a recuperar; se debe hacer `reset()` al cambiar sesión o cámara. El watchdog del motor conserva su comprobación de resultados obsoletos por separado.
 
-La integración cancela y suprime eventos mientras `allowActions` es falso. Sigue ejecutando inferencia para mostrar los halos frescos de ambas manos, en gris durante la pausa o el bloqueo por imagen extrema. Si no hay detección fresca, no mantiene una mano inventada. La calidad de la imagen no aumenta ni reduce artificialmente el número de manos reportado: el conteo bruto es un diagnóstico, no un veto automático de selección. Un OK actor válido puede seleccionar acompañado; dos OK válidos tienen prioridad para zoom y el inválido/neutro ajeno no bloquea al actor. Los temporizadores anteriores no se reutilizan y la selección requiere rearmado después de una cancelación.
+La integración cancela y suprime eventos mientras `allowActions` es falso. Sigue ejecutando inferencia para mostrar los halos frescos de ambas manos, en gris durante la pausa o el bloqueo por imagen extrema. Si no hay detección fresca, no mantiene una mano inventada. La calidad de la imagen no aumenta ni reduce artificialmente el número de manos reportado: el conteo bruto es un diagnóstico, no un veto automático de selección. Un actor con landmark 8 usable sobre objetivo puede seleccionar acompañado; dos OK válidos tienen prioridad para zoom y el inválido/neutro ajeno no lo bloquea. La selección no requiere world estimado ni postura de los dedos restantes. Los temporizadores anteriores no se reutilizan y la selección requiere rearmado después de una cancelación.
 
 Estos límites son deliberadamente extremos. No bloquean una imagen sólo porque su fondo sea mate o tenga poco detalle. Aun así, un fondo realmente negro/blanco que ocupa más del 98 % de la imagen puede provocar una pausa aunque haya una mano pequeña visible. Debe registrarse como falso bloqueo y resolverse con montaje/encuadre o umbrales validados, no afirmando que el gate mide calidad de la mano.
 

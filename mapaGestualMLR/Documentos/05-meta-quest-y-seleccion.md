@@ -3,15 +3,17 @@
 **Fecha de consulta:** 5, 6 y 9 de octubre de 2026<br>
 **Última actualización de implementación:** 9 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.11<br>
-**Estado:** reglas vigentes 0.1.11; ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.12<br>
+**Estado:** reglas vigentes 0.1.12; suite/build/runtime y contenido de paquetes Mac/Windows aprobados. Ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
 
-## Vigencia de 0.1.11
+## Vigencia de 0.1.12
 
-La selección cambia a **índice exclusivo**: índice extendido y pulgar/medio/anular/meñique recogidos positivamente. Prioridad **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Se conservan actor por identidad y continuidad con acompañante. El [protocolo](./03-protocolo-validacion.md) concentra dwell de **1500 ms**, objetivo anclado, tolerancia desde origen fijo y retención; la [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión. Suite, build y runtime 0.1.11 aprobados; consultar el alcance y estado de los paquetes en [Entrega y verificación](./04-entrega-y-verificacion.md). La evidencia de 0.1.10 de abajo es histórica.
+Selección por **landmark 8 sobre objetivo durante 1500 ms**, sin exigir postura del índice ni de los demás dedos. No hay dwell sobre mapa vacío. Prioridad **dos OK → zoom; mano no puño sobre objetivo → selección; después puños → pan**. El aro conserva destino y región amplia; salir reinicia el reloj y, tras un clic, salir del destino original **120 ms** rearma sin retraer el índice. El [protocolo](./03-protocolo-validacion.md) concentra el contrato y la [bitácora](../Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra la decisión. Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados. Alcance de entrega en [04](./04-entrega-y-verificacion.md).
+
+La exigencia de índice exclusivo de **0.1.11 es histórica**. Su suite/runtime/paquetes sintéticos aprobados no cubrieron el fallo físico reportado por el usuario: índice sobre punto 1 sin aro, con posible veto de otros dedos. No hay logs de esa captura que demuestren la causa exacta. [Reportes Mac](./verificacion-paquete-mac-0.1.11.json) y [Windows](./verificacion-paquete-windows-0.1.11.json). No se registra precisión física nueva ni se modifica el modelo.
 
 ### Referentes para mantener y confirmar sobre un objetivo
 
@@ -19,7 +21,7 @@ La guía oficial de [TouchFree: Hover & Hold](https://docs.ultraleap.com/TouchFr
 
 Dube et al., **ISS 2022**, compararon Push, Tap, Dwell y Pinch con dos condiciones de háptica ultrasónica. En su instalación, dwell fue lento por diseño, preciso y poco demandante; el ensayo utilizó **Leap Motion Controller, Unity y Stratos Explore**, con dwell de **800 ms** elegido en un piloto. Es un referente primario para comparar errores, esfuerzo y demora, no una garantía de rendimiento en webcam ni una recomendación de **1500 ms**. [Artículo completo de los autores y DOI 10.1145/3567718](https://www.yorku.ca/mack/iss2022.html).
 
-Fuentes consultadas el **9 de octubre de 2026**. La exclusividad del índice, radio **0,15** y margen de retención **36 CSS px** son decisiones de este prototipo; las fuentes no fijan esos parámetros. Los principios históricos de Meta sobre hover, objetivo estable y cancelación siguen orientando feedback, aunque OK individual ya no selecciona.
+Fuentes consultadas el **9 de octubre de 2026**. La exclusividad del índice fue una decisión de **0.1.11**, retirada en 0.1.12. Tiempo y retención son parámetros propios; las fuentes no fijan esos valores ni requieren esa postura de dedos. Los principios históricos de Meta sobre hover, objetivo estable y cancelación siguen orientando feedback, aunque OK individual dejó de ser el disparador de selección. En 0.1.12 su landmark 8 puede seleccionar por permanencia sobre destino como cualquier mano no puño.
 
 ## Antecedente de selección por OK: 0.1.10
 

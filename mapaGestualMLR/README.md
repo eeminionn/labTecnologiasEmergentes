@@ -5,8 +5,8 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 **Inicio:** 5 de octubre de 2026<br>
 **Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Versión vigente:** 0.1.11<br>
-**Estado:** 0.1.11: suite 180/180, build, runtime y contenido de paquetes Mac/Windows aprobados. La evidencia de 0.1.10 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.12<br>
+**Estado:** 0.1.12: 192/192 pruebas, build y runtime aprobados; contenido de paquetes Mac/Windows aprobado. La evidencia aprobada de 0.1.11 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
@@ -16,7 +16,7 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 - Detecta hasta dos manos con MediaPipe Hand Landmarker y procesa las imágenes en este equipo.
 - Permite apuntar, abrir información, desplazar el mapa y acercar o alejar la vista.
 - Muestra una sombra por cada mano detectada con datos frescos: azul al apuntar o reposar, violeta con uno o dos puños para desplazar y ámbar con dos OK para zoom. Durante pausa o bloqueo aparecen grises.
-- Selecciona al mantener **sólo el índice extendido** durante 1,5 segundos; pulgar, medio, anular y meñique deben estar recogidos. Objetivo y aro quedan anclados aunque cambie un acompañante. Dos OK conservan el zoom.
+- Selecciona al mantener **landmark 8 sobre un objetivo durante 1500 ms**, sin exigir postura del índice ni recoger los otros dedos. Objetivo y aro quedan anclados con acompañante; dos OK tienen prioridad de zoom y el puño queda reservado para pan.
 - Lleva todo el encuadre de cámara a todo el mapa; permite elegir cámara, reflejar o rotar la imagen.
 - Mantiene una Vista cenital pequeña siempre visible arriba a la izquierda, con video, skeleton fresco y conteo de manos cuando la cámara está activa. Detenida, muestra Cámara detenida y limpia los datos anteriores; no pide permisos ni activa la cámara al arrancar.
 - Reúne métricas, exportación y Marcar falso clic en Diagnóstico de seguimiento, una sección desplegable de Ajustes.
@@ -49,40 +49,40 @@ La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Lo
 
 ## Abrir el programa empaquetado
 
-La distribución **0.1.11 aprobó 180 pruebas, build, runtime y smoke de su contenido empaquetado en Mac/Windows** sobre la fuente `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. La `.app` instalada abrió con la cámara detenida. Windows comprobó `win-unpacked`; su envoltorio portable se verifica por separado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y alcance. La evidencia de 0.1.10 y anteriores se conserva abajo como historia.
+La distribución **0.1.12 aprobó 192 pruebas, build, runtime y smoke de su contenido empaquetado en Mac/Windows** sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`. La `.app` instalada abrió con la cámara detenida. Windows comprobó `win-unpacked`; el envoltorio portable se verifica por separado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y alcance. La evidencia de 0.1.11 y anteriores se conserva abajo como historia.
 
 Como evidencia histórica, la `.app` Mac **0.1.3** aprobó el smoke del paquete y su apertura real, Ajustes y ayuda se revisaron en la aplicación. Windows **0.1.3** aprobó pruebas, build, runtime, construcción del portable y smoke del contenido empaquetado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y resultados por plataforma.
 
 **macOS Apple Silicon:** descomprimir el ZIP para obtener `Mapa Gestual MLR.app` y abrirla. Elegir la cámara USB y conceder el acceso a cámara cuando macOS lo solicite. Esta versión de desarrollo no tiene firma ni notarización. Si Gatekeeper bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación de macOS; no desactivar la protección global del equipo.
 
-**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI Windows 0.1.11](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) aprobó suite, build, runtime, portable y smoke `win-unpacked` para la fuente final; hashes y reporte en la [entrega](./Documentos/04-entrega-y-verificacion.md). El arranque mediante el envoltorio portable y la cámara USB/driver físicos siguen pendientes.
+**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI Windows 0.1.12](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38011189028) aprobó suite, build, runtime, portable y smoke `win-unpacked` para la fuente final; reporte y hashes en la [entrega](./Documentos/04-entrega-y-verificacion.md). Arranque del envoltorio portable y cámara USB/driver físicos pendientes.
 
 La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y plataforma de cada entrega junto con los resultados de verificación. Construir un archivo no demuestra por sí solo que la detección funcione con la cámara de la instalación.
 
 ## Gestos
 
-| Acción | Cómo se realiza en 0.1.11 |
+| Acción | Cómo se realiza en 0.1.12 |
 |:---|:---|
-| Apuntar | Mover la punta del índice dentro del encuadre. La sombra sigue el índice 8 también en reposo y con palma abierta. |
-| Clic | Extender **sólo el índice** y recoger positivamente pulgar, medio, anular y meñique. Mantener sobre el objetivo **1500 ms**: clic automático y aro anclado. Otro dedo extendido impide seleccionar. |
-| Desplazar | Formar uno o dos puños cuando no hay una selección por índice exclusivo ni dos OK. Pan usa sólo sus nudillos; una mano libre no aporta movimiento. |
+| Apuntar | Mover la punta del índice dentro del encuadre; la sombra usa landmark 8 cuando la mano no es un puño. No hace falta extender el índice en una postura concreta. |
+| Clic | Llevar esa punta sobre un objetivo seleccionable y mantener **1500 ms**. Aparece un aro anclado y el clic se ejecuta al completar. Los otros dedos pueden estar abiertos, recogidos o cambiar sin cancelar por su postura. |
+| Desplazar | Formar uno o dos puños cuando no hay dos OK ni una mano libre sobre un objetivo. Pan usa sólo sus nudillos; una mano no puño que mantiene su índice sobre un objetivo tiene prioridad sobre el puño acompañante. |
 | Zoom | Formar **OK con ambas manos** y adquirir durante **180 ms**. Separar sus índices 8 acerca y juntarlos aleja; traslación común sin cambio de separación no desplaza. |
 
 **Pausa:** pulsar Espacio. La pérdida de foco detiene la interacción. Esc cancela la acción en curso.
 
-La prioridad vigente es **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Un OK individual ya no hace clic. El acompañante puede entrar, salir o cambiar de orden sin cancelar al actor válido; el objetivo y el tiempo pertenecen a su identidad, nunca al índice del array.
+La prioridad vigente es **dos OK → zoom; punta de índice de mano no puño sobre objetivo → selección; uno o dos puños → pan**. El motor consulta los objetivos antes de iniciar el mantenimiento: sobre mapa vacío no hay reloj ni clic. El acompañante puede entrar, salir o cambiar de orden sin cancelar al actor válido; objetivo y tiempo pertenecen a su identidad.
 
-Durante el mantenimiento se admite temblor respecto de un **origen fijo**, sin desplazar el destino a un vecino. El motor permite hasta **0,15 unidades de alto de cámara** y el renderer retiene el rectángulo del objetivo ampliado **36 CSS px por lado**. Esa extensión conserva un objetivo ya adquirido. Salir de la tolerancia reinicia el reloj, sin exigir soltar la postura para intentarlo de nuevo; **después del clic**, debe abandonarse durante **120 ms** antes de otro. El [protocolo vigente](./Documentos/03-protocolo-validacion.md) separa estas unidades, adquisición, retención y pruebas pendientes.
+El aro conserva el destino durante temblor dentro de su región amplia de retención, sin saltar a un vecino por solapamiento. Salir de la región reinicia el tiempo; reentrar exige **1500 ms** completos. Después de un clic, salir del ID del destino original durante **120 ms** lo rearma para esa mano; no hay que recoger ni retraer el índice. Otro destino puede iniciar inmediatamente **1500 ms** nuevos, sin heredar tiempo ni repetir el original al volver en menos de 120 ms. El [protocolo vigente](./Documentos/03-protocolo-validacion.md) concentra regiones, callbacks y comprobaciones.
 
-Modelo Hand Landmarker, pesos, SDK y captura se conservan. La postura utiliza geometría positiva XYZ estimada; que otro dedo no parezca extendido no basta para considerarlo recogido. Esta revisión no certifica reconocimiento físico ni pocos falsos positivos. La [entrada de 0.1.11 en la bitácora](./Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión y la [investigación de selección](./Documentos/05-meta-quest-y-seleccion.md) aporta los referentes.
+La revisión responde al reporte físico del usuario: en **0.1.11** podía situar el índice sobre el punto 1 sin obtener aro, con un posible veto de otros dedos. No hay logs de landmarks de esa captura que demuestren la condición exacta. Sus pruebas sintéticas aprobadas no cubrieron esa dificultad real. **0.1.12 elimina el requisito de índice exclusivo y de dedos restantes recogidos**, sin incorporar un modelo, SDK ni inferencia nuevos. La [entrada de 0.1.12 en la bitácora](./Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra el cambio; la [investigación de selección](./Documentos/05-meta-quest-y-seleccion.md) conserva los referentes de hover y confirmación.
 
-Cada mano conserva una sombra fresca independiente: azul al apuntar o reposar, violeta sólo en puños participantes adquiridos y ámbar en dos OK adquiridos. Gris indica bloqueo. El aro azul representa los 1500 ms y confirma en verde; no se muestra como confirmación de navegación.
+Cada mano conserva una sombra fresca independiente: azul al apuntar o reposar, violeta sólo en puños participantes adquiridos y ámbar en dos OK adquiridos. Gris indica bloqueo. El aro azul representa los **1500 ms** y confirma en verde; no confirma navegación ni avanza por mapa vacío.
 
 Los tres puntos ficticios muestran **1, 2 y 3**. Su dibujo nominal mide **40 px** y el activo, **56 px**; su caja exterior fija de **56 × 56 px** permanece estable durante el pulso. Un clic nativo sobre el activo avanza una vez. Tras el tercero termina el pulso; **Reiniciar recorrido**, en Ajustes, vuelve al punto 1. El botón del popup no vuelve a avanzar e Inicio conserva progreso. [Fuente y recorrido](./Documentos/07-limite-la-reina.md).
 
-La Vista cenital permanece visible arriba a la izquierda, unos **200 px** de ancho o **160 px** en pantallas pequeñas, sin casilla ni botón de cierre. Iniciar/Detener cámara es explícito; detener o perderla limpia skeleton y conteo. Métricas y exportación permanecen en Ajustes.
+La Vista cenital permanece visible arriba a la izquierda, unos **200 px** de ancho o **160 px** en pantallas pequeñas. Iniciar/Detener cámara es explícito; detener o perderla limpia skeleton y conteo. Métricas y exportación permanecen en Ajustes.
 
-La selección por OK, su asistencia de cierre y los resultados de **0.1.10** se conservan como historia en la bitácora y el protocolo. Los 1500 ms son preferencia del usuario; las tolerancias son parámetros experimentales. **Suite, build, runtime y contenido de paquetes 0.1.11 aprobados.**
+**Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados.** Los **1500 ms** son preferencia del usuario y la región de retención es una decisión experimental. La evidencia anterior permanece histórica y no valida precisión física de esta revisión.
 
 ## Preparar la mesa
 
@@ -125,11 +125,17 @@ npm run build
 npm run test:app
 ```
 
-### Verificación vigente: versión 0.1.11
+### Verificación vigente: versión 0.1.12
+
+La **0.1.12 aprobó 192/192 pruebas**, build y runtime Electron sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`. El runtime ejecutó **cuatro clics nativos `isTrusted` tras al menos 1500 ms**, con aro/destino conservados; todos los grupos Feedback aprobaron, incluidos 24 checks de navegación, siete de recuperación y siete de tolerancia. El [protocolo](./Documentos/03-protocolo-validacion.md) registra la distribución y alcance. Son entradas sintéticas con motor real, sin benchmark de precisión física.
+
+Los **contenidos de paquetes Mac y Windows 0.1.12 están aprobados**. Los [reportes Mac](./Documentos/verificacion-paquete-mac-0.1.12.json) y [Windows](./Documentos/verificacion-paquete-windows-0.1.12.json) confirman `ok:true`, cuatro clics nativos por plataforma y todos los grupos Feedback. La [CI Windows 38011189028](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38011189028) terminó con éxito para `3bfd3c50bce3abbaafb145096a3d00403b199701`: 192 pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió con **Cámara detenida**, footer/ayuda de hover revisados y respaldo 0.1.11 conservado. La [entrega](./Documentos/04-entrega-y-verificacion.md) concentra reportes, capturas, hashes e intervalos. **El envoltorio portable Windows no se ejecutó como tal; ensayo USB, métricas físicas y Google con key siguen pendientes.**
+
+### Evidencia histórica: versión 0.1.11
 
 La **0.1.11 aprobó 180/180 pruebas**: 95 de motor de gestos, 15 de OK en perspectiva, 21 de índice exclusivo 3D, 4 de participantes, 15 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. El runtime emitió cuatro clics nativos `isTrusted` tras al menos **1500 ms**, con temblor de índice de **42 × 32 CSS px** y continuidad del acompañante; aprobó **24 checks de navegación** y los siete `selectionToleranceFeedback`, incluidos espacio vacío, salida/reinicio, otros dedos y pulgar. Son entradas sintéticas interpretadas por el motor real y eventos nativos dentro de la app; no un ensayo físico de gestos.
 
-Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. Los [reportes Mac](./Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](./Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](./Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. El [reporte Mac](./Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](./Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](./Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
 
 ### Evidencia histórica: versión 0.1.10
 
@@ -232,7 +238,7 @@ En Windows CI aprobaron build, **26/26 tests**, smoke de runtime y smoke de la a
 
 Estas son comprobaciones de integración; no miden precisión cenital, latencia con cámara USB ni detección de dos manos reales. Los fixtures son imágenes de prueba y no corresponden al montaje municipal.
 
-Los reportes anteriores identifican sus respectivas versiones. Los resultados de una versión anterior no certifican las reglas ni los paquetes 0.1.11.
+Los reportes anteriores identifican sus respectivas versiones. Los resultados de una versión anterior no certifican las reglas ni los paquetes 0.1.12.
 
 Estas pruebas no sustituyen el ensayo con cámara USB cenital. Google Maps todavía no está probado con una key del usuario. Consultar el [protocolo de validación](./Documentos/03-protocolo-validacion.md) para medir falsos clics, estabilidad y latencia en condiciones reales.
 
@@ -262,7 +268,7 @@ npm run dist:win
 
 MediaPipe Tasks Vision `1.0.1`, Hand Landmarker full, modo video, hasta dos manos y delegate CPU en worker local. Umbrales iniciales de detección, presencia y tracking: `0,70`.
 
-El modelo Hand Landmarker full, SDK, pesos e inferencia CPU se conservan. La versión 0.1.11 cambia la selección a índice exclusivo con evidencia positiva de los otros dedos recogidos, mantenimiento de **1500 ms** y retención del destino. Dos OK siguen utilizando geometría XYZ para zoom; uno o dos puños desplazan. No se añade una inferencia ni un modelo. Parámetros y alcance de los **180 casos, build y runtime aprobados** en el protocolo; contenido de paquetes vigente aprobado. Los **177 casos y paquetes de 0.1.10** son históricos.
+El modelo Hand Landmarker full, SDK, pesos e inferencia CPU se conservan. La versión **0.1.12** inicia selección únicamente cuando el landmark 8 fresco de una mano no puño está sobre un objetivo seleccionable. No requiere geometría de índice extendido ni recogimiento de los otros dedos. Dwell de **1500 ms**, retención del destino, rearme por salida y prioridades de navegación se prueban por separado; Suite **192/192**, build/runtime y contenido de paquetes Mac/Windows aprobados. Los **180 casos y paquetes de 0.1.11** son históricos.
 
 El diagnóstico muestra tiempos de inferencia y captura→resultado del worker. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado de hasta 10.000 muestras recientes. El botón **Marcar falso clic** suma una anotación manual; no detecta errores ni calcula una tasa de falsos positivos automáticamente. Para medir esa tasa se requiere tiempo negativo e intención anotados.
 
