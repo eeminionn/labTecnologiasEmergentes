@@ -14,19 +14,23 @@ test('popup controls take priority over points behind them',()=>{
   const button={...a,id:'button',width:100,height:30,priority:1};
   assert.equal(hoverTarget({x:120,y:180},[a,button],a.id)?.id,button.id);
 });
-test('OK acquires the hovered point and locks it through progress and confirmation',()=>{
+test('index dwell retains the acquired target within its wider hold region',()=>{
   const feedback=new SelectionFeedback();
   feedback.update({x:130,y:180},'point',[a,b],viewport);
   const pending=feedback.update({x:130,y:180},'click-pending',[a,b],viewport);
   assert.deepEqual(pending.point,{x:120,y:180});
-  const later=feedback.update({x:450,y:300},'click-pending',[a,b],viewport);
+  const later=feedback.update({x:174,y:225},'click-pending',[a,b],viewport);
   assert.deepEqual(later.point,pending.point);
   assert.equal(later.target.id,a.id);
-  assert.deepEqual(feedback.update({x:450,y:300},'click-confirmed',[a,b],viewport).point,pending.point);
+  assert.deepEqual(feedback.update({x:174,y:225},'click-confirmed',[a,b],viewport).point,pending.point);
 });
-test('clicking an empty map area preserves that location and never uses canvas center',()=>{
+test('empty space never accumulates dwell or falls back to canvas center',()=>{
   const feedback=new SelectionFeedback();
-  assert.deepEqual(feedback.update({x:80,y:90},'click-pending',[],viewport).point,{x:80,y:90});
+  const empty=feedback.update({x:80,y:90},'click-pending',[],viewport);
+  assert.deepEqual(empty.point,{x:80,y:90});
+  assert.equal(empty.cancel,true);
+  assert.equal(feedback.held,null);
+  assert.equal(feedback.update(a,'click-pending',[a],viewport).cancel,false);
 });
 test('a disappearing or moving target and a resized viewport cancel an unfinished hold',()=>{
   for(const [targets,size] of [[[],viewport],[[{...a,x:150}],viewport],[[a],{...viewport,width:950}]]){
@@ -61,32 +65,47 @@ test('browser viewport dimensions inherited from DOMRect do not cancel the hold'
   assert.equal(feedback.update(a,'click-confirmed',[a],rect).cancel,false);
 });
 
-test('closing a pinch acquires the hovered target before OK and retains it through dwell',()=>{
+test('an acquired target wins while the index trembles over an overlapping neighbour',()=>{
   const feedback=new SelectionFeedback();
-  feedback.update({x:130,y:180},'point',[a,b],viewport);
-  const preparing=feedback.update({x:130,y:180},'click-preparing',[a,b],viewport);
-  assert.equal(preparing.target.id,a.id);
-  assert.deepEqual(preparing.point,{x:a.x,y:a.y});
-  const moved=feedback.update({x:144,y:180},'click-pending',[a,b],viewport);
-  assert.equal(moved.target.id,a.id);
-  assert.deepEqual(moved.point,preparing.point);
-  assert.equal(feedback.update({x:144,y:180},'click-confirmed',[a,b],viewport).target.id,a.id);
-});
-
-test('an invalidated target or resized viewport cancels preparation before any dwell',()=>{
-  for(const [targets,size] of [[[],viewport],[[{...a,x:150}],viewport],[[a],{...viewport,height:640}]]){
-    const feedback=new SelectionFeedback();
-    feedback.update(a,'click-preparing',[a],viewport);
-    assert.equal(feedback.update(a,'click-preparing',targets,size).cancel,true);
+  feedback.update(a,'click-pending',[a,b],viewport);
+  for(const point of [{x:144,y:180},{x:173,y:225},{x:66,y:130}]){
+    const result=feedback.update(point,'click-pending',[a,b],viewport);
+    assert.equal(result.cancel,false);
+    assert.equal(result.target.id,a.id);
+    assert.deepEqual(result.point,{x:a.x,y:a.y});
   }
 });
 
-test('aborting preparation releases the old target and acquires a newly hovered target',()=>{
-  const feedback=new SelectionFeedback();
-  feedback.update(a,'click-preparing',[a,b],viewport);
-  feedback.update({x:450,y:300},'idle',[a,b],viewport);
-  assert.equal(feedback.held,null);
-  const next=feedback.update(b,'click-preparing',[a,b],viewport);
+test('leaving the fixed generous region cancels even if the halo stays anchored',()=>{
+  for(const point of [{x:179,y:180},{x:120,y:239},{x:60,y:180}]){
+    const feedback=new SelectionFeedback();
+    feedback.update(a,'click-pending',[a,b],viewport);
+    assert.equal(feedback.update(point,'click-pending',[a,b],viewport).cancel,true);
+  }
+});
+
+test('the tolerance is fixed at acquisition rather than following successive small movements',()=>{
+  const feedback=new SelectionFeedback();feedback.update(a,'click-pending',[a],viewport);
+  for(let dx=10;dx<=50;dx+=10)assert.equal(feedback.update({...a,x:a.x+dx},'click-pending',[a],viewport).cancel,false);
+  assert.equal(feedback.update({...a,x:a.x+60},'click-pending',[a],viewport).cancel,true);
+});
+
+test('leaving on the exact completion frame cannot click the stale target',()=>{
+  const feedback=new SelectionFeedback();feedback.update(a,'click-pending',[a],viewport);
+  assert.equal(feedback.update({...a,x:a.x+59},'click-confirmed',[a],viewport).cancel,true);
+});
+
+test('an aborted hold releases the old target before acquiring a new one',()=>{
+  const feedback=new SelectionFeedback();feedback.update(a,'click-pending',[a,b],viewport);
+  feedback.reset();
+  const next=feedback.update(b,'click-pending',[a,b],viewport);
   assert.equal(next.target.id,b.id);
   assert.deepEqual(next.point,{x:b.x,y:b.y});
+});
+
+test('a wider popup retains its own original bounds plus the same tremor padding',()=>{
+  const target={...a,width:120,height:40},feedback=new SelectionFeedback();
+  feedback.update(target,'click-pending',[target],viewport);
+  assert.equal(feedback.update({...target,x:target.x+95},'click-pending',[target],viewport).cancel,false);
+  assert.equal(feedback.update({...target,x:target.x+97},'click-pending',[target],viewport).cancel,true);
 });

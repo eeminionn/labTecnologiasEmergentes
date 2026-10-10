@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyOkGeometry } from '../src/ok-geometry.js';
+import { GestureEngine, classifyHand } from '../src/gestures.js';
 
 // Independent kinematic fixtures: fixed bone lengths and explicit bends.
 // They test geometry, not MediaPipe's accuracy or visibility under occlusion.
@@ -104,6 +105,41 @@ test('world and aspect-corrected image XYZ give the same posture under foreshort
       assert.equal(fallback.ok, true);
       assert.deepEqual(world.supporting, fallback.supporting);
       assert.ok(Math.abs(world.pinchRatio - fallback.pinchRatio) < 1e-12);
+    }
+  }
+});
+
+test('OK remains exclusive to two-hand zoom: a single frontal or side-on OK cannot select after any dwell', () => {
+  for (const world of [true, false]) for (const aspectRatio of [1, 16 / 9]) {
+    for (const [pitch, yaw] of [[0, 0], [Math.PI / 2, 0], [-Math.PI / 2, 0], [0, Math.PI / 2]]) {
+      const view = cameraCoordinates(transform(pose(), { pitch, yaw }), aspectRatio);
+      const actor = { id: 'a', landmarks: view.image, ...(world ? { worldLandmarks: view.world } : {}) };
+      const shape = classifyHand(actor, { aspectRatio });
+      assert.equal(shape.ok, true);
+      assert.equal(shape.point, false);
+      const single = new GestureEngine({ aspectRatio });
+      for (let time = 0; time <= 2200; time += 20) {
+        const result = single.update([actor], time);
+        assert.equal(result.events.length, 0);
+        assert.ok(!result.mode.startsWith('click-'));
+      }
+      const pair = [-0.15, 0.15].map((x, index) => ({ ...actor, id: index ? 'b' : 'a',
+        landmarks: actor.landmarks.map(p => ({ ...p, x: p.x + x })) }));
+      const zoom = new GestureEngine({ aspectRatio });
+      for (let time = 0; time < 180; time += 20) {
+        const result = zoom.update(pair, time);
+        assert.equal(result.navigationCandidateKind, 'zoom');
+        assert.equal(result.events.length, 0);
+      }
+      const acquired = zoom.update(pair, 180);
+      assert.equal(acquired.navigationKind, 'zoom');
+      assert.equal(acquired.selectionHandId, null);
+      assert.equal(acquired.selectionLiveCursor, null);
+      const spread = pair.map((value, index) => ({ ...value,
+        landmarks: value.landmarks.map(p => ({ ...p, x: p.x + (index ? 0.02 : -0.02) })) }));
+      const result = zoom.update(spread, 200);
+      assert.ok(result.events.some(event => event.type === 'zoom' && event.delta > 0));
+      assert.ok(result.events.every(event => event.type === 'zoom'));
     }
   }
 });

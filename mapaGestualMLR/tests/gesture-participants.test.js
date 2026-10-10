@@ -8,7 +8,7 @@ const fixtures = JSON.parse(readFileSync(new URL('./fixtures/selection-poses.jso
 // MediaPipe does not give our interpreter stable hand IDs. These fixtures
 // deliberately contain no `id`: matching must preserve the actual actor.
 function hand(kind, x = 0) {
-  const points = fixtures[kind] || fixtures.point;
+  const points = kind === 'point' ? fixtures.index : fixtures[kind] || fixtures.point;
   const landmarks = points.map(point => ({ ...point }));
   if (kind === 'open') {
     for (let index = 9; index < 21; index++) landmarks[index] = { ...fixtures.ok[index] };
@@ -32,16 +32,17 @@ function frames(engine, hands, from, until) {
 const events = results => results.flatMap(result => result.events);
 const clicks = results => events(results).filter(event => event.type === 'click');
 
-test('one anonymous OK selects in either array position beside open, fist or invalid companions', () => {
-  for (const kind of ['open', 'point', 'neutral', 'fist', 'invalid-world', 'invalid-image']) {
+test('one anonymous index-only hand selects in either array position beside open, OK, fist or invalid companions', () => {
+  for (const kind of ['open', 'ok', 'neutral', 'fist', 'invalid-world', 'invalid-image']) {
     for (const actorSecond of [false, true]) {
       const engine = new GestureEngine();
-      const actor = hand('ok', -0.17), companion = hand(kind, 0.17);
+      const actor = hand('point', -0.17), companion = hand(kind, 0.17);
       const pair = actorSecond ? [companion, actor] : [actor, companion];
       assert.ok(pair.every(value => !Object.hasOwn(value, 'id')));
       const start = engine.update(pair, 0);
       assert.equal(start.mode, 'click-pending', `${kind}, second=${actorSecond}`);
       assert.equal(start.progress, 0);
+      assert.equal(start.pointers.find(pointer => pointer.id === start.selectionHandId).handIndex, actorSecond ? 1 : 0);
       const beforeDeadline = frames(engine, pair, 20, 1480);
       assert.equal(events(beforeDeadline).length, 0);
       assert.ok(beforeDeadline.every(result => result.mode === 'click-pending'));
@@ -54,10 +55,10 @@ test('one anonymous OK selects in either array position beside open, fist or inv
   }
 });
 
-test('a free anonymous hand entering, leaving and reversing order does not reset an OK actor or target', () => {
+test('a free anonymous hand entering, leaving and reversing order does not reset an index-only actor or target', () => {
   const engine = new GestureEngine();
-  const pointed = frames(engine, [hand('point', -0.17)], 0, 140).at(-1).cursor;
-  const actor = hand('ok', -0.17);
+  const pointed = frames(engine, [hand('open', -0.17)], 0, 140).at(-1).cursor;
+  const actor = hand('point', -0.17);
   const start = engine.update([actor], 160);
   assert.deepEqual(start.cursor, pointed);
   const results = frames(engine, time => {
@@ -87,7 +88,7 @@ test('pan keeps the same anonymous fist contributor while a free hand changes or
   const participants = acquired.navigationHandIds;
   const schedule = (time, actor) => {
     if (time >= 500 && time < 700) return [actor];
-    const kind = time < 400 ? 'point' : time < 800 ? 'open'
+    const kind = time < 400 ? 'ok' : time < 800 ? 'open'
       : time < 1000 ? 'invalid-world' : 'invalid-image';
     const companion = hand(kind, 0.17 + (time % 60) / 2000);
     return time % 80 === 20 ? [companion, actor] : [actor, companion];
@@ -106,12 +107,12 @@ test('pan keeps the same anonymous fist contributor while a free hand changes or
 test('losing or changing an anonymous selection actor never transfers its elapsed hold to the other hand', () => {
   for (const previousActorRemains of [false, true]) {
     const engine = new GestureEngine();
-    const actor = hand('ok', -0.17), companion = hand('point', 0.17);
+    const actor = hand('point', -0.17), companion = hand('open', 0.17);
     const initial = engine.update([actor, companion], 0);
     const history = frames(engine, [actor, companion], 20, 1000);
     assert.equal(events(history).length, 0);
     const companionPointer = history.at(-1).pointers.find(pointer => pointer.handIndex === 1);
-    const nextPair = previousActorRemains ? [hand('open', -0.17), hand('ok', 0.17)] : [hand('ok', 0.17)];
+    const nextPair = previousActorRemains ? [hand('open', -0.17), hand('point', 0.17)] : [hand('point', 0.17)];
     const switched = engine.update(nextPair, 1020);
     assert.equal(switched.mode, 'click-pending');
     assert.equal(switched.progress, 0);
