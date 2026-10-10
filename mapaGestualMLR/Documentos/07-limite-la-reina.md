@@ -3,8 +3,8 @@
 **Fecha:** 6 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Actualización de implementación:** 9 de octubre de 2026<br>
-**Versión:** 0.1.10<br>
-**Estado:** 177/177 pruebas, build, runtime y paquetes Mac/Windows finales aprobados. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión:** 0.1.11<br>
+**Estado:** reglas vigentes 0.1.11; ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
@@ -69,7 +69,7 @@ La geometría no procede de OpenStreetMap; no se le atribuye licencia ODbL. Las 
 
 Los tres puntos mantienen identidades estables `point-0`, `point-1` y `point-2`, con números visibles **1, 2 y 3**. Su apariencia nominal mide 40 px y el siguiente punto activo mide 56 px. Sólo el activo tiene un pulso suave; al completar el tercero, los tres quedan completos y dejan de pulsar.
 
-El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante el mantenimiento de OK por 1,5 segundos. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
+El área exterior permanece fija en **56 × 56 px**. La animación afecta únicamente al elemento interior, por lo que no desplaza el centro ni invalida el objetivo durante el mantenimiento de índice exclusivo por **1500 ms**. Google utiliza `OverlayView` y su pane de eventos para compartir los mismos marcadores DOM sin necesitar un Map ID. [API pública OverlayView](https://developers.google.com/maps/documentation/javascript/reference/overlay-view).
 
 El aro de mantenimiento usa un contenedor de **96 × 96 px**, radio de **34 px** y trazo de 3 px. Su perímetro queda fuera del círculo activo de 56 px, de modo que el punto no oculta el progreso. Conserva el azul durante el mantenimiento y el verde al confirmar.
 
@@ -92,23 +92,15 @@ Diagnóstico disponible mediante `map.info()`:
 }
 ```
 
-## Interacción vigente de 0.1.10
+## Vigencia de 0.1.11
 
-La **0.1.10** separa acción y acompañante con esta prioridad: **dos OK válidos hacen zoom; un OK válido selecciona; sin OK, uno o dos puños desplazan**. Un OK puede mantener el clic de **1500 ms** aunque la otra mano esté abierta, en reposo o cerrada en puño: OK + puño selecciona, no desplaza. Pan utiliza sólo los nudillos de los puños y zoom la separación entre índices 8. No se combinan acciones ni se hereda progreso al entrar en zoom.
+La selección cambia a **índice exclusivo**: índice extendido y pulgar/medio/anular/meñique recogidos positivamente. Prioridad **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Se conservan actor por identidad y continuidad con acompañante. El [protocolo](./03-protocolo-validacion.md) concentra dwell de **1500 ms**, objetivo anclado, tolerancia desde origen fijo y retención; la [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión. Suite, build y runtime 0.1.11 aprobados; consultar el alcance y estado de los paquetes en [Entrega y verificación](./04-entrega-y-verificacion.md). La evidencia de 0.1.10 de abajo es histórica.
 
-Se valida a los **participantes de la acción**. Una mano ajena inválida o neutra no debe bloquear a un actor válido. Si el acompañante entra, sale o cambia de identidad sin participar, el actor conserva su objetivo, reloj y continuidad; no se reinicia el hold ni la base de pan por el simple cambio del conteo. La pérdida, invalidez o discontinuidad del actor, foco, pausa y calidad global siguen siendo guardas de seguridad. El segundo OK válido sí activa la prioridad de zoom y termina la selección individual. La adquisición de navegación y el rearme se resuelven por participantes: cambiar un acompañante ajeno no reinicia la acción; cambiar el conjunto real de puños o pasar a zoom adquiere una base nueva durante **180 ms**, sin salto ni tiempo heredado.
+La fuente SUBDERE DPA 2023, GeoJSON, contorno, posiciones y recorrido no cambian. Sólo un clic confirmado del actor sobre el punto activo avanza una vez. Su caja exterior fija de **56 × 56 CSS px** conserva la hitarea; el margen de retención no cambia el dibujo ni permite avanzar por otro marcador superpuesto. Home conserva progreso y el botón del popup no duplica el avance. La integración vigente aprobó selección/recorrido; consultar el [alcance de verificación](./04-entrega-y-verificacion.md).
 
-El feedback pertenece al actor: el aro y halo de selección permanecen anclados en su objetivo aunque haya dos manos detectadas, mientras el acompañante conserva su sombra fresca independiente. Sólo participantes de pan se muestran violetas y los dos OK de zoom, ámbar; la mano libre permanece azul. Se mantienen preview pequeño permanente, controles de cámara explícitos y diagnóstico en Ajustes. Modelo, pesos, SDK e inferencia no cambian.
+## Interacción histórica de 0.1.10
 
-El rearme se conserva **por mano**. Si cambia el actor de A a B, B puede iniciar un mantenimiento nuevo de **1500 ms**, sin heredar tiempo, objetivo ni bloqueo de A. Cada mano conserva rearme de **120 ms** y cooldown de **400 ms**. Tras zoom o reaparición de una mano que perdió tracking se exige apertura válida antes de seleccionar, para evitar un clic al salir del zoom. El renderer dirige hover, aro y clic por **`selectionHandId`**, no por posición `0` del array ni por conteo; invertir el orden del resultado no cambia al actor.
-
-La guarda de geometría se aplica también al **puño participante de pan**. Si A pierde geometría válida y luego vuelve en OK, debe abrir para rearmarse, con o sin acompañante. B válido conserva su propia capacidad de seleccionar; no hereda el bloqueo de A. Si A recupera un puño válido, puede readquirir pan durante **180 ms** sin exigir apertura, tomando base nueva y sin salto.
-
-La ayuda de cierre sigue siendo opcional. Si el acompañante ya está en puño, una intención privada de la mano libre puede conservarse sin mostrar `click-preparing` ni interrumpir pan. Sólo OK validado tiene prioridad para selección y comienza los **1500 ms** completos. No todos los cierres muestran preparación pública: se debe comprobar objetivo válido retenido al primer OK y ausencia de clic previo, además del mantenimiento posterior.
-
-OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente. La comprobación física sigue pendiente.
-
-El cambio no altera la fuente, GeoJSON, hash, posiciones, hitareas ni secuencia de puntos. Sólo el actor seleccionado puede abrir el marcador activo y avanzar una vez; un acompañante no cambia destino ni avanza el recorrido.
+En **0.1.10**, un OK válido seleccionaba durante **1500 ms** incluso acompañado; dos OK tenían prioridad para zoom y, sin OK, los puños hacían pan. Se incorporaron geometría XYZ positiva de OK, identidad/rearme por participante y continuidad con entrada/salida/reorden del acompañante. Es el contrato histórico probado, sustituido para selección por el índice exclusivo de 0.1.11. Los detalles de aquella postura y asistencia permanecen en la [bitácora](../Bitacora/README.md#9-de-octubre---selección-acompañada-y-perspectiva-en-0110-histórica) y el [protocolo histórico](./03-protocolo-validacion.md#interacción-histórica-de-0110).
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 

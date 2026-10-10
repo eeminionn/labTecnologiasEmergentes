@@ -4,7 +4,7 @@
 **Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.10 · 177/177 pruebas, build, runtime y paquetes Mac/Windows finales aprobados. La evidencia 0.1.9 queda histórica. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
+**Versión vigente:** 0.1.11: suite 180/180, build, runtime y contenido de paquetes Mac/Windows aprobados. La evidencia de 0.1.10 queda histórica. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -170,7 +170,7 @@ La suite **0.1.9 aprobó 145/145 pruebas**: 103 de gestos, 12 de selección, 3 d
 
 El código comprobado es `cb7d88071af0388d146d3719ae5c77744d3a8661`. El [paquete Mac 0.1.9](../Documentos/verificacion-paquete-mac-0.1.9.json) está aprobado: 23 checks de navegación, nueve de vistas de puño, seis de recuperación y cuatro clics nativos con intervalos **1539,0 / 1539,8 / 1533,8 / 1533,0 ms** desde OK válido. La `.app` abrió, se revisó la ayuda de un puño y se observó cámara activa con cero manos; esa observación no es un ensayo físico de gestos. La [CI Windows 37466845521](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37466845521) terminó con éxito para esa misma revisión: 145 pruebas, build, runtime, construcción del portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto aprobados. El [reporte Windows 0.1.9](../Documentos/verificacion-paquete-windows-0.1.9.json) confirma 23 checks de navegación, nueve de vistas de puño, seis de recuperación y cuatro clics nativos con intervalos **1529,0 / 1512,2 / 1514,4 / 1500,0 ms** desde OK válido, sin clic temprano ni repetición y con recorrido completo. Verifica el contenido empaquetado; no se ejecutó el envoltorio portable como tal. Los checks usan landmarks sintéticos con motor real y eventos nativos dentro de la app; no acreditan ensayo USB, latencia física ni tasa de falsos positivos. Las 132 pruebas y paquetes 0.1.8 quedan históricos.
 
-## 9 de octubre - Selección acompañada y perspectiva en 0.1.10
+## 9 de octubre - Selección acompañada y perspectiva en 0.1.10 (histórica)
 
 El usuario solicita conservar control y selección cuando aparece la segunda mano y aceptar OK en más perspectivas. La revisión modifica reglas de interacción y geometría, sin reemplazar ni entrenar el modelo.
 
@@ -186,31 +186,41 @@ La guarda de geometría se aplica también al **puño participante de pan**. Si 
 
 La ayuda de cierre sigue siendo opcional. Si el acompañante ya está en puño, una intención privada de la mano libre puede conservarse sin mostrar `click-preparing` ni interrumpir pan. Sólo OK validado tiene prioridad para selección y comienza los **1500 ms** completos. No todos los cierres muestran preparación pública: se debe comprobar objetivo válido retenido al primer OK y ausencia de clic previo, además del mantenimiento posterior.
 
-OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente. La comprobación física sigue pendiente.
+OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente.
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 
 Los **paquetes finales Mac y Windows 0.1.10 están aprobados**: [reporte Mac](../Documentos/verificacion-paquete-mac-0.1.10.json) y [reporte Windows](../Documentos/verificacion-paquete-windows-0.1.10.json), ambos `ok:true` con cuatro clics nativos. Intervalos Mac **1503,7 / 1500,6 / 1500,5 / 1541,0 ms**; Windows **1526,5 / 1516,7 / 1524,2 / 1509,2 ms**. Acompañante cambiante, reorden y salida conservan actor/objetivo/aro; el botón mantiene compañero puño desde el inicio y actor secundario. Ambos reportes aprueban **24 checks de navegación** y todos los grupos Feedback. La [CI Windows 38006516067](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38006516067) terminó con éxito para la misma fuente, incluido portable y smoke de `win-unpacked`; el envoltorio NSIS no se ejecutó como tal. La `.app` final abrió sin iniciar cámara. La [entrega](../Documentos/04-entrega-y-verificacion.md) registra archivos, tamaños, hashes y capturas finales. Las **145/145 pruebas y paquetes Mac/Windows 0.1.9** permanecen históricos; esta evidencia nueva sigue siendo sintética y no mide gestos físicos.
 
+## 9 de octubre - Selección con índice exclusivo en 0.1.11
+
+El usuario elige seleccionar señalando: **sólo el índice extendido**, con pulgar, medio, anular y meñique recogidos mediante evidencia geométrica positiva. Si cualquiera de esos dedos está extendido, no se habilita selección. OK individual deja de ser el gesto de clic; dos OK conservan el zoom y los puños, el desplazamiento.
+
+La prioridad pasa a **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. El actor mantiene su identidad, objetivo y reloj aunque el acompañante entre, salga o cambie de orden. No se transfiere tiempo entre manos ni se ejecutan dos modos a la vez.
+
+El mantenimiento sigue siendo de **1500 ms**, con destino, halo y aro anclados. Para tolerar temblor se combina un radio de motor de **0,15 unidades de alto de cámara desde el origen fijo** y retención del objetivo adquirido en su rectángulo ampliado **36 CSS px por lado**. La hitarea base es al menos **44 CSS px** y la caja de los puntos propios mide **56 × 56 CSS px**. La retención no autoriza saltar a un objetivo superpuesto. Salir reinicia el tiempo, sin exigir abandonar la postura para volver a intentar; después de confirmar sí se exige soltarla **120 ms** antes de otro clic.
+
+No cambian Hand Landmarker, pesos, SDK ni número de inferencias. Los puntos XYZ y world siguen siendo estimaciones monoculares, sin certificar articulaciones ocultas ni contacto físico. La geometría final utiliza un único XYZ y evidencia positiva del índice extendido y los otros dedos recogidos. No hay `click-preparing` ni asistencia de cierre OK en la selección vigente; el hold comienza desde el índice 8 actual. El [protocolo](../Documentos/03-protocolo-validacion.md) concentra el contrato vigente y sus comprobaciones; [selección e investigación](../Documentos/05-meta-quest-y-seleccion.md) separa los referentes del hardware real.
+
+La **0.1.11 aprobó 180/180 pruebas**: 95 de motor de gestos, 15 de OK en perspectiva, 21 de índice exclusivo 3D, 4 de participantes, 15 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. El runtime emitió cuatro clics nativos `isTrusted` tras al menos **1500 ms**, con temblor de índice de **42 × 32 CSS px** y continuidad del acompañante; aprobó **24 checks de navegación** y los siete `selectionToleranceFeedback`, incluidos espacio vacío, salida/reinicio, otros dedos y pulgar. Son entradas sintéticas interpretadas por el motor real y eventos nativos dentro de la app; no un ensayo físico de gestos.
+
+Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. Los [reportes Mac](../Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](../Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](../Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+
 ## Decisiones de interacción vigentes
 
-- Prioridad: dos OK válidos para zoom, un OK válido para seleccionar incluso acompañado y, sin OK, uno o dos puños para desplazar.
-- La palma abierta ya no desplaza el mapa.
-- El puño exige evidencia positiva XYZ de recogimiento y compactación, preferentemente del mundo estimado; la posición del control sigue usando la imagen. Escorzo frontal y vista cenital deben evaluarse por separado.
-- Un OK estable de una mano ejecuta el clic automáticamente al completar `1500 ms`, sin soltar.
-- La sombra sigue índice 8 salvo puño, que usa media de MCP 5/9/13/17; transición temporal de 300 ms incluso quieto.
-- La asistencia de cierre es opcional: un descarte previo sin hold no bloquea el siguiente OK válido; limpia el destino viejo. Sólo OK válido inicia los `1500 ms`. Durante OK individual el objetivo, aro y halo quedan anclados; cancelar/liberar regresa suavemente al índice. Dos OK no heredan offsets de ese clic.
-- Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
-- Abrir antes del umbral cancela el mantenimiento. El aro azul confirma en verde cuando se ejecuta el clic.
-- Un acompañante neutro que entra, sale o cambia de identidad no cancela el hold ni reinicia la base de navegación del actor estable. OK + puño selecciona. Un segundo OK válido pasa a zoom y no hereda progreso. Invalidez de mano ajena neutra no veta al actor válido; foco, calidad y pérdida/invalidez del participante continúan como guardas.
-- Una sombra por mano conserva feedback en reposo, clic y navegación; violeta identifica sólo puños participantes adquiridos, mano libre azul y ámbar dos OK. Adquisición sin aro/hover de clic. No se ejecuta pan y zoom a la vez.
-- El preview pequeño está siempre visible; sólo muestra skeleton fresco con cámara activa y se limpia al detenerla. El diagnóstico detallado está en Ajustes.
-- Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.
-- Todo el encuadre de cámara corresponde a todo el mapa con espejo, orientación y límites `0..1`, sin calibración de esquinas.
-- El recorrido avanza por clic nativo sobre el punto activo; tras completar 1→2→3 se reinicia desde Ajustes.
-- Una imagen extrema cancela acciones sin ocultar los punteros frescos; se exigen 600 ms continuos de recuperación.
+- Dos OK válidos hacen zoom; índice exclusivo selecciona; sin esas prioridades, uno o dos puños desplazan. OK individual no selecciona.
+- El índice debe estar extendido y los otros cuatro dedos recogidos positivamente. Otro dedo extendido veta esa selección.
+- Un mantenimiento válido de **1500 ms** ejecuta un clic automático; destino y aro permanecen anclados.
+- Retener un destino adquirido admite temblor acotado desde origen fijo y en su hitrect ampliado. Salir reinicia tiempo sin bloqueo de postura; después del clic, soltar **120 ms** rearma.
+- El acompañante no participante no reinicia el actor válido. Pérdida/invalidez del actor, pausa, foco y calidad global siguen siendo guardas.
+- La sombra sigue índice 8 salvo puño, que usa media MCP 5/9/13/17; transición temporal de **300 ms** incluso quieto. Una sombra fresca por mano, hasta dos.
+- Sólo puños participantes adquiridos son violetas; mano libre azul y dos OK adquiridos ámbar. No se ejecutan pan y zoom simultáneamente.
+- Preview pequeño permanente; skeleton sólo fresco y cámara explícita. Métricas, exportación y anotación manual en Ajustes.
+- Todo el frame corresponde a todo el mapa, con espejo, orientación y límites `0..1`, sin calibración de esquinas.
+- El recorrido avanza una vez por clic nativo del activo y se reinicia desde Ajustes; Inicio conserva progreso.
+- Imagen extrema cancela sin ocultar punteros frescos; recuperación continua de **600 ms**.
 
-Los tiempos elegidos son valores iniciales para probar. No se registran todavía como una solución validada por usuarios.
+Los tiempos y tolerancias son decisiones experimentales. La revisión aprobó pruebas de software y runtime; contenido de paquetes aprobado; ensayo con usuarios pendiente.
 
 ## Interfaz y mapas
 

@@ -1,8 +1,8 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 9 de octubre de 2026<br>
-**Versión vigente:** 0.1.10<br>
-**Estado:** 177/177 pruebas, build, runtime y paquetes Mac/Windows finales aprobados. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.11<br>
+**Estado:** 0.1.11: suite 180/180, build, runtime y contenido de paquetes Mac/Windows aprobados. La evidencia de 0.1.10 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -24,7 +24,64 @@ Desde 0.1.3 cada mano detectada conserva una sombra fresca, incluso en reposo y 
 
 Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. El recorrido tiene tres puntos ficticios numerados, un único activo con pulso y avance por clic nativo **1→2→3**. El límite comunal proviene de SUBDERE DPA 2023 y se documenta en [Límite de La Reina y recorrido](./07-limite-la-reina.md); no convierte los marcadores ficticios en datos municipales.
 
-## Interacción vigente de 0.1.10
+## Interacción vigente de 0.1.11
+
+El usuario elige **sólo el índice extendido** para seleccionar; pulgar, medio, anular y meñique deben aportar evidencia positiva de recogimiento. Otro dedo extendido impide esa selección. **Dos OK tienen prioridad para zoom; después selección por índice exclusivo; después pan con uno o dos puños.** OK individual no produce clic. No se cambia Hand Landmarker, pesos, SDK ni número de inferencias. La [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión; los [referentes de selección](./05-meta-quest-y-seleccion.md) orientan hover, mantenimiento y feedback sin validar una webcam.
+
+### Objetivo y tolerancia al temblor
+
+| Elemento vigente | Contrato 0.1.11 que se debe verificar |
+|:---|:---|
+| Confirmación | Mantener índice exclusivo válido durante **1500 ms**; inicio desde índice 8 actual, sin historial, `click-preparing` ni asistencia de cierre OK. Clic automático al completar; aro azul `0→1` y confirmación verde. |
+| Identidad | Objetivo, cursor de selección, aro y reloj pertenecen a `selectionHandId`. Entrada/salida/reorden del acompañante no cancelan al actor válido ni reinician el tiempo. Cambiar de actor no hereda destino ni tiempo. Si ambas manos señalan, conservar el dueño estable en lugar de intercambiarlo por el orden del array. |
+| Adquisición | Usar un objetivo visible y seleccionable, conservando su identidad. La ampliación de retención no autoriza elegir un destino que nunca se adquirió ni cambiarlo por uno vecino. |
+| Radio del motor | Hasta **0,15 unidades de alto de cámara**, respecto de la referencia inicial fija del hold. Corregir aspecto antes de medir distancia; no comparar sólo frames consecutivos ni ir moviendo la base con el temblor. |
+| Retención del renderer | Mantener el objetivo adquirido en su hitrect ampliado **36 CSS px por cada lado**. Hitarea base mínima **44 CSS px**; caja fija propia de puntos **56 × 56 CSS px**. CSS px no son metros ni las unidades normalizadas del motor. |
+| Destino anclado | `selectionCursor` conserva objetivo/aro/halo y punto de clic. `selectionLiveCursor` mantiene el índice 8 actual limitado a `0..1`, sin filtro 1€ en la guarda de retención. Jitter y solapamiento no cambian silenciosamente el candidato. |
+| Salida de tolerancia | Salir del radio o del área de retención reinicia el reloj, sin acumular tiempo previo. Se puede volver a adquirir y completar **1500 ms** sin abandonar la postura sólo por esa salida. |
+| Después de confirmar | Un clic por mantenimiento. Abandonar la postura de selección durante **120 ms** antes de otro; sostener índice exclusivo o soltar después no genera clic adicional. |
+| Seguridad | Pausa, foco, calidad global y pérdida/invalidez/ambigüedad del actor cancelan acciones. El acompañante inválido/neutro no veta por sí solo al actor válido. No usar datos antiguos ni transferir un hold cancelado. |
+| Pan y zoom | Pan sólo de puños participantes, desde media MCP 5/9/13/17 de uno o punto medio de dos; zoom sólo de dos OK, por separación de índices 8. Cambio real de participantes/modo adquiere **180 ms**, con base nueva y sin salto; acompañante ajeno no reinicia. |
+| Feedback | Sombra fresca por mano: azul libre, violeta puños participantes adquiridos, ámbar dos OK adquiridos y gris bloqueo. Navegación no presenta aro de confirmación de clic. |
+| Recorrido | Únicamente clic nativo sobre el marcador activo avanza una vez; botón del popup no avanza, Home conserva y Ajustes reinicia. Dibujo pulsante no altera caja fija. |
+
+La tolerancia combina dos guardas distintas: distancia del actor en coordenadas de cámara y retención del mismo objetivo en pantalla. No basta cumplir sólo una. Retener no significa cambiar de objetivo si otro aparece debajo del cursor. El destino oculto, eliminado o desplazado y un viewport cambiado deben invalidar la adquisición según los controles de selección; se comprobarán en integración. **1500 ms, 0,15, 36 CSS px y tamaños de hitarea son parámetros experimentales del prototipo**, no recomendaciones numéricas de Meta, Ultraleap ni del estudio ISS.
+
+### Geometría positiva del índice exclusivo
+
+`classifyPointGeometry` opera sobre un único espacio XYZ de la misma mano: world válido preferido; si no existe, XYZ normalizado con x/z corregidos por ancho/alto. World explícito inválido no autoriza fallback. La escala `s` es el máximo de muñeca 0–MCP 9 y MCP 5–MCP 17. Cursor, control de mapa y distancia entre manos usan coordenadas de imagen; world describe una mano local estimada, no posiciones globales entre dos manos.
+
+| Evidencia del helper | Umbral experimental de la revisión |
+|:---|:---|
+| Fuente y plausibilidad | 21 XYZ finitos, palma/plano no degenerados; cada segmento de cadena entre **0,015 × s y 0,85 × s**. Aquí `s` es escala de palma, no segundos. |
+| Índice extendido | Todas: PIP ≥ **155°**, DIP ≥ **145°**, cuerda MCP–punta / cadena ≥ **0,90** y punta–muñeca / PIP–muñeca ≥ **1,12**. |
+| Medio, anular y meñique recogidos | Cada uno: PIP ≤ **150°**, cuerda/cadena ≤ **0,72**, retracción punta–muñeca / PIP–muñeca ≤ **1,00** y compactación positiva. No basta `!extended`. |
+| Compactación de los tres dedos | Punta–MCP ≤ **0,90 × s**, punta–centro de palma ≤ **1,10 × s** y distancia al plano ≤ **0,45 × s**; hasta **0,75 × s** sólo con cierre fuerte. |
+| DIP de los tres dedos | DIP ≤ **155°** o cierre fuerte con cuerda/cadena ≤ **0,45** y retracción ≤ **0,90**; garra distal recta sin esas evidencias no se acepta. |
+| Pulgar recogido | Compacto/aducido en envolvente anatómica de palma: punta–centro ≤ **0,85 × s**, distancia al plano ≤ **0,45 × s**, proyección longitudinal **0,10–1,10** y margen radial **0,15 × s**. Flexión de MCP/IP ≤ **160°** o aducción positiva ≥ **0,05**; no exigir IP doblada si está aducido. Pulgar recto externo, lateral extendido o Thumb Up no satisfacen la postura. |
+| Contradicción positiva | Otro dedo extendido o pulgar extendido aporta veto positivo en imagen/world. La evidencia positiva parcial de extensión sigue vetando aunque otra articulación esté inválida; no autoriza la postura. Que una proyección no reconozca una postura no equivale a evidencia de extensión ni de recogimiento. |
+
+Estos parámetros describen geometría **estimada** y son hipótesis de ingeniería. MediaPipe documenta XY normalizado, Z relativo y world XYZ en metros de origen local; no garantiza articulaciones visibles, contacto físico ni precisión de estos ángulos. [Guía oficial, consultada 9 de octubre de 2026](https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js). Mantener vistas cenital, frontal y oblicua como condiciones distintas para validar, con anotación independiente de postura.
+
+### Alcance de verificación de 0.1.11
+
+La fuente de software quedó congelada en `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. Suite, build, runtime y contenido de paquetes aprobados. Las comprobaciones siguientes definen el alcance y los casos que deben conservarse por versión; no trasladar los **177 casos de 0.1.10** a esta revisión.
+
+- Positivos de índice exclusivo con ambas manos, vistas y aspecto; negativos con pulgar lateral/Thumb Up, otro dedo extendido, garra, puño, OK y datos degenerados.
+- Hold de reloj real sobre punto activo y botón de popup: cero clic antes de **1500 ms**, uno al completar y ninguno al sostener; nueva selección tras soltar **120 ms**.
+- Temblor dentro de radio y hitrect retenido, borde exacto y salida: ancla inmutable, reloj reiniciado al salir, reentrada sin exigir abandonar la postura y sin reutilizar progreso.
+- Objetivos próximos/superpuestos: no cambiar ID silenciosamente; ocultar, mover o eliminar el destino debe cancelar sin clic residual.
+- Acompañante abierto/puño que entra, sale y cambia orden; conservar actor y destino. Cambio real de actor inicia su propio tiempo.
+- Dos OK sólo zoom, índice exclusivo con compañero puño sólo selección y sin selección ni dos OK pan por puños; adquisición y cambios sin salto.
+- Gate/foco/pausa/tracking, preview fresco, recorrido **1→2→3** y botón de popup sin doble avance. Ejecutar de nuevo integración y contenido empaquetado en Mac y Windows.
+
+La **0.1.11 aprobó 180/180 pruebas**: 95 de motor de gestos, 15 de OK en perspectiva, 21 de índice exclusivo 3D, 4 de participantes, 15 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. El runtime emitió cuatro clics nativos `isTrusted` tras al menos **1500 ms**, con temblor de índice de **42 × 32 CSS px** y continuidad del acompañante; aprobó **24 checks de navegación** y los siete `selectionToleranceFeedback`, incluidos espacio vacío, salida/reinicio, otros dedos y pulgar. Son entradas sintéticas interpretadas por el motor real y eventos nativos dentro de la app; no un ensayo físico de gestos.
+
+Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. Los [reportes Mac](./verificacion-paquete-mac-0.1.11.json) y [Windows](./verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](./04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+
+La evidencia siguiente de 0.1.10 y anteriores queda histórica.
+
+## Interacción histórica de 0.1.10
 
 La **0.1.10** separa acción y acompañante con esta prioridad: **dos OK válidos hacen zoom; un OK válido selecciona; sin OK, uno o dos puños desplazan**. Un OK puede mantener el clic de **1500 ms** aunque la otra mano esté abierta, en reposo o cerrada en puño: OK + puño selecciona, no desplaza. Pan utiliza sólo los nudillos de los puños y zoom la separación entre índices 8. No se combinan acciones ni se hereda progreso al entrar en zoom.
 
@@ -38,7 +95,7 @@ La guarda de geometría se aplica también al **puño participante de pan**. Si 
 
 La ayuda de cierre sigue siendo opcional. Si el acompañante ya está en puño, una intención privada de la mano libre puede conservarse sin mostrar `click-preparing` ni interrumpir pan. Sólo OK validado tiene prioridad para selección y comienza los **1500 ms** completos. No todos los cierres muestran preparación pública: se debe comprobar objetivo válido retenido al primer OK y ausencia de clic previo, además del mantenimiento posterior.
 
-OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente. La comprobación física sigue pendiente.
+OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente.
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 
@@ -66,7 +123,7 @@ La medida de palma es `max(mediana(d0,d5,d9,d13,d17), distancia(centroide actual
 
 Durante el hold continúan **300 ms** de asentamiento de midpoint 4/8, límite **0,12**, palma robusta **0,018** para esa tolerancia y reapertura ≤ **0,04** sobre el mínimo. Palma acumulada o deriva normal mayores a **0,055** cancelan. Foco, calidad, datos obsoletos, identidad, world inválido y dos→una siguen bloqueos explícitos; no heredar progreso. `cancelClick(true)` solicita ese bloqueo de seguridad; el descarte de asistencia sin hold usa recuperación suave. `selectionBlockedReason` informa `release-required`, `second-hand`, `invalid-geometry` o `null`, sin datos de imagen.
 
-## Referencias de seguimiento heredadas de 0.1.6
+## Referencias de seguimiento de 0.1.6 conservadas en 0.1.10 (históricas)
 
 Cada sombra sigue la **punta del índice, landmark 8**, en reposo, palma abierta, apuntado, OK y zoom. Cuando la postura se reconoce como puño, utiliza la media de los **MCP 5, 9, 13 y 17**, sin muñeca: un punto de nudillos estimado por el modelo, no garantía de visibilidad física de cada articulación. `pointerReference()` comparte esa elección con el fallback del renderer; sin geometría clasificable, éste conserva el índice 8 fresco sin habilitar acciones.
 
@@ -76,7 +133,9 @@ Cambiar entre índice y nudillos conserva inicialmente la posición mostrada y e
 
 La navegación mantiene referencias de nudillos para pan y de índices 8 para zoom. En 0.1.10 dos OK válidos tienen prioridad, un OK selecciona y sólo sin OK hay pan. Un acompañante no participante no reinicia una acción estable; la invalidez se evalúa por participantes. La pinza 4/8 conserva la detección de OK, el control de drift y la comprobación de continuidad/identidad; ya no define la posición del halo ni la distancia de zoom. Modelo, SDK, umbrales de puño XYZ, mapa, recorrido y UI se conservan.
 
-## Configuración que se debe registrar
+## Configuración registrada en 0.1.10 (histórica)
+
+La tabla conserva el contrato probado de selección por OK. Para la selección vigente por índice exclusivo, usar la sección 0.1.11 anterior. Modelo, filtro, cámara, mapeo, contorno y recorrido se conservan cuando no se especifica un cambio.
 
 | Elemento | Configuración conservada o revisión 0.1.10 |
 |:---|:---|
@@ -156,7 +215,7 @@ La suite aprobó **177/177 casos**, build e integración en el runtime nativo de
 
 El skeleton de ambas manos permanece visible en el fallo reportado. En la revisión de 0.1.4, los ángulos usaban XYZ pero escala, longitudes y compactación usaban XY: un segmento orientado hacia la cámara puede proyectarse casi a un punto y resultar inválido pese a tener longitud 3D. Una rotación rígida sintética de la misma mano a 90° reprodujo ese rechazo dentro del encuadre; no se presenta como detección física ni como una tasa medida.
 
-En 0.1.5 la geometría del puño se calcula de forma coherente en XYZ. Cada dedo largo debe aportar recogimiento y compactación positivos; se excluye la extensión en la propia geometría 3D. El pulgar debe mantenerse compacto/aducido, sin exigir que una articulación concreta esté doblada. No se define puño como simple ausencia de palma abierta u OK. La escala de palma, segmentos y distancias se calculan en la misma fuente; los parámetros siguientes son el contrato actual de implementación.
+En 0.1.5 la geometría del puño se calcula de forma coherente en XYZ. Cada dedo largo debe aportar recogimiento y compactación positivos; se excluye la extensión en la propia geometría 3D. El pulgar debe mantenerse compacto/aducido, sin exigir que una articulación concreta esté doblada. No se define puño como simple ausencia de palma abierta u OK. La escala de palma, segmentos y distancias se calculan en la misma fuente; los parámetros siguientes documentan la implementación de 0.1.5 conservada en 0.1.10.
 
 MediaPipe devuelve 21 puntos de imagen y 21 de mundo por mano: los primeros tienen x/y normalizados y z relativo a la muñeca; los segundos expresan XYZ en metros respecto al centro geométrico. Son estimaciones del modelo monocular. La fuente world se valida y asocia por índice dentro del mismo resultado; si world falta, el fallback normalizado corrige x/z por la relación ancho/alto. Un world explícito inválido impide acciones de esa mano, sin ocultar su puntero fresco ni inventar otra fuente. En 0.1.10 la invalidez ajena neutra no veta al actor válido. El cursor y la navegación utilizan la imagen. No se interpreta world como cámara de profundidad ni evidencia de visibilidad real. [Guía oficial Web, consultada 6-10-2026](https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker/web_js), [conversión oficial de resultados](https://github.com/google-ai-edge/mediapipe/blob/master/mediapipe/tasks/web/components/processors/landmark_result.ts).
 
@@ -182,7 +241,7 @@ La continuidad se comprueba en el centro de palma **y en la pinza formada por lo
 
 Registrar commit, hash del modelo y build, versión del runtime, SO, CPU, resolución de pantalla, cámara, resolución/FPS reales, controles/capacidades reportados, exposición, iluminación, altura de montaje, encuadre, espejo y rotación. Cualquier cambio crea una condición nueva; no mezclar sus resultados sin identificarla.
 
-## 1. Verificación de software
+## 1. Verificación de software y evidencia histórica
 
 Ejecutar desde la carpeta del prototipo:
 
@@ -241,7 +300,7 @@ Conservar reportes y screenshot técnico si se genera. La prueba de UI puede usa
 
 El fixture positivo PNG tiene transparencia. En el smoke se compone sobre gris `#777` antes de pasar al worker de producción, cuyo análisis de calidad requiere una imagen opaca. Registrar esa condición del fixture. Las cámaras y la entrada real no se preprocesan así; no atribuir a una prueba de imagen compuesta mejoras de precisión en webcam ni de contraste del modelo.
 
-### Verificación vigente: versión 0.1.10
+### Verificación histórica: versión 0.1.10
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 
@@ -450,7 +509,7 @@ Google Maps necesita otra comprobación con key autorizada, API habilitada, fact
 
 Fijar la cámara USB, iluminar de forma uniforme y delimitar una zona de mesa cómoda. Anotar la geometría antes de comparar modelos. Revisar que la mano mantenga suficiente detalle al moverse y que el foco no cambie de forma inestable.
 
-Comprobar superior izquierda, superior derecha, inferior derecha, inferior izquierda, bordes y centro. La app usa el frame completo con espejo, rotación y límites `0..1`, sin homografía ni esquinas guardadas. Repetir la comprobación tras mover la cámara, cambiar resolución, espejo u orientación. Una corrección al cambiar índice↔nudillos debe desaparecer por convergencia temporal de 300 ms incluso quieto, sin necesitar desplazar la palma. El movimiento hasta un borde conserva alcance completo. Durante selección de OK quieto, conservar objetivo/aro/halo 1500 ms y mientras siga confirmada sin soltar; cancelar/liberar regresa al índice. Evaluar por separado cambios de altura y deformación de la perspectiva.
+Comprobar superior izquierda, superior derecha, inferior derecha, inferior izquierda, bordes y centro. La app usa el frame completo con espejo, rotación y límites `0..1`, sin homografía ni esquinas guardadas. Repetir la comprobación tras mover la cámara, cambiar resolución, espejo u orientación. Una corrección al cambiar índice↔nudillos debe desaparecer por convergencia temporal de 300 ms incluso quieto, sin necesitar desplazar la palma. El movimiento hasta un borde conserva alcance completo. Durante selección por índice exclusivo, conservar objetivo/aro/halo **1500 ms** y mientras siga confirmada; abandonar la postura rearma según el contrato. Ensayar radio fijo y retención en pantalla por separado. Evaluar por separado cambios de altura y deformación de la perspectiva.
 
 Consultar las capacidades del track después de iniciar streaming y registrar los ajustes que realmente informa. Si brillo, contraste o compensación de exposición no están disponibles, no inventar sliders ni confundir soporte del navegador con soporte de la USB. Probar modos continuos únicamente si la cámara los anuncia; comparar imagen quieta y manos en movimiento para detectar autofocus inestable, ruido o blur. Una solicitud resuelta no demuestra que el hardware haya cambiado.
 
@@ -464,33 +523,28 @@ Propuesta inicial: 15–20 participantes voluntarios y dos sesiones por persona.
 
 Cada sesión incluye:
 
-1. Apuntar a objetivos de diferentes tamaños y posiciones sin seleccionarlos.
-2. Apuntar a un objetivo, formar OK y mantener 1,5 segundos: debe seleccionarlo automáticamente sin soltar.
-3. Mantener OK después de completar: un solo clic. Abrir durante `120 ms` y volver a mantener para una segunda selección.
-4. Interrumpir un OK demasiado corto, moverlo demasiado, ocultar la mano y recuperarla: no debe completar la selección cancelada.
-5. Abrir y cerrar una ficha; accionar su botón con OK.
-6. Sin OK válido, formar un puño y moverlo tras adquirir pan: desplaza por nudillos sin zoom ni clic. Añadir/retirar el segundo puño debe mantener continuidad sin salto; añadir o retirar un puño participante exige adquisición nueva de **180 ms**, con base nueva y sin salto. Con dos puños, variar sólo la separación con punto medio quieto no debe ampliar. Una segunda mano abierta conserva su sombra sin contribuir ni reiniciar pan; moverla no altera el mapa. Su invalidez neutra no bloquea al actor. Si hace OK válido, selecciona y tiene prioridad sobre pan.
-7. Formar dos OK y variar su separación manteniendo el punto medio quieto; soltar primero una mano y después la otra sin clic residual.
-8. Cruzar manos, añadir la segunda durante un click pendiente y retirar ambas.
-9. Pausar con Espacio, cancelar con Esc y cambiar el foco de ventana durante cada acción.
-10. Mover una palma abierta, cerrar y abrir dedos casualmente: no debe navegar.
-11. Introducir/retirar una segunda mano abierta o en puño durante un OK actor: mantener objetivo, aro, reloj y un solo clic. Un acompañante inválido/neutro no veta al actor válido. Invertir el orden del array y cambiar identidad sólo del compañero no transfiere la selección.
-12. Combinar traslación y separación de dos OK: sólo zoom. Trasladar dos OK con separación constante: ningún pan. Cambiar a uno o dos puños y adquirir otra vez; puño + palma sólo pan, puño + OK selección y sin OK ni puños ninguna acción.
-13. Seleccionar objetivos laterales y cercanos entre sí; comprobar que cursor, hover, aro y clic coincidan sin saltar al centro.
-14. Recorrer extremos y centro de cámara con una y dos manos; cambiar postura cerca del borde y alcanzar los límites del mapa sin offset residual.
-15. Completar 1→2→3 mediante OK de 1,5 segundos sobre cada activo; comprobar un avance por clic nativo, pulso detenido al finalizar y reinicio desde Ajustes.
-16. Mantener uno o dos puños y dos OK quietos: observar violeta/ámbar según postura adquirida; pequeños temblores no deben producir eventos ni alternar modo.
-17. Provocar una imagen extrema durante un clic o navegación, recuperar imagen y abrir para rearmar; no completar un temporizador previo. Las sombras frescas deben quedar grises durante bloqueo.
-18. Revisar controles de cámara disponibles y ajustes reportados, sin asumir soporte de exposición o contraste en cualquier dispositivo.
-19. Iniciar y detener cámara, reiniciar sesión y perder el stream: preview siempre visible, skeleton fresco sólo con datos vigentes, mensaje Cámara detenida y ningún dibujo o conteo anterior al detener. Confirmar diagnóstico en Ajustes y ausencia de controles para ocultar el preview.
-20. Cambiar actor A→B: B debe mantener 1500 ms propios sin tiempo ni objetivo heredado. Tras zoom y pérdida/reaparición comprobar apertura antes de volver a seleccionar.
-21. Comparar OK cenital, frontal y oblicuo con negativos similares —garra, puño, dedos agrupados sin intención y contacto aparente por proyección—; etiquetar por referencia independiente, sin usar world del modelo como verdad física.
+1. Mover una palma abierta o varias puntas extendidas para apuntar sin seleccionar; verificar que otra extensión no se interprete como índice exclusivo.
+2. Extender sólo índice, recoger los otros cuatro dedos y mantener **1500 ms** sobre un objetivo; debe seleccionarse automáticamente.
+3. Mantener después de completar: un clic. Soltar la postura **120 ms** y volver a mantener para seleccionar otra vez.
+4. Introducir temblor dentro del radio fijo **0,15** y del hitrect retenido; objetivo y aro no se trasladan a un vecino. Salir y volver sin soltar: reloj nuevo completo, sin bloqueo persistente ni suma del tiempo previo.
+5. Abrir una ficha y accionar su botón con índice exclusivo; alternar objetivos próximos y superpuestos sin cambio silencioso durante el hold.
+6. Formar un puño y moverlo tras adquisición; añadir/retirar segundo puño exige **180 ms** y base nueva, sin salto. La mano libre no aporta movimiento ni reinicia pan; índice exclusivo válido tiene prioridad para seleccionar.
+7. Formar dos OK y variar separación: sólo zoom. Traslación común con separación constante no desplaza; salir de zoom sin clic residual.
+8. Añadir/retirar un acompañante abierto o puño durante la selección, invertir el orden de resultados y cambiar identidad sólo del compañero: conservar actor, aro y reloj. Cambiar el actor inicia **1500 ms** propios.
+9. Pausar con Espacio, cancelar con Esc, cambiar foco, ocultar al actor y recuperar tracking: no completar una acción cancelada ni usar datos antiguos.
+10. Comparar positivos cenitales, frontales y oblicuos con negativos —otro dedo extendido, pulgar lateral, Thumb Up, garra, puño y OK—; no usar world estimado como verdad física.
+11. Recorrer centro/bordes con índice y nudillos, cambiar postura quieto y verificar transición de **300 ms** sin offset permanente.
+12. Completar **1→2→3** con índice exclusivo; un avance por clic del activo, final sin pulso, Home conserva y Ajustes reinicia. Botón del popup no duplica avance.
+13. Provocar imagen extrema durante hold o navegación, comprobar cancelación/recuperación **600 ms**, datos frescos grises y ausencia de temporizador heredado.
+14. Revisar capacidades/ajustes reales de cámara y preview permanente: limpiar skeleton/conteo al detener o perder stream, sin controles para ocultarlo y sin activar permisos al arrancar.
+
+
 
 Registrar intención, acción obtenida, objetivo, hora de inicio/fin, errores y necesidad de ayuda. Explicar la tarea antes de comenzar; no enseñar continuamente una corrección mientras se mide aprendizaje.
 
 ## 4. Periodos sin intención de control
 
-Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Evaluar por separado cámara cenital y frontal, inclinación de muñeca, pulgar compacto con IP recta, mano abierta de canto, dedos parcialmente recogidos, garra y puño recortado; no aceptar un fallo geométrico por falta de referencia independiente. Añadir puños casuales al tomar objetos, dos manos recogidas y mezclas puño/OK sin intención de navegar; distinguir reconocimiento de postura de intención real. Dedicar al menos la mitad del material a estas condiciones negativas.
+Incluir mesa vacía, papeles, teléfono, objetos alargados, manos descansando, conversación, señalamientos casuales, recoger objetos, ajustar mangas y entrada/salida de personas. Evaluar por separado cámara cenital y frontal, inclinación de muñeca, pulgar compacto con IP recta, mano abierta de canto, dedos parcialmente recogidos, garra y puño recortado; no aceptar un fallo geométrico por falta de referencia independiente. Añadir puños casuales al tomar objetos, dos manos recogidas y posturas de índice exclusivo o mezclas puño/OK sin intención de actuar; distinguir reconocimiento de postura de intención real. Dedicar al menos la mitad del material a estas condiciones negativas.
 
 Variar iluminación, fondo, altura de mano, anillos y oclusiones de forma registrada. Si guantes u otras condiciones no están cubiertas por el sistema, medir su rechazo y documentar la limitación; no descartarlas silenciosamente del informe.
 
@@ -525,12 +579,12 @@ No publicar sólo FPS o promedios. Informar condiciones, número de muestras, ca
 | Criterio | Condición inicial de aceptación |
 |:---|:---|
 | Cancelación | Cero acciones durante pausa, pérdida de foco, pérdida/invalidez del participante o recuperación de un candidato cancelado. Entrada/salida del acompañante neutro no equivale a pérdida del actor. |
-| Arbitraje | Dos OK sólo zoom; un OK selecciona incluso acompañado; sin OK, puños sólo pan. Cero clic residual al cambiar realmente de modo, sin heredar tiempo. |
+| Arbitraje | Dos OK sólo zoom; índice exclusivo selecciona incluso acompañado; después, puños sólo pan. OK individual no selecciona. Cero clic residual al cambiar modo, sin tiempo heredado. |
 | Palma abierta sin navegación | Cero episodios de desplazamiento o zoom con una palma abierta de una mano en el test. |
-| Pan de uno o dos puños | Un puño traslada desde su media MCP 5/9/13/17 y dos desde el punto medio de ambas referencias, sin zoom. Separación pura con punto medio quieto no amplía. Sólo los puños contribuyen si no hay OK válido. La mano libre abierta/neutra no aporta movimiento; si hace OK válido tiene prioridad para selección. Sólo participantes validan geometría; una mano ajena neutra/inválida no bloquea al actor. |
+| Pan de uno o dos puños | Un puño usa media MCP 5/9/13/17 y dos su punto medio, sin zoom. Sólo puños contribuyen cuando no hay dos OK ni selección por índice exclusivo. Mano libre no mueve mapa; su invalidez/neutridad ajena no veta al actor válido. |
 | Zoom de dos OK | Separación amplía sin pan; traslación común con separación constante no desplaza. |
-| Cambio y mezcla | OK + puño selecciona; dos OK zoom; sin OK, puños pan. Cambio del acompañante no participante conserva hold/base del actor. Cambio real de participantes o modo sin salto ni progreso heredado. |
-| Sombras | Una sombra por cada mano detectada con datos frescos, hasta dos, incluso en reposo y navegación; eliminar feedback obsoleto y conservar gris durante bloqueo. Aro/ripple pertenecen al actor OK válido aun con dos detecciones; acompañante con sombra independiente y sin selección ajena. |
+| Cambio y mezcla | Índice exclusivo + puño selecciona; dos OK zoom; después puños pan. Cambio del acompañante conserva hold/base del actor; cambiar participante o modo no transfiere progreso ni crea salto. |
+| Sombras | Una sombra por cada mano detectada con datos frescos, hasta dos, incluso en reposo y navegación; eliminar feedback obsoleto y conservar gris durante bloqueo. Aro/ripple pertenecen al actor de índice exclusivo válido aun con dos detecciones; acompañante con sombra independiente y sin selección ajena. |
 | Color de navegación | Sólo puños participantes adquiridos violetas; mano libre azul; dos OK adquiridos ámbar, incluso quietos. Adquisición sin hover ni aro; sin alternar modo ni emitir eventos por jitter. |
 | Preview | Siempre visible y pequeño arriba a la izquierda; datos vigentes con cámara activa, limpieza/mensaje al detener y sin controles para ocultar. Diagnóstico detallado en Ajustes. |
 | Mapeo completo | Referencia índice/nudillos alcanza extremos y centro según orientación; sin esquinas guardadas ni offset permanente tras cambiar postura. Corrección converge en 300 ms aun quieto; selección mantenida conserva su ancla. |
@@ -538,8 +592,8 @@ No publicar sólo FPS o promedios. Informar condiciones, número de muestras, ca
 | Calidad de imagen | Frames severos o inválidos cancelan inmediatamente; recuperación continua de `600 ms` sin reutilizar selección pendiente. Registrar falsos bloqueos y no inferir precisión del detector a partir del gate. |
 | Controles de cámara | Mostrar y solicitar sólo capacidades válidas reportadas por el track; informar si el ajuste no se confirma y no garantizar soporte de USB no ensayadas. |
 | Continuidad geométrica | Saltos anómalos de centro o pinza y separación filtrada inválida/cercana a cero cancelan sin eventos residuales ni valores no finitos. |
-| Repetición | Un OK válido produce un clic al completar `1500 ms`; mantener cerrado y soltar después no repiten. Nueva selección de la misma mano requiere apertura; B inicia su propio `1500 ms`, sin herencia. Salir de zoom o reaparición después de pérdida exige apertura. |
-| Objetivo estable | Cursor, hover, aro y clic conservan el destino adquirido durante la transición a OK, sin recentrado ni cambio silencioso de candidato. |
+| Repetición | Índice exclusivo produce un clic al completar **1500 ms**; sostener y soltar después no repiten. Tras confirmar, abandonar la postura **120 ms**; cambiar actor inicia tiempo propio. Una salida de tolerancia antes del clic reinicia reloj sin exigir soltar. |
+| Objetivo estable | Conservar destino adquirido durante hold dentro de radio fijo y hitrect ampliado **36 CSS px por lado**; no cambiarlo por temblor/solapamiento. Salir reinicia tiempo; destino oculto/movido invalida adquisición sin clic residual. |
 | Recall de clic | Al menos 95 % en las tareas y condiciones declaradas. |
 | Falsos clics | Límite superior unilateral de 95 % por debajo de `0,01/min` en condiciones negativas representativas. |
 | Respuesta de movimiento | p95 del recorrido medido por la aplicación menor de `100 ms`; medir y reportar aparte demora física de cámara/pantalla. |
@@ -566,10 +620,13 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 
 | Verificación | Estado al preparar este documento |
 |:---|:---|
-| Suite y build 0.1.10 | 177/177 casos y build aprobados; 117 de motor. Fuente `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. |
-| Runtime Electron 0.1.10 | Aprobado: cuatro clics nativos y continuidad de actor/objetivo/aro con acompañante. Datos sintéticos. |
-| Paquete Mac final 0.1.10 | Aprobado: [reporte](./verificacion-paquete-mac-0.1.10.json), cuatro clics nativos y continuidad con acompañante; `.app` abierta sin cámara. Hash en la entrega. |
-| Paquete Windows final 0.1.10 | Aprobado: [reporte](./verificacion-paquete-windows-0.1.10.json), cuatro clics nativos; CI 38006516067 success, smoke `win-unpacked`. Envoltorio NSIS pendiente. |
+| Suite/build/runtime 0.1.11 | Aprobados: **180/180** casos, 95 de motor; fuente `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. Runtime con cuatro clics nativos y tolerancia/continuidad verificadas sintéticamente. |
+| Paquetes Mac/Windows 0.1.11 | Contenido aprobado; CI Windows 38009217606 success. `.app` abierta con cámara detenida, Windows `win-unpacked` comprobado. Reportes/hashes en [entrega](./04-entrega-y-verificacion.md); envoltorio portable pendiente. |
+| Geometría y retención 0.1.11 | Software y runtime aprobados con positivos/negativos sintéticos; no benchmark físico. |
+| Suite y build históricos 0.1.10 | 177/177 casos y build aprobados; 117 de motor. Fuente `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. |
+| Runtime Electron histórico 0.1.10 | Aprobado: cuatro clics nativos y continuidad de actor/objetivo/aro con acompañante. Datos sintéticos. |
+| Paquete Mac histórico 0.1.10 | Aprobado: [reporte](./verificacion-paquete-mac-0.1.10.json), cuatro clics nativos y continuidad con acompañante; `.app` abierta sin cámara. Hash en la entrega. |
+| Paquete Windows histórico 0.1.10 | Aprobado: [reporte](./verificacion-paquete-windows-0.1.10.json), cuatro clics nativos; CI 38006516067 success, smoke `win-unpacked`. Envoltorio NSIS pendiente. |
 | Suite histórica de 0.1.9 | 145/145 aprobadas: 103 gestos, 12 selección, 3 helper/calibración histórica, 4 mapeo, 15 calidad/cámara y 8 secuencia. |
 | Build histórico 0.1.9 | Aprobado. |
 | Runtime Mac histórico 0.1.9 | Aprobado: 23 checks de navegación, nueve de vistas de puño, seis de recuperación, cuatro clics nativos y recorrido. |

@@ -5,8 +5,8 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 **Inicio:** 5 de octubre de 2026<br>
 **Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Versión vigente:** 0.1.10<br>
-**Estado:** 177/177 pruebas, build, runtime y paquetes Mac/Windows finales aprobados. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.11<br>
+**Estado:** 0.1.11: suite 180/180, build, runtime y contenido de paquetes Mac/Windows aprobados. La evidencia de 0.1.10 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
@@ -16,7 +16,7 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 - Detecta hasta dos manos con MediaPipe Hand Landmarker y procesa las imágenes en este equipo.
 - Permite apuntar, abrir información, desplazar el mapa y acercar o alejar la vista.
 - Muestra una sombra por cada mano detectada con datos frescos: azul al apuntar o reposar, violeta con uno o dos puños para desplazar y ámbar con dos OK para zoom. Durante pausa o bloqueo aparecen grises.
-- Un OK válido selecciona tras 1,5 segundos con objetivo y aro anclados, incluso con otra mano presente. Dos OK válidos tienen prioridad para zoom; cada mano conserva su sombra fresca.
+- Selecciona al mantener **sólo el índice extendido** durante 1,5 segundos; pulgar, medio, anular y meñique deben estar recogidos. Objetivo y aro quedan anclados aunque cambie un acompañante. Dos OK conservan el zoom.
 - Lleva todo el encuadre de cámara a todo el mapa; permite elegir cámara, reflejar o rotar la imagen.
 - Mantiene una Vista cenital pequeña siempre visible arriba a la izquierda, con video, skeleton fresco y conteo de manos cuando la cámara está activa. Detenida, muestra Cámara detenida y limpia los datos anteriores; no pide permisos ni activa la cámara al arrancar.
 - Reúne métricas, exportación y Marcar falso clic en Diagnóstico de seguimiento, una sección desplegable de Ajustes.
@@ -49,64 +49,40 @@ La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Lo
 
 ## Abrir el programa empaquetado
 
-La versión **0.1.10 aprobó 177 pruebas, build y runtime** sobre la fuente final `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Los paquetes Mac/Windows finales están verificados y la `.app` abrió sin iniciar cámara. Windows comprobó el contenido de `win-unpacked`; el envoltorio portable se verifica por separado. La **0.1.9** conserva sus 145 pruebas y paquetes verificados como historia. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica la versión y el estado de cada archivo.
+La distribución **0.1.11 aprobó 180 pruebas, build, runtime y smoke de su contenido empaquetado en Mac/Windows** sobre la fuente `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. La `.app` instalada abrió con la cámara detenida. Windows comprobó `win-unpacked`; su envoltorio portable se verifica por separado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y alcance. La evidencia de 0.1.10 y anteriores se conserva abajo como historia.
 
 Como evidencia histórica, la `.app` Mac **0.1.3** aprobó el smoke del paquete y su apertura real, Ajustes y ayuda se revisaron en la aplicación. Windows **0.1.3** aprobó pruebas, build, runtime, construcción del portable y smoke del contenido empaquetado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y resultados por plataforma.
 
 **macOS Apple Silicon:** descomprimir el ZIP para obtener `Mapa Gestual MLR.app` y abrirla. Elegir la cámara USB y conceder el acceso a cámara cuando macOS lo solicite. Esta versión de desarrollo no tiene firma ni notarización. Si Gatekeeper bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación de macOS; no desactivar la protección global del equipo.
 
-**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI Windows 0.1.10](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38006516067) aprobó 177 pruebas, build, runtime, portable y smoke `win-unpacked` para la misma fuente; el [reporte final](./Documentos/verificacion-paquete-windows-0.1.10.json) y los hashes de la entrega identifican el ejecutable descargado. El arranque mediante el envoltorio portable y la cámara USB/driver físicos siguen pendientes.
+**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni abrir una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI Windows 0.1.11](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) aprobó suite, build, runtime, portable y smoke `win-unpacked` para la fuente final; hashes y reporte en la [entrega](./Documentos/04-entrega-y-verificacion.md). El arranque mediante el envoltorio portable y la cámara USB/driver físicos siguen pendientes.
 
 La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y plataforma de cada entrega junto con los resultados de verificación. Construir un archivo no demuestra por sí solo que la detección funcione con la cámara de la instalación.
 
 ## Gestos
 
-| Acción | Cómo se realiza |
+| Acción | Cómo se realiza en 0.1.11 |
 |:---|:---|
 | Apuntar | Mover la punta del índice dentro del encuadre. La sombra sigue el índice 8 también en reposo y con palma abierta. |
-| Clic | Mantener **un OK válido 1,5 segundos** ejecuta el clic sin soltar, incluso con la otra mano abierta, neutra o en puño. El actor conserva objetivo y reloj cuando cambia un acompañante. Dos OK pasan a zoom. La preparación es opcional; no cuenta dentro del mantenimiento. |
-| Desplazar | **Sin OK válido**, formar uno o dos puños. Pan utiliza sus medias de nudillos, sin zoom. La mano libre no contribuye; sus entradas/salidas no reinician el actor. OK + puño selecciona por la mano en OK. |
-| Zoom | Formar **OK con ambas manos** y mantener durante `180 ms`. Separar sus índices 8 acerca y juntarlos aleja. Moverlas juntas sin cambiar separación no desplaza el mapa. |
+| Clic | Extender **sólo el índice** y recoger positivamente pulgar, medio, anular y meñique. Mantener sobre el objetivo **1500 ms**: clic automático y aro anclado. Otro dedo extendido impide seleccionar. |
+| Desplazar | Formar uno o dos puños cuando no hay una selección por índice exclusivo ni dos OK. Pan usa sólo sus nudillos; una mano libre no aporta movimiento. |
+| Zoom | Formar **OK con ambas manos** y adquirir durante **180 ms**. Separar sus índices 8 acerca y juntarlos aleja; traslación común sin cambio de separación no desplaza. |
 
 **Pausa:** pulsar Espacio. La pérdida de foco detiene la interacción. Esc cancela la acción en curso.
 
-La versión 0.1.1 eliminó el desplazamiento con una palma abierta por una observación de movimientos accidentales. En 0.1.9 pan admitió al menos un puño; 0.1.10 conserva ese gesto cuando no hay OK y cambia la prioridad y continuidad de los actores.
+La prioridad vigente es **dos OK → zoom; índice exclusivo → selección; uno o dos puños → pan**. Un OK individual ya no hace clic. El acompañante puede entrar, salir o cambiar de orden sin cancelar al actor válido; el objetivo y el tiempo pertenecen a su identidad, nunca al índice del array.
 
-La **0.1.10** separa acción y acompañante con esta prioridad: **dos OK válidos hacen zoom; un OK válido selecciona; sin OK, uno o dos puños desplazan**. Un OK puede mantener el clic de **1500 ms** aunque la otra mano esté abierta, en reposo o cerrada en puño: OK + puño selecciona, no desplaza. Pan utiliza sólo los nudillos de los puños y zoom la separación entre índices 8. No se combinan acciones ni se hereda progreso al entrar en zoom.
+Durante el mantenimiento se admite temblor respecto de un **origen fijo**, sin desplazar el destino a un vecino. El motor permite hasta **0,15 unidades de alto de cámara** y el renderer retiene el rectángulo del objetivo ampliado **36 CSS px por lado**. Esa extensión conserva un objetivo ya adquirido. Salir de la tolerancia reinicia el reloj, sin exigir soltar la postura para intentarlo de nuevo; **después del clic**, debe abandonarse durante **120 ms** antes de otro. El [protocolo vigente](./Documentos/03-protocolo-validacion.md) separa estas unidades, adquisición, retención y pruebas pendientes.
 
-Se valida a los **participantes de la acción**. Una mano ajena inválida o neutra no debe bloquear a un actor válido. Si el acompañante entra, sale o cambia de identidad sin participar, el actor conserva su objetivo, reloj y continuidad; no se reinicia el hold ni la base de pan por el simple cambio del conteo. La pérdida, invalidez o discontinuidad del actor, foco, pausa y calidad global siguen siendo guardas de seguridad. El segundo OK válido sí activa la prioridad de zoom y termina la selección individual. La adquisición de navegación y el rearme se resuelven por participantes: cambiar un acompañante ajeno no reinicia la acción; cambiar el conjunto real de puños o pasar a zoom adquiere una base nueva durante **180 ms**, sin salto ni tiempo heredado.
+Modelo Hand Landmarker, pesos, SDK y captura se conservan. La postura utiliza geometría positiva XYZ estimada; que otro dedo no parezca extendido no basta para considerarlo recogido. Esta revisión no certifica reconocimiento físico ni pocos falsos positivos. La [entrada de 0.1.11 en la bitácora](./Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111) registra la decisión y la [investigación de selección](./Documentos/05-meta-quest-y-seleccion.md) aporta los referentes.
 
-El feedback pertenece al actor: el aro y halo de selección permanecen anclados en su objetivo aunque haya dos manos detectadas, mientras el acompañante conserva su sombra fresca independiente. Sólo participantes de pan se muestran violetas y los dos OK de zoom, ámbar; la mano libre permanece azul. Se mantienen preview pequeño permanente, controles de cámara explícitos y diagnóstico en Ajustes. Modelo, pesos, SDK e inferencia no cambian.
+Cada mano conserva una sombra fresca independiente: azul al apuntar o reposar, violeta sólo en puños participantes adquiridos y ámbar en dos OK adquiridos. Gris indica bloqueo. El aro azul representa los 1500 ms y confirma en verde; no se muestra como confirmación de navegación.
 
-El rearme se conserva **por mano**. Si cambia el actor de A a B, B puede iniciar un mantenimiento nuevo de **1500 ms**, sin heredar tiempo, objetivo ni bloqueo de A. Cada mano conserva rearme de **120 ms** y cooldown de **400 ms**. Tras zoom o reaparición de una mano que perdió tracking se exige apertura válida antes de seleccionar, para evitar un clic al salir del zoom. El renderer dirige hover, aro y clic por **`selectionHandId`**, no por posición `0` del array ni por conteo; invertir el orden del resultado no cambia al actor.
+Los tres puntos ficticios muestran **1, 2 y 3**. Su dibujo nominal mide **40 px** y el activo, **56 px**; su caja exterior fija de **56 × 56 px** permanece estable durante el pulso. Un clic nativo sobre el activo avanza una vez. Tras el tercero termina el pulso; **Reiniciar recorrido**, en Ajustes, vuelve al punto 1. El botón del popup no vuelve a avanzar e Inicio conserva progreso. [Fuente y recorrido](./Documentos/07-limite-la-reina.md).
 
-La guarda de geometría se aplica también al **puño participante de pan**. Si A pierde geometría válida y luego vuelve en OK, debe abrir para rearmarse, con o sin acompañante. B válido conserva su propia capacidad de seleccionar; no hereda el bloqueo de A. Si A recupera un puño válido, puede readquirir pan durante **180 ms** sin exigir apertura, tomando base nueva y sin salto.
+La Vista cenital permanece visible arriba a la izquierda, unos **200 px** de ancho o **160 px** en pantallas pequeñas, sin casilla ni botón de cierre. Iniciar/Detener cámara es explícito; detener o perderla limpia skeleton y conteo. Métricas y exportación permanecen en Ajustes.
 
-La ayuda de cierre sigue siendo opcional. Si el acompañante ya está en puño, una intención privada de la mano libre puede conservarse sin mostrar `click-preparing` ni interrumpir pan. Sólo OK validado tiene prioridad para selección y comienza los **1500 ms** completos. No todos los cierres muestran preparación pública: se debe comprobar objetivo válido retenido al primer OK y ausencia de clic previo, además del mantenimiento posterior.
-
-OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente. La comprobación física sigue pendiente.
-
-La **0.1.5 corrige el reconocimiento de puños** cuando el skeleton está presente pero la postura no habilita pan. Una vista frontal puede acortar las longitudes proyectadas de dedos recogidos hasta casi cero. La corrección interpreta la flexión y compactación del puño en geometría XYZ consistente, preferentemente con `worldLandmarks` estimados por la misma inferencia. Si faltan, utiliza XYZ normalizado con aspecto corregido; si llegan explícitamente inválidos, esa mano no participa en clic ni navegación y conserva el puntero fresco. Un acompañante neutro inválido no veta al actor válido en 0.1.10. Mantiene las coordenadas de imagen para cursor, movimiento y zoom. Tolera un DIP recto sólo con evidencia adicional de cierre fuerte; el pulgar puede permanecer recto si está compacto/aducido. No incorpora otro modelo ni demuestra por sí sola precisión física: la comprobación cenital/frontal sigue el [protocolo](./Documentos/03-protocolo-validacion.md).
-
-La corrección **0.1.8** responde a un bloqueo informado durante uso físico y reproducido con landmarks sintéticos: una deformación aislada de MCP podía abortar la ayuda previa y dejar `clickBlocked` activo, aunque OK válido sí servía para zoom. La asistencia de cierre es **opcional**. Un OK válido tiene prioridad: si su copia sigue fresca, de menos de **1200 ms**, y el movimiento robusto de palma no supera **0,055**, conserva el objetivo e inicia un mantenimiento nuevo de **1500 ms** antes de aplicar las condiciones estrictas de preparación. OK directo sigue permitido.
-
-Cuando una intención latente o preparación vence o se aborta antes de un hold, se descarta suavemente. Se limpian copia, historial del cursor y anclaje visual; `resetSelection` obliga al renderer a borrar el objetivo antiguo y volver al índice actual. El descarte no activa un bloqueo persistente ni reutiliza tiempo. Las cancelaciones de un **hold activo**, pérdida/discontinuidad/identidad del actor, geometría inválida del actor, foco, pausa y calidad mantienen el bloqueo de seguridad y exigen apertura válida de **120 ms**. El clic sigue siendo automático al completar OK de **1500 ms**, uno por mantenimiento, sin confirmar al soltar.
-
-La palma se mide respecto de una base fija mediante el **máximo entre la mediana de los desplazamientos de las cinco referencias 0/5/9/13/17 y el desplazamiento de su centroide**. Una MCP aislada deformada no representa por sí sola traslación de toda la mano; una traslación rígida acumulada sigue limitada. El índice 8, las referencias de nudillos, la separación entre pan y zoom, el asentamiento inicial de pinza de **300 ms**, modelo, SDK, pesos y umbrales del task se conservan. Esta medida es una hipótesis geométrica, no una garantía de precisión física.
-
-El diagnóstico usa la métrica existente de **Ajustes → Diagnóstico de seguimiento**: «Abre la pinza para habilitar la selección» (`release-required`) o «Postura no válida para seleccionar» (`invalid-geometry`). La presencia de una segunda mano no es un motivo de bloqueo; dos OK muestran el estado de zoom. El diagnóstico del runtime nuevo está comprobado; los motivos se asocian al actor. Mientras se navega, «Zoom» o «Desplazando» tiene prioridad. Al abrir Ajustes se conserva el último motivo de control, aunque el diálogo impida acciones. La exportación añade estado y conteos de razones, sin frames de cámara ni landmarks; no calcula una tasa de falsos positivos.
-
-El seguimiento heredado de 0.1.6 usa índice 8 en reposo, abierta, apuntado, OK y zoom; al reconocer puño cambia a la media de MCP 5, 9, 13 y 17, sin muñeca. La transición converge durante `300 ms` incluso quieto. Son puntos estimados por el modelo, no una promesa de observar cada nudillo. Objetivo, aro y halo permanecen anclados durante selección; cancelar o liberar regresa suavemente al índice. Dos OK no heredan el offset del clic individual. El hover indica un único candidato visible.
-
-El aro azul avanza de `0` a `1` durante los 1,5 segundos y confirma en verde al ejecutar el clic. Un OK sostenido produce **un solo clic hasta volver a abrir durante `120 ms`**; mantenerlo cerrado o soltar después no repite. Abrir antes del umbral cancela. Si se pierde o invalida el actor, se cancela la selección pendiente. Un acompañante neutro no interrumpe; un segundo OK válido da prioridad a zoom, sin reutilizar el tiempo de clic.
-
-Cada mano conserva su sombra independiente, incluida la palma abierta, los dos puños y los dos OK. Azul indica apuntado/reposo; violeta corresponde al modo de desplazamiento adquirido con uno o dos puños y ámbar al modo de zoom adquirido con dos OK, incluso cuando las manos están quietas. Sólo los puños participantes adquiridos quedan violetas; la mano libre continúa azul. Durante adquisición de navegación no se muestra aro ni hover de clic. El color identifica la postura adquirida; pequeños temblores no habilitan otro modo ni producen eventos cruzados. Gris indica que las acciones están bloqueadas. El aro y ripple pertenecen al actor de selección válido; el conteo de dos detecciones no los oculta por sí solo.
-
-Los tres puntos muestran números **1, 2 y 3**. Su dibujo nominal mide `40 px` y el siguiente punto activo, `56 px`, con un pulso suave. El área exterior fija de `56 × 56 px` mantiene el objetivo estable durante OK. Un clic nativo sobre el activo avanza una sola vez: **1→2→3**. Tras el tercero no queda ningún pulso; **Reiniciar recorrido**, en Ajustes, vuelve al punto 1. El botón del popup no vuelve a avanzar la secuencia e Inicio conserva el progreso. La [fuente del límite y el recorrido](./Documentos/07-limite-la-reina.md) documenta la geometría oficial y separa esos datos de los marcadores ficticios.
-
-Los **1,5 segundos** son la preferencia actual del usuario; sustituyen los 3 segundos de 0.1.2 y 0.1.3. El [referente Meta Quest](./Documentos/05-meta-quest-y-seleccion.md) orienta estabilización, hover y cancelación; no establece ese tiempo ni los tamaños de marcador como valores Meta. Los tiempos y umbrales no representan una tasa de falsos positivos demostrada. El motor evalúa cercanía XYZ estimada, no contacto físico verificable.
-
-El panel Vista cenital mide aproximadamente **200 px de ancho**, o **160 px** en pantallas pequeñas. Permanece visible y no tiene botón de cierre ni casilla para ocultarlo. Iniciar/Detener cámara conserva el control explícito del usuario. El skeleton usa sólo resultados frescos; detener o perder la cámara limpia el dibujo y el conteo anterior.
+La selección por OK, su asistencia de cierre y los resultados de **0.1.10** se conservan como historia en la bitácora y el protocolo. Los 1500 ms son preferencia del usuario; las tolerancias son parámetros experimentales. **Suite, build, runtime y contenido de paquetes 0.1.11 aprobados.**
 
 ## Preparar la mesa
 
@@ -149,7 +125,13 @@ npm run build
 npm run test:app
 ```
 
-### Verificación vigente: versión 0.1.10
+### Verificación vigente: versión 0.1.11
+
+La **0.1.11 aprobó 180/180 pruebas**: 95 de motor de gestos, 15 de OK en perspectiva, 21 de índice exclusivo 3D, 4 de participantes, 15 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `11c5b049dd76c7575c26a65e7e0dabe93f03b0d5`. El runtime emitió cuatro clics nativos `isTrusted` tras al menos **1500 ms**, con temblor de índice de **42 × 32 CSS px** y continuidad del acompañante; aprobó **24 checks de navegación** y los siete `selectionToleranceFeedback`, incluidos espacio vacío, salida/reinicio, otros dedos y pulgar. Son entradas sintéticas interpretadas por el motor real y eventos nativos dentro de la app; no un ensayo físico de gestos.
+
+Los **paquetes Mac y Windows 0.1.11 aprobaron el smoke nativo** de la fuente final. Los [reportes Mac](./Documentos/verificacion-paquete-mac-0.1.11.json) y [Windows](./Documentos/verificacion-paquete-windows-0.1.11.json) confirman cuatro clics nativos y todos los grupos Feedback por plataforma. La [CI Windows 38009217606](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38009217606) terminó con éxito sobre la misma fuente: pruebas, build, runtime, portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto. La `.app` instalada abrió y se revisaron ayuda/footer de índice exclusivo con **Cámara detenida**; se conserva el respaldo 0.1.10. La [entrega](./Documentos/04-entrega-y-verificacion.md) concentra reportes, hashes, capturas e intervalos. **Envoltorio portable, ensayo USB, métricas físicas y Google con key siguen pendientes.**
+
+### Evidencia histórica: versión 0.1.10
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 
@@ -250,7 +232,7 @@ En Windows CI aprobaron build, **26/26 tests**, smoke de runtime y smoke de la a
 
 Estas son comprobaciones de integración; no miden precisión cenital, latencia con cámara USB ni detección de dos manos reales. Los fixtures son imágenes de prueba y no corresponden al montaje municipal.
 
-Los reportes anteriores identifican sus respectivas versiones. Los resultados de una versión anterior no certifican las reglas ni los paquetes 0.1.10.
+Los reportes anteriores identifican sus respectivas versiones. Los resultados de una versión anterior no certifican las reglas ni los paquetes 0.1.11.
 
 Estas pruebas no sustituyen el ensayo con cámara USB cenital. Google Maps todavía no está probado con una key del usuario. Consultar el [protocolo de validación](./Documentos/03-protocolo-validacion.md) para medir falsos clics, estabilidad y latencia en condiciones reales.
 
@@ -280,7 +262,7 @@ npm run dist:win
 
 MediaPipe Tasks Vision `1.0.1`, Hand Landmarker full, modo video, hasta dos manos y delegate CPU en worker local. Umbrales iniciales de detección, presencia y tracking: `0,70`.
 
-El modelo Hand Landmarker full, SDK, pesos e inferencia CPU se conservan. La versión 0.1.10 cambia arbitraje y continuidad por actor y evalúa OK mediante XYZ consistente: entrada `0,28`, salida `0,40`, dos dedos restantes con evidencia semiextendida y cierre/oposición positivos. Ya no exige dos dedos perfectamente extendidos. Clic de `1500 ms`, un evento por mantenimiento y navegación separada. El filtro 1€ y seguimiento por índice 8 o nudillos se conservan; la suite de 177 casos, build, runtime y paquetes Mac/Windows están aprobados; validación física pendiente. Consultar los umbrales experimentales del protocolo vigente.
+El modelo Hand Landmarker full, SDK, pesos e inferencia CPU se conservan. La versión 0.1.11 cambia la selección a índice exclusivo con evidencia positiva de los otros dedos recogidos, mantenimiento de **1500 ms** y retención del destino. Dos OK siguen utilizando geometría XYZ para zoom; uno o dos puños desplazan. No se añade una inferencia ni un modelo. Parámetros y alcance de los **180 casos, build y runtime aprobados** en el protocolo; contenido de paquetes vigente aprobado. Los **177 casos y paquetes de 0.1.10** son históricos.
 
 El diagnóstico muestra tiempos de inferencia y captura→resultado del worker. **No incluye toda la demora física de cámara USB ni de presentación de pantalla.** Exportar la sesión permite conservar un resumen agregado de hasta 10.000 muestras recientes. El botón **Marcar falso clic** suma una anotación manual; no detecta errores ni calcula una tasa de falsos positivos automáticamente. Para medir esa tasa se requiere tiempo negativo e intención anotados.
 
