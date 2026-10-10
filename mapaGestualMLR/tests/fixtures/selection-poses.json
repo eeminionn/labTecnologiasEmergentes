@@ -1,5 +1,5 @@
 {
-  "description": "Synthetic interpreter regression fixtures; not detector accuracy evidence. Only index extended with thumb and other fingers retracted selects; fists pan and two OK hands zoom.",
+  "description": "Synthetic interpreter regression fixtures; not detector accuracy evidence. A tracked index hovering a target selects independently of other fingers; fists pan and two OK hands zoom.",
   "poses": {
     "point": [
       {

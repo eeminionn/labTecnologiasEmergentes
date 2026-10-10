@@ -76,13 +76,15 @@ const translatedImage = (value, x, y = 0) => ({ ...value,
   landmarks: value.landmarks.map(point => ({ ...point, x: point.x + x, y: point.y + y })) });
 
 
-function frames(engine, hands, from, until, step = 20) {
+function frames(engine, hands, from, until, step = 20, context = {}) {
   const results = [];
-  for (let time = from; time <= until; time += step) results.push(engine.update(hands, time));
+  for (let time = from; time <= until; time += step) results.push(engine.update(hands, time, context));
   return results;
 }
 const events = results => results.flatMap(result => result.events);
 const clicks = results => events(results).filter(event => event.type === 'click');
+const target = id => ({ selectionTargetForHand: () => id });
+const leftTarget = { selectionTargetForHand: ({ pointer }) => pointer.x < 0.5 ? 'left' : null };
 function pointedEngine(options = {}) {
   const engine = new GestureEngine(options);
   frames(engine, [hand('point')], 0, 140);
@@ -101,359 +103,6 @@ function navigationEngine(options = {}, pose = 'ok') {
   frames(engine, pose === 'fist' ? fistPair() : okPair(), 0, 200);
   return engine;
 }
-
-test('only an index-only pose starts selection; initial pointing uses its current absolute fingertip', () => {
-  for (const preceding of [null, 'open', 'neutral', 'ok', 'fist']) {
-    const engine = new GestureEngine();
-    let start = 0;
-    if (preceding) { frames(engine, [hand(preceding)], 0, 200); start = 220; }
-    else engine.update([], -20);
-    const actor = hand('point');
-    const pending = engine.update([actor], start);
-    assert.equal(pending.mode, 'click-pending', preceding);
-    assert.equal(pending.progress, 0);
-    assert.deepEqual(pending.selectionCursor, classifyHand(actor).pointer);
-    assert.deepEqual(pending.selectionLiveCursor, classifyHand(actor).pointer);
-    assert.equal(events(frames(engine, [actor], start + 20, start + 1480)).length, 0);
-    assert.equal(engine.update([actor], start + 1499).events.length, 0);
-    assert.deepEqual(engine.update([actor], start + 1500).events,
-      [{ type: 'click', ...classifyHand(actor).pointer }]);
-    assert.equal(events(frames(engine, [actor], start + 1520, start + 2500)).length, 0);
-  }
-});
-
-test('single OK, palms, relaxed hands and partial index poses never select', () => {
-  for (const pose of ['ok', 'open', 'neutral']) {
-    const results = frames(new GestureEngine(), [hand(pose)], 0, 3000);
-    assert.equal(events(results).length, 0, pose);
-    assert.ok(results.every(result => !result.mode.startsWith('click-')), pose);
-  }
-  const partial = hand('point');
-  const folded = hand('neutral');
-  for (let index = 6; index <= 8; index++) partial.landmarks[index] = folded.landmarks[index];
-  assert.equal(clicks(frames(new GestureEngine(), [partial], 0, 3000)).length, 0);
-});
-
-test('every additional extended finger or outstretched thumb vetoes index-only selection', () => {
-  for (const mcp of [9, 13, 17]) {
-    const value = hand('point'), open = hand('open');
-    for (let index = mcp; index < mcp + 4; index++) value.landmarks[index] = open.landmarks[index];
-    assert.equal(classifyHand(value).point, false, `extra finger ${mcp}`);
-    assert.equal(clicks(frames(new GestureEngine(), [value], 0, 2200)).length, 0);
-  }
-  const thumb = hand('point');
-  for (let index = 1; index <= 4; index++) thumb.landmarks[index] = hand('open').landmarks[index];
-  assert.equal(classifyHand(thumb).point, false);
-  assert.equal(clicks(frames(new GestureEngine(), [thumb], 0, 2200)).length, 0);
-});
-
-test('the progress ring is timed solely from index-only acquisition for all 1500 ms', () => {
-  const engine = new GestureEngine();
-  frames(engine, [hand('ok')], 0, 1000);
-  for (let elapsed = 0; elapsed <= 1500; elapsed += 100) {
-    const result = engine.update([hand('point')], 1020 + elapsed);
-    assert.equal(result.progress, elapsed / 1500);
-    assert.equal(result.mode, elapsed < 1500 ? 'click-pending' : 'click-confirmed');
-    assert.equal(result.events.length, elapsed < 1500 ? 0 : 1);
-  }
-});
-
-test('leaving the index-only pose before or exactly at completion cancels without release clicks', () => {
-  for (const releaseAt of [1000, 1500]) for (const pose of ['open', 'ok', 'neutral', 'fist']) {
-    const engine = new GestureEngine();
-    frames(engine, [hand('point')], 0, releaseAt - 20);
-    const release = engine.update([hand(pose)], releaseAt);
-    assert.equal(release.events.length, 0);
-    assert.notEqual(release.mode, 'click-confirmed');
-    assert.equal(clicks(frames(engine, [hand(pose)], releaseAt + 20, releaseAt + 1000)).length, 0);
-  }
-});
-
-test('one click per pointing pose requires a complete stable 120 ms non-point release', () => {
-  const engine = new GestureEngine();
-  assert.equal(clicks(frames(engine, [hand('point')], 0, 1500)).length, 1);
-  engine.update([hand('open')], 1520);
-  assert.equal(clicks(frames(engine, [hand('point')], 1540, 3000)).length, 0);
-  frames(engine, [hand('ok')], 3020, 3120);
-  const early = engine.update([hand('point')], 3139);
-  assert.equal(early.mode, 'point');
-  frames(engine, [hand('open')], 3160, 3260);
-  engine.update([hand('open')], 3280);
-  const pending = engine.update([hand('point')], 3300);
-  assert.equal(pending.mode, 'click-pending');
-  assert.equal(pending.progress, 0);
-  assert.equal(events(frames(engine, [hand('point')], 3320, 4780)).length, 0);
-  assert.equal(engine.update([hand('point')], 4800).events.length, 1);
-});
-
-test('live index movement is unfiltered while the selection anchor and original deadline stay fixed within range', () => {
-  for (const aspectRatio of [1, 16 / 9]) {
-    const initial = cameraView('point', { aspectRatio, world: false });
-    const engine = new GestureEngine({ aspectRatio });
-    const first = engine.update([initial], 0);
-    for (let time = 20; time <= 1500; time += 20) {
-      const dx = Math.sin(time / 1500 * Math.PI / 2) * 0.12 / aspectRatio;
-      const dy = Math.sin(time / 1500 * Math.PI / 2) * 0.03;
-      const value = translatedImage(initial, dx, dy);
-      const result = engine.update([value], time);
-      assert.deepEqual(result.selectionCursor, first.selectionCursor);
-      assert.deepEqual(result.selectionLiveCursor, classifyHand(value, { aspectRatio }).pointer);
-      assert.equal(result.progress, time / 1500);
-      assert.equal(result.events.length, time < 1500 ? 0 : 1);
-    }
-  }
-});
-
-test('slow accumulated index motion beyond the fixed 0.15 metric origin restarts without requiring release', () => {
-  for (const aspectRatio of [1, 16 / 9]) {
-    const initial = cameraView('point', { aspectRatio, world: false });
-    const engine = new GestureEngine({ aspectRatio });
-    engine.update([initial], 0);
-    let cancelled;
-    for (let time = 20; time <= 1200; time += 20) {
-      const value = translatedImage(initial, time / 1200 * 0.16 / aspectRatio);
-      const result = engine.update([value], time);
-      assert.equal(result.events.length, 0);
-      if (result.mode === 'idle') { cancelled = { time, value, result }; break; }
-    }
-    assert.ok(cancelled);
-    assert.equal(cancelled.result.resetSelection, true);
-    assert.equal(cancelled.result.selectionBlockedReason, null);
-    const fresh = engine.update([cancelled.value], cancelled.time + 20);
-    assert.equal(fresh.mode, 'click-pending');
-    assert.equal(fresh.progress, 0);
-    assert.deepEqual(fresh.selectionCursor, classifyHand(cancelled.value, { aspectRatio }).pointer);
-    assert.equal(events(frames(engine, [cancelled.value], cancelled.time + 40, cancelled.time + 1500)).length, 0);
-    assert.equal(engine.update([cancelled.value], cancelled.time + 1520).events.length, 1);
-  }
-});
-
-test('soft target cancellation permits the same pointing pose to acquire a fresh full dwell', () => {
-  const engine = new GestureEngine();
-  frames(engine, [hand('point')], 0, 600);
-  engine.cancelClick(false);
-  const moved = hand('point', { x: 0.08 });
-  const fresh = engine.update([moved], 620);
-  assert.equal(fresh.resetSelection, true);
-  assert.equal(fresh.selectionBlockedReason, null);
-  assert.equal(fresh.mode, 'click-pending');
-  assert.equal(fresh.progress, 0);
-  assert.deepEqual(fresh.selectionCursor, classifyHand(moved).pointer);
-  assert.equal(events(frames(engine, [moved], 640, 2100)).length, 0);
-  assert.equal(engine.update([moved], 2120).events.length, 1);
-  engine.cancelClick(false);
-  assert.equal(clicks(frames(engine, [moved], 2140, 4000)).length, 0,
-    'soft UI cancellation cannot rearm an already confirmed pointing pose');
-});
-
-test('explicit safety cancellation still requires stable pose release for every tracked participant', () => {
-  const engine = new GestureEngine();
-  const pair = [hand('point', { id: 'a', x: -0.15 }), hand('point', { id: 'b', x: 0.15 })];
-  frames(engine, pair, 0, 600);
-  engine.cancelInteraction(); engine.cancelClick(true);
-  const blocked = frames(engine, pair, 620, 2400);
-  assert.ok(blocked.every(result => result.selectionBlockedReason === 'release-required'));
-  assert.equal(events(blocked).length, 0);
-  const release = [hand('open', { id: 'a', x: -0.15 }), hand('open', { id: 'b', x: 0.15 })];
-  frames(engine, release, 2420, 2540);
-  const fresh = engine.update(pair, 2560);
-  assert.equal(fresh.mode, 'click-pending');
-  assert.equal(fresh.progress, 0);
-});
-
-test('loss, invalid participant geometry, identity replacement and inference gaps cannot release or inherit pointing dwell', () => {
-  for (const reason of ['loss', 'world', 'landmarks', 'identity', 'gap']) {
-    const engine = new GestureEngine();
-    frames(engine, [hand('point')], 0, 600);
-    const interrupted = reason === 'loss' ? [] : reason === 'world' ? [{ ...hand('point'), worldLandmarks: [] }]
-      : reason === 'landmarks' ? [{ landmarks: [] }] : reason === 'identity' ? [hand('point', { id: 'replacement' })]
-      : [hand('point')];
-    const time = reason === 'gap' ? 780 : 620;
-    assert.equal(engine.update(interrupted, time).events.length, 0, reason);
-    const returned = hand('point', { id: reason === 'identity' ? 'replacement' : 'a' });
-    const held = frames(engine, [returned], time + 20, time + 2000);
-    assert.ok(held.every(result => result.selectionBlockedReason === 'release-required'), reason);
-    assert.equal(events(held).length, 0, reason);
-  }
-});
-
-test('exactly 180 ms without inference cancels selection rather than contributing dwell', () => {
-  const engine = new GestureEngine();
-  frames(engine, [hand('point')], 0, 1320);
-  const deadline = engine.update([hand('point')], 1500);
-  assert.equal(deadline.events.length, 0);
-  assert.equal(deadline.selectionBlockedReason, 'release-required');
-});
-
-test('one index-only actor selects with any non-point companion and survives its entry, exit and order changes', () => {
-  for (const pose of ['open', 'neutral', 'ok', 'fist', 'invalid-world', 'invalid-image']) {
-    const engine = new GestureEngine();
-    const actor = hand('point', { id: 'a', x: -0.17 }); delete actor.id;
-    const first = engine.update([actor], 0);
-    for (let time = 20; time <= 1500; time += 20) {
-      let buddy = hand(pose.startsWith('invalid-') ? 'open' : pose, { id: 'b', x: 0.17 }); delete buddy.id;
-      if (pose === 'invalid-world') buddy.worldLandmarks = [];
-      if (pose === 'invalid-image') buddy.landmarks = [];
-      const present = time >= 200 && time < 500 || time >= 700 && time < 1300;
-      const input = present ? time % 40 ? [buddy, actor] : [actor, buddy] : [actor];
-      const result = engine.update(input, time);
-      assert.equal(result.selectionHandId, first.selectionHandId, pose);
-      assert.deepEqual(result.selectionCursor, first.selectionCursor, pose);
-      assert.equal(result.progress, time / 1500, pose);
-      assert.equal(result.navigationKind, null);
-      assert.equal(result.events.length, time < 1500 ? 0 : 1);
-    }
-  }
-});
-
-test('both hands pointing preserve the existing owner through input order reversals and release the other independently', () => {
-  const engine = new GestureEngine();
-  const a = hand('point', { id: 'a', x: -0.15 }), b = hand('point', { id: 'b', x: 0.15 });
-  const start = engine.update([b], 0);
-  const joined = engine.update([a, b], 20);
-  assert.equal(joined.selectionHandId, start.selectionHandId);
-  for (let time = 40; time <= 1500; time += 20) {
-    const result = engine.update(time % 40 ? [a, b] : [b, a], time);
-    assert.equal(result.selectionHandId, start.selectionHandId);
-    assert.equal(result.progress, time / 1500);
-    assert.equal(result.events.length, time < 1500 ? 0 : 1);
-  }
-  const switched = engine.update([a, hand('open', { id: 'b', x: 0.15 })], 1520);
-  assert.notEqual(switched.selectionHandId, start.selectionHandId);
-  assert.equal(switched.mode, 'click-pending');
-  assert.equal(switched.progress, 0);
-  assert.deepEqual(switched.selectionCursor, classifyHand(a).pointer);
-  assert.equal(events(frames(engine, [a], 1540, 3000)).length, 0);
-  assert.equal(engine.update([a], 3020).events.length, 1);
-});
-
-test('a new pointing actor cannot inherit another participant target, deadline, block or cooldown', () => {
-  const engine = new GestureEngine();
-  const a = hand('point', { id: 'a', x: -0.15 }), bOpen = hand('open', { id: 'b', x: 0.15 });
-  const first = frames(engine, [a, bOpen], 0, 1000).at(-1);
-  const b = hand('point', { id: 'b', x: 0.15 }), aOpen = hand('open', { id: 'a', x: -0.15 });
-  const next = engine.update([b, aOpen], 1020);
-  assert.notEqual(next.selectionHandId, first.selectionHandId);
-  assert.equal(next.progress, 0);
-  assert.equal(next.resetSelection, true);
-  assert.deepEqual(next.selectionCursor, classifyHand(b).pointer);
-  assert.equal(events(frames(engine, [aOpen, b], 1040, 2500)).length, 0);
-  assert.equal(engine.update([aOpen, b], 2520).events.length, 1);
-});
-
-test('the pointing companion remains usable when only the previous selected or panning actor loses geometry', () => {
-  for (const initialPose of ['point', 'fist']) {
-    const engine = new GestureEngine();
-    const a = hand(initialPose, { id: 'a', x: -0.15 }), bOpen = hand('open', { id: 'b', x: 0.15 });
-    const previous = frames(engine, [a, bOpen], 0, 200).at(-1);
-    const bId = previous.pointers.find(pointer => pointer.handIndex === 1).id;
-    const invalid = { ...a, worldLandmarks: [] }, b = hand('point', { id: 'b', x: 0.15 });
-    const next = engine.update([invalid, b], 220);
-    assert.equal(next.selectionHandId, bId);
-    assert.equal(next.mode, 'click-pending');
-    assert.equal(next.selectionBlockedReason, null);
-    assert.equal(next.progress, 0);
-    assert.equal(events(frames(engine, [invalid, b], 240, 1700)).length, 0);
-    assert.equal(engine.update([invalid, b], 1720).events.length, 1);
-  }
-});
-
-test('a panning participant whose geometry became invalid must release before pointing, independent of any companion', () => {
-  for (const withCompanion of [false, true]) {
-    const engine = new GestureEngine();
-    const buddy = hand('open', { id: 'b', x: 0.17 });
-    const input = value => withCompanion ? [value, buddy] : [value];
-    const fist = hand('fist', { id: 'a', x: -0.17 });
-    frames(engine, input(fist), 0, 200);
-    engine.update(input({ ...fist, worldLandmarks: [] }), 220);
-    const point = hand('point', { id: 'a', x: -0.17 });
-    const blocked = frames(engine, input(point), 240, 1800);
-    assert.ok(blocked.every(result => result.mode === 'point'
-      && result.selectionBlockedReason === 'release-required'));
-    assert.equal(events(blocked).length, 0);
-    frames(engine, input(hand('open', { id: 'a', x: -0.17 })), 1820, 1940);
-    assert.equal(engine.update(input(point), 1960).mode, 'click-pending');
-  }
-});
-
-test('confirmed selection never repeats after moving beyond the pending range without releasing the pointing pose', () => {
-  const engine = new GestureEngine();
-  const initial = engine.update([hand('point')], 0);
-  assert.equal(clicks(frames(engine, [hand('point')], 20, 1500)).length, 1);
-  const moved = hand('point', { x: 0.16 });
-  const held = frames(engine, [moved], 1520, 3300);
-  assert.equal(events(held).length, 0);
-  assert.ok(held.every(result => result.mode === 'click-confirmed'
-    && result.selectionBlockedReason === 'release-required'));
-  assert.ok(held.every(result => result.selectionCursor.x === initial.selectionCursor.x));
-  assert.ok(held.every(result => result.selectionLiveCursor.x === classifyHand(moved).pointer.x));
-});
-
-test('positive image evidence of an extra finger or thumb vetoes a contradictory world pointing pose even with another invalid joint', () => {
-  const world = cameraView('point').worldLandmarks;
-  for (const extra of ['middle', 'ring', 'little', 'thumb']) for (const collapseOther of [false, true]) {
-    const value = hand('point');
-    const open = hand('open');
-    if (extra === 'thumb') {
-      for (let index = 1; index <= 4; index++) value.landmarks[index] = open.landmarks[index];
-    } else {
-      const mcp = { middle: 9, ring: 13, little: 17 }[extra];
-      for (let index = mcp; index < mcp + 4; index++) value.landmarks[index] = open.landmarks[index];
-    }
-    if (collapseOther) {
-      const joint = extra === 'ring' ? 18 : 14;
-      value.landmarks[joint] = { ...value.landmarks[joint - 1] };
-    }
-    value.worldLandmarks = world;
-    assert.equal(classifyHand(value).actionGeometryValid, false, `${extra}, collapsed=${collapseOther}`);
-    assert.equal(events(frames(new GestureEngine(), [value], 0, 2200)).length, 0);
-  }
-});
-
-test('pointing takes priority over fists without cross-mode actions; single OK leaves pan available', () => {
-  const engine = new GestureEngine();
-  const a = hand('fist', { id: 'a', x: -0.15 });
-  frames(engine, [a, hand('ok', { id: 'b', x: 0.15 })], 0, 200);
-  const pointing = hand('point', { id: 'b', x: 0.15 });
-  const selected = engine.update([a, pointing], 220);
-  assert.equal(selected.mode, 'click-pending');
-  assert.equal(selected.progress, 0);
-  assert.equal(selected.navigationKind, null);
-  assert.equal(selected.selectionHandId, selected.pointers.find(pointer => pointer.handIndex === 1).id);
-  assert.equal(events(frames(engine, [a, pointing], 240, 1700)).length, 0);
-  assert.equal(engine.update([a, pointing], 1720).events[0]?.type, 'click');
-  const released = frames(engine, [a, hand('ok', { id: 'b', x: 0.15 })], 1740, 1920);
-  assert.equal(released.at(-1).navigationKind, 'pan');
-  assert.equal(events(released).length, 0);
-});
-
-test('frontal and side-on 3D index-only poses select with world or aspect-corrected normalized landmarks', () => {
-  for (const aspectRatio of [1, 16 / 9]) for (const world of [true, false]) {
-    for (const [pitch, yaw, roll] of [[0, 0, 0], [Math.PI / 2, 0, 0], [-Math.PI / 2, 0, 0],
-      [0, Math.PI / 2, 0], [0, -Math.PI / 2, 0], [1.2, 0.7, 1.5]]) {
-      const actor = cameraView('point', { pitch, yaw, roll, aspectRatio, world });
-      const shape = classifyHand(actor, { aspectRatio });
-      assert.equal(shape.point, true);
-      assert.equal(shape.pointGeometrySource, world ? 'world' : 'normalized-3d');
-      const engine = new GestureEngine({ aspectRatio });
-      const result = frames(engine, [actor], 0, 1500);
-      assert.deepEqual(clicks(result), [{ type: 'click', ...shape.pointer }]);
-    }
-  }
-});
-
-test('live selection coordinates reach camera edges exactly while the fixed anchor never recentres', () => {
-  for (const axis of ['x', 'y']) for (const edge of [0, 1]) {
-    const value = hand('point', { scale: 0.25 });
-    const shift = edge - value.landmarks[8][axis];
-    const actor = { ...value, landmarks: value.landmarks.map(p => ({ ...p, [axis]: p[axis] + shift })) };
-    const engine = new GestureEngine();
-    const pending = engine.update([actor], 0);
-    assert.equal(pending.selectionLiveCursor[axis], edge);
-    assert.equal(pending.selectionCursor[axis], edge);
-    assert.deepEqual(clicks(frames(engine, [actor], 20, 1500)), [{ type: 'click', ...pending.selectionCursor }]);
-  }
-});
 
 test('geometry recognizes poses under in-plane rotation, translation and size changes', () => {
   for (const angle of [0, Math.PI / 2, Math.PI, Math.PI * 1.7]) {
@@ -885,9 +534,9 @@ test('two matched hysteretic OK hands cancel selection for zoom and never retain
     y: bNeutral.landmarks[8].y, z: 0 };
   assert.equal(classifyHand(bNeutral).pinched, true);
   assert.equal(classifyHand(bNeutral).ok, false);
-  frames(engine, [aPoint, bNeutral], 0, 200);
+  frames(engine, [aPoint, bNeutral], 0, 200, 20, leftTarget);
   const a = hand('point', { id: 'a', x: -0.15 });
-  const pending = frames(engine, [a, bNeutral], 220, 400).at(-1);
+  const pending = frames(engine, [a, bNeutral], 220, 400, 20, leftTarget).at(-1);
   const b = hand('ok', { id: 'b', x: 0.15, pinchRatio: 0.35 });
   assert.equal(classifyHand(b).ok, false, 'entry threshold alone would not classify this frame');
   const aOK = hand('ok', { id: 'a', x: -0.15 });
@@ -901,8 +550,8 @@ test('two matched hysteretic OK hands cancel selection for zoom and never retain
   assert.deepEqual({ x: aPointer.x, y: aPointer.y }, classifyHand(aOK).pointer);
   assert.notDeepEqual({ x: aPointer.x, y: aPointer.y }, pending.selectionCursor);
   assert.equal(clicks(frames(engine, [b, aOK], 440, 600)).length, 0);
-  const alone = frames(engine, [a], 620, 2400);
-  assert.ok(alone.every(result => result.mode === 'point' && result.selectionBlockedReason === 'release-required'));
+  const alone = frames(engine, [a], 620, 2400, 20, leftTarget);
+  assert.ok(alone.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
   assert.equal(clicks(alone).length, 0);
 });
 
@@ -1025,7 +674,7 @@ test('one-to-two and two-to-one fists reacquire with fresh baselines, including 
     const point = hand('point', { id: anonymous ? undefined : keep ? 'b' : 'a',
       x: 0.20 + (keep ? 0.15 : -0.15) });
     if (anonymous) delete point.id;
-    const selection = frames(engine, [point], 680, 2280);
+    const selection = frames(engine, [point], 680, 2280, 20, target('after-pan'));
     assert.equal(selection[0].mode, 'click-pending');
     assert.equal(selection[0].progress, 0, 'pan duration contributes no click dwell');
     assert.equal(clicks(selection).length, 1);
@@ -1337,8 +986,7 @@ test('a single hand cursor follows pose geometry without moving the map', () => 
     assert.deepEqual(result.cursor, classifyHand(value)[key]);
     assert.equal(result.events.length, 0);
     const moved = engine.update([hand(pose, { x: 0.02 })], 20);
-    if (pose === 'point') assert.deepEqual(moved.cursor, result.cursor);
-    else assert.ok(moved.cursor.x > result.cursor.x);
+    assert.ok(moved.cursor.x > result.cursor.x);
     assert.equal(moved.events.length, 0);
   }
 });
@@ -1413,8 +1061,8 @@ test('two fist-to-OK shadows converge to both indices without causing acquisitio
 
 test('two OK hands discard a one-hand selection anchor and track both index tips without clicking', () => {
   const engine = new GestureEngine();
-  const prior = engine.update([hand('point')], 0);
-  const held = frames(engine, [hand('point')], 20, 500);
+  const prior = engine.update([hand('point')], 0, target('selected'));
+  const held = frames(engine, [hand('point')], 20, 500, 20, target('selected'));
   assert.deepEqual(held.at(-1).cursor, prior.cursor);
   const pair = [hand('ok'), hand('ok', { id: 'b', x: 0.30 })];
   const second = engine.update(pair, 520);
@@ -1566,24 +1214,6 @@ test('sub-deadband intentional movements accumulate instead of being discarded',
   assert.ok(movement.reduce((sum, event) => sum + event.dx, 0) > 0.01);
 });
 
-test('the same timed interaction clicks once at 15, 30 and 60 FPS', () => {
-  for (const fps of [15, 30, 60]) {
-    const engine = new GestureEngine();
-    const results = [];
-    const step = 1000 / fps;
-    let started, fired;
-    for (let time = 0; time < 4600; time += step) {
-      const pose = time < 200 ? 'open' : time < 4000 ? 'point' : 'open';
-      if (pose === 'point' && started === undefined) started = time;
-      const result = engine.update([hand(pose)], time);
-      if (result.events.some(event => event.type === 'click')) fired = time;
-      results.push(result);
-    }
-    assert.equal(clicks(results).length, 1, `FPS=${fps}`);
-    assert.ok(fired - started >= 1500 && fired - started <= 1500 + step + 1e-8, `duration FPS=${fps}`);
-  }
-});
-
 test('two-hand acquisition and exclusive motion work at 15, 30 and 60 FPS', () => {
   for (const fps of [15, 30, 60]) {
     for (const [pair, kind] of [[fistPair, 'pan'], [okPair, 'zoom']]) {
@@ -1622,37 +1252,12 @@ test('occlusion cancels navigation; returning with both OK or one OK never jumps
   assert.ok(one.every(result => result.cursor));
 });
 
-test('identity replacement cannot inherit dwell or create a pan jump', () => {
-  const engine = pointedEngine();
-  frames(engine, [hand('point')], 160, 420);
-  const results = frames(engine, [hand('point', { id: 'new' })], 440, 3800);
-  results.push(engine.update([hand('point', { id: 'new' })], 3820));
-  assert.equal(clicks(results).length, 0);
-  engine.reset();
-  frames(engine, okPair(), 0, 200);
-  const changed = okPair({ x: 0.04 });
-  changed[0].id = 'new';
-  assert.equal(engine.update(changed, 220).events.length, 0);
-});
-
 test('unlabelled hands match spatially; a large relocation cancels navigation', () => {
   const engine = new GestureEngine();
   const anonymousPair = options => fistPair(options).map(value => { delete value.id; return value; });
   frames(engine, anonymousPair(), 0, 200);
   assert.equal(engine.update(anonymousPair({ x: 0.02 }), 220).events[0]?.type, 'pan');
   assert.equal(engine.update(anonymousPair({ x: -0.3 }), 240).events.length, 0);
-});
-
-test('stable open release permits another hold, while a brief release does not repeat', () => {
-  const engine = pointedEngine();
-  const first = frames(engine, [hand('point')], 160, 1660);
-  assert.equal(clicks(first).length, 1);
-  engine.update([hand('open')], 1680);
-  const brief = frames(engine, [hand('point')], 1700, 5000);
-  assert.equal(clicks(brief).length, 0);
-  frames(engine, [hand('open')], 5020, 5160);
-  const second = frames(engine, [hand('point')], 5180, 6680);
-  assert.equal(clicks(second).length, 1);
 });
 
 test('One Euro smooths static jitter and follows intentional motion', () => {
@@ -1695,18 +1300,6 @@ test('two geometrically valid hands always have independent pointers with stable
   assert.ok(ok.pointers[0].x < ok.cursor.x && ok.pointers[1].x > ok.cursor.x);
   assert.notDeepEqual(ok.pointers[0], ok.pointers[1]);
   assert.deepEqual(engine.update([], 260).pointers, []);
-});
-
-test('single pointer agrees with cursor throughout pose changes, hold and confirmation', () => {
-  const engine = new GestureEngine();
-  const results = frames(engine, [hand('open')], 0, 140);
-  results.push(...frames(engine, [hand('point')], 160, 3400));
-  results.push(...frames(engine, [hand('open')], 3420, 3580));
-  for (const result of results) {
-    assert.equal(result.pointers.length, 1);
-    assert.deepEqual({ x: result.pointers[0].x, y: result.pointers[0].y }, result.cursor);
-  }
-  assert.equal(clicks(results).length, 1);
 });
 
 test('pointer filtering reduces jitter for both non-eligible hands without action colors', () => {
@@ -1782,7 +1375,8 @@ test('index tracking recovers absolute tip coordinates without a palm excursion'
   const engine = new GestureEngine();
   const first = engine.update([hand('point')], 0);
   const changed = engine.update([hand('neutral')], 20);
-  assert.deepEqual(changed.cursor, first.cursor, 'leaving an anchored selection starts a smooth visual transition');
+  assert.ok(changed.cursor.y > first.cursor.y && changed.cursor.y < hand('neutral').landmarks[8].y,
+    'without a target, the filtered index moves smoothly toward its new absolute position');
   let previous = changed.cursor;
   for (let step = 1; step <= 20; step++) {
     const result = engine.update([hand('neutral', { x: step * 0.01 })], 20 + step * 20);
@@ -1833,4 +1427,381 @@ test('two-to-one keeps the remaining pointer coherent and still reaches the came
   }
   assert.equal(atEdge.cursor.x, 0);
   assert.equal(atEdge.pointers[0].x, 0);
+});
+
+test('selection is disabled without an explicit target hit test and starts fresh when one appears', () => {
+  for (const pose of ['point', 'open', 'neutral', 'ok']) {
+    const engine = new GestureEngine();
+    const actor = hand(pose);
+    const outside = frames(engine, [actor], 0, 2000);
+    assert.equal(events(outside).length, 0);
+    assert.ok(outside.every(result => result.selectionHandId === null && result.progress === 0));
+    const empty = frames(engine, [actor], 2020, 2200, 20, target(null));
+    assert.equal(events(empty).length, 0);
+    const start = engine.update([actor], 2220, target('poi'));
+    assert.equal(start.mode, 'click-pending');
+    assert.equal(start.progress, 0);
+    assert.equal(start.selectionTargetId, 'poi');
+    assert.equal(clicks(frames(engine, [actor], 2240, 3700, 20, target('poi'))).length, 0);
+    assert.equal(clicks([engine.update([actor], 3720, target('poi'))]).length, 1);
+  }
+});
+
+test('bad, absent or throwing hit tests cannot start or inherit a selection clock', () => {
+  for (const context of [{}, null, { selectionTargetForHand: 'poi' }, target(''), target(0),
+    target(undefined), target({ id: 'poi' }), { selectionTargetForHand: () => { throw Error('unavailable'); } }]) {
+    const engine = new GestureEngine();
+    const actor = hand('open');
+    assert.equal(events(frames(engine, [actor], 0, 2000, 20, context)).length, 0);
+    assert.equal(engine.update([actor], 2020, context).selectionTargetId, null);
+    const started = engine.update([actor], 2040, target('poi'));
+    assert.equal(started.mode, 'click-pending');
+    assert.equal(started.progress, 0);
+  }
+  const engine = new GestureEngine(), actor = hand('open');
+  frames(engine, [actor], 0, 1480, 20, target('poi'));
+  const unavailable = engine.update([actor], 1500, {});
+  assert.equal(unavailable.events.length, 0);
+  assert.equal(unavailable.resetSelection, true);
+  assert.equal(unavailable.selectionHandId, null);
+  assert.equal(engine.update([actor], 1520, target('poi')).progress, 0);
+});
+
+test('a new target anchors the current raw index rather than previous filtered or palm coordinates', () => {
+  const engine = new GestureEngine();
+  frames(engine, [hand('open')], 0, 200);
+  const moved = hand('neutral', { x: 0.08 });
+  const raw = classifyHand(moved).pointer;
+  const result = engine.update([moved], 220, target('poi'));
+  assert.equal(result.mode, 'click-pending');
+  assert.equal(result.progress, 0);
+  assert.deepEqual(result.cursor, raw);
+  assert.deepEqual(result.selectionCursor, raw);
+  assert.deepEqual(result.selectionLiveCursor, raw);
+  assert.deepEqual({ x: result.pointers[0].x, y: result.pointers[0].y }, raw);
+  assert.notDeepEqual(result.cursor, classifyHand(moved).center);
+});
+
+test('hover confirms exactly at 1500 ms, never at 1499, and never repeats in its retained target', () => {
+  const engine = new GestureEngine(), actor = hand('open');
+  const start = engine.update([actor], 0, target('poi'));
+  assert.equal(events(frames(engine, [actor], 20, 1480, 20, target('poi'))).length, 0);
+  const before = engine.update([actor], 1499, target('poi'));
+  assert.equal(before.mode, 'click-pending');
+  assert.equal(before.progress, 1499 / 1500);
+  assert.equal(before.events.length, 0);
+  const confirmed = engine.update([actor], 1500, target('poi'));
+  assert.equal(confirmed.mode, 'click-confirmed');
+  assert.equal(confirmed.progress, 1);
+  assert.deepEqual(confirmed.events, [{ type: 'click', ...start.cursor }]);
+  const still = frames(engine, [actor], 1520, 6000, 20, target('poi'));
+  assert.equal(events(still).length, 0);
+  assert.ok(still.every(result => result.mode === 'click-confirmed' && result.selectionTargetId === 'poi'));
+});
+
+test('target dwell and one-click confirmation use elapsed time at 15, 30 and 60 FPS', () => {
+  for (const fps of [15, 30, 60]) {
+    const engine = new GestureEngine(), actor = hand('neutral');
+    const results = [];
+    let confirmedAt = null;
+    for (let frame = 0; frame <= fps * 3; frame++) {
+      const timestamp = frame * 1000 / fps;
+      const result = engine.update([actor], timestamp, target('poi'));
+      results.push(result);
+      if (result.events.length) confirmedAt = timestamp;
+      if (timestamp < 1500) assert.equal(result.events.length, 0);
+    }
+    assert.equal(clicks(results).length, 1);
+    assert.ok(confirmedAt >= 1500 && confirmedAt < 1500 + 1000 / fps + 1e-9);
+    assert.ok(results.filter(result => result.mode === 'click-confirmed').every(result => result.progress === 1));
+  }
+});
+
+test('posture, thumb motion and unusable world fingers do not interrupt a usable index over its target', () => {
+  const engine = new GestureEngine();
+  const initial = hand('open');
+  const raw = initial.landmarks[8];
+  const start = engine.update([initial], 0, target('poi'));
+  const results = [];
+  for (let time = 20; time <= 1500; time += 20) {
+    const pose = time < 300 ? 'neutral' : time < 600 ? 'point' : time < 900 ? 'ok' : 'open';
+    const actor = hand(pose);
+    actor.landmarks[8] = { ...raw };
+    if (time >= 900) actor.landmarks[4].x += 0.30;
+    if (time >= 700) actor.worldLandmarks = [];
+    const result = engine.update([actor], time, target('poi'));
+    results.push(result);
+    assert.equal(result.selectionHandId, start.selectionHandId);
+    assert.deepEqual(result.selectionCursor, start.selectionCursor);
+    assert.deepEqual(result.selectionLiveCursor, { x: raw.x, y: raw.y });
+    assert.equal(result.resetSelection, false);
+    assert.equal(result.progress, time / 1500);
+  }
+  assert.equal(clicks(results).length, 1);
+  assert.ok(results.every(result => result.navigationKind === null));
+});
+
+test('malformed or contradictory world fingers do not veto image-index hover but cannot navigate', () => {
+  for (const worldLandmarks of [[], null, Array.from({ length: 21 }, () => ({ x: 0, y: 0, z: NaN })),
+    cameraView('fist').worldLandmarks]) {
+    const actor = { ...hand('point'), worldLandmarks };
+    const shape = classifyHand(actor);
+    assert.equal(shape.selectionTrackingValid, true);
+    assert.equal(shape.actionGeometryValid, false);
+    const results = frames(new GestureEngine(), [actor], 0, 1800, 20, target('poi'));
+    assert.equal(clicks(results).length, 1);
+    assert.ok(events(results).every(event => event.type === 'click'));
+  }
+});
+
+test('a positively closed image fist cannot hover-select when its world result is unusable', () => {
+  const fist = { ...hand('fist'), worldLandmarks: [] };
+  assert.equal(classifyHand(fist).fist, false, 'unusable world cannot enable navigation');
+  assert.equal(classifyHand(fist).selectionTrackingValid, false, 'positive image closure still reserves the hand');
+  const results = frames(new GestureEngine(), [fist], 0, 2000, 20, target('poi'));
+  assert.equal(events(results).length, 0);
+  assert.ok(results.every(result => result.selectionHandId === null && result.navigationKind === null));
+  const engine = new GestureEngine();
+  const pair = [fist, hand('open', { id: 'b', x: 0.20 })];
+  const selected = frames(engine, pair, 0, 1500, 20, target('other'));
+  assert.equal(clicks(selected).length, 1, 'the reserved invalid fist cannot veto its usable companion');
+  assert.equal(selected[0].pointers.find(pointer => pointer.id === selected[0].selectionHandId).handIndex, 1);
+});
+
+test('the raw index must stay in frame while unrelated clipped fingers do not veto hovering', () => {
+  const clippedOther = hand('open');
+  clippedOther.landmarks[12].x = 1.05;
+  assert.equal(classifyHand(clippedOther).selectionTrackingValid, true);
+  assert.equal(clicks(frames(new GestureEngine(), [clippedOther], 0, 1500, 20, target('edge'))).length, 1);
+  for (const [axis, outside] of [['x', -0.001], ['x', 1.001], ['y', -0.001], ['y', 1.001]]) {
+    const value = hand('open');
+    value.landmarks[8][axis] = outside;
+    const calls = [];
+    const context = { selectionTargetForHand: args => { calls.push(args); return 'edge'; } };
+    const results = frames(new GestureEngine(), [value], 0, 1600, 20, context);
+    assert.equal(events(results).length, 0);
+    assert.ok(results.every(result => result.selectionHandId === null));
+    assert.ok(calls.every(args => args.pointer[axis] === (outside < 0 ? 0 : 1)));
+    assert.ok(results.every(result => result.pointers[0][axis] === (outside < 0 ? 0 : 1)));
+  }
+});
+
+test('live-index jitter is bounded from its fixed origin and does not leak into the anchored click', () => {
+  for (const aspectRatio of [1, 16 / 9]) {
+    const engine = new GestureEngine({ aspectRatio });
+    const actor = hand('open');
+    const start = engine.update([actor], 0, target('poi'));
+    const results = [];
+    for (let time = 20; time <= 1500; time += 20) {
+      const moved = hand('open', { x: Math.sin(time / 150) * 0.045, y: Math.cos(time / 190) * 0.03 });
+      const result = engine.update([moved], time, target('poi'));
+      results.push(result);
+      assert.deepEqual(result.selectionCursor, start.selectionCursor);
+      assert.deepEqual(result.selectionLiveCursor, classifyHand(moved, { aspectRatio }).pointer);
+      assert.equal(result.selectionHandId, start.selectionHandId);
+    }
+    assert.ok(results.some(result => Math.abs(result.selectionLiveCursor.x - start.cursor.x) > 0.04));
+    assert.deepEqual(clicks(results), [{ type: 'click', ...start.cursor }]);
+  }
+});
+
+test('leaving the motor drift bound resets an unfinished hold softly with a new full timer', () => {
+  const engine = new GestureEngine();
+  engine.update([hand('open')], 0, target('poi'));
+  const movement = [];
+  for (let frame = 1; frame <= 8; frame++) {
+    movement.push(engine.update([hand('open', { x: frame * 0.02 })], frame * 20, target('poi')));
+  }
+  assert.equal(events(movement).length, 0);
+  assert.equal(movement.at(-1).mode, 'idle');
+  assert.equal(movement.at(-1).resetSelection, true);
+  const actor = hand('open', { x: 0.16 });
+  const restart = engine.update([actor], 180, target('poi'));
+  assert.equal(restart.mode, 'click-pending');
+  assert.equal(restart.progress, 0);
+  assert.equal(restart.selectionBlockedReason, null);
+  assert.deepEqual(restart.selectionCursor, classifyHand(actor).pointer);
+  assert.equal(clicks(frames(engine, [actor], 200, 1660, 20, target('poi'))).length, 0);
+  assert.equal(clicks([engine.update([actor], 1680, target('poi'))]).length, 1);
+  const confirmedMotion = frames(engine, [hand('open')], 1700, 2200, 20, target('poi'));
+  assert.equal(events(confirmedMotion).length, 0);
+  assert.ok(confirmedMotion.every(result => result.mode === 'click-confirmed'));
+});
+
+test('leaving at the deadline cancels before clicking, and coming back starts at zero without a pose release', () => {
+  const engine = new GestureEngine(), actor = hand('open');
+  frames(engine, [actor], 0, 1480, 20, target('poi'));
+  const exited = engine.update([actor], 1500, target(null));
+  assert.equal(exited.events.length, 0);
+  assert.equal(exited.resetSelection, true);
+  const restart = engine.update([actor], 1520, target('poi'));
+  assert.equal(restart.mode, 'click-pending');
+  assert.equal(restart.progress, 0);
+  assert.equal(clicks(frames(engine, [actor], 1540, 3000, 20, target('poi'))).length, 0);
+  assert.equal(clicks([engine.update([actor], 3020, target('poi'))]).length, 1);
+});
+
+test('changing target before confirmation discards old time and anchors the live index for the new target', () => {
+  const engine = new GestureEngine(), actor = hand('open');
+  const old = engine.update([actor], 0, target('a'));
+  frames(engine, [actor], 20, 1000, 20, target('a'));
+  const moved = hand('open', { x: 0.04 });
+  const current = engine.update([moved], 1020, target('b'));
+  assert.equal(current.mode, 'click-pending');
+  assert.equal(current.progress, 0);
+  assert.equal(current.resetSelection, true);
+  assert.equal(current.selectionTargetId, 'b');
+  assert.equal(current.selectionHandId, old.selectionHandId);
+  assert.deepEqual(current.selectionCursor, classifyHand(moved).pointer);
+  assert.notDeepEqual(current.selectionCursor, old.selectionCursor);
+  assert.equal(clicks(frames(engine, [moved], 1040, 2500, 20, target('b'))).length, 0);
+  assert.deepEqual(engine.update([moved], 2520, target('b')).events, [{ type: 'click', ...current.cursor }]);
+});
+
+test('confirmation inhibits only its own target and target exit rearms after 120 ms even over another target', () => {
+  for (const exitDuration of [100, 120]) {
+    const engine = new GestureEngine(), actor = hand('open');
+    assert.equal(clicks(frames(engine, [actor], 0, 1500, 20, target('a'))).length, 1);
+    const next = engine.update([actor], 1520, target('b'));
+    assert.equal(next.mode, 'click-pending');
+    assert.equal(next.progress, 0);
+    assert.equal(next.selectionTargetId, 'b');
+    const outside = frames(engine, [actor], 1540, 1520 + exitDuration, 20, target('b'));
+    assert.equal(events(outside).length, 0);
+    // At 1640 the old ID has been absent exactly 120 ms. At 1620 it has
+    // been absent only 100 ms; returning prevents that old destination repeat.
+    const returning = engine.update([actor], 1540 + exitDuration, target('a'));
+    if (exitDuration === 100) {
+      assert.equal(returning.mode, 'idle');
+      assert.equal(returning.selectionBlockedReason, 'release-required');
+      assert.equal(clicks(frames(engine, [actor], 1660, 3400, 20, target('a'))).length, 0);
+    } else {
+      assert.equal(returning.mode, 'click-pending');
+      assert.equal(returning.progress, 0);
+      assert.equal(returning.selectionBlockedReason, null);
+      assert.equal(clicks(frames(engine, [actor], 1680, 3140, 20, target('a'))).length, 0);
+      assert.equal(clicks([engine.update([actor], 3160, target('a'))]).length, 1);
+    }
+  }
+});
+
+test('a different target can complete immediately after confirmation without hiding the hand or changing posture', () => {
+  const engine = new GestureEngine(), actor = hand('neutral');
+  assert.equal(clicks(frames(engine, [actor], 0, 1500, 20, target('a'))).length, 1);
+  const second = engine.update([actor], 1520, target('b'));
+  assert.equal(second.progress, 0);
+  const history = frames(engine, [actor], 1540, 3000, 20, target('b'));
+  assert.equal(events(history).length, 0);
+  assert.deepEqual(engine.update([actor], 3020, target('b')).events, [{ type: 'click', ...second.cursor }]);
+});
+
+test('soft target cancellation restarts dwell while hard cancellation blocks only the interrupted destination', () => {
+  for (const hard of [false, true]) {
+    const engine = new GestureEngine(), actor = hand('open');
+    frames(engine, [actor], 0, 200, 20, target('a'));
+    engine.cancelClick(hard);
+    const result = engine.update([actor], 220, target('a'));
+    assert.equal(result.resetSelection, true);
+    assert.equal(result.events.length, 0);
+    assert.equal(result.mode, hard ? 'idle' : 'click-pending');
+    assert.equal(result.selectionBlockedReason, hard ? 'release-required' : null);
+    const other = engine.update([actor], 240, target('b'));
+    assert.equal(other.mode, 'click-pending');
+    assert.equal(other.progress, 0);
+    assert.equal(other.selectionBlockedReason, null);
+    assert.equal(clicks(frames(engine, [actor], 260, 1720, 20, target('b'))).length, 0);
+    assert.equal(clicks([engine.update([actor], 1740, target('b'))]).length, 1);
+  }
+});
+
+test('safety cancellation without a known target requires 120 ms of null hit tests, not a posture change', () => {
+  const engine = new GestureEngine(), actor = hand('open');
+  frames(engine, [actor], 0, 200);
+  engine.cancelClick(true);
+  const blocked = frames(engine, [actor], 220, 500, 20, target('poi'));
+  assert.ok(blocked.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
+  frames(engine, [actor], 520, 620, 20, target(null));
+  assert.equal(engine.update([actor], 640, target('poi')).selectionBlockedReason, 'release-required');
+  frames(engine, [actor], 660, 780, 20, target(null));
+  const restart = engine.update([actor], 800, target('poi'));
+  assert.equal(restart.mode, 'click-pending');
+  assert.equal(restart.progress, 0);
+  assert.equal(restart.selectionBlockedReason, null);
+  assert.equal(clicks(frames(engine, [actor], 820, 2280, 20, target('poi'))).length, 0);
+  assert.equal(clicks([engine.update([actor], 2300, target('poi'))]).length, 1);
+});
+
+test('loss, frame gaps, identity changes and real index outliers cannot inherit or retry the same target until exit', () => {
+  for (const interruption of ['loss', 'gap', 'identity', 'index', 'malformed']) {
+    const engine = new GestureEngine(), actor = hand('open');
+    const start = engine.update([actor], 0, target('poi'));
+    frames(engine, [actor], 20, 200, 20, target('poi'));
+    let returningAt = 240, returning = actor;
+    if (interruption === 'loss') engine.update([], 220, target('poi'));
+    if (interruption === 'gap') returningAt = 380;
+    if (interruption === 'identity') returning = hand('open', { id: 'replacement' });
+    if (interruption === 'index') {
+      returning = hand('open');
+      returning.landmarks[8].x += 0.24;
+    }
+    if (interruption === 'malformed') {
+      const broken = hand('open'); broken.landmarks[8].x = NaN;
+      engine.update([broken], 220, target('poi'));
+    }
+    const returnResult = engine.update([returning], returningAt, target('poi'));
+    assert.notEqual(returnResult.selectionHandId, start.selectionHandId, interruption);
+    assert.equal(returnResult.mode, 'idle', interruption);
+    assert.equal(returnResult.selectionBlockedReason, 'release-required', interruption);
+    assert.equal(clicks(frames(engine, [returning], returningAt + 20, returningAt + 1800, 20, target('poi'))).length, 0);
+    frames(engine, [returning], returningAt + 1820, returningAt + 1940, 20, target(null));
+    const restartAt = returningAt + 1960;
+    const restart = engine.update([returning], restartAt, target('poi'));
+    assert.equal(restart.mode, 'click-pending', interruption);
+    assert.equal(restart.progress, 0, interruption);
+    assert.equal(clicks(frames(engine, [returning], restartAt + 20, restartAt + 1480, 20, target('poi'))).length, 0);
+    assert.equal(clicks([engine.update([returning], restartAt + 1500, target('poi'))]).length, 1);
+  }
+});
+
+test('two OK zoom cancels target hover and requires a null target interval before single-hand selection', () => {
+  const engine = new GestureEngine(), actor = hand('open', { x: -0.15 });
+  const hovered = frames(engine, [actor], 0, 200, 20, target('poi')).at(-1);
+  const acquisition = frames(engine, okPair(), 220, 380, 20, target('poi'));
+  assert.ok(acquisition.every(result => result.selectionHandId === null && result.navigationCandidateKind === 'zoom'));
+  assert.equal(events(acquisition).length, 0);
+  assert.equal(engine.update(okPair(), 400, target('poi')).navigationKind, 'zoom');
+  const remaining = hand('open', { x: -0.15 });
+  const blocked = frames(engine, [remaining], 420, 2200, 20, target('poi'));
+  assert.ok(blocked.every(result => result.mode === 'idle' && result.selectionBlockedReason === 'release-required'));
+  assert.equal(events(blocked).length, 0);
+  assert.equal(blocked[0].selectionHandId, hovered.selectionHandId);
+  frames(engine, [remaining], 2220, 2340, 20, target(null));
+  const restart = engine.update([remaining], 2360, target('poi'));
+  assert.equal(restart.mode, 'click-pending');
+  assert.equal(restart.progress, 0);
+  assert.equal(clicks(frames(engine, [remaining], 2380, 3840, 20, target('poi'))).length, 0);
+  assert.equal(clicks([engine.update([remaining], 3860, target('poi'))]).length, 1);
+});
+
+test('a blocked target cannot occupy an idle selection turn but a confirmed owner keeps its retained region', () => {
+  const a = hand('open', { id: 'a', x: -0.15 }), b = hand('neutral', { id: 'b', x: 0.15 });
+  const bothTargets = { selectionTargetForHand: ({ pointer }) => pointer.x < 0.5 ? 'a' : 'b' };
+  const engine = new GestureEngine();
+  const first = frames(engine, [a], 0, 200, 20, bothTargets).at(-1);
+  engine.cancelClick(true);
+  const second = engine.update([b, a], 220, bothTargets);
+  assert.equal(second.mode, 'click-pending');
+  assert.equal(second.selectionTargetId, 'b');
+  assert.notEqual(second.selectionHandId, first.selectionHandId);
+  assert.equal(second.progress, 0);
+  const before = frames(engine, [a, b], 240, 1700, 20, bothTargets);
+  assert.equal(events(before).length, 0);
+  const confirmed = engine.update([a, b], 1720, bothTargets);
+  assert.equal(confirmed.mode, 'click-confirmed');
+  assert.equal(confirmed.selectionTargetId, 'b');
+  assert.equal(confirmed.events.length, 1);
+  const retained = frames(engine, [a, b], 1740, 3000, 20, bothTargets);
+  assert.ok(retained.every(result => result.selectionHandId === second.selectionHandId
+    && result.selectionTargetId === 'b' && result.mode === 'click-confirmed'));
+  assert.equal(events(retained).length, 0);
 });

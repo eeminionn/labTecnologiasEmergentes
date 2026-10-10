@@ -179,7 +179,8 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   // the action pose; its hand/pointer remains available at the image edges.
   const handInFrame = points.every(p => p.x >= 0 && p.x <= 1 && p.y >= 0 && p.y <= 1);
   const actionGeometryValid = okGeometry.valid && pointGeometry.valid && (hand.worldLandmarks === undefined
-    || (geometry.valid && !(geometry.fist && (imageOkGeometry.ok || imagePoint || imageOpen))
+    || (geometry.valid && !(geometry.fist && (imageOkGeometry.ok || imagePoint || imageOpen
+      || extended[0] || imagePointGeometry.fingers[0]?.extended))
       && !((ok || point) && imageFist.fist)
       && !(point && (extended.slice(1).some(Boolean)
         || imagePointGeometry.fingers.slice(1).some(finger => finger.extended)
@@ -187,6 +188,8 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
   return {
     center,
     pointer: copy(points[8]),
+    selectionTrackingValid: points[8].x >= 0 && points[8].x <= 1 && points[8].y >= 0 && points[8].y <= 1
+      && !imageFist.fist,
     thumb: copy(points[4]),
     knuckles: mean(points[5], points[9], points[13], points[17]),
     pinch: mean(points[4], points[8]),
@@ -204,7 +207,7 @@ export function classifyHand(hand, options = DEFAULT_GESTURE_OPTIONS, wasPinched
       : hand.worldLandmarks === undefined ? 'invalid-normalized-3d' : 'invalid-world',
     // An explicit closed 3D pose must not coexist with positive image-space
     // pointing/open/OK evidence from a mismatched result. Keep the pointer,
-    // but cancel actions rather than choosing one contradictory pose.
+    // but cancel navigation rather than choosing one contradictory action pose.
     actionGeometryValid,
     extended,
     folded: geometry.folded || [false, false, false, false],
@@ -264,25 +267,31 @@ class PointFilter {
 }
 
 /**
- * update([{ landmarks: [{x,y,z}, ...21], worldLandmarks?: [...21], id?: stableCameraId }], timestampMs)
+ * update([{ landmarks: [{x,y,z}, ...21], worldLandmarks?: [...21], id?: stableCameraId }],
+ *        timestampMs, { selectionTargetForHand: ({trackId, handIndex, pointer}) => string|null })
  * -> { mode, cursor, selectionHandId, selectionCursor, selectionLiveCursor,
+ *      selectionTargetId,
  *      pointers:[{id,handIndex,actionGeometryValid,x,y}], navigationKind,
  *      navigationHandIds, navigationCandidateKind, progress, events, hands }
  *
- * At most two hands are accepted. Only the extended index with all other
- * fingers positively retracted clicks automatically after
- * clickDwellMs and remains click-confirmed until released, without repeating.
- * The actual index position starts the dwell; no other pose contributes time.
- * Selection belongs to one tracked hand; another hand
+ * At most two hands are accepted. A usable index tip over a target clicks after
+ * clickDwellMs, regardless of the other fingers or the index's posture. Without
+ * the target callback, or when it returns null, selection does not accumulate.
+ * The actual image-space index starts the dwell. A positively closed fist is
+ * reserved for navigation; other fingers' invalid world geometry cannot veto
+ * selection. Selection belongs to one tracked hand and one target; another hand
  * entering, leaving or changing pose cannot transfer its target or deadline.
- * Participant loss, a model pause, identity replacement or invalid geometry
- * require a stable pose release. Leaving the bounded selection area starts a
- * fresh dwell; it does not rearm an already confirmed pointing pose.
- * A different pointing hand starts its own full dwell at its actual index.
+ * Participant loss, a model pause or identity replacement requires target exit
+ * before retrying the interrupted destination. Confirming blocks only that
+ * hand's same target until it has left for rearmMs; a different target or hand
+ * starts its own full dwell, without inheriting time. A target exit, replacement
+ * or bounded live-index excursion resets an unfinished dwell without requiring
+ * a pose change. Safety cancellation without a known destination requires a
+ * stable null target before selecting again.
  * Visible pointers follow index tip 8, or the four MCP knuckles for a fist.
  * Any closed fist pans by its knuckles; two fists use their knuckle midpoint.
  * A detected free hand does not contribute to pan. Two valid OK hands zoom;
- * otherwise pointing takes priority over pan. A single OK does not select.
+ * otherwise target hover takes priority over pan, including a single OK hover.
  * Changing participant identities restarts navigation acquisition; free hands
  * do not. Invalid geometry cannot act or veto another valid hand's action.
  * The navigation modes never emit each other's event. Open palms do not navigate.
@@ -312,6 +321,7 @@ export class GestureEngine {
     this.observedGeometryInvalid = false;
     this.selectionHandId = null;
     this.blockNewTracks = false;
+    this.recoveryTargets = new Set();
     this.cancelInteraction();
   }
 
@@ -323,7 +333,7 @@ export class GestureEngine {
     this.selectionHandId = null;
   }
 
-  /** UI target exits can restart dwell; safety cancellation requires release. */
+  /** UI target exits can restart dwell; safety cancellation requires target exit. */
   cancelClick(requireRelease = false) {
     const interaction = this.pendingClick || this.confirmedClick;
     const track = this.tracks.find(track => track.trackId === (interaction?.trackId ?? this.selectionHandId));
@@ -331,28 +341,41 @@ export class GestureEngine {
     this.confirmedClick = null;
     this.selectionResetRequested = true;
     if (!requireRelease) return;
-    if (track && interaction) {
-      this.blockTrack(track);
-      this.rearmTrack(track, this.lastTimestamp);
-    }
+    if (track && interaction) this.blockTrack(track, interaction.targetId);
     else {
       this.blockNewTracks = true;
-      for (const current of this.tracks) this.blockTrack(current);
+      for (const current of this.tracks) this.blockTrack(current, null, true);
     }
   }
 
-  blockTrack(track) {
-    track.clickBlocked = true;
-    track.rearmSince = null;
+  blockTrack(track, targetId = track.selectionTargetId, requireEmpty = false) {
+    if (requireEmpty || typeof targetId !== 'string') {
+      track.blockUntilTargetExit = true;
+      track.outsideAllSince = null;
+    } else track.blockedTargets.set(targetId, null);
+    track.clickBlocked = track.blockUntilTargetExit || track.blockedTargets.has(track.selectionTargetId);
   }
 
   rearmTrack(track, timestampMs) {
-    if (!track.shape.actionGeometryValid || track.shape.point) {
-      track.rearmSince = null;
-      return;
+    const targetId = track.selectionTargetId;
+    if (track.blockUntilTargetExit) {
+      if (targetId !== null) track.outsideAllSince = null;
+      else {
+        if (track.outsideAllSince === null) track.outsideAllSince = timestampMs;
+        if (timestampMs - track.outsideAllSince >= this.options.rearmMs) track.blockUntilTargetExit = false;
+      }
     }
-    if (track.rearmSince === null) track.rearmSince = timestampMs;
-    if (timestampMs - track.rearmSince >= this.options.rearmMs) track.clickBlocked = false;
+    for (const [blockedId, outsideSince] of track.blockedTargets) {
+      if (targetId === blockedId) track.blockedTargets.set(blockedId, null);
+      else if (outsideSince === null) track.blockedTargets.set(blockedId, timestampMs);
+      else if (timestampMs - outsideSince >= this.options.rearmMs) track.blockedTargets.delete(blockedId);
+    }
+    track.clickBlocked = track.blockUntilTargetExit || track.blockedTargets.has(targetId);
+  }
+
+  rememberTrackingInterruption(interaction = this.pendingClick || this.confirmedClick) {
+    if (interaction?.targetId) this.recoveryTargets.add(interaction.targetId);
+    else if (this.hasObservedHand) this.blockNewTracks = true;
   }
 
   result(mode = 'idle', cursor = null, progress = 0, events = [], hands = this.tracks.length) {
@@ -363,25 +386,26 @@ export class GestureEngine {
       ...(selectionTrack === track && selectionCursor ? selectionCursor : track.visual.position) }));
     const result = { mode, cursor, pointers, navigationKind: mode === 'navigate' ? this.navigation.kind : null,
       selectionHandId: selectionTrack?.trackId ?? null, selectionCursor,
+      selectionTargetId: selectionTrack?.selectionTargetId ?? null,
       selectionLiveCursor: selectionTrack ? { x: clamp(selectionTrack.shape.pointer.x, 0, 1),
         y: clamp(selectionTrack.shape.pointer.y, 0, 1) } : null,
       navigationCandidateKind: this.navigationCandidate?.kind ?? null,
       navigationHandIds: mode === 'navigate' ? [...this.navigation.handIds] : [],
       progress: clamp(progress, 0, 1), events, hands,
       resetSelection: this.selectionResetRequested,
-      selectionBlockedReason: selectionTrack ? !selectionTrack.shape.actionGeometryValid ? 'invalid-geometry'
-        : selectionTrack.clickBlocked ? 'release-required' : null
+      selectionBlockedReason: selectionTrack ? selectionTrack.clickBlocked ? 'release-required' : null
         : this.tracks.every(track => !track.shape.actionGeometryValid)
             && (this.observedGeometryInvalid || this.tracks.length > 0) ? 'invalid-geometry' : null };
     this.selectionResetRequested = false;
     return result;
   }
 
-  matchHands(hands, timestampMs) {
+  matchHands(hands, timestampMs, context = {}) {
     const valid = hands.map((hand, rawIndex) => ({ hand, rawIndex, shape: classifyHand(hand, this.options) }))
       .filter(entry => entry.shape);
     if (valid.length > 2) return [];
     const oldTracks = this.tracks;
+    const navigationIds = new Set((this.navigation || this.navigationCandidate)?.handIds || []);
     const candidates = [];
     valid.forEach((entry, newIndex) => {
       oldTracks.forEach((track, oldIndex) => {
@@ -395,12 +419,14 @@ export class GestureEngine {
         const sameReference = ['fist', 'ok', 'point', 'open']
           .every(key => matchedShape[key] === track.shape[key]);
         const reference = entry.shape.fist ? 'knuckles' : 'pointer';
-        const pointerJump = sameReference
-          ? metricDistance(entry.shape[reference], track.shape[reference], this.options.aspectRatio) : 0;
+        const navigating = navigationIds.has(track.trackId);
+        const pointerJump = navigating
+          ? sameReference ? metricDistance(entry.shape[reference], track.shape[reference], this.options.aspectRatio) : 0
+          : metricDistance(entry.shape.pointer, track.shape.pointer, this.options.aspectRatio);
         // A landmark outlier can move fingertips while leaving every palm
         // landmark/ID intact. Such a jump must not inherit live navigation or
         // enter its filters, where opposing jumps could collapse separation.
-        if (separation <= this.options.trackingJumpRadius && pinchJump <= this.options.trackingJumpRadius
+        if (separation <= this.options.trackingJumpRadius && (!navigating || pinchJump <= this.options.trackingJumpRadius)
           && pointerJump <= this.options.trackingJumpRadius) {
           candidates.push({ newIndex, oldIndex, separation });
         }
@@ -428,7 +454,10 @@ export class GestureEngine {
         externalId: entry.hand.id,
         pinched: false,
         clickBlocked: this.blockNewTracks,
-        rearmSince: null,
+        blockUntilTargetExit: this.blockNewTracks,
+        outsideAllSince: null,
+        blockedTargets: new Map([...this.recoveryTargets].map(targetId => [targetId, null])),
+        selectionTargetId: null,
         cooldownUntil: 0,
         filters: Object.fromEntries(['pointer', 'pinch', 'center', 'knuckles']
           .map(key => [key, new PointFilter(this.options)])),
@@ -442,6 +471,19 @@ export class GestureEngine {
         .map(key => [key, track.filters[key].update(track.shape[key], timestampMs)]));
       return track;
     });
+    const callback = typeof context?.selectionTargetForHand === 'function' ? context.selectionTargetForHand : null;
+    for (const track of matched) {
+      let targetId = null;
+      if (callback) {
+        try {
+          const resolved = callback({ trackId: track.trackId, handIndex: track.handIndex,
+            pointer: { x: clamp(track.shape.pointer.x, 0, 1), y: clamp(track.shape.pointer.y, 0, 1) } });
+          if (track.shape.selectionTrackingValid && typeof resolved === 'string' && resolved.length > 0) targetId = resolved;
+        } catch { /* A missing/invalid hit test cannot contribute selection dwell. */ }
+      }
+      track.selectionTargetId = targetId;
+      this.rearmTrack(track, timestampMs);
+    }
     const isZoomFrame = matched.filter(track => track.shape.actionGeometryValid && track.shape.ok).length === 2;
     for (const track of matched) track.visual = this.handPointer(track, timestampMs, matched.length, !isZoomFrame);
     return matched;
@@ -453,11 +495,10 @@ export class GestureEngine {
     this.selectionHandId = nextId;
   }
 
-  update(hands, timestampMs) {
+  update(hands, timestampMs, context = {}) {
     this.observedGeometryInvalid = false;
     if (!Array.isArray(hands) || !Number.isFinite(timestampMs)) {
-      for (const track of this.tracks) this.blockTrack(track);
-      if (this.hasObservedHand) this.blockNewTracks = true;
+      this.rememberTrackingInterruption();
       this.cancelInteraction();
       this.tracks = [];
       this.lastTimestamp = null;
@@ -465,8 +506,7 @@ export class GestureEngine {
     }
     if (this.lastTimestamp !== null
       && (timestampMs <= this.lastTimestamp || timestampMs - this.lastTimestamp >= this.options.maxFrameGapMs)) {
-      for (const track of this.tracks) this.blockTrack(track);
-      if (this.hasObservedHand) this.blockNewTracks = true;
+      this.rememberTrackingInterruption();
       this.cancelInteraction();
       this.tracks = [];
       this.selectionResetRequested = true;
@@ -475,12 +515,12 @@ export class GestureEngine {
     const previousActor = this.pendingClick || this.confirmedClick;
     const previousSelectionId = this.selectionHandId;
     const previousParticipants = (this.navigation || this.navigationCandidate)?.handIds ?? [];
-    this.tracks = this.matchHands(hands, timestampMs);
+    this.tracks = this.matchHands(hands, timestampMs, context);
     const ids = new Set(this.tracks.map(track => track.trackId));
     const count = this.tracks.length;
     this.observedGeometryInvalid = count !== hands.length;
     if (count === 0 || hands.length > 2) {
-      if (this.hasObservedHand) this.blockNewTracks = true;
+      this.rememberTrackingInterruption(previousActor);
       this.cancelInteraction();
       this.selectionResetRequested = previousSelectionId !== null;
       return this.result();
@@ -489,65 +529,57 @@ export class GestureEngine {
     const lostSelection = previousSelectionId !== null && !ids.has(previousSelectionId);
     const lostParticipant = previousParticipants.some(id => !ids.has(id));
     if (lostSelection || lostParticipant) {
-      // A free hand may come and go. A missing/replaced participant cannot pass
-      // its selection or navigation state to a newly assigned identity.
-      this.blockNewTracks = true;
-      for (const track of this.tracks) if (track.isNew) this.blockTrack(track);
-      if (lostActor) {
-        this.pendingClick = null;
-        this.confirmedClick = null;
+      // A free hand may come and go; new identities cannot inherit an absent
+      // actor's clock or repeat the same destination after a tracking break.
+      this.rememberTrackingInterruption(previousActor);
+      for (const track of this.tracks) if (track.isNew) {
+        this.blockTrack(track, previousActor?.targetId, !previousActor?.targetId);
       }
+      if (lostActor) { this.pendingClick = null; this.confirmedClick = null; }
       if (lostSelection) this.setSelectionTrack(null);
     }
     for (const track of this.tracks) {
       if (previousParticipants.includes(track.trackId) && !track.shape.actionGeometryValid) {
-        // A participant's geometry interruption requires its own release,
-        // even when a valid free hand becomes the displayed selection candidate.
-        this.blockTrack(track);
+        this.blockTrack(track, null, true);
       }
     }
     this.hasObservedHand = true;
-    const eligible = this.tracks.filter(track => track.shape.actionGeometryValid);
-    for (const track of eligible) this.rearmTrack(track, timestampMs);
-    const okHands = eligible.filter(track => track.shape.ok);
+    const eligibleNavigation = this.tracks.filter(track => track.shape.actionGeometryValid);
+    const okHands = eligibleNavigation.filter(track => track.shape.ok);
     if (okHands.length === 2) {
       if (this.pendingClick || this.confirmedClick) this.cancelClick(true);
-      for (const track of okHands) this.blockTrack(track);
+      for (const track of okHands) this.blockTrack(track, null, true);
       this.setSelectionTrack(null);
       return this.updateNavigation(timestampMs, 'zoom', okHands);
     }
-    const pointing = eligible.filter(track => track.shape.point);
-    if (pointing.length) {
-      // Preserve the owner when both hands point. A new actor never inherits
-      // another hand's target, elapsed time, or release/cooldown state.
-      const selected = pointing.find(track => track.trackId === this.selectionHandId)
-        || pointing.reduce((first, track) => track.trackId < first.trackId ? track : first);
+    // Normalized image tracking and the hit test supply selection eligibility.
+    // Other fingers' world geometry and the old index-only classifier do not.
+    const candidates = this.tracks.filter(track => track.shape.selectionTrackingValid
+      && track.selectionTargetId !== null && !track.shape.fist);
+    if (candidates.length) {
       const interaction = this.pendingClick || this.confirmedClick;
-      if (interaction && interaction.trackId !== selected.trackId) {
-        this.cancelClick(true);
-        this.selectionResetRequested = true;
-      }
+      // A confirmed owner remains selected inside its retained region. Without
+      // a live hold, a blocked destination must not occupy the turn of another
+      // hand which can begin an independent, complete dwell.
+      const available = candidates.filter(track => !track.clickBlocked);
+      const pool = available.length ? available : candidates;
+      const selected = candidates.find(track => track.trackId === interaction?.trackId)
+        || pool.find(track => track.trackId === this.selectionHandId)
+        || pool.reduce((first, track) => track.trackId < first.trackId ? track : first);
+      if (interaction && interaction.trackId !== selected.trackId) this.cancelClick(false);
       this.navigationCandidate = null;
       this.navigation = null;
       this.setSelectionTrack(selected);
       return this.updateSingleHand(timestampMs, selected);
     }
-    if (this.pendingClick || this.confirmedClick) this.cancelClick(true);
-    const fists = eligible.filter(track => track.shape.fist);
-    if (fists.length) {
-      this.setSelectionTrack(null);
-      return this.updateNavigation(timestampMs, 'pan', fists);
-    }
+    if (this.pendingClick || this.confirmedClick) this.cancelClick(false);
+    const fists = eligibleNavigation.filter(track => track.shape.fist);
+    this.setSelectionTrack(null);
+    if (fists.length) return this.updateNavigation(timestampMs, 'pan', fists);
     this.navigationCandidate = null;
     this.navigation = null;
-    const ownerId = this.selectionHandId;
-    const candidate = eligible.find(track => track.trackId === ownerId && !track.shape.fist)
-      || eligible.find(track => track.shape.point)
-      || eligible.find(track => !track.shape.fist)
-      || this.tracks.find(track => track.trackId === ownerId)
-      || this.tracks[0];
-    this.setSelectionTrack(candidate);
-    return this.updateSingleHand(timestampMs, candidate);
+    const visual = this.tracks[0]?.visual.position ?? null;
+    return this.result('idle', visual);
   }
 
   updateNavigation(timestampMs, kind, contributors = this.tracks) {
@@ -629,8 +661,7 @@ export class GestureEngine {
       && timestampMs - previous.time <= this.options.cursorAnchorMaxAgeMs;
     const hold = this.pendingClick || this.confirmedClick;
     const locked = allowSelection && hold?.trackId === track.trackId
-      && track.shape.point
-      && track.shape.actionGeometryValid;
+      && track.shape.selectionTrackingValid && !track.shape.fist && track.selectionTargetId === hold.targetId;
     let transition = null;
     let edgeMotion = false;
     if (recent) {
@@ -661,7 +692,7 @@ export class GestureEngine {
       y: clamp(source.y + (transition?.offset.y || 0) * correction, 0, 1),
     };
     // Moving to a camera edge reaches it exactly, even during a short reference
-    // transition. A stationary held OK keeps its selection anchor instead.
+    // transition. An active selection keeps its target anchor instead.
     if (!locked) for (const axis of ['x', 'y']) {
       if ((edgeMotion || correction === 0 || transition?.offset[axis] === 0)
         && (raw[axis] <= 0 || raw[axis] >= 1)) {
@@ -676,19 +707,16 @@ export class GestureEngine {
   updateSingleHand(timestampMs, track = this.tracks[0]) {
     const hand = track.shape;
     const cursor = copy(track.visual.position);
-    if (!hand.actionGeometryValid) {
-      this.cancelClick(true);
-      return this.result('idle', cursor);
+    const targetId = track.selectionTargetId;
+    let hold = this.pendingClick || this.confirmedClick;
+    if (hold && hold.targetId !== targetId) {
+      this.cancelClick(false);
+      hold = null;
     }
-    const hold = this.pendingClick || this.confirmedClick;
-    if (hold && hand.point) {
+    if (hold) {
       if (this.confirmedClick) return this.result('click-confirmed', hold.anchor, 1);
-      // Compare every frame with the original physical fingertip. Slow motion
-      // cannot creep the baseline; visual smoothing never extends the dwell.
       const movement = metricDistance(hand.pointer, hold.rawPointer, this.options.aspectRatio);
       if (movement > this.options.maxClickDrift) {
-        // Leaving the selection area starts a new dwell at the next target;
-        // it is not a tracking discontinuity and does not require a pose release.
         this.cancelClick(false);
         return this.result('idle', cursor);
       }
@@ -696,23 +724,19 @@ export class GestureEngine {
       if (progress >= 1 && timestampMs >= track.cooldownUntil) {
         this.pendingClick = null;
         this.confirmedClick = hold;
-        this.blockTrack(track);
+        this.blockTrack(track, targetId);
         track.cooldownUntil = timestampMs + this.options.clickCooldownMs;
         return this.result('click-confirmed', hold.anchor, 1, [{ type: 'click', ...hold.anchor }]);
       }
       return this.result('click-pending', hold.anchor, progress);
     }
-    if (hold) this.cancelClick(true);
-    if (!hand.point) return this.result('idle', cursor);
-    track.rearmSince = null;
-    if (track.clickBlocked) return this.result('point', cursor);
-    // Selection starts at the current absolute index, never a previous pose's
-    // cursor or preparation snapshot. Only this frame starts the full dwell.
+    if (track.clickBlocked) return this.result('idle', cursor);
     this.pendingClick = {
       since: timestampMs,
       rawPointer: copy(hand.pointer),
       anchor: { x: clamp(hand.pointer.x, 0, 1), y: clamp(hand.pointer.y, 0, 1) },
       trackId: track.trackId,
+      targetId,
     };
     track.visual.position = copy(this.pendingClick.anchor);
     track.visual.locked = true;

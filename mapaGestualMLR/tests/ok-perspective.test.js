@@ -109,7 +109,7 @@ test('world and aspect-corrected image XYZ give the same posture under foreshort
   }
 });
 
-test('OK remains exclusive to two-hand zoom: a single frontal or side-on OK cannot select after any dwell', () => {
+test('a single OK can hover a target in any view while two OK hands take exclusive zoom priority', () => {
   for (const world of [true, false]) for (const aspectRatio of [1, 16 / 9]) {
     for (const [pitch, yaw] of [[0, 0], [Math.PI / 2, 0], [-Math.PI / 2, 0], [0, Math.PI / 2]]) {
       const view = cameraCoordinates(transform(pose(), { pitch, yaw }), aspectRatio);
@@ -123,21 +123,28 @@ test('OK remains exclusive to two-hand zoom: a single frontal or side-on OK cann
         assert.equal(result.events.length, 0);
         assert.ok(!result.mode.startsWith('click-'));
       }
+      const hover = new GestureEngine({ aspectRatio });
+      const context = { selectionTargetForHand: () => 'target' };
+      const selected = [];
+      for (let time = 0; time <= 2200; time += 20) selected.push(hover.update([actor], time, context));
+      assert.equal(selected.flatMap(result => result.events).filter(event => event.type === 'click').length, 1);
+      assert.equal(selected.at(-1).mode, 'click-confirmed');
+      assert.deepEqual(selected[0].selectionCursor, { x: actor.landmarks[8].x, y: actor.landmarks[8].y });
       const pair = [-0.15, 0.15].map((x, index) => ({ ...actor, id: index ? 'b' : 'a',
         landmarks: actor.landmarks.map(p => ({ ...p, x: p.x + x })) }));
       const zoom = new GestureEngine({ aspectRatio });
       for (let time = 0; time < 180; time += 20) {
-        const result = zoom.update(pair, time);
+        const result = zoom.update(pair, time, context);
         assert.equal(result.navigationCandidateKind, 'zoom');
         assert.equal(result.events.length, 0);
       }
-      const acquired = zoom.update(pair, 180);
+      const acquired = zoom.update(pair, 180, context);
       assert.equal(acquired.navigationKind, 'zoom');
       assert.equal(acquired.selectionHandId, null);
       assert.equal(acquired.selectionLiveCursor, null);
       const spread = pair.map((value, index) => ({ ...value,
         landmarks: value.landmarks.map(p => ({ ...p, x: p.x + (index ? 0.02 : -0.02) })) }));
-      const result = zoom.update(spread, 200);
+      const result = zoom.update(spread, 200, context);
       assert.ok(result.events.some(event => event.type === 'zoom' && event.delta > 0));
       assert.ok(result.events.every(event => event.type === 'zoom'));
     }

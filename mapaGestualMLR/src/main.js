@@ -4,7 +4,7 @@ import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
 import { getCameraControls, applyCameraControls } from './camera-quality.js';
 import { createMap } from './map.js';
-import { SelectionFeedback } from './selection.js';
+import { SelectionFeedback, hoverTarget } from './selection.js';
 
 const $ = id => document.getElementById(id);
 const smoke = new URLSearchParams(location.search).has('smoke');
@@ -27,8 +27,8 @@ const timings=[], inferenceTimes=[],qualityTimes=[];
 const counters={frames:0,clicks:0,panEvents:0,zoomEvents:0,markedFalseClicks:0};
 const startedAt=new Date().toISOString();
 const linePairs=[[0,1],[1,2],[2,3],[3,4],[0,5],[5,6],[6,7],[7,8],[5,9],[9,10],[10,11],[11,12],[9,13],[13,14],[14,15],[15,16],[13,17],[17,18],[18,19],[19,20],[0,17]];
-const labels={idle:'En reposo',point:'Apuntando','click-pending':'Mantén solo el índice · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
-const selectionReasonLabels={'release-required':'Retrae el índice para seleccionar otra vez','invalid-geometry':'Postura no válida para seleccionar'};
+const labels={idle:'En reposo',point:'Apuntando','click-pending':'Índice sobre el punto · 1,5 s','click-confirmed':'Seleccionado',navigate:'Navegación'};
+const selectionReasonLabels={'release-required':'Sal del punto para seleccionar otra vez','invalid-geometry':'Seguimiento no válido para actuar'};
 let lastActiveSelectionState=null,lastSelectionReason=null;
 const selectionReasonCounts={};
 let noticeTimer,noticeKind;
@@ -91,7 +91,7 @@ function initializeWorker() {
       showQuality(data.quality,qualityState);
       const blocked=isBlocked() || !qualityState.allowActions;
       if(blocked)cancelGesture(false);
-      let result=engine.update(latestHands,data.timestamp);
+      let result=engine.update(latestHands,data.timestamp,blocked?{}:selectionContext(engine));
       // The engine validates each participating hand. A free hand must not
       // cancel an otherwise valid action by changing the observed count.
       if(blocked) {
@@ -147,42 +147,51 @@ async function finishSmoke(data) {
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
     && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint
     && nativeSelection.pointHold.companionContinuity && nativeSelection.buttonHold.companionContinuity
-    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.indexOnly && h.tremorTolerated && h.noClickBeforeIndex && h.retainedTargetAtIndex)
+    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.postureIndependent && h.tremorTolerated && h.emptySpaceNoClick && h.targetAcquiredAtIndex)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && Object.values(fistViewsFeedback).every(Boolean)
     && Object.values(indexTrackingFeedback).every(Boolean)
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && Object.values(selectionToleranceFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.11',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.12',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
-  const hand=(pose,id='recovery',dx=0)=>({id,landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+dx}))});
-  const synthetic=new GestureEngine();
-  let zoom;
-  for(const time of [0,100,180])zoom=synthetic.update([hand('ok'),hand('ok','other',.30)],time);
-  await renderGesture(zoom,2);
-  const navigationLabel=$('gesture-metric').textContent==='Zoom';
-  const one=synthetic.update([hand('index')],220);await renderGesture(one,1);
-  const releaseHint=one.selectionBlockedReason==='release-required' && $('gesture-metric').textContent.includes('Retrae el índice');
-  const noClickAfterZoom=one.events.length===0 && one.progress===0 && one.mode!=='click-pending';
-  await renderGesture(one,1,{blocked:true});
-  const hintSurvivesDialog=$('gesture-metric').textContent.includes('último estado: Retrae el índice');
-  for(const time of [260,340,420])synthetic.update([hand('point')],time);
-  const rearmed=synthetic.update([hand('index')],460);
-  const retractingRearms=rearmed.mode==='click-pending' && rearmed.progress===0 && !rearmed.selectionBlockedReason;
-  const invalid=new GestureEngine(),rejected=invalid.update([{...hand('index'),worldLandmarks:[]}],0);
-  await renderGesture(rejected,1);
-  const geometryHint=rejected.selectionBlockedReason==='invalid-geometry' && $('gesture-metric').textContent.includes('Postura no válida');
-  cancelGesture();return {navigationLabel,releaseHint,noClickAfterZoom,hintSurvivesDialog,retractingRearms,geometryHint};
+  map.resetSequence();map.home();cancelGesture();
+  const fixture=await (await fetch('/fixtures/selection-poses.json')).json(),saved=engine;
+  const rect=$('map').getBoundingClientRect(),target=map.targets()[0];
+  const hand=(pose,id='recovery',dx=0,dy=0)=>({id,landmarks:fixture.poses[pose].map(p=>({...p,
+    x:p.x+target.x/rect.width-fixture.poses[pose][8].x+dx,
+    y:p.y+target.y/rect.height-fixture.poses[pose][8].y+dy}))});
+  const tick=async(h,t)=>{const result=engine.update(h,t,selectionContext(engine));await renderGesture(result,h.length);return result;};
+  try {
+    engine=new GestureEngine();let zoom;
+    for(const time of [0,100,180])zoom=await tick([hand('ok'),hand('ok','other',-.30)],time);
+    const navigationLabel=$('gesture-metric').textContent==='Zoom';
+    const one=await tick([hand('index')],220);
+    const releaseHint=one.selectionBlockedReason==='release-required' && $('gesture-metric').textContent.includes('Sal del punto');
+    const noClickAfterZoom=one.events.length===0 && one.progress===0 && one.mode!=='click-pending';
+    await renderGesture(one,1,{blocked:true});
+    const hintSurvivesDialog=$('gesture-metric').textContent.includes('último estado: Sal del punto');
+    for(const time of [260,340,420])await tick([hand('index','recovery',0,.12)],time);
+    const rearmed=await tick([hand('point')],460);
+    const leavingTargetRearms=rearmed.mode==='click-pending' && rearmed.progress===0 && !rearmed.selectionBlockedReason;
+    cancelGesture();engine=new GestureEngine();
+    const world=await tick([{...hand('point'),worldLandmarks:[]}],0);
+    const worldDoesNotVetoHover=world.mode==='click-pending' && world.progress===0 && !world.selectionBlockedReason;
+    cancelGesture();engine=new GestureEngine();
+    const corrupt=hand('index');corrupt.landmarks[8].x=NaN;
+    const rejected=await tick([corrupt],0);
+    const invalidImageHint=rejected.selectionBlockedReason==='invalid-geometry' && $('gesture-metric').textContent.includes('Seguimiento no válido');
+    return {navigationLabel,releaseHint,noClickAfterZoom,hintSurvivesDialog,leavingTargetRearms,worldDoesNotVetoHover,invalidImageHint};
+  } finally {cancelGesture();engine=saved;cancelGesture();}
 }
 async function verifySelectionToleranceFeedback(){
   map.resetSequence();map.home();cancelGesture();
   const saved=engine,fixture=await (await fetch('/fixtures/selection-poses.json')).json();
   const rect=$('map').getBoundingClientRect(),target=map.targets()[0];
   const hand=(pose,x=target.x,y=target.y)=>({id:'tolerance',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+x/rect.width-fixture.poses[pose][8].x,y:p.y+y/rect.height-fixture.poses[pose][8].y}))});
-  const tick=async(h,t)=>{const result=engine.update([h],t);await renderGesture(result,1);return result;};
+  const tick=async(h,t)=>{const result=engine.update([h],t,selectionContext(engine));await renderGesture(result,1);return result;};
   const feedback={};
   try {
     engine=new GestureEngine();await tick(hand('index'),0);
@@ -194,21 +203,22 @@ async function verifySelectionToleranceFeedback(){
     const victory=hand('index');
     for(let i=1;i<=3;i++)victory.landmarks[9+i]={...victory.landmarks[9+i],x:victory.landmarks[9].x,y:victory.landmarks[9].y+fixture.poses.index[5+i].y-fixture.poses.index[5].y,z:0};
     const extra=await tick(victory,740);
-    feedback.extraFingerCancels=extra.mode!=='click-pending' && extra.events.length===0 && $('cursor').dataset.state!=='loading' && Number($('cursor').querySelector('.cursor-progress').style.strokeDashoffset)===213.63;
+    feedback.extraFingerKeepsDwell=extra.mode==='click-pending' && extra.progress>0 && extra.events.length===0 && $('cursor').dataset.state==='loading';
     for(const time of [800,880,960])await tick(victory,time);
-    const restarted=await tick(hand('index'),1000);
-    feedback.postureRestartFullDwell=restarted.mode==='click-pending' && restarted.progress===0 && restarted.events.length===0;
+    const continued=await tick(hand('point'),1000);
+    feedback.thumbAndPostureKeepTimer=continued.mode==='click-pending' && Math.abs(continued.progress-360/1500)<1e-8 && continued.events.length===0;
     cancelGesture();engine=new GestureEngine();
     const thumb=await tick(hand('point'),0);
-    feedback.extendedThumbRejected=thumb.mode!=='click-pending' && $('cursor').dataset.state!=='loading';
+    feedback.extendedThumbAccepted=thumb.mode==='click-pending' && thumb.progress===0 && $('cursor').dataset.state==='loading';
     cancelGesture();engine=new GestureEngine();
     const empty=hand('index',rect.width*.85,rect.height*.20);
-    for(const time of [40,140,240,340,440,540])await tick(empty,time);
-    feedback.emptySpaceNoLoading=$('cursor').dataset.state==='idle' && !$('map').querySelector('.gesture-target');
+    let emptyEvents=0;
+    for(const time of [40,140,240,340,440,540])emptyEvents+=(await tick(empty,time)).events.length;
+    feedback.emptySpaceNoLoading=$('cursor').dataset.state==='idle' && !$('map').querySelector('.gesture-target') && emptyEvents===0;
     let acquired=null;
     for(let step=1;step<=12;step++){
       const x=rect.width*.85+(target.x-rect.width*.85)*step/12,y=rect.height*.20+(target.y-rect.height*.20)*step/12;
-      const result=await tick(hand('index',x,y),540+step*40);
+      const result=await tick(hand('point',x,y),540+step*40);
       if($('cursor').dataset.state==='loading' && acquired===null)acquired=result;
     }
     feedback.targetAcquiresFreshTimer=!!acquired && acquired.progress===0 && acquired.events.length===0;
@@ -247,8 +257,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   const rect=$('map').getBoundingClientRect();
   const dx=target.x/rect.width-fixture.poses.index[8].x,dy=target.y/rect.height-fixture.poses.index[8].y;
   const hand=(pose,jx=0,jy=0)=>({id:'smoke-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+dx+jx/rect.width,y:p.y+dy+jy/rect.height}))});
-  if(!classifyHand(hand('index'))?.point)throw new Error('Smoke: índice exclusivo no reconocido');
-  const synthetic=new GestureEngine();
+  const saved=engine,synthetic=new GestureEngine();engine=synthetic;selection.reset();
   const freeX=target.x/rect.width<.5?.8:.2;
   const companion=pose=>({id:'free-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+freeX-fixture.poses[pose][8].x,y:p.y+.5-fixture.poses[pose][8].y}))});
   const currentCursor=result=>[$('cursor'),$('cursor-secondary')].find(cursor=>cursor.dataset.hand===String(result.selectionHandId))||$('cursor');
@@ -258,7 +267,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
     const pose=companionMode==='always' || elapsed>=650?'fist':'point';
     const reverse=companionMode==='changing' && elapsed>=450 && elapsed<650;
     const hands=present?(reverse?[selected,companion(pose)]:[companion(pose),selected]):[selected];
-    const result=synthetic.update(hands,time),accepted=await renderGesture(result,hands.length);
+    const result=synthetic.update(hands,time,selectionContext(synthetic)),accepted=await renderGesture(result,hands.length);
     if(present){companionFrames++;companionFistFrames+=pose==='fist';hadCompanion=true;}
     else if(hadCompanion)companionExited=true;
     selectionOnSecondary ||= currentCursor(result)===$('cursor-secondary') && result.mode==='click-pending';
@@ -269,23 +278,33 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
     }
     return {result,accepted,cursor:currentCursor(result)};
   };
-  const beforeClicks=trustedCount();let noClickBeforeIndex=true;
+  const beforeClicks=trustedCount();let emptySpaceNoClick=true;
   for(let warmupFrame=0;warmupFrame<5;warmupFrame++){
-    const {result}=await frame(hand('point'),performance.now());
-    noClickBeforeIndex &&= result.mode!=='click-pending' && result.events.every(e=>e.type!=='click') && trustedCount()===beforeClicks;
+    const {result}=await frame(hand('point',0,-100),performance.now());
+    emptySpaceNoClick &&= result.mode!=='click-pending' && result.events.every(e=>e.type!=='click') && trustedCount()===beforeClicks;
     await sleep(40);
   }
-  const start=performance.now(),initial=await frame(hand('index'),start);
-  if(initial.result.mode!=='click-pending' || initial.result.progress!==0)throw new Error('Smoke: índice no inició mantenimiento completo');
-  const retainedTargetAtIndex=Math.abs(parseFloat(initial.cursor.style.left)-target.x)<.5 && Math.abs(parseFloat(initial.cursor.style.top)-target.y)<.5;
-  let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false,tremorFrames=0,maxTremorPx=0;
+  const start=performance.now(),initial=await frame(hand('point'),start);
+  if(initial.result.mode!=='click-pending' || initial.result.progress!==0)throw new Error('Smoke: índice sobre objetivo no inició mantenimiento completo');
+  const targetAcquiredAtIndex=Math.abs(parseFloat(initial.cursor.style.left)-target.x)<.5 && Math.abs(parseFloat(initial.cursor.style.top)-target.y)<.5;
+  let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false,tremorFrames=0,maxTremorPx=0,thumbOutFrames=0,extraFingerFrames=0,invalidWorldFrames=0;
   const anchor={x:target.x,y:target.y};
   while(performance.now()-start<1800){
     const now=performance.now(),elapsed=now-start;
     // Raw landmark motion exceeds the old narrow hover area. The fixed hold
     // region must retain the same target and clock while the ring stays put.
     const jx=elapsed<80?0:42*Math.sin(elapsed/180),jy=elapsed<80?0:32*Math.cos(elapsed/170);
-    const {result,accepted,cursor}=await frame(hand('index',jx,jy),now,elapsed);
+    const selected=hand(elapsed<500?'index':'point',jx,jy);
+    if(elapsed>=850){
+      for(const mcp of [9,13,17])for(let i=1;i<=3;i++)selected.landmarks[mcp+i]={...selected.landmarks[mcp+i],
+        x:selected.landmarks[mcp].x,y:selected.landmarks[mcp].y+fixture.poses.index[5+i].y-fixture.poses.index[5].y,z:0};
+      // World estimates of non-index fingers must not gate index hover.
+      selected.worldLandmarks=[];
+    }
+    const {result,accepted,cursor}=await frame(selected,now,elapsed);
+    if(elapsed>=500)thumbOutFrames++;
+    if(elapsed>=850){extraFingerFrames++;invalidWorldFrames++;}
+    continued &&= result.mode==='click-pending' || result.mode==='click-confirmed';
     tremorFrames++;maxTremorPx=Math.max(maxTremorPx,Math.hypot(jx,jy));
     cursorLocked &&= Math.abs(parseFloat(cursor.style.left)-anchor.x)<.5 && Math.abs(parseFloat(cursor.style.top)-anchor.y)<.5;
     if(result.progress>=.45 && result.progress<=.65){
@@ -299,7 +318,8 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   }
   const companionContinuity=!companionMode || (continued && companionFrames>0 && companionFistFrames>0 && selectionOnSecondary
     && (companionMode!=='changing' || (companionExited && orderReversedDuringHold)) && clicks===1 && clickAccepted);
-  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,indexOnly:true,noClickBeforeIndex,retainedTargetAtIndex,tremorTolerated:continued&&maxTremorPx>40&&clicks===1,tremorFrames,maxTremorPx,companionMode,companionContinuity,companionFrames,companionFistFrames,selectionOnSecondary,companionExited,orderReversedDuringHold};
+  engine=saved;
+  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,postureIndependent:continued && thumbOutFrames>0 && extraFingerFrames>0 && invalidWorldFrames>0 && clicks===1,thumbOutFrames,extraFingerFrames,invalidWorldFrames,emptySpaceNoClick,targetAcquiredAtIndex,tremorTolerated:continued&&maxTremorPx>40&&clicks===1,tremorFrames,maxTremorPx,companionMode,companionContinuity,companionFrames,companionFistFrames,selectionOnSecondary,companionExited,orderReversedDuringHold};
 }
 async function verifyQualityFeedback() {
   const image=value=>({width:4,height:4,data:Uint8ClampedArray.from(Array.from({length:16},()=>[value,value,value,255]).flat())});
@@ -497,6 +517,20 @@ function selectionTargets(rect) {
     return target.element?target.element.contains(top):$('map').contains(top);
   });
 }
+function selectionContext(interpreter) {
+  const rect=$('map').getBoundingClientRect(),targets=selectionTargets(rect);
+  const ownerId=interpreter.selectionHandId;
+  return {selectionTargetForHand:({trackId,pointer})=>{
+    const mapped=mapPoint(pointer);
+    if(!within(mapped))return null;
+    const point={x:mapped.x*rect.width,y:mapped.y*rect.height};
+    if(trackId===ownerId){
+      const retained=selection.retainedTargetId(point,targets,rect);
+      if(retained)return retained;
+    }
+    return hoverTarget(point,targets,trackId===ownerId?selection.hoverId:null)?.id??null;
+  }};
+}
 function pulse(x,y) { const ripple=$('click-ripple');ripple.style.left=`${x}px`;ripple.style.top=`${y}px`;ripple.classList.remove('play');void ripple.offsetWidth;ripple.classList.add('play'); }
 function verifyPointerFeedback() {
   const sample={mode:'idle',cursor:{x:.5,y:.5},pointers:[{id:1,x:.5,y:.5}],progress:0,events:[],hands:1};
@@ -669,7 +703,7 @@ async function verifyNavigationFeedback() {
   const indexPriorityEngine=new GestureEngine(),beforeIndexPriority=map.info();
   const target=map.targets()[0],rect=$('map').getBoundingClientRect();
   const selecting={id:'right',landmarks:fixture.poses.index.map(p=>({...p,x:p.x+target.x/rect.width-fixture.poses.index[8].x,y:p.y+target.y/rect.height-fixture.poses.index[8].y}))};
-  const indexPriority=indexPriorityEngine.update([hand('fist','left',.35,.5),selecting],2000);
+  const indexPriority=indexPriorityEngine.update([hand('fist','left',.35,.5),selecting],2000,selectionContext(indexPriorityEngine));
   await renderGesture(indexPriority,2);
   const indexWithFistSelects=indexPriority.mode==='click-pending' && indexPriority.navigationKind===null
     && $('cursor-secondary').dataset.hand===String(indexPriority.selectionHandId) && $('cursor-secondary').dataset.state==='loading'
@@ -756,7 +790,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.11',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.1.12',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

@@ -21,45 +21,47 @@ function hand(kind, x = 0) {
   return result;
 }
 
-function frames(engine, hands, from, until) {
+function frames(engine, hands, from, until, context = {}) {
   const results = [];
   for (let time = from; time <= until; time += 20) {
-    results.push(engine.update(typeof hands === 'function' ? hands(time) : hands, time));
+    results.push(engine.update(typeof hands === 'function' ? hands(time) : hands, time, context));
   }
   return results;
 }
 
 const events = results => results.flatMap(result => result.events);
 const clicks = results => events(results).filter(event => event.type === 'click');
+const leftTarget = { selectionTargetForHand: ({ pointer }) => pointer.x < 0.5 ? 'left-target' : null };
+const rightTarget = { selectionTargetForHand: ({ pointer }) => pointer.x > 0.5 ? 'right-target' : null };
 
-test('one anonymous index-only hand selects in either array position beside open, OK, fist or invalid companions', () => {
+test('one anonymous hand over a target selects in either array position beside open, OK, fist or invalid companions', () => {
   for (const kind of ['open', 'ok', 'neutral', 'fist', 'invalid-world', 'invalid-image']) {
     for (const actorSecond of [false, true]) {
       const engine = new GestureEngine();
       const actor = hand('point', -0.17), companion = hand(kind, 0.17);
       const pair = actorSecond ? [companion, actor] : [actor, companion];
       assert.ok(pair.every(value => !Object.hasOwn(value, 'id')));
-      const start = engine.update(pair, 0);
+      const start = engine.update(pair, 0, leftTarget);
       assert.equal(start.mode, 'click-pending', `${kind}, second=${actorSecond}`);
       assert.equal(start.progress, 0);
       assert.equal(start.pointers.find(pointer => pointer.id === start.selectionHandId).handIndex, actorSecond ? 1 : 0);
-      const beforeDeadline = frames(engine, pair, 20, 1480);
+      const beforeDeadline = frames(engine, pair, 20, 1480, leftTarget);
       assert.equal(events(beforeDeadline).length, 0);
       assert.ok(beforeDeadline.every(result => result.mode === 'click-pending'));
-      const confirmation = engine.update(pair, 1500);
+      const confirmation = engine.update(pair, 1500, leftTarget);
       assert.deepEqual(confirmation.events, [{ type: 'click', ...start.cursor }]);
       assert.equal(confirmation.selectionHandId, start.selectionHandId);
       assert.equal(confirmation.mode, 'click-confirmed');
-      assert.equal(events(frames(engine, pair, 1520, 2000)).length, 0);
+      assert.equal(events(frames(engine, pair, 1520, 2000, leftTarget)).length, 0);
     }
   }
 });
 
-test('a free anonymous hand entering, leaving and reversing order does not reset an index-only actor or target', () => {
+test('a free anonymous hand entering, leaving and reversing order does not reset the hover actor or target', () => {
   const engine = new GestureEngine();
   const pointed = frames(engine, [hand('open', -0.17)], 0, 140).at(-1).cursor;
   const actor = hand('point', -0.17);
-  const start = engine.update([actor], 160);
+  const start = engine.update([actor], 160, leftTarget);
   assert.deepEqual(start.cursor, pointed);
   const results = frames(engine, time => {
     if (time < 420 || time >= 1300) return [actor];
@@ -67,7 +69,7 @@ test('a free anonymous hand entering, leaving and reversing order does not reset
       : time < 1100 ? 'invalid-world' : 'invalid-image';
     const companion = hand(kind, 0.17);
     return time % 80 === 20 ? [companion, actor] : [actor, companion];
-  }, 180, 1660);
+  }, 180, 1660, leftTarget);
   assert.ok(results.every(result => result.selectionHandId === start.selectionHandId));
   assert.ok(results.every(result => result.resetSelection === false));
   assert.ok(results.every(result => result.cursor.x === pointed.x && result.cursor.y === pointed.y));
@@ -108,18 +110,18 @@ test('losing or changing an anonymous selection actor never transfers its elapse
   for (const previousActorRemains of [false, true]) {
     const engine = new GestureEngine();
     const actor = hand('point', -0.17), companion = hand('open', 0.17);
-    const initial = engine.update([actor, companion], 0);
-    const history = frames(engine, [actor, companion], 20, 1000);
+    const initial = engine.update([actor, companion], 0, leftTarget);
+    const history = frames(engine, [actor, companion], 20, 1000, leftTarget);
     assert.equal(events(history).length, 0);
     const companionPointer = history.at(-1).pointers.find(pointer => pointer.handIndex === 1);
     const nextPair = previousActorRemains ? [hand('open', -0.17), hand('point', 0.17)] : [hand('point', 0.17)];
-    const switched = engine.update(nextPair, 1020);
+    const switched = engine.update(nextPair, 1020, rightTarget);
     assert.equal(switched.mode, 'click-pending');
     assert.equal(switched.progress, 0);
     assert.notEqual(switched.selectionHandId, initial.selectionHandId);
     assert.equal(switched.selectionHandId, companionPointer.id);
     assert.deepEqual(switched.cursor, { x: companionPointer.x, y: companionPointer.y });
-    assert.equal(events(frames(engine, nextPair, 1040, 2500)).length, 0);
-    assert.deepEqual(engine.update(nextPair, 2520).events, [{ type: 'click', ...switched.cursor }]);
+    assert.equal(events(frames(engine, nextPair, 1040, 2500, rightTarget)).length, 0);
+    assert.deepEqual(engine.update(nextPair, 2520, rightTarget).events, [{ type: 'click', ...switched.cursor }]);
   }
 });

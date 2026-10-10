@@ -18,6 +18,18 @@ export function hoverTarget(point,targets,previousId=null) {
 export class SelectionFeedback {
   constructor({holdPadding=36}={}){this.holdPadding=holdPadding;this.reset();}
   reset(){this.hoverId=null;this.held=null;}
+  // Query the live index before the interpreter counts time. This does not
+  // move the retained region, including after a click changes the popup/POI.
+  retainedTargetId(point,targets,viewport) {
+    const held=this.held;
+    if(!held || !finitePoint(point)
+      || viewport.width!==held.viewport.width || viewport.height!==held.viewport.height
+      || Math.abs(point.x-held.point.x)>held.halfWidth
+      || Math.abs(point.y-held.point.y)>held.halfHeight)return null;
+    const target=targets.find(t=>t.id===held.targetId);
+    if(!held.confirmed && (!finitePoint(target) || distance(target,held.point)>8))return null;
+    return held.targetId;
+  }
   update(point,mode,targets,viewport) {
     if(!finitePoint(point)){const cancel=!!this.held;this.reset();return {point:null,target:null,cancel};}
     const holding=mode==='click-pending' || mode==='click-confirmed';

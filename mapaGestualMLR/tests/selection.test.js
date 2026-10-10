@@ -109,3 +109,30 @@ test('a wider popup retains its own original bounds plus the same tremor padding
   assert.equal(feedback.update({...target,x:target.x+95},'click-pending',[target],viewport).cancel,false);
   assert.equal(feedback.update({...target,x:target.x+97},'click-pending',[target],viewport).cancel,true);
 });
+
+test('the target query uses the retained region without moving it or accumulating dwell',()=>{
+  const feedback=new SelectionFeedback();
+  assert.equal(feedback.retainedTargetId(a,[a],viewport),null);
+  assert.equal(feedback.held,null);
+  feedback.update(a,'click-pending',[a,b],viewport);
+  for(const dx of [10,20,30,40,50])assert.equal(feedback.retainedTargetId({...a,x:a.x+dx},[a,b],viewport),a.id);
+  assert.deepEqual(feedback.held.point,{x:a.x,y:a.y});
+  assert.equal(feedback.retainedTargetId({...a,x:a.x+59},[a,b],viewport),null);
+});
+
+test('an unfinished target query rejects stale geometry before the completion frame',()=>{
+  const feedback=new SelectionFeedback();feedback.update(a,'click-pending',[a],viewport);
+  for(const targets of [[],[{...a,x:a.x+9}],[{...a,x:NaN}]])assert.equal(feedback.retainedTargetId(a,targets,viewport),null);
+  assert.equal(feedback.retainedTargetId(a,[a],{...viewport,width:901}),null);
+});
+
+test('confirmed target identity persists after its point disappears until the live index exits',()=>{
+  const feedback=new SelectionFeedback();feedback.update(a,'click-pending',[a],viewport);
+  feedback.update(a,'click-confirmed',[a],viewport);
+  const replacement={...a,id:'new-popup-button',priority:1};
+  assert.equal(feedback.retainedTargetId(a,[replacement],viewport),a.id);
+  assert.equal(feedback.retainedTargetId({...a,x:a.x+59},[replacement],viewport),null);
+  feedback.reset();
+  assert.equal(feedback.retainedTargetId(a,[replacement],viewport),null);
+  assert.equal(hoverTarget(a,[replacement]).id,replacement.id);
+});
