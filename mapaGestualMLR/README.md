@@ -1,4 +1,4 @@
-# Mapa Gestual MLR
+ # Mapa Gestual MLR
 
 Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando una cámara frontal apuntando hacia la persona. Las manos completas quedan dentro del encuadre, con iluminación uniforme; todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial. En esta etapa probamos la detección, la selección y el movimiento; la interfaz y la integración municipal se ajustarán después.
 
@@ -7,7 +7,6 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
 **Versión vigente:** 0.1.13 · corrección del montaje frontal<br>
 **Estado:** gestos y detector conservados; verificación y paquetes de 0.1.13 en la [entrega](./Documentos/04-entrega-y-verificacion.md). Los resultados de 0.1.12 quedan históricos. Ensayo frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
-**Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
 
