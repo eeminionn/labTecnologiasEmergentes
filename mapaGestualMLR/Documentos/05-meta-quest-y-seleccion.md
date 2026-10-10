@@ -3,15 +3,15 @@
 **Fecha de consulta:** 5, 6 y 9 de octubre de 2026<br>
 **Última actualización de implementación:** 9 de octubre de 2026<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
-**Versión vigente:** 0.1.12<br>
-**Estado:** reglas vigentes 0.1.12; suite/build/runtime y contenido de paquetes Mac/Windows aprobados. Ver alcance de verificación en [Entrega y verificación](./04-entrega-y-verificacion.md). Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.13 · montaje frontal<br>
+**Estado:** gestos conservados desde 0.1.12; verificación y paquetes vigentes en [Entrega y verificación](./04-entrega-y-verificacion.md). Evidencia numérica 0.1.12 histórica; ensayo frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex.
 
 [Volver al prototipo](../README.md) · [Revisar protocolo](./03-protocolo-validacion.md) · [Revisar entrega](./04-entrega-y-verificacion.md)
 
-## Vigencia de 0.1.12
+## Montaje frontal y gestos conservados
 
-Selección por **landmark 8 sobre objetivo durante 1500 ms**, sin exigir postura del índice ni de los demás dedos. No hay dwell sobre mapa vacío. Prioridad **dos OK → zoom; mano no puño sobre objetivo → selección; después puños → pan**. El aro conserva destino y región amplia; salir reinicia el reloj y, tras un clic, salir del destino original **120 ms** rearma sin retraer el índice. El [protocolo](./03-protocolo-validacion.md) concentra el contrato y la [bitácora](../Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra la decisión. Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados. Alcance de entrega en [04](./04-entrega-y-verificacion.md).
+La cámara vigente es **frontal, apuntando hacia la persona**: manos completas en encuadre, iluminación uniforme y todo el encuadre correspondiente al mapa. Sustituye el planteamiento cenital inicial, conservado en antecedentes y comparaciones. Los gestos no cambian. Selección por **landmark 8 sobre objetivo durante 1500 ms**, sin exigir postura del índice ni de los demás dedos. No hay dwell sobre mapa vacío. Prioridad **dos OK → zoom; mano no puño sobre objetivo → selección; después puños → pan**. El aro conserva destino y región amplia; salir reinicia el reloj y, tras un clic, salir del destino original **120 ms** rearma sin retraer el índice. El [protocolo](./03-protocolo-validacion.md) concentra el contrato y la [bitácora](./08-historial-tecnico.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra la decisión. La evidencia aprobada de 0.1.12 permanece histórica. Alcance de verificación y paquetes vigentes en [04](./04-entrega-y-verificacion.md).
 
 La exigencia de índice exclusivo de **0.1.11 es histórica**. Su suite/runtime/paquetes sintéticos aprobados no cubrieron el fallo físico reportado por el usuario: índice sobre punto 1 sin aro, con posible veto de otros dedos. No hay logs de esa captura que demuestren la causa exacta. [Reportes Mac](./verificacion-paquete-mac-0.1.11.json) y [Windows](./verificacion-paquete-windows-0.1.11.json). No se registra precisión física nueva ni se modifica el modelo.
 
@@ -25,7 +25,7 @@ Fuentes consultadas el **9 de octubre de 2026**. La exclusividad del índice fue
 
 ## Antecedente de selección por OK: 0.1.10
 
-En **0.1.10**, un OK válido seleccionaba durante **1500 ms** incluso acompañado; dos OK tenían prioridad para zoom y, sin OK, los puños hacían pan. Se incorporaron geometría XYZ positiva de OK, identidad/rearme por participante y continuidad con entrada/salida/reorden del acompañante. Es el contrato histórico probado, sustituido para selección por el índice exclusivo de 0.1.11. Los detalles de aquella postura y asistencia permanecen en la [bitácora](../Bitacora/README.md#9-de-octubre---selección-acompañada-y-perspectiva-en-0110-histórica) y el [protocolo histórico](./03-protocolo-validacion.md#interacción-histórica-de-0110).
+En **0.1.10**, un OK válido seleccionaba durante **1500 ms** incluso acompañado; dos OK tenían prioridad para zoom y, sin OK, los puños hacían pan. Se incorporaron geometría XYZ positiva de OK, identidad/rearme por participante y continuidad con entrada/salida/reorden del acompañante. Es el contrato histórico probado, sustituido para selección por el índice exclusivo de 0.1.11. Los detalles de aquella postura y asistencia permanecen en la [bitácora](./08-historial-tecnico.md#9-de-octubre---selección-acompañada-y-perspectiva-en-0110-histórica) y el [protocolo histórico](./03-protocolo-validacion.md#interacción-histórica-de-0110).
 
 La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
 

@@ -8,7 +8,7 @@
 
 ## Del territorio al prototipo
 
-En la etapa anterior planteamos reunir información municipal en un mismo mapa. Ahora nos concentramos en cómo recorrerlo con las manos frente a una cámara. Elegimos MediaPipe para obtener los puntos de las manos y dedicar este avance a probar la interacción.
+En la etapa anterior planteamos reunir información municipal en un mismo mapa. Ahora nos concentramos en cómo recorrerlo con las manos frente a una cámara frontal que apunta hacia la persona. Elegimos MediaPipe para obtener los puntos de las manos y dedicar este avance a probar la interacción.
 
 <table>
   <tr>
@@ -53,6 +53,6 @@ Dejamos una sombra por mano y colores distintos para desplazamiento y zoom, para
 
 ## Cómo seguimos
 
-Después de estos ajustes, el usuario confirmó que el control funciona bien. Ahora queremos probar el montaje cenital, medir errores y comodidad, y luego incorporar información municipal real.
+Después de estos ajustes, el usuario confirmó que el control funciona bien. Ahora queremos evaluar ese montaje frontal, medir errores y comodidad, y luego incorporar información municipal real.
 
 [Investigación de visión](../Documentos/01-investigacion-vision.md) · [Detalle de los avances](../Documentos/08-historial-tecnico.md) · [Pruebas y entrega](../Documentos/04-entrega-y-verificacion.md)

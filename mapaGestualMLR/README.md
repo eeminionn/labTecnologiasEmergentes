@@ -1,12 +1,12 @@
 # Mapa Gestual MLR
 
-Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando una cámara USB fija sobre una mesa. En esta etapa probamos la detección, la selección y el movimiento; la interfaz y la integración municipal se ajustarán después.
+Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando una cámara frontal apuntando hacia la persona. Las manos completas quedan dentro del encuadre, con iluminación uniforme; todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial. En esta etapa probamos la detección, la selección y el movimiento; la interfaz y la integración municipal se ajustarán después.
 
 **Inicio:** 5 de octubre de 2026<br>
 **Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Versión vigente:** 0.1.12<br>
-**Estado:** 0.1.12: 192/192 pruebas, build y runtime aprobados; contenido de paquetes Mac/Windows aprobado. La evidencia aprobada de 0.1.11 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.13 · corrección del montaje frontal<br>
+**Estado:** gestos y detector conservados; verificación y paquetes de 0.1.13 en la [entrega](./Documentos/04-entrega-y-verificacion.md). Los resultados de 0.1.12 quedan históricos. Ensayo frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Documentación:** preparada con asistencia técnica de Codex. No se atribuyen al equipo ensayos que todavía no se han realizado.
 
 [Volver al README principal](../README.md) · [Revisar la bitácora](./Bitacora/README.md)
@@ -18,7 +18,7 @@ Prototipo de escritorio para recorrer un mapa de La Reina con las manos, usando 
 - Muestra una sombra por cada mano detectada con datos frescos: azul al apuntar o reposar, violeta con uno o dos puños para desplazar y ámbar con dos OK para zoom. Durante pausa o bloqueo aparecen grises.
 - Selecciona al mantener **landmark 8 sobre un objetivo durante 1500 ms**, sin exigir postura del índice ni recoger los otros dedos. Objetivo y aro quedan anclados con acompañante; dos OK tienen prioridad de zoom y el puño queda reservado para pan.
 - Lleva todo el encuadre de cámara a todo el mapa; permite elegir cámara, reflejar o rotar la imagen.
-- Mantiene una Vista cenital pequeña siempre visible arriba a la izquierda, con video, skeleton fresco y conteo de manos cuando la cámara está activa. Detenida, muestra Cámara detenida y limpia los datos anteriores; no pide permisos ni activa la cámara al arrancar.
+- Mantiene una Vista frontal pequeña siempre visible arriba a la izquierda, con video, skeleton fresco y conteo de manos cuando la cámara está activa. Detenida, muestra Cámara detenida y limpia los datos anteriores; no pide permisos ni activa la cámara al arrancar.
 - Reúne métricas, exportación y Marcar falso clic en Diagnóstico de seguimiento, una sección desplegable de Ajustes.
 - Ofrece brillo, contraste y compensación de exposición sólo si la cámara declara esas capacidades; solicita modos automáticos continuos cuando están disponibles.
 - Incluye un recorrido de tres puntos ficticios numerados y el límite oficial de La Reina procedente de SUBDERE, DPA 2023.
@@ -33,7 +33,7 @@ La aplicación tiene su propia ventana de escritorio, cámara, motor de gestos y
 
 ```mermaid
 flowchart LR
-    A[Cámara USB cenital] --> B[Captura local]
+    A[Cámara frontal] --> B[Captura local]
     B --> C[Worker: Hand Landmarker CPU]
     C --> D[21 puntos de imagen y mundo estimado por mano]
     D --> E[Estados de gestos y filtro 1€]
@@ -49,19 +49,19 @@ La interfaz se sirve dentro de la aplicación desde `http://127.0.0.1:47831`. Lo
 
 ## Abrir el programa empaquetado
 
-La distribución **0.1.12 aprobó 192 pruebas, build, runtime y smoke de su contenido empaquetado en Mac/Windows** sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`. La `.app` instalada abrió con la cámara detenida. Windows comprobó `win-unpacked`; el envoltorio portable se verifica por separado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y alcance. La evidencia de 0.1.11 y anteriores se conserva abajo como historia.
+La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica los archivos, hashes y alcance de la distribución vigente **0.1.13**. Como antecedente, **0.1.12 aprobó 192 pruebas, build, runtime y smoke de su contenido empaquetado en Mac/Windows** sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`; la `.app` abrió con cámara detenida y Windows comprobó `win-unpacked`. Esos resultados no se reasignan a 0.1.13. El envoltorio portable se verifica por separado.
 
 Como evidencia histórica, la `.app` Mac **0.1.3** aprobó el smoke del paquete y su apertura real, Ajustes y ayuda se revisaron en la aplicación. Windows **0.1.3** aprobó pruebas, build, runtime, construcción del portable y smoke del contenido empaquetado. La [guía de entrega](./Documentos/04-entrega-y-verificacion.md) identifica archivos, hashes y resultados por plataforma.
 
 **macOS Apple Silicon:** descomprimir el ZIP para obtener `Mapa Gestual MLR.app` y abrirla. Elegir la cámara USB y conceder el acceso a cámara cuando macOS lo solicite. Esta versión de desarrollo no tiene firma ni notarización. Si Gatekeeper bloquea su apertura, usar el menú contextual de la aplicación → **Abrir** y seguir la indicación de macOS; no desactivar la protección global del equipo.
 
-**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. La [CI Windows 0.1.12](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38011189028) aprobó suite, build, runtime, portable y smoke `win-unpacked` para la fuente final; reporte y hashes en la [entrega](./Documentos/04-entrega-y-verificacion.md). Arranque del envoltorio portable y cámara USB/driver físicos pendientes.
+**Windows x64:** abrir el `.exe` portable de la versión indicada en la entrega. No necesita instalar Node ni una terminal. El `.exe` es para Windows; en Mac se utiliza la `.app`. Como evidencia histórica, la [CI Windows 0.1.12](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38011189028) aprobó suite, build, runtime, portable y smoke `win-unpacked` para la fuente final; reporte y hashes en la [entrega](./Documentos/04-entrega-y-verificacion.md). Arranque del envoltorio portable y cámara USB/driver físicos pendientes.
 
 La carpeta de artefactos se genera en `release/`. Registrar el nombre, hash y plataforma de cada entrega junto con los resultados de verificación. Construir un archivo no demuestra por sí solo que la detección funcione con la cámara de la instalación.
 
 ## Gestos
 
-| Acción | Cómo se realiza en 0.1.12 |
+| Acción | Cómo se realiza, conservado desde 0.1.12 |
 |:---|:---|
 | Apuntar | Mover la punta del índice dentro del encuadre; la sombra usa landmark 8 cuando la mano no es un puño. No hace falta extender el índice en una postura concreta. |
 | Clic | Llevar esa punta sobre un objetivo seleccionable y mantener **1500 ms**. Aparece un aro anclado y el clic se ejecuta al completar. Los otros dedos pueden estar abiertos, recogidos o cambiar sin cancelar por su postura. |
@@ -74,19 +74,19 @@ La prioridad vigente es **dos OK → zoom; punta de índice de mano no puño sob
 
 El aro conserva el destino durante temblor dentro de su región amplia de retención, sin saltar a un vecino por solapamiento. Salir de la región reinicia el tiempo; reentrar exige **1500 ms** completos. Después de un clic, salir del ID del destino original durante **120 ms** lo rearma para esa mano; no hay que recoger ni retraer el índice. Otro destino puede iniciar inmediatamente **1500 ms** nuevos, sin heredar tiempo ni repetir el original al volver en menos de 120 ms. El [protocolo vigente](./Documentos/03-protocolo-validacion.md) concentra regiones, callbacks y comprobaciones.
 
-La revisión responde al reporte físico del usuario: en **0.1.11** podía situar el índice sobre el punto 1 sin obtener aro, con un posible veto de otros dedos. No hay logs de landmarks de esa captura que demuestren la condición exacta. Sus pruebas sintéticas aprobadas no cubrieron esa dificultad real. **0.1.12 elimina el requisito de índice exclusivo y de dedos restantes recogidos**, sin incorporar un modelo, SDK ni inferencia nuevos. La [entrada de 0.1.12 en la bitácora](./Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra el cambio; la [investigación de selección](./Documentos/05-meta-quest-y-seleccion.md) conserva los referentes de hover y confirmación.
+La revisión responde al reporte físico del usuario: en **0.1.11** podía situar el índice sobre el punto 1 sin obtener aro, con un posible veto de otros dedos. No hay logs de landmarks de esa captura que demuestren la condición exacta. Sus pruebas sintéticas aprobadas no cubrieron esa dificultad real. **0.1.12 elimina el requisito de índice exclusivo y de dedos restantes recogidos**, sin incorporar un modelo, SDK ni inferencia nuevos. La [entrada de 0.1.12 en la bitácora](./Documentos/08-historial-tecnico.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra el cambio; la [investigación de selección](./Documentos/05-meta-quest-y-seleccion.md) conserva los referentes de hover y confirmación.
 
 Cada mano conserva una sombra fresca independiente: azul al apuntar o reposar, violeta sólo en puños participantes adquiridos y ámbar en dos OK adquiridos. Gris indica bloqueo. El aro azul representa los **1500 ms** y confirma en verde; no confirma navegación ni avanza por mapa vacío.
 
 Los tres puntos ficticios muestran **1, 2 y 3**. Su dibujo nominal mide **40 px** y el activo, **56 px**; su caja exterior fija de **56 × 56 px** permanece estable durante el pulso. Un clic nativo sobre el activo avanza una vez. Tras el tercero termina el pulso; **Reiniciar recorrido**, en Ajustes, vuelve al punto 1. El botón del popup no vuelve a avanzar e Inicio conserva progreso. [Fuente y recorrido](./Documentos/07-limite-la-reina.md).
 
-La Vista cenital permanece visible arriba a la izquierda, unos **200 px** de ancho o **160 px** en pantallas pequeñas. Iniciar/Detener cámara es explícito; detener o perderla limpia skeleton y conteo. Métricas y exportación permanecen en Ajustes.
+La Vista frontal permanece visible arriba a la izquierda, unos **200 px** de ancho o **160 px** en pantallas pequeñas. Iniciar/Detener cámara es explícito; detener o perderla limpia skeleton y conteo. Métricas y exportación permanecen en Ajustes.
 
-**Suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados.** Los **1500 ms** son preferencia del usuario y la región de retención es una decisión experimental. La evidencia anterior permanece histórica y no valida precisión física de esta revisión.
+**Antecedente de verificación: suite, build, runtime y contenido de paquetes Mac/Windows 0.1.12 aprobados.** Los **1500 ms** son preferencia del usuario y la región de retención es una decisión experimental. La evidencia anterior permanece histórica y no valida precisión física de esta revisión.
 
-## Preparar la mesa
+## Preparar el montaje frontal
 
-1. Fijar la cámara USB sobre la zona de trabajo, con iluminación difusa y fondo mate.
+1. Fijar la cámara frente a la persona, apuntando hacia sus manos completas dentro del encuadre, con iluminación uniforme y fondo mate.
 2. Abrir Ajustes y elegir la cámara. Revisar la orientación y el reflejo con el diagnóstico.
 3. Usar todo el encuadre como zona de interacción: comprobar las cuatro esquinas, los bordes y el centro antes de probar clics.
 4. Revisar los controles que ofrece la cámara. Ajustar luz y enfoque reales; probar brillo, contraste o compensación de exposición sólo si están disponibles y comprobar el resultado.
@@ -125,7 +125,7 @@ npm run build
 npm run test:app
 ```
 
-### Verificación vigente: versión 0.1.12
+### Evidencia histórica: versión 0.1.12
 
 La **0.1.12 aprobó 192/192 pruebas**, build y runtime Electron sobre `3bfd3c50bce3abbaafb145096a3d00403b199701`. El runtime ejecutó **cuatro clics nativos `isTrusted` tras al menos 1500 ms**, con aro/destino conservados; todos los grupos Feedback aprobaron, incluidos 24 checks de navegación, siete de recuperación y siete de tolerancia. El [protocolo](./Documentos/03-protocolo-validacion.md) registra la distribución y alcance. Son entradas sintéticas con motor real, sin benchmark de precisión física.
 

@@ -33,12 +33,12 @@ El código y la documentación de la aplicación están en [registroVehicularMLR
 
 ## Prototipo de interacción territorial
 
-Comenzamos a explorar una aplicación de escritorio para recorrer el mapa con las manos, vistas por una cámara USB cenital. Esta etapa se centra en la detección, la intención de los gestos y la reducción de acciones accidentales antes de ajustar la experiencia municipal definitiva.
+Comenzamos a explorar una aplicación de escritorio para recorrer el mapa con las manos, vistas por una cámara frontal apuntando hacia la persona. Las manos completas quedan dentro del encuadre, con iluminación uniforme, y todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial. Esta etapa se centra en la detección, la intención de los gestos y la reducción de acciones accidentales antes de ajustar la experiencia municipal definitiva.
 
 - [Mapa Gestual MLR: aplicación, instalación y gestos](./mapaGestualMLR/README.md)
 - [Bitácora del prototipo](./mapaGestualMLR/Bitacora/README.md)
 - [Investigación de modelos de visión](./mapaGestualMLR/Documentos/01-investigacion-vision.md)
 - [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md)
-- [Protocolo de validación cenital](./mapaGestualMLR/Documentos/03-protocolo-validacion.md)
+- [Protocolo de validación del montaje frontal](./mapaGestualMLR/Documentos/03-protocolo-validacion.md)
 
 **Actualización del prototipo:** 9 de octubre de 2026

@@ -1,8 +1,8 @@
 # Protocolo de validación del mapa gestual
 
 **Fecha:** 9 de octubre de 2026<br>
-**Versión vigente:** 0.1.12<br>
-**Estado:** 0.1.12: 192/192 pruebas, build y runtime aprobados; contenido de paquetes Mac/Windows aprobado. La evidencia aprobada de 0.1.11 queda histórica. Ensayo USB, métricas físicas, Google con key y envoltorio portable pendientes<br>
+**Versión vigente:** 0.1.13 · montaje frontal<br>
+**Estado:** gestos y detector conservados desde 0.1.12; verificación y paquetes vigentes en la [entrega](./04-entrega-y-verificacion.md). La evidencia numérica de 0.1.12 queda histórica. Ensayo frontal, métricas físicas, Google con key y envoltorio portable pendientes<br>
 **Proyecto:** Mapa Gestual MLR · La Reina<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
@@ -10,7 +10,7 @@
 
 ## Qué queremos comprobar
 
-Evaluar si una cámara cenital permite apuntar, seleccionar, desplazar y hacer zoom sin activar acciones durante movimientos cotidianos. Medir precisión, estabilidad y demora en el equipo de la instalación; no trasladar benchmarks de teléfonos o modelos de cuerpo a este prototipo.
+Evaluar si una cámara frontal apuntando hacia la persona permite apuntar, seleccionar, desplazar y hacer zoom sin activar acciones durante movimientos cotidianos. Mantener las manos completas en encuadre e iluminación uniforme; todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial, conservado en investigaciones, comparaciones y fixtures históricos. Medir precisión, estabilidad y demora en el equipo de la instalación; no trasladar benchmarks de teléfonos o modelos de cuerpo a este prototipo.
 
 Una buena detección de mano no garantiza un buen clic. Separar tres errores: detectar una mano inexistente, estimar mal su postura y ejecutar una acción que la persona no quería realizar.
 
@@ -24,7 +24,7 @@ Desde 0.1.3 cada mano detectada conserva una sombra fresca, incluso en reposo y 
 
 Todo el encuadre de cámara corresponde a todo el mapa mediante orientación y límites `0..1`, sin homografía ni esquinas guardadas. El recorrido tiene tres puntos ficticios numerados, un único activo con pulso y avance por clic nativo **1→2→3**. El límite comunal proviene de SUBDERE DPA 2023 y se documenta en [Límite de La Reina y recorrido](./07-limite-la-reina.md); no convierte los marcadores ficticios en datos municipales.
 
-## Interacción vigente de 0.1.12
+## Interacción vigente, conservada desde 0.1.12
 
 El usuario reportó índice sobre el punto 1 sin aro en **0.1.11**, con posible veto geométrico de otros dedos. La captura no está instrumentada con logs que acrediten la condición exacta. Las pruebas sintéticas aprobadas no cubrieron esa dificultad física. La revisión **0.1.12 selecciona por permanencia del landmark 8 sobre un objetivo**, sin exigir índice extendido ni pulgar, medio, anular o meñique recogidos. Cambiar esos dedos no cancela por una condición de postura de selección. Hand Landmarker, SDK, pesos y número de inferencias se conservan; geometría de OK/puños mantiene los modos de navegación, no una postura exclusiva para clic.
 
@@ -47,9 +47,9 @@ El usuario reportó índice sobre el punto 1 sin aro en **0.1.11**, con posible 
 
 Distinguir **destino original**, usado para rearme, de **región amplia de retención**, usada para tolerar temblor durante el hold. No solicitar una postura nueva para resolver la salida. Las condiciones geométricas de índice exclusivo y los ángulos de dedos de 0.1.11 se conservan abajo como historia; no rigen selección 0.1.12. Sus parámetros y aprobación sintética no garantizan facilidad de uso ni pocos falsos positivos físicos.
 
-### Alcance de verificación de 0.1.12
+### Alcance histórico de verificación de 0.1.12
 
-Fuente final `3bfd3c50bce3abbaafb145096a3d00403b199701`: suite, build y runtime aprobados. Contenido de paquetes Mac/Windows y CI también aprobados; reportes, hashes e intervalos en la entrega. La [bitácora](../Bitacora/README.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra el reporte, el posible veto y el cambio; [05](./05-meta-quest-y-seleccion.md) conserva los referentes de hover/mantenimiento con hardware distinto. No asignar los **180 casos de 0.1.11** a esta revisión.
+Fuente final `3bfd3c50bce3abbaafb145096a3d00403b199701`: suite, build y runtime aprobados. Contenido de paquetes Mac/Windows y CI también aprobados; reportes, hashes e intervalos en la entrega. La [bitácora](./08-historial-tecnico.md#9-de-octubre---selección-por-permanencia-sobre-objetivo-en-0112) registra el reporte, el posible veto y el cambio; [05](./05-meta-quest-y-seleccion.md) conserva los referentes de hover/mantenimiento con hardware distinto. No asignar los **180 casos de 0.1.11** a esta revisión.
 
 - Landmark 8 sobre punto activo y botón con otros dedos abiertos, recogidos, flexionados o cambiando; no exigir postura exclusiva ni cancelar por esos cambios.
 - Mapa vacío y puntos inactivos: sin candidato, reloj, aro de confirmación ni evento.
@@ -58,7 +58,7 @@ Fuente final `3bfd3c50bce3abbaafb145096a3d00403b199701`: suite, build y runtime 
 - Confirmar A, volver en menos de **120 ms**, mantener fuera de A durante 120 ms e iniciar B: rearme por ID original y por mano, B con tiempo fresco incluso sin retraer índice.
 - Acompañante abierto/puño entra/sale/reordena durante hold; conservar al actor. Índice de mano no puño sobre objetivo tiene prioridad sobre pan ajeno; fuera de objetivo, ese puño conserva pan.
 - Dos OK sólo zoom; foco/pausa/tracking/calidad, preview fresco, recorrido completo y botón del popup sin doble avance. Repetir runtime y contenido empaquetado en Mac/Windows.
-- Ensayo físico del caso reportado sobre punto 1, con montaje cenital/frontal registrado y referencia independiente; no sustituirlo por fixtures sintéticos ni declarar métricas sin medir.
+- Ensayo físico del caso reportado sobre punto 1, con el montaje frontal registrado y referencia independiente; no sustituirlo por fixtures sintéticos ni declarar métricas sin medir.
 
 La **suite final 0.1.12 aprobó 192/192 pruebas**: **89** de motor, **15** de OK en perspectiva, **21** del helper de índice y guardas de navegación, **15** de hover nuevo, **4** de participantes anónimos, **18** de selección, **3** de calibración histórica, **4** de mapeo, **15** de calidad/cámara y **8** de secuencia/contorno. Los 21 del helper no acreditan una postura obligatoria para clic: éste ya usa permanencia de landmark 8 sobre un objetivo.
 
@@ -70,7 +70,7 @@ Los **contenidos de paquetes Mac y Windows 0.1.12 están aprobados**. Los [repor
 
 Las condiciones siguientes documentan selección por índice exclusivo de aquella revisión. En el uso físico posterior, el usuario reportó índice sobre punto 1 sin aro con posible veto de otros dedos; la captura no tenía logs para demostrar la condición exacta y la aprobación sintética no acreditó esa postura real. Se retiran como requisitos vigentes en 0.1.12.
 
-El usuario elige **sólo el índice extendido** para seleccionar; pulgar, medio, anular y meñique deben aportar evidencia positiva de recogimiento. Otro dedo extendido impide esa selección. **Dos OK tienen prioridad para zoom; después selección por índice exclusivo; después pan con uno o dos puños.** OK individual no produce clic. No se cambia Hand Landmarker, pesos, SDK ni número de inferencias. La [bitácora](../Bitacora/README.md#9-de-octubre---selección-con-índice-exclusivo-en-0111-histórica) registra la decisión; los [referentes de selección](./05-meta-quest-y-seleccion.md) orientan hover, mantenimiento y feedback sin validar una webcam.
+El usuario elige **sólo el índice extendido** para seleccionar; pulgar, medio, anular y meñique deben aportar evidencia positiva de recogimiento. Otro dedo extendido impide esa selección. **Dos OK tienen prioridad para zoom; después selección por índice exclusivo; después pan con uno o dos puños.** OK individual no produce clic. No se cambia Hand Landmarker, pesos, SDK ni número de inferencias. La [bitácora](./08-historial-tecnico.md#9-de-octubre---selección-con-índice-exclusivo-en-0111-histórica) registra la decisión; los [referentes de selección](./05-meta-quest-y-seleccion.md) orientan hover, mantenimiento y feedback sin validar una webcam.
 
 ### Objetivo y tolerancia al temblor de 0.1.11
 
@@ -218,7 +218,7 @@ La tabla conserva el contrato probado de selección por OK. Para la selección v
 | Mapeo | Todo el frame a todo el mapa; espejo/rotación y límites `0..1`, sin homografía ni esquinas guardadas. Referencia visual recupera posición absoluta por convergencia temporal; mantener alcance a bordes. |
 | Calidad de imagen | Imagen casi totalmente negra/blanca o frame inválido cancela y bloquea acciones inmediatamente; recuperación no severa continua `600 ms`. Aviso estable tras `200 ms` de condición severa, sin permitir acciones durante esa espera. |
 | Cámara | Brillo, contraste y compensación de exposición sólo con rangos válidos declarados por el track; solicitar modos continuos sólo si están disponibles y verificar ajustes reportados. |
-| Preview permanente | Vista cenital fija arriba a la izquierda, ancho nominal `200 px` o `160 px` en pantallas pequeñas; imagen, skeleton fresco y conteo con cámara activa. Sin casilla ni botón de cierre. Cámara detenida: mensaje y datos anteriores limpios. |
+| Preview permanente (0.1.10, histórico) | Vista cenital fija arriba a la izquierda, ancho nominal `200 px` o `160 px` en pantallas pequeñas; imagen, skeleton fresco y conteo con cámara activa. Sin casilla ni botón de cierre. Cámara detenida: mensaje y datos anteriores limpios. |
 | Diagnóstico | Métrica existente en Ajustes: `release-required` pide abrir la pinza; `invalid-geometry` informa postura inválida. `second-hand` se retira del contrato vigente; zoom conserva su estado propio. Sin cámara ni landmarks en exportación; runtime nuevo aprobado. |
 | Equipo principal | macOS arm64 y cámara USB; anotar modelos y versiones reales. |
 | Segundo destino | Windows x64, `.exe` portable; verificación de cámara por separado. |
@@ -549,15 +549,15 @@ En el ensayo aislado también se consultó un segundo fixture JPG con dos manos:
 
 Google Maps necesita otra comprobación con key autorizada, API habilitada, facturación, restricciones correctas y atribución visible. Registrar cambio de key, fallo de autenticación, recuperación, POI real y popup. Actualmente esa prueba está pendiente.
 
-## 2. Montaje cenital y encuadre completo
+## 2. Montaje frontal y encuadre completo
 
-Fijar la cámara USB, iluminar de forma uniforme y delimitar una zona de mesa cómoda. Anotar la geometría antes de comparar modelos. Revisar que la mano mantenga suficiente detalle al moverse y que el foco no cambie de forma inestable.
+Fijar la cámara frente a la persona, apuntando hacia las manos, e iluminar de forma uniforme. Mantener ambas manos completas dentro del encuadre y una postura cómoda. Anotar distancia y altura de cámara antes de comparar modelos. Revisar que la mano mantenga suficiente detalle al moverse y que el foco no cambie de forma inestable.
 
 Comprobar superior izquierda, superior derecha, inferior derecha, inferior izquierda, bordes y centro. La app usa el frame completo con espejo, rotación y límites `0..1`, sin homografía ni esquinas guardadas. Repetir la comprobación tras mover la cámara, cambiar resolución, espejo u orientación. Una corrección al cambiar índice↔nudillos debe desaparecer por convergencia temporal de 300 ms incluso quieto, sin necesitar desplazar la palma. El movimiento hasta un borde conserva alcance completo. Durante permanencia del landmark 8 sobre objetivo, conservar destino/aro **1500 ms** y mientras siga confirmado. Salir del destino original **120 ms** rearma; no exigir postura o retracción del índice. Ensayar adquisición sobre destino y región de retención por separado. Evaluar por separado cambios de altura y deformación de la perspectiva.
 
 Consultar las capacidades del track después de iniciar streaming y registrar los ajustes que realmente informa. Si brillo, contraste o compensación de exposición no están disponibles, no inventar sliders ni confundir soporte del navegador con soporte de la USB. Probar modos continuos únicamente si la cámara los anuncia; comparar imagen quieta y manos en movimiento para detectar autofocus inestable, ruido o blur. Una solicitud resuelta no demuestra que el hardware haya cambiado.
 
-Ensayar bloqueo con frames severos y su recuperación: las acciones se detienen desde el primer frame inutilizable, los punteros frescos permanecen grises y el tiempo anterior del clic no se reutiliza. Comprobar el umbral continuo de `600 ms`, interrupciones durante recuperación y avisos sin bloqueo por fondo mate. Esto prueba la lógica del gate; no establece precisión cenital ni una garantía de falsos positivos.
+Ensayar bloqueo con frames severos y su recuperación: las acciones se detienen desde el primer frame inutilizable, los punteros frescos permanecen grises y el tiempo anterior del clic no se reutiliza. Comprobar el umbral continuo de `600 ms`, interrupciones durante recuperación y avisos sin bloqueo por fondo mate. Esto prueba la lógica del gate; no establece precisión física del montaje frontal ni una garantía de falsos positivos.
 
 Ensayar mano izquierda y derecha, rotaciones en el plano, manos de distinto tamaño, entrada por distintos bordes y dos manos simultáneas. El orden de detección del modelo puede cambiar; la aplicación debe conservar identidad o cancelar ante ambigüedad.
 
@@ -577,7 +577,7 @@ Cada sesión incluye:
 8. Formar dos OK y variar separación: sólo zoom. Traslación común no desplaza; salir de zoom sin clic residual ni tiempo heredado.
 9. Añadir/retirar compañero abierto o puño, invertir el orden del resultado y cambiar identidad sólo del compañero durante hold: conservar actor. Cambiar actor inicia reloj propio.
 10. Pausar con Espacio, cancelar con Esc, cambiar foco y perder tracking: cancelar, rearmar por salida del objetivo y no usar datos antiguos.
-11. Reproducir físicamente el caso de punto 1 de 0.1.11 en vistas cenital/frontal/oblicua, sin usar world como verdad física ni atribuir precisión a una postura que dejó de exigirse.
+11. Reproducir físicamente el caso de punto 1 de 0.1.11 en el montaje frontal, anotando variantes oblicuas y dejando la vista cenital como comparación del planteamiento anterior, sin usar world como verdad física ni atribuir precisión a una postura que dejó de exigirse.
 12. Completar **1→2→3** por hover de 1,5 segundos; un avance por activo, final sin pulso, Home conserva y Ajustes reinicia. Botón del popup no duplica avance.
 13. Provocar imagen extrema, comprobar recuperación **600 ms**, sombras frescas grises y ningún temporizador reutilizado.
 14. Iniciar/detener cámara y revisar capacidades reales: preview permanente con skeleton fresco y limpieza al detener, diagnóstico en Ajustes, sin permisos automáticos ni controles ocultables.
@@ -723,7 +723,7 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 | Build de interfaz, assets y Mac ZIP de 0.1.0 | Aprobado en el host Mac arm64. |
 | Smoke de 0.1.0 con modelo real, PNG positivo/frame vacío, CSP y UI | Aprobado en Apple M5/macOS 26.6.2/Electron 44.5.1; alcance descrito arriba. |
 | Apertura de `.app` y smoke del paquete Mac 0.1.0 | Aprobados; reporte histórico `verificacion-paquete-mac.json`. |
-| Mac arm64 con cámara USB cenital | Pendiente de ensayo de instalación. |
+| Mac arm64 con cámara frontal | Pendiente de ensayo de instalación. |
 | Controles con cámara y driver reales | Pendientes; tests de API y visibilidad condicional usan capacidades simuladas y no demuestran soporte físico. |
 | Windows build y `.exe` portable de 0.1.0 | Artefacto construido en CI; 26 tests y smoke de runtime aprobados. |
 | Contenido empaquetado Windows 0.1.0 | Smoke aprobado con `release/win-unpacked/Mapa Gestual MLR.exe` en CI. |
@@ -732,7 +732,7 @@ Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal
 | Google Maps con key propia | Pendiente; no hay key del usuario configurada. |
 | Evaluación de usuarios y falsos clics | Pendiente; no existe tasa medida publicada. |
 
-Actualizar esta tabla sólo con evidencia de la condición específica. Una prueba positiva con fixture frontal no completa el ensayo cenital; un build Windows aprobado no completa la prueba de cámara Windows.
+Actualizar esta tabla sólo con evidencia de la condición específica. Una prueba positiva con fixture frontal no completa el ensayo físico del montaje; un build Windows aprobado no completa la prueba de cámara Windows.
 
 ---
 

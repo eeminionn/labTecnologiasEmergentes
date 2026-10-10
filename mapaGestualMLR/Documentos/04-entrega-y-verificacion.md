@@ -1,4 +1,27 @@
-# Entrega técnica - Mapa Gestual MLR 0.1.12
+# Entrega técnica - Mapa Gestual MLR 0.1.13
+
+**Fecha:** 9 de octubre de 2026<br>
+**Fuente verificada:** `6f511d743b5b15cb8cbb06cc36a513202c731e42`<br>
+**Estado:** build Mac, 192 pruebas en CI, runtime y contenido empaquetado Mac/Windows aprobados.
+
+## Cámara frontal
+
+El montaje actual usa una **cámara frontal mirando hacia la persona**. La ventana pequeña se llama **Vista frontal**, el selector de Ajustes dice **Cámara frontal** y la ayuda explica cómo mantener las manos completas en el encuadre. Cambian los textos y metadatos; se conserva el modelo, los gestos y la configuración de espejo/orientación existente.
+
+La aplicación 0.1.13 quedó instalada y abierta en esta Mac, con copia de 0.1.12. Se comprobaron Vista frontal y el selector en la interfaz nativa, sin iniciar la cámara. Las [tres capturas de la bitácora](../Bitacora/README.md) se renovaron; el aro corresponde a una prueba automatizada identificada como tal.
+
+## Verificación y archivos
+
+Los [reportes Mac](./verificacion-paquete-mac-0.1.13.json) y [Windows](./verificacion-paquete-windows-0.1.13.json) aprueban cuatro clics nativos de 1,5 segundos y todos los grupos de seguimiento, selección y navegación. La [CI Windows](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38015600692) aprobó pruebas, build, runtime y smoke del contenido empaquetado. El envoltorio portable no se ejecutó como tal. Estos resultados usan entradas sintéticas; las métricas físicas de precisión, comodidad y latencia del montaje frontal siguen por medir.
+
+| Archivo | Bytes | SHA-256 |
+|:---|---:|:---|
+| `MapaGestualMLR-0.1.13-mac-arm64.zip` | 156760716 | `a56d1a40ec45ab3c0bb49b420fd57bd498f1e9d180d154782b643c0256f4b828` |
+| `MapaGestualMLR-0.1.13-windows-x64.exe` | 109777639 | `b11d46b13246e63c2904633ecf178a5ff77c821eb65c7bbfec09da7520db33ca` |
+
+## Registro histórico de 0.1.12
+
+El registro siguiente conserva resultados y textos de versiones anteriores. El planteamiento cenital y las capturas con esa etiqueta son históricos; el montaje vigente es frontal.
 
 **Fecha:** 9 de octubre de 2026<br>
 **Fuente verificada:** `3bfd3c50bce3abbaafb145096a3d00403b199701`<br>
