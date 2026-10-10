@@ -18,7 +18,7 @@
       <div id="click-ripple" aria-hidden="true"></div>
       <div id="notice" role="status" hidden></div>
       <section id="diagnostics" class="panel" aria-label="Cámara con tracking de manos">
-        <div class="panel-heading">Vista cenital</div>
+        <div class="panel-heading">Vista frontal</div>
         <div class="video-frame"><video id="video" autoplay playsinline muted></video><canvas id="skeleton"></canvas><span id="camera-preview-state" class="preview-state">Cámara detenida</span></div>
         <div class="preview-footer"><span id="hands-metric">0 manos</span></div>
       </section>
@@ -28,7 +28,7 @@
     <dialog id="settings">
       <form method="dialog" id="settings-form">
         <div class="dialog-heading"><h1>Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
-        <label>Cámara USB cenital<select id="camera-select"><option value="">Cámara predeterminada</option></select></label>
+        <label>Cámara frontal<select id="camera-select"><option value="">Cámara predeterminada</option></select></label>
         <div class="row"><label><input id="mirror" type="checkbox" /> Reflejar horizontalmente</label><label>Orientación<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label></div>
         <label><input id="camera-auto" type="checkbox" /> Preferir exposición y enfoque continuos</label>
         <div id="camera-controls">
@@ -54,7 +54,7 @@
     </dialog>
     <dialog id="help"><div class="dialog-heading"><h1>Gestos</h1><button id="help-close" aria-label="Cerrar ayuda">×</button></div>
       <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Mueve el índice sobre el mapa. Las sombras siguen la punta del índice de cada mano; con los puños cerrados siguen los nudillos. El punto con pulso indica el siguiente paso del recorrido.</p></li><li><strong>Clic</strong><p>Coloca la punta del índice sobre un punto o botón. La posición de los otros dedos no importa. El aro conserva el objetivo mientras tu índice se mueve dentro de una zona amplia alrededor de él; no necesitas mantenerlo inmóvil. Tras 1,5 segundos selecciona automáticamente. Salir de la zona reinicia la carga. Después del clic, sal de la zona para seleccionar otra vez. La entrada o salida de la otra mano no interrumpe la selección.</p></li><li><strong>Mover</strong><p>Cierra una mano completamente en puño, espera un instante y muévela. También puedes usar dos puños y moverlos juntos. Las sombras se vuelven violetas. La otra mano puede permanecer abierta: sólo los puños mueven el mapa. Si el índice de una mano libre está sobre un objetivo, pasa a selección. Abre el último puño para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar y júntalas para alejar. Para seleccionar, mantén la punta del índice sobre un objetivo; el zoom con dos OK tiene prioridad. Las sombras se vuelven ámbar durante el zoom. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
-      <p class="field-note">Manos separadas, cámara fija, iluminación uniforme y fondo mate. Usa Ajustes para elegir tu USB y revisar orientación y exposición. Los extremos de cámara corresponden a los extremos del mapa. Espacio pausa; Esc cancela cualquier acción.</p>
+      <p class="field-note">Cámara frontal fija mirando hacia la persona, manos completas y separadas dentro del encuadre, iluminación uniforme y fondo mate. Usa Ajustes para elegir la cámara y revisar orientación y exposición. Los extremos de cámara corresponden a los extremos del mapa. Espacio pausa; Esc cancela cualquier acción.</p>
       <p class="field-note">Servicios de mapa: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank">Términos Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank">Privacidad Google</a>. Los mapas usan Internet; este prototipo no envía frames de cámara al proveedor del mapa.</p>
     </dialog>
     <script type="module" src="/src/main.js"></script>

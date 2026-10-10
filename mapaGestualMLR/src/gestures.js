@@ -1,5 +1,5 @@
 /**
- * Stateful, local gesture interpreter for a top-down camera.
+ * Stateful, local gesture interpreter for hand landmarks from an RGB camera.
  *
  * Input and output coordinates use the camera's original 0..1 image space.
  * Set aspectRatio = camera width / height for distance and joint geometry. The

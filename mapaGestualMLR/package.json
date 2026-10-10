@@ -1,8 +1,8 @@
 {
   "name": "mapa-gestual-mlr",
-  "version": "0.1.12",
+  "version": "0.1.13",
   "private": true,
-  "description": "Prototipo cenital de interacción territorial mediante manos",
+  "description": "Prototipo de interacción territorial mediante manos con cámara frontal",
   "author": "Emilio Abarca",
   "type": "module",
   "main": "electron/main.cjs",
@@ -27,17 +27,35 @@
   "build": {
     "appId": "cl.mlr.mapagestual",
     "productName": "Mapa Gestual MLR",
-    "directories": { "output": "release" },
-    "files": ["dist/**/*", "electron/**/*", "assets/**/*", "package.json", "THIRD_PARTY_NOTICES.md"],
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "assets/**/*",
+      "package.json",
+      "THIRD_PARTY_NOTICES.md"
+    ],
     "asar": true,
     "mac": {
       "icon": "assets/icon.icns",
       "category": "public.app-category.utilities",
       "identity": null,
-      "extendInfo": { "NSCameraUsageDescription": "La cámara detecta tus manos para mover el mapa. Las imágenes se procesan en este equipo." },
+      "extendInfo": {
+        "NSCameraUsageDescription": "La cámara detecta tus manos para mover el mapa. Las imágenes se procesan en este equipo."
+      },
       "artifactName": "MapaGestualMLR-${version}-mac-${arch}.${ext}"
     },
-    "win": { "icon": "assets/icon.ico", "target": ["portable"], "artifactName": "MapaGestualMLR-${version}-windows-${arch}.${ext}" },
-    "portable": { "requestExecutionLevel": "user" }
+    "win": {
+      "icon": "assets/icon.ico",
+      "target": [
+        "portable"
+      ],
+      "artifactName": "MapaGestualMLR-${version}-windows-${arch}.${ext}"
+    },
+    "portable": {
+      "requestExecutionLevel": "user"
+    }
   }
 }
