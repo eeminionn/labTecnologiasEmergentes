@@ -2,24 +2,61 @@
 
 Investigación sobre la adaptación del espacio público de La Reina a las necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.
 
-## Índice
-
-- [Bitácora: Etapa 1](./Etapa-1/Bitacora/README.md)
-
----
-
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Estado actual:** Investigación preliminar · Etapa 1<br>
-**Última actualización:** 21 de agosto de 2026
+**Estado actual:** Etapa 2 · prototipo de interacción territorial<br>
+**Última actualización:** 10 de octubre de 2026
 
-## Continuación: Etapa 2
+## Prototipo: Mapa Gestual MLR
 
-La investigación siguió desde los tres problemas iniciales hacia una oportunidad más amplia: conectar la información territorial que hoy se encuentra repartida entre distintas plataformas y áreas municipales.
+Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina con las manos frente a una cámara frontal. Permite desplazarse, hacer zoom y seleccionar puntos de interés. Por ahora trabajamos con tres puntos demostrativos, antes de incorporar información municipal real.
 
-- [Bitácora: Etapa 2](./Etapa-2/Bitacora/README.md)
-- [Presentación del nuevo avance](./Etapa-2/Documentos/01-presentacion-avance-plataforma-territorial.pdf)
+**[README principal del prototipo: qué hace y cómo usarlo](./mapaGestualMLR/README.md)**
 
-<p align="center"><img src="./Etapa-2/Imagenes/04-problematica-transversal.jpg" alt="Problemática transversal de la Etapa 2" width="640"></p>
+**[Bitácora del prototipo: decisiones, avances e imágenes](./mapaGestualMLR/Bitacora/README.md)**
+
+La bitácora reúne el recorrido del proyecto y explica por qué fuimos cambiando los gestos y la interacción.
+
+### Demostración
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="https://youtu.be/mBsh8tRpk8A">
+        <img src="https://i.ytimg.com/vi/mBsh8tRpk8A/hqdefault.jpg" alt="Ver video demostrativo del Mapa Gestual MLR" width="640" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Video demostrativo.</strong> <a href="https://youtu.be/mBsh8tRpk8A">Test software visualización de datos MLR</a>. Hacer clic en la imagen para ver el funcionamiento en YouTube.</td>
+  </tr>
+</table>
+
+### Referentes y arquitectura
+
+| Documento | Qué aporta |
+|:---|:---|
+| [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md) | Investigación para definir la interacción. |
+| [Arquitectura del sistema](./mapaGestualMLR/Documentos/09-arquitectura-del-sistema.md) | Resumen por módulos y diagrama completo. |
+
+## Etapas de la investigación
+
+En la primera etapa revisamos problemas de movilidad, calor y anegamientos. En la segunda pasamos a una oportunidad más amplia: conectar la información territorial que hoy está repartida entre plataformas y áreas municipales.
+
+| Etapa | Registro |
+|:---|:---|
+| **Etapa 1** | [Exploración y definición de la problemática](./Etapa-1/Bitacora/README.md) |
+| **Etapa 2** | [Bitácora del avance](./Etapa-2/Bitacora/README.md) · [Presentación](./Etapa-2/Documentos/01-presentacion-avance-plataforma-territorial.pdf) |
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="./Etapa-2/Imagenes/04-problematica-transversal.jpg" alt="Problemática transversal de la Etapa 2" width="640" />
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Problemática transversal.</strong> Síntesis de la Etapa 2. <strong>Fuente:</strong> elaboración del equipo.</td>
+  </tr>
+</table>
 
 ## Herramienta web
 
@@ -28,17 +65,3 @@ Como parte del levantamiento de datos construimos una aplicación móvil para me
 **[Abrir Registro Vehicular MLR](https://eeminionn.github.io/labTecnologiasEmergentes/registroVehicularMLR/)**
 
 El código y la documentación de la aplicación están en [registroVehicularMLR](./registroVehicularMLR/).
-
-**Actualización Etapa 2:** 28 de agosto de 2026
-
-## Prototipo de interacción territorial
-
-Comenzamos a explorar una aplicación de escritorio para recorrer el mapa con las manos, vistas por una cámara frontal apuntando hacia la persona. Las manos completas quedan dentro del encuadre, con iluminación uniforme, y todo el encuadre corresponde al mapa. Este montaje sustituye el planteamiento cenital inicial. Esta etapa se centra en la detección, la intención de los gestos y la reducción de acciones accidentales antes de ajustar la experiencia municipal definitiva.
-
-- [Mapa Gestual MLR: aplicación, instalación y gestos](./mapaGestualMLR/README.md)
-- [Bitácora del prototipo](./mapaGestualMLR/Bitacora/README.md)
-- [Investigación de modelos de visión](./mapaGestualMLR/Documentos/01-investigacion-vision.md)
-- [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md)
-- [Protocolo de validación del montaje frontal](./mapaGestualMLR/Documentos/03-protocolo-validacion.md)
-
-**Actualización del prototipo:** 9 de octubre de 2026
