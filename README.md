@@ -3,7 +3,7 @@
 Investigación sobre la adaptación del espacio público de La Reina a las necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Estado actual:** Etapa 2 · prototipo y propuesta espacial<br>
+**Estado actual:** Etapa 2 · prototipo, propuesta espacial y gráfica<br>
 **Última actualización:** 10 de octubre de 2026
 
 ## Prototipo: Mapa Gestual MLR
@@ -41,6 +41,12 @@ La bitácora reúne el recorrido del prototipo y explica las decisiones de gesto
 Propusimos reorganizar la sala del Concejo Municipal con un centro compartido y proyecciones en las paredes. Este apartado reúne el proceso de la propuesta, sus referentes, los esquemas, la planta, los cortes y las vistas de la sala.
 
 **[Bitácora de la propuesta espacial: decisiones, planos e imágenes](./propuestaEspacialMLR/)**
+
+## Propuesta gráfica del proyecto
+
+Estamos desarrollando un concepto inicial que busca mantener la paleta original de La Reina y explorar una presencia más futurista, estilo cyberpunk. La gráfica y la elección tipográfica siguen en evaluación.
+
+**[Bitácora de la propuesta gráfica: concepto inicial, referentes y pruebas](./propuestaGraficaMLR/)**
 
 ## Etapas de la investigación
 
