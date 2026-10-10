@@ -1,10 +1,10 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 6 de octubre de 2026<br>
+**Última actualización:** 9 de octubre de 2026<br>
 **Equipo del proyecto:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
-**Versión vigente:** 0.1.9 · 145/145 pruebas, build, runtime y paquetes Mac/Windows 0.1.9 aprobados. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
+**Versión vigente:** 0.1.10 · 177/177 pruebas, build, runtime y paquetes Mac/Windows finales aprobados. La evidencia 0.1.9 queda histórica. Ensayo USB cenital/frontal, métricas físicas, Google con key y envoltorio portable pendientes
 
 [Volver al prototipo](../README.md) · [Volver al README principal](../../README.md) · [Revisar Etapa 2](../../Etapa-2/Bitacora/README.md)
 
@@ -158,7 +158,7 @@ La suite **0.1.8 aprobó 132/132 pruebas**: 90 de gestos, 12 de selección, 3 de
 
 El código histórico comprobado es `323bc002a998babd9cc1d30825e68fc8383c7dee`. El [paquete Mac 0.1.8](../Documentos/verificacion-paquete-mac-0.1.8.json) está aprobado: cuatro clics nativos con intervalos de **1538,9 / 1500,8 / 1500,9 / 1534,3 ms** desde OK válido, incluidos MCP 5 deformado y pulgar quieto, destino conservado y seis checks de recuperación. La [CI Windows 37464967238](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37464967238) terminó con éxito: 132 pruebas, build, runtime, portable y smoke de `release/win-unpacked/Mapa Gestual MLR.exe`. El [reporte Windows 0.1.8](../Documentos/verificacion-paquete-windows-0.1.8.json) confirma cuatro clics nativos con intervalos **1533,1 / 1509,3 / 1528,0 / 1532,4 ms**, MCP 5 deformado, pulgar quieto y seis checks de recuperación. El envoltorio portable no se ejecutó como tal. Estos checks usan landmarks sintéticos con el motor real y eventos nativos dentro de la app; no validan cámara USB, falsos positivos ni latencia física. Una auditoría independiente aprobó **167 casos adicionales**, separados de la suite del repositorio; no son 167 usuarios. Esta evidencia no certifica el pan de una mano ni los paquetes 0.1.9.
 
-## 6 de octubre - Pan con uno o dos puños en 0.1.9
+## 6 de octubre - Pan con uno o dos puños en 0.1.9 (histórico)
 
 El usuario solicita poder desplazar con al menos una mano cerrada. No se recupera el gesto histórico de palma abierta.
 
@@ -170,9 +170,31 @@ La suite **0.1.9 aprobó 145/145 pruebas**: 103 de gestos, 12 de selección, 3 d
 
 El código comprobado es `cb7d88071af0388d146d3719ae5c77744d3a8661`. El [paquete Mac 0.1.9](../Documentos/verificacion-paquete-mac-0.1.9.json) está aprobado: 23 checks de navegación, nueve de vistas de puño, seis de recuperación y cuatro clics nativos con intervalos **1539,0 / 1539,8 / 1533,8 / 1533,0 ms** desde OK válido. La `.app` abrió, se revisó la ayuda de un puño y se observó cámara activa con cero manos; esa observación no es un ensayo físico de gestos. La [CI Windows 37466845521](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/37466845521) terminó con éxito para esa misma revisión: 145 pruebas, build, runtime, construcción del portable, smoke de `release/win-unpacked/Mapa Gestual MLR.exe` y publicación del artefacto aprobados. El [reporte Windows 0.1.9](../Documentos/verificacion-paquete-windows-0.1.9.json) confirma 23 checks de navegación, nueve de vistas de puño, seis de recuperación y cuatro clics nativos con intervalos **1529,0 / 1512,2 / 1514,4 / 1500,0 ms** desde OK válido, sin clic temprano ni repetición y con recorrido completo. Verifica el contenido empaquetado; no se ejecutó el envoltorio portable como tal. Los checks usan landmarks sintéticos con motor real y eventos nativos dentro de la app; no acreditan ensayo USB, latencia física ni tasa de falsos positivos. Las 132 pruebas y paquetes 0.1.8 quedan históricos.
 
+## 9 de octubre - Selección acompañada y perspectiva en 0.1.10
+
+El usuario solicita conservar control y selección cuando aparece la segunda mano y aceptar OK en más perspectivas. La revisión modifica reglas de interacción y geometría, sin reemplazar ni entrenar el modelo.
+
+La **0.1.10** separa acción y acompañante con esta prioridad: **dos OK válidos hacen zoom; un OK válido selecciona; sin OK, uno o dos puños desplazan**. Un OK puede mantener el clic de **1500 ms** aunque la otra mano esté abierta, en reposo o cerrada en puño: OK + puño selecciona, no desplaza. Pan utiliza sólo los nudillos de los puños y zoom la separación entre índices 8. No se combinan acciones ni se hereda progreso al entrar en zoom.
+
+Se valida a los **participantes de la acción**. Una mano ajena inválida o neutra no debe bloquear a un actor válido. Si el acompañante entra, sale o cambia de identidad sin participar, el actor conserva su objetivo, reloj y continuidad; no se reinicia el hold ni la base de pan por el simple cambio del conteo. La pérdida, invalidez o discontinuidad del actor, foco, pausa y calidad global siguen siendo guardas de seguridad. El segundo OK válido sí activa la prioridad de zoom y termina la selección individual. La adquisición de navegación y el rearme se resuelven por participantes: cambiar un acompañante ajeno no reinicia la acción; cambiar el conjunto real de puños o pasar a zoom adquiere una base nueva durante **180 ms**, sin salto ni tiempo heredado.
+
+El feedback pertenece al actor: el aro y halo de selección permanecen anclados en su objetivo aunque haya dos manos detectadas, mientras el acompañante conserva su sombra fresca independiente. Sólo participantes de pan se muestran violetas y los dos OK de zoom, ámbar; la mano libre permanece azul. Se mantienen preview pequeño permanente, controles de cámara explícitos y diagnóstico en Ajustes. Modelo, pesos, SDK e inferencia no cambian.
+
+El rearme se conserva **por mano**. Si cambia el actor de A a B, B puede iniciar un mantenimiento nuevo de **1500 ms**, sin heredar tiempo, objetivo ni bloqueo de A. Cada mano conserva rearme de **120 ms** y cooldown de **400 ms**. Tras zoom o reaparición de una mano que perdió tracking se exige apertura válida antes de seleccionar, para evitar un clic al salir del zoom. El renderer dirige hover, aro y clic por **`selectionHandId`**, no por posición `0` del array ni por conteo; invertir el orden del resultado no cambia al actor.
+
+La guarda de geometría se aplica también al **puño participante de pan**. Si A pierde geometría válida y luego vuelve en OK, debe abrir para rearmarse, con o sin acompañante. B válido conserva su propia capacidad de seleccionar; no hereda el bloqueo de A. Si A recupera un puño válido, puede readquirir pan durante **180 ms** sin exigir apertura, tomando base nueva y sin salto.
+
+La ayuda de cierre sigue siendo opcional. Si el acompañante ya está en puño, una intención privada de la mano libre puede conservarse sin mostrar `click-preparing` ni interrumpir pan. Sólo OK validado tiene prioridad para selección y comienza los **1500 ms** completos. No todos los cierres muestran preparación pública: se debe comprobar objetivo válido retenido al primer OK y ausencia de clic previo, además del mantenimiento posterior.
+
+OK utiliza una única geometría **XYZ consistente**: `worldLandmarks` válidos de la misma mano, o XYZ normalizado con aspecto corregido cuando world no existe. La razón pulgar 4–índice 8 / palma entra en `0,28` y sale en `0,40`, acompañada de evidencia positiva semiextendida en al menos dos de los otros tres dedos y de cierre del índice o oposición compacta del pulgar. No exige dedos perfectamente rectos ni un círculo perfecto; una superposición XY con separación Z no sustituye la proximidad 3D. World es una estimación monocular, no una medición de contacto físico. Los umbrales experimentales del módulo se detallan en el protocolo. La geometría y el rearme por participante se comprobaron sintéticamente, en runtime y en paquetes finales; la validación física sigue pendiente. La comprobación física sigue pendiente.
+
+La suite **0.1.10 aprobó 177/177 pruebas**: 117 de motor de gestos, 14 de geometría OK, 4 de participantes anónimos, 12 de selección, 3 de calibración histórica, 4 de mapeo, 15 de calidad/cámara y 8 de secuencia/contorno. **Build y runtime Electron aprobados** sobre `b6184aa9f0ba62cfa6b0e1b39cd7615c4ea0e797`. Las tres regresiones de rearme comprueban que A pierde geometría y requiere apertura antes de seleccionar, tenga o no acompañante; B válido no se bloquea y A en puño readquiere pan durante **180 ms** sin apertura ni salto. El runtime ejecutó cuatro clics `isTrusted` con intervalos **1540,5 / 1500,3 / 1534,3 / 1541,0 ms**, conservando actor/objetivo/aro con acompañante cambiante y con puño permanente. Son landmarks sintéticos y eventos de la app, no rendimiento físico medido.
+
+Los **paquetes finales Mac y Windows 0.1.10 están aprobados**: [reporte Mac](../Documentos/verificacion-paquete-mac-0.1.10.json) y [reporte Windows](../Documentos/verificacion-paquete-windows-0.1.10.json), ambos `ok:true` con cuatro clics nativos. Intervalos Mac **1503,7 / 1500,6 / 1500,5 / 1541,0 ms**; Windows **1526,5 / 1516,7 / 1524,2 / 1509,2 ms**. Acompañante cambiante, reorden y salida conservan actor/objetivo/aro; el botón mantiene compañero puño desde el inicio y actor secundario. Ambos reportes aprueban **24 checks de navegación** y todos los grupos Feedback. La [CI Windows 38006516067](https://github.com/eeminionn/labTecnologiasEmergentes/actions/runs/38006516067) terminó con éxito para la misma fuente, incluido portable y smoke de `win-unpacked`; el envoltorio NSIS no se ejecutó como tal. La `.app` final abrió sin iniciar cámara. La [entrega](../Documentos/04-entrega-y-verificacion.md) registra archivos, tamaños, hashes y capturas finales. Las **145/145 pruebas y paquetes Mac/Windows 0.1.9** permanecen históricos; esta evidencia nueva sigue siendo sintética y no mide gestos físicos.
+
 ## Decisiones de interacción vigentes
 
-- Índice para apuntar, un OK de una mano para seleccionar, uno o dos puños para desplazar y dos OK exclusivamente para zoom.
+- Prioridad: dos OK válidos para zoom, un OK válido para seleccionar incluso acompañado y, sin OK, uno o dos puños para desplazar.
 - La palma abierta ya no desplaza el mapa.
 - El puño exige evidencia positiva XYZ de recogimiento y compactación, preferentemente del mundo estimado; la posición del control sigue usando la imagen. Escorzo frontal y vista cenital deben evaluarse por separado.
 - Un OK estable de una mano ejecuta el clic automáticamente al completar `1500 ms`, sin soltar.
@@ -180,7 +202,7 @@ El código comprobado es `cb7d88071af0388d146d3719ae5c77744d3a8661`. El [paquete
 - La asistencia de cierre es opcional: un descarte previo sin hold no bloquea el siguiente OK válido; limpia el destino viejo. Sólo OK válido inicia los `1500 ms`. Durante OK individual el objetivo, aro y halo quedan anclados; cancelar/liberar regresa suavemente al índice. Dos OK no heredan offsets de ese clic.
 - Mantener cerrado no repite clics. Una apertura de `120 ms` rearma la selección; abrir después del clic no genera otro evento.
 - Abrir antes del umbral cancela el mantenimiento. El aro azul confirma en verde cuando se ejecuta el clic.
-- La segunda mano cancela la selección individual pendiente. Pan admite uno o dos puños y sólo ellos contribuyen; puño + palma u OK hace pan sin clic/zoom. La mano libre conserva sombra. Dos OK hacen zoom; mezclas sin puño ni dos OK no navegan. Cambiar número o identidad de puños exige `180 ms` nuevos, sin salto.
+- Un acompañante neutro que entra, sale o cambia de identidad no cancela el hold ni reinicia la base de navegación del actor estable. OK + puño selecciona. Un segundo OK válido pasa a zoom y no hereda progreso. Invalidez de mano ajena neutra no veta al actor válido; foco, calidad y pérdida/invalidez del participante continúan como guardas.
 - Una sombra por mano conserva feedback en reposo, clic y navegación; violeta identifica sólo puños participantes adquiridos, mano libre azul y ámbar dos OK. Adquisición sin aro/hover de clic. No se ejecuta pan y zoom a la vez.
 - El preview pequeño está siempre visible; sólo muestra skeleton fresco con cámara activa y se limpia al detenerla. El diagnóstico detallado está en Ajustes.
 - Pausa, pérdida de foco, cancelación y pérdida de tracking detienen las acciones en curso.

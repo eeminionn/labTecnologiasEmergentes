@@ -41,4 +41,4 @@ Comenzamos a explorar una aplicación de escritorio para recorrer el mapa con la
 - [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md)
 - [Protocolo de validación cenital](./mapaGestualMLR/Documentos/03-protocolo-validacion.md)
 
-**Actualización del prototipo:** 5 de octubre de 2026
+**Actualización del prototipo:** 9 de octubre de 2026
