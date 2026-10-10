@@ -85,3 +85,18 @@ El módulo 5 decide entre selección y navegación: dos OK tienen prioridad de z
 Después de estos ajustes, el usuario confirmó que el control funciona bien. Ahora queremos evaluar ese montaje frontal, medir errores y comodidad, y luego incorporar información municipal real.
 
 [Investigación de visión](../Documentos/01-investigacion-vision.md) · [Arquitectura completa](../Documentos/09-arquitectura-del-sistema.md) · [Detalle de los avances](../Documentos/08-historial-tecnico.md) · [Pruebas y entrega](../Documentos/04-entrega-y-verificacion.md)
+
+## Vista de la arquitectura completa
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="../Documentos/arquitectura-sistema-0.1.13.jpg">
+        <img src="../Documentos/arquitectura-sistema-0.1.13.jpg" alt="Arquitectura completa del mapa gestual, organizada en nueve módulos" width="640" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 5.</strong> Arquitectura completa del sistema. <a href="../Documentos/arquitectura-sistema-0.1.13.jpg">Abrir en grande</a> para leer cada módulo. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el prototipo 0.1.13.</td>
+  </tr>
+</table>

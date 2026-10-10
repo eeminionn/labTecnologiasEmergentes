@@ -105,3 +105,18 @@ El frame completo se mapea al mapa con espejo/orientación, sin homografía acti
 El diagnóstico exporta contadores, anotaciones manuales de falsos clics y p50/p95 separados de **calidad**, **inferencia** y **captura→resultado**, con hasta 10.000 muestras recientes. El último incluye creación del bitmap y traslado entre hilos; excluye buffer físico de cámara y presentación en pantalla. No es latencia extremo a extremo ni una tasa de falsos positivos medida. La evidencia de pruebas y sus límites se mantienen en [Entrega y verificación](./04-entrega-y-verificacion.md).
 
 </details>
+
+## Vista de la arquitectura completa
+
+<table>
+  <tr>
+    <td align="center">
+      <a href="./arquitectura-sistema-0.1.13.jpg">
+        <img src="./arquitectura-sistema-0.1.13.jpg" alt="Diagrama completo de la arquitectura del sistema, con sus nueve módulos" width="640" />
+      </a>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Figura 2.</strong> Arquitectura completa del sistema. <a href="./arquitectura-sistema-0.1.13.jpg">Abrir en grande</a> para leer cada módulo. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el prototipo 0.1.13.</td>
+  </tr>
+</table>
