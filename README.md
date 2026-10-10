@@ -3,7 +3,7 @@
 Investigación sobre la adaptación del espacio público de La Reina a las necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Estado actual:** Etapa 2 · prototipo de interacción territorial<br>
+**Estado actual:** Etapa 2 · prototipo y propuesta espacial<br>
 **Última actualización:** 10 de octubre de 2026
 
 ## Prototipo: Mapa Gestual MLR
@@ -12,7 +12,7 @@ Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina co
 
 **[Bitácora del Mapa Gestual MLR: proceso, decisiones e imágenes](./mapaGestualMLR/)**
 
-La bitácora reúne el recorrido del proyecto, las decisiones de interacción y la propuesta espacial de la sala, con referentes, planos y renders.
+La bitácora reúne el recorrido del prototipo y explica las decisiones de gestos e interacción.
 
 ### Demostración
 
@@ -35,6 +35,12 @@ La bitácora reúne el recorrido del proyecto, las decisiones de interacción y 
 |:---|:---|
 | [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md) | Investigación para definir la interacción. |
 | [Arquitectura del sistema](./mapaGestualMLR/Documentos/09-arquitectura-del-sistema.md) | Resumen por módulos y diagrama completo. |
+
+## Propuesta espacial del proyecto
+
+Propusimos reorganizar la sala del Concejo Municipal con un centro compartido y proyecciones en las paredes. Este apartado reúne el proceso de la propuesta, sus referentes, los esquemas, la planta, los cortes y las vistas de la sala.
+
+**[Bitácora de la propuesta espacial: decisiones, planos e imágenes](./propuestaEspacialMLR/)**
 
 ## Etapas de la investigación
 
