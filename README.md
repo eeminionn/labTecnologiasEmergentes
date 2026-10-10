@@ -12,7 +12,7 @@ Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina co
 
 **[Bitácora del Mapa Gestual MLR: proceso, decisiones e imágenes](./mapaGestualMLR/)**
 
-La bitácora reúne el recorrido del proyecto y explica por qué fuimos cambiando los gestos y la interacción.
+La bitácora reúne el recorrido del proyecto, las decisiones de interacción y la propuesta espacial de la sala, con referentes, planos y renders.
 
 ### Demostración
 
