@@ -3,7 +3,7 @@
 Investigación sobre la adaptación del espacio público de La Reina a las necesidades actuales de movilidad, confort climático y gestión de aguas lluvias.
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
-**Estado actual:** Etapa 2 · prototipo, propuesta espacial y gráfica<br>
+**Estado actual:** Etapa 2 · prototipo, propuestas espacial y gráfica, y gemelo digital<br>
 **Última actualización:** 16 de octubre de 2026
 
 ## Prototipo: Mapa Gestual MLR
@@ -42,7 +42,11 @@ Propusimos reorganizar la sala del Concejo Municipal con un centro compartido y 
 
 **[Bitácora de la propuesta espacial: decisiones, planos e imágenes](./propuestaEspacialMLR/)**
 
-También desarrollamos un **[recorrido virtual de la sala en Unity](./digitalTwinMLR/)** para revisar la escala, el mobiliario y las proyecciones, y preparar una experiencia en Meta Quest.
+## Gemelo digital: recorrido virtual de la sala
+
+Llevamos la propuesta espacial a Unity para revisar las proporciones, las sillas y las proyecciones desde adentro. Podemos caminar, sentarnos y probar el mapa gestual sobre la mesa desde el puesto principal en Mac. La bitácora reúne las pruebas y los ajustes del espacio; la revisión con un visor Meta Quest sigue pendiente.
+
+**[Bitácora del gemelo digital: recorrido, decisiones e imágenes](./digitalTwinMLR/)**
 
 ## Propuesta gráfica del proyecto
 
