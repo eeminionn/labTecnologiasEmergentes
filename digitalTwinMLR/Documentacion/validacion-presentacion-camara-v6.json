@@ -1,0 +1,96 @@
+{
+  "passed": true,
+  "syntheticCamera": true,
+  "physicalCameraTested": false,
+  "ready": true,
+  "live": {
+    "version": 1,
+    "ready": true,
+    "active": true,
+    "epoch": 1,
+    "chair": "Chair_10",
+    "width": 720,
+    "height": 950,
+    "fps": 15,
+    "leaseMs": 3000,
+    "cameraActive": true,
+    "hands": 0,
+    "detectorReady": true,
+    "inferenceFrames": 4,
+    "cameraLabel": "fake_device_0",
+    "mirror": true,
+    "previewVisible": true,
+    "previewFrames": 4,
+    "frameSequence": 18,
+    "error": ""
+  },
+  "expired": {
+    "version": 1,
+    "ready": true,
+    "active": false,
+    "epoch": 2,
+    "chair": "Chair_10",
+    "width": 720,
+    "height": 950,
+    "fps": 15,
+    "leaseMs": 3000,
+    "cameraActive": false,
+    "hands": 0,
+    "detectorReady": false,
+    "inferenceFrames": 0,
+    "cameraLabel": "",
+    "mirror": false,
+    "previewVisible": false,
+    "previewFrames": 0,
+    "frameSequence": 63,
+    "error": ""
+  },
+  "resumed": {
+    "version": 1,
+    "ready": true,
+    "active": true,
+    "epoch": 3,
+    "chair": "Chair_10",
+    "width": 720,
+    "height": 950,
+    "fps": 15,
+    "leaseMs": 3000,
+    "cameraActive": true,
+    "hands": 0,
+    "detectorReady": true,
+    "inferenceFrames": 50,
+    "cameraLabel": "fake_device_0",
+    "mirror": false,
+    "previewVisible": true,
+    "previewFrames": 1,
+    "frameSequence": 69,
+    "error": ""
+  },
+  "presentation": {
+    "savedMirrorBeforeLaunch": false,
+    "startup": {
+      "preferencesMirror": true,
+      "checkboxMirror": true
+    },
+    "preview": {
+      "width": 320,
+      "height": 240,
+      "loaded": true,
+      "focused": false,
+      "focusable": false,
+      "alwaysOnTop": true
+    },
+    "toggle": {
+      "accepted": true,
+      "originalMirror": true
+    },
+    "frontAfterToggle": {
+      "checkboxMirror": false
+    }
+  },
+  "frameBytes": 152872,
+  "unauthorizedRejected": true,
+  "wrongChairRejected": true,
+  "leaseExpiryStops": true,
+  "stopStops": true
+}

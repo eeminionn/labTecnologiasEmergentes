@@ -11,6 +11,7 @@ contextBridge.exposeInMainWorld('desktop', {
     ipcRenderer.send('twin-ready');
   },
   reportTwinState: state => { if (twinBridge) ipcRenderer.send('twin-renderer-state', { ...state, epoch: leaseEpoch }); },
+  reportTwinPreview: frame => { if(twinBridge)ipcRenderer.send('twin-preview-frame',{...frame,epoch:leaseEpoch}); },
   loadTwinConfig: () => twinBridge ? ipcRenderer.invoke('twin-config-load') : Promise.resolve({}),
   reportTwinCameras: devices => { if(twinBridge)ipcRenderer.send('twin-camera-devices',devices); },
   onTwinPreferences: callback => { if(twinBridge && typeof callback==='function')ipcRenderer.on('twin-preferences',(_event,preferences)=>callback(preferences)); }

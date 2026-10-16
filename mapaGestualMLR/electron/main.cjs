@@ -1,4 +1,4 @@
-const { app, BrowserWindow, session, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, session, ipcMain, dialog, shell, screen, nativeImage } = require('electron');
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -24,11 +24,13 @@ const smokeReport = process.argv.find(v => v.startsWith('--smoke-report='))?.sli
 const screenshot = process.argv.find(v => v.startsWith('--screenshot='))?.slice(13);
 const progressScreenshot = process.argv.find(v=>v.startsWith('--progress-screenshot='))?.slice(22);
 const navigationScreenshot = process.argv.find(v=>v.startsWith('--navigation-screenshot='))?.slice(24);
-let win, server, timeout, leaseSweep, settingsWindow;
+let win, server, timeout, leaseSweep, settingsWindow, previewWindow;
+let previewReady=false,latestPreview=null,lastPreviewTime=0,previewFrames=0;
 let twinDevices = [];
 const twinPreferenceFile = twinMode ? path.join(app.getPath('userData'), 'twin-camera.json') : '';
 let twinPreferences = {};
 if (twinMode) { try { twinPreferences = JSON.parse(fs.readFileSync(twinPreferenceFile, 'utf8')); } catch {} }
+if(twinMode)twinPreferences={...twinPreferences,mirror:true};
 function cameraPreferences(value) {
   if (!value || typeof value !== 'object') return {};
   return { cameraId: String(value.cameraId || '').slice(0,256), cameraLabel: String(value.cameraLabel || '').slice(0,256),
@@ -51,12 +53,38 @@ async function openTwinSettings() {
   await settingsWindow.loadFile(path.join(__dirname, 'twin-settings.html'));
   settingsWindow.show(); settingsWindow.focus();
 }
+async function openTwinPreview() {
+  if(!bridge?.isActive() || (previewWindow && !previewWindow.isDestroyed()))return;
+  const area=screen.getDisplayNearestPoint(screen.getCursorScreenPoint()).workArea;
+  const preview=new BrowserWindow({x:area.x+12,y:area.y+12,width:320,height:294,
+    title:'Vista frontal · Mapa Gestual',show:false,frame:false,resizable:false,minimizable:false,
+    maximizable:false,fullscreenable:false,closable:false,focusable:false,alwaysOnTop:true,skipTaskbar:true,
+    backgroundColor:'#161b22',webPreferences:{preload:path.join(__dirname,'twin-preview-preload.cjs'),
+      contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  previewWindow=preview;previewReady=false;
+  if(process.platform==='darwin')preview.setVisibleOnAllWorkspaces(true,{visibleOnFullScreen:true,skipTransformProcessType:true});
+  preview.setIgnoreMouseEvents(true);
+  preview.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+  preview.webContents.on('will-navigate',event=>event.preventDefault());
+  preview.on('closed',()=>{if(previewWindow===preview){previewWindow=null;previewReady=false;}});
+  await preview.loadFile(path.join(__dirname,'twin-preview.html'));
+  if(preview.isDestroyed())return;
+  if(!bridge.isActive()){preview.destroy();return;}
+  previewReady=true;
+  if(latestPreview)preview.webContents.send('twin-preview-frame',latestPreview);
+  preview.showInactive();
+}
 const bridge = twinMode ? createTwinBridge({ token: twinToken, onState: state => {
   if (!win || win.isDestroyed()) return;
   win.webContents.send('twin-control', state);
-  if (state.active) { win.webContents.startPainting(); win.webContents.invalidate(); }
-  else { win.webContents.stopPainting(); settingsWindow?.close(); }
-}, onSettings: () => { openTwinSettings().catch(error => console.error(error)); } }) : null;
+  if (state.active) { win.webContents.startPainting(); win.webContents.invalidate();openTwinPreview().catch(error=>console.error(error)); }
+  else {
+    win.webContents.stopPainting();settingsWindow?.close();
+    latestPreview=null;lastPreviewTime=0;previewFrames=0;previewReady=false;previewWindow?.destroy();
+  }
+}, onSettings: () => { openTwinSettings().catch(error => console.error(error)); },
+  getPresentationState:()=>({mirror:twinPreferences.mirror===true,
+    previewVisible:!!previewWindow && !previewWindow.isDestroyed() && previewWindow.isVisible(),previewFrames}) }) : null;
 const trusted = sender => sender === win?.webContents && sender.getURL().startsWith(`${origin}/`);
 function openMapLink(url) {
   try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com'].includes(parsed.hostname))shell.openExternal(url); }catch{}
@@ -112,7 +140,25 @@ else {
         bridge.pushFrame((size.width === 720 && size.height === 950 ? image : image.resize({ width: 720, height: 950 })).toJPEG(78));
       });
       ipcMain.on('twin-ready', event => { if (trusted(event.sender)) bridge.rendererReady(); });
-      ipcMain.on('twin-renderer-state', (event, data) => { if (trusted(event.sender)) bridge.rendererState(data); });
+      ipcMain.on('twin-renderer-state', (event, data) => {
+        if(!trusted(event.sender))return;
+        bridge.rendererState(data);
+        if(previewReady && previewWindow && !previewWindow.isDestroyed()) {
+          const state=bridge.status();
+          previewWindow.webContents.send('twin-preview-status',{cameraActive:state.cameraActive,hands:state.hands,error:state.error});
+        }
+      });
+      ipcMain.on('twin-preview-frame',(event,data)=>{
+        if(!trusted(event.sender) || !data || !bridge.isActive(data.epoch) || Date.now()-lastPreviewTime<95)return;
+        if(!Number.isInteger(data.width) || !Number.isInteger(data.height) || data.width<1 || data.width>320 || data.height<1 || data.height>240
+          || typeof data.jpeg!=='string' || data.jpeg.length>140000 || !/^data:image\/jpeg;base64,[A-Za-z0-9+/]+=*$/.test(data.jpeg))return;
+        const size=nativeImage.createFromDataURL(data.jpeg).getSize();
+        if(size.width!==data.width || size.height!==data.height)return;
+        lastPreviewTime=Date.now();
+        previewFrames++;
+        latestPreview={jpeg:data.jpeg,width:data.width,height:data.height,hands:Math.max(0,Math.min(2,Number(data.hands)||0))};
+        if(previewReady && previewWindow && !previewWindow.isDestroyed())previewWindow.webContents.send('twin-preview-frame',latestPreview);
+      });
       ipcMain.handle('twin-config-load', event => trusted(event.sender) ? cameraPreferences(twinPreferences) : {});
       ipcMain.on('twin-camera-devices', (event, devices) => {
         if (!trusted(event.sender) || !Array.isArray(devices)) return;

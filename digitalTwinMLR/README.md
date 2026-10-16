@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 16 de octubre de 2026 · versión 0.5<br>
+**Avance:** 16 de octubre de 2026 · versión 0.6<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -20,6 +20,8 @@ En este avance tomamos **solo la mesa del nuevo archivo sala 002.fbx** y reacomo
 Después acercamos las sillas y volvimos a una **disposición en U**, con cuatro a cada lado y tres al fondo. Dejamos libre el lado que mira a la puerta para entrar y acercarse a la mesa con más claridad.
 
 También conectamos el **mapa gestual en vivo** a la mesa. En Mac funciona únicamente cuando nos sentamos en la silla central del fondo, **Chair_10**, usando la cámara frontal. Conservamos los gestos que ya habíamos probado; al levantarnos o usar otra silla, se apagan la cámara y los gestos, pero la mesa mantiene la última imagen del mapa. Así podemos mirar lo que quedó seleccionado desde cualquier puesto, con un solo lugar para interactuar.
+
+En este ajuste redujimos el borde blanco de **30 a 20 cm** para darle más espacio al mapa, sin agrandar la mesa. También dejamos probar la altura de la mesa y del mapa por separado; al abrir de nuevo, parten a la misma altura de antes. La cámara siempre inicia en modo espejo y, al entrar a la silla principal, aparece una vista pequeña con el seguimiento de las manos. Se cierra al levantarnos.
 
 ## Escala, gráfica y puntos de vista
 
@@ -59,6 +61,14 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
   <tr>
     <td>La U compacta deja abierto el acceso a la mesa.</td>
     <td>El control con las manos se activa solo desde el puesto principal.</td>
+  </tr>
+  <tr>
+    <td><img src="./Imagenes/mesa-proyeccion.png" alt="Mesa con el mapa ampliado y las alturas iniciales" width="380" /></td>
+    <td><img src="./Imagenes/mesa-ajustada.png" alt="Prueba de ajuste temporal de la altura de la mesa y del mapa" width="380" /></td>
+  </tr>
+  <tr>
+    <td>Borde de 20 cm y altura inicial conservada.</td>
+    <td>Ajustes de altura para comparar la lectura desde la silla.</td>
   </tr>
 </table>
 

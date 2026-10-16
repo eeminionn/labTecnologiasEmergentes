@@ -1,0 +1,8 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; img-src data:; style-src 'unsafe-inline'; base-uri 'none'; object-src 'none'">
+<title>Vista frontal</title><style>
+*{box-sizing:border-box}body{margin:0;font:12px -apple-system,BlinkMacSystemFont,sans-serif;background:#161b22;color:#d1d9e0;overflow:hidden;border:1px solid #59636e;border-radius:8px;height:294px}
+header{height:28px;padding:6px 10px;background:#f6f8fa;color:#1f2328;font-weight:600;-webkit-app-region:drag}
+.camera{height:240px;display:flex;align-items:center;justify-content:center;position:relative;background:#161b22}img{max-width:320px;max-height:240px;object-fit:contain}img:not([src]){display:none}
+#waiting{position:absolute;color:#8c959f;padding:10px;text-align:center}footer{height:24px;line-height:24px;padding:0 10px;font-size:11px;background:#f6f8fa;color:#59636e;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+</style></head><body><header>Vista frontal</header><div class="camera"><img id="camera" alt="Cámara frontal con puntos de seguimiento"><span id="waiting">Iniciando cámara…</span></div><footer id="state">Sólo desde la silla principal</footer><script src="twin-preview.js"></script></body></html>

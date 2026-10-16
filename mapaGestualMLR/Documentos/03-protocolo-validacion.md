@@ -660,6 +660,21 @@ Comparar cada candidato con los mismos videos y tareas. Etiquetar una muestra de
 
 Cambiar una variable por comparación: montaje, umbral, filtro, ventana temporal o modelo. Registrar beneficio y coste en recall, falsos eventos y latencia. Subir un umbral puede reducir activaciones y aumentar pérdidas; no optimizar sólo una métrica.
 
+## Puente del gemelo digital · ajuste de cámara
+
+La integración para Mac se comprobó con **198 pruebas unitarias**, build de Vite y empaquetado arm64. Además, se ejecutó el mismo proceso Electron con una cámara sintética y un perfil aislado, sin usar ni modificar la cámara o preferencias del usuario.
+
+| Comprobación | Resultado técnico |
+| --- | --- |
+| Preferencia guardada con espejo desactivado | Al iniciar, la preferencia y la casilla aparecen activadas. |
+| Cambio durante la sesión | Se puede desactivar el espejo desde los ajustes; sigue desactivado al levantarse y volver a sentarse. |
+| Preview al autorizar la silla principal | Se abre automáticamente, recibe cámara y tracking desde el mismo stream, con imágenes de hasta 320 × 240 px y 10 FPS. |
+| Foco de la ventanita | Ventana visible y siempre encima, sin foco ni capacidad de tomarlo. |
+| Fin de autorización | Se cierran cámara, detector y preview; la entrega de frames responde sin imagen. |
+| Nueva autorización | Se reabren cámara, detector y preview sin reiniciar el mapa. |
+
+La comprobación de integración se repite desde `mapaGestualMLR` con `TWIN_TEST_ENTRY=scripts/bridge-presentation-probe.cjs TWIN_PRESENTATION_PROBE=/tmp/mlr-presentation.json node scripts/bridge-smoke.mjs`. La cámara sintética verifica el recorrido técnico y la ventana; **no sustituye una prueba de gestos con personas ni permite calcular una tasa de falsos positivos**.
+
 ## Registro de estado
 
 | Verificación | Estado al preparar este documento |

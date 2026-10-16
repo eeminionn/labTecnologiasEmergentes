@@ -91,3 +91,16 @@ test('a delayed heartbeat cannot reactivate the camera after a newer stop or ove
   assert.equal((await call('stop','POST',{sequence:12})).status,409);
   assert.equal(bridge.isActive(),true);
 });
+
+test('preview telemetry is visible only during the active chair lease and renewal preserves session preferences',async t=>{
+  const presentation={mirror:true,previewVisible:true,previewFrames:4};
+  const {bridge,call}=await harness(t,{getPresentationState:()=>presentation});
+  assert.equal(bridge.status().previewVisible,false);assert.equal(bridge.status().previewFrames,0);
+  await call('lease','POST',{chair:'Chair_10',seated:true});
+  assert.equal(bridge.status().mirror,true);assert.equal(bridge.status().previewVisible,true);assert.equal(bridge.status().previewFrames,4);
+  presentation.mirror=false;
+  await call('lease','POST',{chair:'Chair_10',seated:true});
+  assert.equal(bridge.status().mirror,false);
+  await call('stop','POST');
+  assert.equal(bridge.status().previewVisible,false);assert.equal(bridge.status().previewFrames,0);
+});

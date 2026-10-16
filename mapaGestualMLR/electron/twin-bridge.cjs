@@ -2,7 +2,7 @@ const crypto = require('node:crypto');
 
 // A short lease belongs to the Unity visitor, not to the camera or renderer.
 // If Unity stops renewing it, every input and frame endpoint closes first.
-function createTwinBridge({ token, onState = () => {}, onSettings = () => {}, now = Date.now, leaseMs = 3000 }) {
+function createTwinBridge({ token, onState = () => {}, onSettings = () => {}, getPresentationState = () => ({}), now = Date.now, leaseMs = 3000 }) {
   if (!/^[A-Za-z0-9_-]{32,128}$/.test(token || '')) throw new Error('Invalid twin token');
   const secret = Buffer.from(`Bearer ${token}`);
   let active = false, expiresAt = 0, epoch = 0, ready = false, lastControlSequence = -1;
@@ -19,10 +19,13 @@ function createTwinBridge({ token, onState = () => {}, onSettings = () => {}, no
   }
   function status() {
     expire();
+    const presentation=getPresentationState();
     return { version: 1, ready, active, epoch, chair: 'Chair_10', width: 720, height: 950,
       fps: 15, leaseMs, cameraActive: active && renderer.cameraActive, hands: active ? renderer.hands : 0,
       detectorReady: active && renderer.detectorReady === true, inferenceFrames: active ? renderer.inferenceFrames || 0 : 0,
       cameraLabel: active ? renderer.cameraLabel || '' : '',
+      mirror:active && presentation.mirror===true,previewVisible:active && presentation.previewVisible===true,
+      previewFrames:active ? Math.max(0,Number(presentation.previewFrames)||0) : 0,
       frameSequence, error: renderer.error || '' };
   }
   function rendererReady() {

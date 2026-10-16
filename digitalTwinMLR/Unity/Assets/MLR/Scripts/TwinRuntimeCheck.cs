@@ -42,10 +42,13 @@ namespace LaReina.DigitalTwin
             public int countdownStart, countdownAfterWait, displayRepetitions;
             public Vector3 tabletopDimensions;
             public float tabletopHeight, pedestalFloorHeight, ovalUvArea;
+            public Vector3 projectionDimensions;
+            public bool reducedWhiteRim;
             public bool ovalTablePassed, footprintRouteClear;
             public int[] blockedFootsteps;
             public bool gestureGatePassed;
             public GestureBridgeQa.Result gestureIntegration;
+            public TableAdjustmentQa.Result heightAdjustment;
         }
         IEnumerator Start()
         {
@@ -72,6 +75,8 @@ namespace LaReina.DigitalTwin
             var pedestal=Find("Table_Base_Original").GetComponent<MeshRenderer>();
             var tableProjection=projections.surfaces.First(s=>s.channelId=="mesa");
             report.ovalUvArea=tableProjection.sourceUvArea;
+            report.projectionDimensions=tableProjection.targetRenderer.bounds.size;
+            report.reducedWhiteRim=Mathf.Abs(report.projectionDimensions.x-1.870456f)<.003f && Mathf.Abs(report.projectionDimensions.z-2.401718f)<.003f;
             report.tabletopDimensions=top.bounds.size;report.tabletopHeight=top.bounds.max.y;report.pedestalFloorHeight=pedestal.bounds.min.y;
             report.ovalTablePassed=Mathf.Abs(top.bounds.size.x-2.270456f)<.003f && Mathf.Abs(top.bounds.size.z-2.801718f)<.003f &&
                 Mathf.Abs(report.tabletopHeight-.762753f)<.002f && Mathf.Abs(report.pedestalFloorHeight)<.001f &&
@@ -103,6 +108,7 @@ namespace LaReina.DigitalTwin
             yield return SeatingQa.Run(desktop,r=>report.seats=r);
             report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
             report.gestureGatePassed=report.seats.Length==11 && report.seats.All(s=>s.gestureGateCorrect);
+            report.heightAdjustment=TableAdjustmentQa.Run(desktop.tableAdjustment);
             var blockedSteps=new List<int>();
             for(int i=0;i<footprints.StepCount;i++)
             {
@@ -147,7 +153,7 @@ namespace LaReina.DigitalTwin
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
                 report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
-                report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed;
+                report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed && report.heightAdjustment.passed && report.reducedWhiteRim;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)

@@ -34,8 +34,8 @@ namespace LaReina.DigitalTwin
         public BridgeStatus Status { get; private set; } = new BridgeStatus();
         [Serializable] public sealed class BridgeStatus
         {
-            public bool ready, active, cameraActive, detectorReady;
-            public int hands, frameSequence, inferenceFrames;
+            public bool ready, active, cameraActive, detectorReady, mirror, previewVisible;
+            public int hands, frameSequence, inferenceFrames, previewFrames;
             public string error;
         }
         sealed class Reply { public int code; public byte[] bytes; }
@@ -199,7 +199,8 @@ namespace LaReina.DigitalTwin
             {
                 var reply=await Send("GET","/bridge/status",null,CancellationToken.None);
                 return reply.code==200 && Encoding.UTF8.GetString(reply.bytes).Contains("\"active\":false") &&
-                    Encoding.UTF8.GetString(reply.bytes).Contains("\"cameraActive\":false");
+                    Encoding.UTF8.GetString(reply.bytes).Contains("\"cameraActive\":false") &&
+                    Encoding.UTF8.GetString(reply.bytes).Contains("\"previewVisible\":false");
             }
             catch{return false;}
         }

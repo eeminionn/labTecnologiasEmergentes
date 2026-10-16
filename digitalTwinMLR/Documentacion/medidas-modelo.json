@@ -1,9 +1,9 @@
 {
-  "version": "0.5.0",
+  "version": "0.6.0",
   "units": "meters",
   "source_original_unchanged": true,
   "geometry_source": "panorama_geometry_v2.json",
-  "previous_revision": "medidas-modelo-v0.1.json",
+  "previous_revision": "medidas-modelo-v0.5.json",
   "room_outer_dimensions_m": [
     8,
     9,
@@ -58,7 +58,15 @@
     "registered_pedestal_bottom_m": 0.0,
     "registered_pedestal_top_m": 0.6505277156829834,
     "source_relative_heights_preserved": true,
-    "source_absolute_height_translation_only_m": -0.053036388009786606
+    "source_absolute_height_translation_only_m": -0.053036388009786606,
+    "white_rim_axis_width_m": 0.2,
+    "white_rim_open_hole": true,
+    "physical_inset_dimensions_m": [
+      1.8704562187194824,
+      2.4017176628112793,
+      0.02064502239227295
+    ],
+    "baseline_heights_unchanged_in_v6": true
   },
   "chair": {
     "world_bbox_m": [
@@ -361,7 +369,7 @@
     "Projection_Wall_Panorama"
   ],
   "meshes": 89,
-  "polygons": 30143,
+  "polygons": 30003,
   "projectors_provisional": [
     {
       "name": "Projector_01_Table_Provisional",
@@ -421,7 +429,7 @@
     }
   ],
   "axes": "Blender X width, Y depth (entry +Y), Z up; Unity X width, Z depth, Y up. FBX imported at one unit per meter.",
-  "note": "Walls and seating anchors revised with team authorization. Furniture dimensions preserved. Optical mapping and actual Quest use require physical validation.",
+  "note": "V0.6 narrows white table rim from 30cm to20cm and expands physical inset/projection. Room, all chair geometry/transforms/anchors, ceiling and baseline table/map heights remain unchanged. Temporary height controls do not persist between runs.",
   "ceiling_event_display": {
     "geometry": "ceiling-event-geometry.json",
     "live_panel": [
@@ -434,25 +442,25 @@
   },
   "table_projection": {
     "object": "Projection_Table",
-    "shape": "original source oval upper surface; no rectangular quad",
+    "shape": "expanded source oval upper surface; real open white annulus",
     "center_blender_m": [
-      0.1656055450439453,
-      0.416805624961853,
-      0.7734999656677246
+      0.16560646891593933,
+      0.4168052673339844,
+      0.7734999358654022
     ],
     "min_blender_m": [
-      -0.6696243286132812,
-      -0.6840555667877197,
+      -0.7696216702461243,
+      -0.7840535640716553,
       0.773177444934845
     ],
     "max_blender_m": [
-      1.0008354187011719,
-      1.5176668167114258,
+      1.100834608078003,
+      1.617664098739624,
       0.7738224267959595
     ],
-    "width_m": 1.6704597473144531,
-    "depth_m": 2.2017223834991455,
-    "aspect_width_over_depth": 0.7587058930924937,
+    "width_m": 1.8704562187194824,
+    "depth_m": 2.4017176628112793,
+    "aspect_width_over_depth": 0.7787994014811486,
     "overlay_offset_m": 0.002,
     "uv": "U +BlenderX, V +BlenderY; rectangular coordinates 0..1 clipped by original oval contour",
     "uv_bounds": [
@@ -469,7 +477,19 @@
     "source_mesh_tilt_max_height_difference_m": 0.000644981861114502
   },
   "current_table_source": "sala 002.fbx",
-  "current_geometry_verification": "verification_v4.json",
+  "current_geometry_verification": "verification_v6.json",
   "chair_layout": "U compacta:4+4+3; lado hacia la puerta abierto",
-  "principal_chair": "Chair_10"
+  "principal_chair": "Chair_10",
+  "current_table_geometry": "table_geometry_v6.json",
+  "table_height_adjustment": {
+    "controls": {
+      "U": "raise entire table",
+      "J": "lower entire table",
+      "I": "raise inset and map relative to table",
+      "K": "lower inset and map relative to table",
+      "0": "restore initial table/map heights"
+    },
+    "persistent": false,
+    "initial_heights_unchanged": true
+  }
 }

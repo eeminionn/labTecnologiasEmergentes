@@ -1,6 +1,6 @@
 {
     "unityVersion": "6000.5.8f1",
-    "buildVersion": "0.5.0",
+    "buildVersion": "0.6.0",
     "platform": "OSXPlayer",
     "mediaFolder": "/Users/eeminionn/Downloads/Gemelo_Digital_La_Reina/Proyecciones",
     "gpu": "Apple M5",
@@ -298,19 +298,25 @@
         4,
         1
     ],
-    "displayedClock": "02:50",
+    "displayedClock": "03:08",
     "displayedCountdown": "14:59",
     "countdownStart": 900,
     "countdownAfterWait": 899,
     "displayRepetitions": 2,
     "tabletopDimensions": {
         "x": 2.270456314086914,
-        "y": 0.10082030296325684,
-        "z": 2.801717758178711
+        "y": 0.10082098841667175,
+        "z": 2.801717519760132
     },
-    "tabletopHeight": 0.7627528309822083,
-    "pedestalFloorHeight": 5.960464477539063e-8,
+    "tabletopHeight": 0.7627531886100769,
+    "pedestalFloorHeight": -1.7881393432617188e-7,
     "ovalUvArea": 0.7827050089836121,
+    "projectionDimensions": {
+        "x": 1.8704562187194825,
+        "y": 0.0006452681263908744,
+        "z": 2.4017174243927
+    },
+    "reducedWhiteRim": true,
     "ovalTablePassed": true,
     "footprintRouteClear": true,
     "blockedFootsteps": [],
@@ -322,6 +328,9 @@
         "cameraActive": true,
         "detectorReady": true,
         "inferenceProcessed": true,
+        "mirrorDefaultActive": true,
+        "previewActive": true,
+        "previewClosed": true,
         "mapReloadPreserved": true,
         "standingGateClosed": true,
         "lastMapFrozen": true,
@@ -330,9 +339,28 @@
         "resumedWithoutRelaunch": true,
         "passed": true,
         "framesReceived": 18,
-        "inferenceFrames": 2,
+        "inferenceFrames": 3,
         "launchCount": 1,
-        "resumedFrames": 12,
+        "resumedFrames": 13,
+        "error": ""
+    },
+    "heightAdjustment": {
+        "initialized": true,
+        "initialStateUnchanged": true,
+        "tableLimits": true,
+        "mapLimits": true,
+        "pedestalOnFloor": true,
+        "insetClearsPedestal": true,
+        "projectionGapPreserved": true,
+        "horizontalDimensionsPreserved": true,
+        "ovalTexturePreserved": true,
+        "resetRestoresInitial": true,
+        "passed": true,
+        "recessedMapVisible": true,
+        "initialProjectionHeight": 0.7738224864006043,
+        "minimumMapOffset": -0.07999999821186066,
+        "projectionGap": 0.0020000338554382326,
+        "pedestalFloorError": 2.9802322387695315e-8,
         "error": ""
     }
 }

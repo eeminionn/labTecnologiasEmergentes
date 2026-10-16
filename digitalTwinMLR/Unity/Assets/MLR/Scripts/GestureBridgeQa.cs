@@ -11,6 +11,7 @@ namespace LaReina.DigitalTwin
         [Serializable] public sealed class Result
         {
             public bool supported, principalSeat, liveMap, cameraActive, detectorReady, inferenceProcessed;
+            public bool mirrorDefaultActive, previewActive, previewClosed;
             public bool mapReloadPreserved, standingGateClosed, lastMapFrozen, cameraStopped, otherChairBlocked, resumedWithoutRelaunch, passed;
             public int framesReceived, inferenceFrames, launchCount, resumedFrames;
             public string error;
@@ -40,12 +41,22 @@ namespace LaReina.DigitalTwin
             result.detectorReady=bridge.Status!=null && bridge.Status.detectorReady;
             result.inferenceFrames=bridge.Status!=null ? bridge.Status.inferenceFrames : 0;
             result.inferenceProcessed=result.inferenceFrames>0;
+            result.mirrorDefaultActive=bridge.Status!=null && bridge.Status.mirror;
+            result.previewActive=bridge.Status!=null && bridge.Status.previewVisible && bridge.Status.previewFrames>0;
             result.framesReceived=bridge.FramesReceived; result.launchCount=bridge.LaunchCount;
             if (!Ready(bridge,2)) result.error=bridge.Message;
             desktop.eye.transform.LookAt(seats.tableFocus);
             yield return new WaitForSecondsRealtime(.3f);
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"15_mapa_gestual.png"));
+            if(desktop.tableAdjustment)
+            {
+                desktop.tableAdjustment.MoveTable(-.12f);desktop.tableAdjustment.MoveMap(-.04f);
+                desktop.eye.transform.LookAt(desktop.tableAdjustment.ProjectionBounds.center);
+                yield return new WaitForSecondsRealtime(.3f);yield return new WaitForEndOfFrame();
+                ScreenCapture.CaptureScreenshot(Path.Combine(folder,"16_mesa_ajustada.png"));
+                desktop.tableAdjustment.ResetAdjustments();desktop.eye.transform.LookAt(seats.tableFocus);
+            }
             var surface=Array.Find(bridge.projections.surfaces,s=>s && s.channelId=="mesa");
             Texture live=SurfaceTexture(surface);
             bridge.projections.LoadConfiguration();
@@ -62,6 +73,7 @@ namespace LaReina.DigitalTwin
                 if (stopped.Status==System.Threading.Tasks.TaskStatus.RanToCompletion && stopped.Result) { result.cameraStopped=true; break; }
                 yield return new WaitForSecondsRealtime(.15f);
             } while(Time.realtimeSinceStartup<deadline);
+            result.previewClosed=result.cameraStopped;
             int launches=bridge.LaunchCount, frames=bridge.FramesReceived;
             bool satOther=Sit(desktop,other);
             yield return new WaitForSecondsRealtime(2f);
@@ -75,6 +87,7 @@ namespace LaReina.DigitalTwin
             result.resumedFrames=bridge.FramesReceived-frames;
             result.resumedWithoutRelaunch=satAgain && Ready(bridge,frames+2) && bridge.LaunchCount==launches;
             result.passed=result.principalSeat && result.liveMap && result.cameraActive && result.detectorReady && result.inferenceProcessed &&
+                result.mirrorDefaultActive && result.previewActive && result.previewClosed &&
                 result.mapReloadPreserved && result.standingGateClosed && result.lastMapFrozen && result.cameraStopped && result.otherChairBlocked && result.resumedWithoutRelaunch;
             if(!result.passed && string.IsNullOrEmpty(result.error)) result.error="Revisar los campos del control gestual en la validación.";
             bridge.suppressAutomatic=true; bridge.StopSession(); desktop.ResetPosition(); desktop.automation=previousAutomation;
@@ -82,7 +95,8 @@ namespace LaReina.DigitalTwin
         }
 
         static bool Ready(GestureTableBridge bridge,int minimumFrames) => bridge.LiveTextureActive && bridge.FramesReceived>=minimumFrames &&
-            bridge.Status!=null && bridge.Status.cameraActive && bridge.Status.detectorReady && bridge.Status.inferenceFrames>0;
+            bridge.Status!=null && bridge.Status.cameraActive && bridge.Status.detectorReady && bridge.Status.inferenceFrames>0 &&
+            bridge.Status.previewVisible && bridge.Status.previewFrames>0;
         static Texture SurfaceTexture(ProjectionSurface surface)
         {
             if(!surface || !surface.targetRenderer)return null;

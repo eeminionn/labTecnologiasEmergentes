@@ -57,7 +57,7 @@ namespace LaReina.DigitalTwin.Editor
                         surface.targetRenderer = renderer;
                         surface.materialSlot = i;
                         surface.channelId = id == "Projection_Table" ? "mesa" : "panorama";
-                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.67046f/2.20172f : 8.987891565f;
+                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.870456f/2.401718f : 8.987891565f;
                         surface.fitMode = surface.channelId == "panorama" ? 1 : 0;
                         surface.ovalMask = surface.channelId == "mesa";
                         if(surface.ovalMask)
@@ -85,7 +85,8 @@ namespace LaReina.DigitalTwin.Editor
                 renderer.sharedMaterials = replacement;
                 renderer.shadowCastingMode = renderer.name.StartsWith("Projection_") ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = !renderer.name.StartsWith("Projection_");
-                GameObjectUtility.SetStaticEditorFlags(renderer.gameObject, StaticEditorFlags.BatchingStatic | StaticEditorFlags.ReflectionProbeStatic);
+                bool adjustableTable=renderer.name.StartsWith("Table_") || renderer.name=="Projection_Table";
+                GameObjectUtility.SetStaticEditorFlags(renderer.gameObject, adjustableTable ? 0 : StaticEditorFlags.BatchingStatic | StaticEditorFlags.ReflectionProbeStatic);
                 bool chair = renderer.name.StartsWith("Chair_");
                 bool decorative = renderer.name.Contains("DecorativeRings") || renderer.name.Contains("Guide") ||
                     renderer.name.Contains("Ceiling_") || renderer.name.Contains("Projector_") || renderer.name.Contains("OvalSupport_");
@@ -160,6 +161,10 @@ namespace LaReina.DigitalTwin.Editor
             var gestureBridge=new GameObject("Mapa gestual — solo silla principal").AddComponent<GestureTableBridge>();
             gestureBridge.desktopSeat=desktopSeats;gestureBridge.principalChair=Find(model,"Chair_10");gestureBridge.projections=director;
             controller.gestureBridge=gestureBridge;
+            var tableAdjustment=new GameObject("Altura temporal de mesa y mapa").AddComponent<RuntimeTableAdjustment>();
+            tableAdjustment.tableTop=Find(model,"Table_Top_Original");tableAdjustment.pedestal=Find(model,"Table_Base_Original");
+            tableAdjustment.inset=Find(model,"Table_Inset_Original");tableAdjustment.projection=Find(model,"Projection_Table");
+            controller.tableAdjustment=tableAdjustment;
             var footprintGuide=CreateFootprints(entrance,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
             var ceilingDisplay=CreateCeilingDisplay();
             controller.ceilingDisplay=ceilingDisplay;
@@ -365,7 +370,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.5.0";PlayerSettings.Android.bundleVersionCode=5;
+            PlayerSettings.bundleVersion="0.6.0";PlayerSettings.Android.bundleVersionCode=6;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -409,6 +414,9 @@ namespace LaReina.DigitalTwin.Editor
             var bridge=UnityEngine.Object.FindAnyObjectByType<GestureTableBridge>();
             if(!bridge || bridge.principalChair!=Find(metadata.gameObject,"Chair_10") || !bridge.desktopSeat || !bridge.projections)
                 throw new InvalidDataException("Falta la autorización del mapa en la silla central.");
+            var adjustment=UnityEngine.Object.FindAnyObjectByType<RuntimeTableAdjustment>();
+            if(!adjustment || !adjustment.tableTop || !adjustment.pedestal || !adjustment.inset || !adjustment.projection)
+                throw new InvalidDataException("Faltan las piezas ajustables de la mesa.");
             foreach(var seats in UnityEngine.Object.FindObjectsByType<SeatInteraction>())
                 if(seats.Seats.Length!=11 || seats.Seats.Any(s=>!s.eyeAnchor || !s.standAnchor || Mathf.Abs(s.eyeAnchor.position.y-1.18f)>.02f))
                     throw new InvalidDataException("Faltan anclas para sentarse o su altura no es correcta.");

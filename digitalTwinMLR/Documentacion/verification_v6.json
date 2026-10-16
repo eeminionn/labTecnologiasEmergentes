@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "fbx_roundtrip": true,
+  "unchanged_other_objects_verified_in_source_blend": true,
+  "modified_objects": [
+    "Projection_Table",
+    "Table_Inset_Original",
+    "Table_Top_Original"
+  ],
+  "white_rim_axis_width_m": 0.2,
+  "outer_table_dimensions_m": [
+    2.270456314086914,
+    2.801717758178711,
+    0.10082066059112549
+  ],
+  "inset_dimensions_m": [
+    1.8704562187194824,
+    2.4017176628112793,
+    0.02064502239227295
+  ],
+  "projection_dimensions_m": [
+    1.8704562187194824,
+    2.4017176628112793,
+    0.000644981861114502
+  ],
+  "projection_uv_bounds": [
+    0.0,
+    1.0,
+    0.0,
+    1.0
+  ],
+  "projection_normals_up": true,
+  "baseline_heights_unchanged": true,
+  "hole_vertical_ray_samples_clear": 256,
+  "white_rim_vertical_ray_samples_hit": 64,
+  "chair_count": 11,
+  "principal_seat_10_height_m": 1.18,
+  "mesh_count": 89,
+  "notes": [
+    "Only table top white ring, physical inset and projection changed. Expanded inner ellipse has a real hole beneath it, so lowering the inset and projection does not reveal a hidden white cap.",
+    "Clearance between hole and physical inset is 0.5mm. Unity remains responsible for the movable height control and any collision geometry update."
+  ]
+}

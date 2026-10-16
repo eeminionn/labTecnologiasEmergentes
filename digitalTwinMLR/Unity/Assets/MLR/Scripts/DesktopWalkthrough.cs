@@ -12,6 +12,7 @@ namespace LaReina.DigitalTwin
         public SeatInteraction seating;
         public CeilingEventDisplay ceilingDisplay;
         public GestureTableBridge gestureBridge;
+        public RuntimeTableAdjustment tableAdjustment;
         [Min(.1f)] public float walkingSpeed = 1.35f;
         public float eyeHeight = 1.65f;
         public Vector3 startPosition;
@@ -50,6 +51,13 @@ namespace LaReina.DigitalTwin
             if (keyboard.spaceKey.wasPressedThisFrame && projections) projections.TogglePause();
             if (keyboard.lKey.wasPressedThisFrame && lighting) lighting.Toggle();
             if (!Captured) return;
+            if (tableAdjustment)
+            {
+                float step=Time.unscaledDeltaTime*.08f;
+                tableAdjustment.MoveTable(((keyboard.uKey.isPressed?1:0)-(keyboard.jKey.isPressed?1:0))*step);
+                tableAdjustment.MoveMap(((keyboard.iKey.isPressed?1:0)-(keyboard.kKey.isPressed?1:0))*step);
+                if(keyboard.digit0Key.wasPressedThisFrame)tableAdjustment.ResetAdjustments();
+            }
             seating?.RefreshCandidate();
             if (keyboard.eKey.wasPressedThisFrame) ToggleSeat();
             Vector2 look = mouse != null ? mouse.delta.ReadValue() : Vector2.zero;
@@ -120,7 +128,7 @@ namespace LaReina.DigitalTwin
             }
             else if (help)
             {
-                GUI.Box(new Rect(20,Screen.height-48,555,30), "WASD · mover   Mouse · mirar   E · silla   Esc · pausa   Tab · ajustes   H · ocultar");
+                GUI.Box(new Rect(20,Screen.height-48,750,30), "WASD · mover   E · silla   U/J · mesa   I/K · mapa   0 · altura inicial   Tab · ajustes   H · ocultar");
             }
             if (Captured && seating && seating.Prompt.Length != 0)
                 GUI.Box(new Rect(Screen.width * .5f-170,Screen.height-95,340,34), seating.Prompt);

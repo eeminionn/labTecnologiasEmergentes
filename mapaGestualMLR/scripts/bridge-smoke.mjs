@@ -44,10 +44,25 @@ try {
   let heartbeat=setInterval(()=>request('lease','POST',{chair:'Chair_10',seated:true}).catch(()=>{}),750);
   try {
     await request('lease','POST',{chair:'Chair_10',seated:true});
-    const live=await waitFor(state=>state.cameraActive && state.detectorReady && state.inferenceFrames>2 && state.frameSequence>2,'Synthetic camera and production MediaPipe worker');
+    const live=await waitFor(state=>state.cameraActive && state.detectorReady && state.inferenceFrames>2 && state.frameSequence>2 && state.previewVisible && state.previewFrames>0,'Synthetic camera, tracking preview and production MediaPipe worker');
+    assert.equal(live.mirror,true);
     const image=await request('frame');assert.equal(image.status,200);assert.equal(image.headers.get('content-type'),'image/jpeg');
     const bytes=Buffer.from(await image.arrayBuffer());assert.ok(bytes.length>2000);
     if(process.env.TWIN_CAPTURE)await fs.writeFile(process.env.TWIN_CAPTURE,bytes);
+    let presentation;
+    if(process.env.TWIN_PRESENTATION_PROBE){
+      await waitFor(async()=>{
+        try{presentation=JSON.parse(await fs.readFile(process.env.TWIN_PRESENTATION_PROBE,'utf8'));return presentation.preview?.loaded && presentation.startup;}catch{return false;}
+      },'Mirrored startup and decoded tracking preview');
+      assert.equal(presentation.savedMirrorBeforeLaunch,false);
+      assert.equal(presentation.startup.preferencesMirror,true);assert.equal(presentation.startup.checkboxMirror,true);
+      assert.equal(presentation.preview.focused,false);assert.equal(presentation.preview.focusable,false);
+      assert.ok(presentation.preview.width<=320 && presentation.preview.height<=240);
+      await request('settings','POST');
+      await waitFor(async(state)=>{
+        try{presentation=JSON.parse(await fs.readFile(process.env.TWIN_PRESENTATION_PROBE,'utf8'));return !state.mirror && presentation.toggle?.accepted && presentation.frontAfterToggle?.checkboxMirror===false;}catch{return false;}
+      },'Mirroring can be disabled through the real session preferences');
+    }
     let nativeInput;
     if(process.env.TWIN_CLICK_PROBE) {
       await waitFor(async()=>{
@@ -59,6 +74,7 @@ try {
     }
     clearInterval(heartbeat);heartbeat=null;
     const expired=await waitFor(state=>!state.active && !state.cameraActive,'Lease expiration',6000);
+    assert.equal(expired.previewVisible,false);assert.equal(expired.previewFrames,0);
     assert.equal((await request('frame')).status,204);
     if(process.env.TWIN_CLICK_PROBE) {
       await waitFor(async()=>{
@@ -67,12 +83,13 @@ try {
     }
     heartbeat=setInterval(()=>request('lease','POST',{chair:'Chair_10',seated:true}).catch(()=>{}),750);
     await request('lease','POST',{chair:'Chair_10',seated:true});
-    const resumed=await waitFor(state=>state.cameraActive && state.detectorReady,'A new seated session restarts camera and detector');
+    const resumed=await waitFor(state=>state.cameraActive && state.detectorReady && state.previewVisible && state.previewFrames>0,'A new seated session restarts camera, detector and preview');
+    if(presentation)assert.equal(resumed.mirror,false);
     clearInterval(heartbeat);heartbeat=null;
     await request('stop','POST');
     assert.equal((await(await request('status')).json()).active,false);
     console.log(JSON.stringify({passed:true,syntheticCamera:true,physicalCameraTested:false,ready:initial.ready,
-      live,expired,resumed,nativeInput,frameBytes:bytes.length,unauthorizedRejected:true,wrongChairRejected:true,leaseExpiryStops:true,stopStops:true},null,2));
+      live,expired,resumed,nativeInput,presentation,frameBytes:bytes.length,unauthorizedRejected:true,wrongChairRejected:true,leaseExpiryStops:true,stopStops:true},null,2));
   } finally {clearInterval(heartbeat);}
 } finally {
   child.kill('SIGTERM');

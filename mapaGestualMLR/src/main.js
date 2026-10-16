@@ -12,11 +12,13 @@ const smoke = new URLSearchParams(location.search).has('smoke');
 const twinProjection = window.desktop?.twinBridge === true;
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
-const defaults = { cameraId:'', cameraLabel:'', mirror:false, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
+const defaults = { cameraId:'', cameraLabel:'', mirror:true, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
 let config;
 try { config = { ...defaults, ...JSON.parse(localStorage.getItem('mlr-config') || '{}') }; } catch { config={...defaults}; }
 if(twinProjection)config={...defaults,...await window.desktop.loadTwinConfig()};
 if (smoke) config={...defaults};
+// Each launch starts mirrored; adjustments remain editable for this session.
+config.mirror=true;
 // Full-frame mapping replaces saved table calibration in every session.
 delete config.corners;
 delete config.showPreview;
@@ -43,6 +45,7 @@ let lastFreshResult=0;
 let smokeStage='empty',emptyFrameResult,smokeFixtureDimensions;
 let cameraGeneration=0;
 let hasFreshCameraResult=false;
+let twinPreviewCanvas,twinPreviewContext,lastTwinPreview=0;
 function notify(message,kind='general') { if(twinProjection && kind==='camera')return;noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
 function save() { localStorage.setItem('mlr-config',JSON.stringify(config)); }
 function updateStatus() {
@@ -139,6 +142,9 @@ async function waitFor(test,timeoutMs=2000,label='condición') {
   const since=performance.now();while(!test()){if(performance.now()-since>timeoutMs)throw new Error(`Smoke: ${label} no observado`);await sleep(20);}
 }
 async function finishSmoke(data) {
+  const startupMirrorEnabled=config.mirror===true;
+  // The fixed test poses use an explicit unmirrored camera coordinate frame.
+  config.mirror=false;
   await waitFor(()=>document.hasFocus(),2000,'foco de ventana');
   const before=map.info().zoom;$('zoom-in').click();const zoomWorks=map.info().zoom>before;map.home();
   const pointerFeedback=verifyPointerFeedback(),navigationFeedback=await verifyNavigationFeedback();
@@ -153,7 +159,7 @@ async function finishSmoke(data) {
   window.desktop.reportSmoke({phase:'navigation'});await sleep(150);cancelGesture();
   const qualityFeedback=await verifyQualityFeedback();
   const nativeSelection=await verifyNativeSelection();
-  const ok=emptyFrameResult.hands===0 && emptyFrameResult.qualityValid && data.quality?.valid && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
+  const ok=startupMirrorEnabled && emptyFrameResult.hands===0 && emptyFrameResult.qualityValid && data.quality?.valid && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
     && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
     && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
     && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint
@@ -165,7 +171,7 @@ async function finishSmoke(data) {
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && Object.values(selectionToleranceFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.13',ok,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.1.13',ok,startupMirrorEnabled,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
   map.resetSequence();map.home();cancelGesture();
@@ -438,6 +444,23 @@ function drawSkeleton(hands,width=$('video').videoWidth||640,height=$('video').v
     for(const [a,b] of linePairs) {ctx.beginPath();ctx.moveTo(hand[a].x*canvas.width,hand[a].y*canvas.height);ctx.lineTo(hand[b].x*canvas.width,hand[b].y*canvas.height);ctx.stroke();}
     for(const p of hand) {ctx.beginPath();ctx.arc(p.x*canvas.width,p.y*canvas.height,3,0,Math.PI*2);ctx.fill();}
   }
+  if(twinProjection)sendTwinPreview(hands.length);
+}
+function sendTwinPreview(hands) {
+  const now=performance.now(),video=$('video');
+  if(!twinLeaseActive || !active || video.readyState<2 || now-lastTwinPreview<100)return;
+  lastTwinPreview=now;
+  const scale=Math.min(320/video.videoWidth,240/video.videoHeight);
+  const width=Math.max(1,Math.round(video.videoWidth*scale)),height=Math.max(1,Math.round(video.videoHeight*scale));
+  if(!twinPreviewCanvas) {twinPreviewCanvas=document.createElement('canvas');twinPreviewContext=twinPreviewCanvas.getContext('2d');}
+  if(twinPreviewCanvas.width!==width || twinPreviewCanvas.height!==height){twinPreviewCanvas.width=width;twinPreviewCanvas.height=height;}
+  twinPreviewContext.clearRect(0,0,width,height);
+  twinPreviewContext.save();
+  if(config.mirror){twinPreviewContext.translate(width,0);twinPreviewContext.scale(-1,1);}
+  twinPreviewContext.drawImage(video,0,0,width,height);
+  twinPreviewContext.drawImage($('skeleton'),0,0,width,height);
+  twinPreviewContext.restore();
+  window.desktop.reportTwinPreview({jpeg:twinPreviewCanvas.toDataURL('image/jpeg',.72),width,height,hands});
 }
 function displayPointers(result,detectedHands) {
   if(result.pointers?.length===detectedHands)return result.pointers;
