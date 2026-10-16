@@ -4,7 +4,7 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
 **Estado actual:** Etapa 2 · prototipo, propuesta espacial y gráfica<br>
-**Última actualización:** 10 de octubre de 2026
+**Última actualización:** 16 de octubre de 2026
 
 ## Prototipo: Mapa Gestual MLR
 
@@ -41,6 +41,8 @@ La bitácora reúne el recorrido del prototipo y explica las decisiones de gesto
 Propusimos reorganizar la sala del Concejo Municipal con un centro compartido y proyecciones en las paredes. Este apartado reúne el proceso de la propuesta, sus referentes, los esquemas, la planta, los cortes y las vistas de la sala.
 
 **[Bitácora de la propuesta espacial: decisiones, planos e imágenes](./propuestaEspacialMLR/)**
+
+También desarrollamos un **[recorrido virtual de la sala en Unity](./digitalTwinMLR/)** para revisar la escala, el mobiliario y las proyecciones, y preparar una experiencia en Meta Quest.
 
 ## Propuesta gráfica del proyecto
 

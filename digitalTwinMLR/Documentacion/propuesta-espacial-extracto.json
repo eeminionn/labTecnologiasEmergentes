@@ -1,0 +1,18 @@
+{
+  "source_file": "/Users/eeminionn/Downloads/Copia de Grupo3_C01-3.pdf",
+  "source_sha256": "e77e22e45cc3ba55ca3cf2fb84f39a4c43163abf31f5028692d7d15ea1875848",
+  "source_pages": [
+    33,
+    34,
+    35,
+    36,
+    37,
+    38,
+    39
+  ],
+  "output_file": "propuesta-espacial-extracto.pdf",
+  "output_pages": 7,
+  "method": "Source pages33-39 extracted with pypdf; original texts, vectors, page dimensions and planimetry images preserved. Render images only on source pages37-39 recompressed as JPEG quality90 at original resolutions to reduce download size.",
+  "output_sha256": "f3d52e306e5beee1f80ed9d707a2712ebb50b42873a3176710bf7160983a4b04",
+  "output_bytes": 4616244
+}

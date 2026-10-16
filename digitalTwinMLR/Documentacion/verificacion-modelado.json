@@ -1,0 +1,143 @@
+{
+  "source_vertices": 201912,
+  "prepared_original_vertices": 201912,
+  "source_polygons": 152809,
+  "prepared_original_polygons": 152809,
+  "original_vertex_positions_preserved_0_1mm": true,
+  "all_source_geometry_preserved": true,
+  "fbx_roundtrip_anchors": {
+    "Spawn_Entrance": {
+      "expected": [
+        1.25,
+        4.0,
+        0.0
+      ],
+      "imported": [
+        1.25,
+        4.0,
+        -6.516827397717861e-07
+      ],
+      "error_m": 6.516827399351688e-07
+    },
+    "Spawn_Left": {
+      "expected": [
+        -2.700000047683716,
+        0.5,
+        0.0
+      ],
+      "imported": [
+        -2.700000047683716,
+        0.5,
+        -8.146034247147327e-08
+      ],
+      "error_m": 8.14603424918961e-08
+    },
+    "Spawn_Right": {
+      "expected": [
+        2.9000000953674316,
+        0.5,
+        0.0
+      ],
+      "imported": [
+        2.9000000953674316,
+        0.5,
+        -8.146034247147327e-08
+      ],
+      "error_m": 8.14603424918961e-08
+    },
+    "Spawn_Far": {
+      "expected": [
+        0.0,
+        -3.549999952316284,
+        0.0
+      ],
+      "imported": [
+        0.0,
+        -3.549999952316284,
+        5.783684287052893e-07
+      ],
+      "error_m": 5.783684246993726e-07
+    },
+    "Target_Table": {
+      "expected": [
+        0.11637306213378906,
+        0.42944860458374023,
+        0.7599999904632568
+      ],
+      "imported": [
+        0.11637306213378906,
+        0.4294487237930298,
+        0.7599999308586121
+      ],
+      "error_m": 1.3328003749250113e-07
+    }
+  },
+  "fbx_roundtrip_all_anchor_errors_under_1mm": true,
+  "chair02_materials_roundtrip": {
+    "Chair_02_Casters": [
+      "Rubber"
+    ],
+    "Chair_02_Frame": [
+      "Steel"
+    ],
+    "Chair_02_Upholstery": [
+      "Fabric"
+    ]
+  },
+  "display_uv_ranges": {
+    "Projection_Table": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_01": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_02": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_03": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_04": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_05": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_06": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_07": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ],
+    "Projection_Wall_08": [
+      0.0,
+      1.0,
+      0.0,
+      1.0
+    ]
+  }
+}

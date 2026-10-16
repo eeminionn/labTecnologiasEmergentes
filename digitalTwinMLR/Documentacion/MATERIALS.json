@@ -1,0 +1,111 @@
+{
+  "title": "Digital Twin La Reina - Original Procedural PBR Materials",
+  "created": "2026-10-16",
+  "authoring": "Deterministic NumPy/Pillow procedural synthesis; seed161026; no third-party bitmap inputs or external asset dependencies.",
+  "rights": "Original textures created for this project; dedicated to CC0 1.0 by the authoring agent to the extent legally possible. No third-party attribution required.",
+  "source_reference": "Visual matching only: team proposal renders in propuestaEspacialMLR/Imagenes. No pixels copied.",
+  "color_space": {
+    "albedo": "sRGB",
+    "normal": "linear via Unity normal-map import",
+    "metallic_smoothness": "linear, sRGB off"
+  },
+  "packing": "Unity Standard / URP Lit Metallic workflow: Metallic R, Smoothness A. G/B zero, unused. RGBA alpha is roughness inverse, NOT transparency.",
+  "materials": {
+    "Floor_DarkTile": {
+      "resolution": [
+        1024,
+        1024
+      ],
+      "physical_repeat_metres": [
+        1.6,
+        0.8
+      ],
+      "maps": {
+        "albedo": "Floor_DarkTile_Albedo.png",
+        "normal": "Floor_DarkTile_Normal.png",
+        "metallic_smoothness": "Floor_DarkTile_MetallicSmoothness.png"
+      },
+      "metallic_channel": "R",
+      "smoothness_channel": "A",
+      "normal_space": "tangent RGB, +Y/OpenGL",
+      "normal_import": "Unity Texture Type Normal map; do not mark Create from Grayscale",
+      "tiling_formula": "renderer physical U,V span in metres divided by physical_repeat_metres",
+      "wrap_mode": "Repeat",
+      "filter_mode": "Trilinear",
+      "recommended_aniso": 8,
+      "description": "Original dark gray staggered rectangular tile; each tile0.80x0.40m, approx3mm joint. Use floor UV in metres or tiling5x11.25 for an8x9m flat quad aligned with1.6x0.8m repeat."
+    },
+    "Steel_DarkBrushed": {
+      "resolution": [
+        1024,
+        1024
+      ],
+      "physical_repeat_metres": [
+        0.5,
+        0.5
+      ],
+      "maps": {
+        "albedo": "Steel_DarkBrushed_Albedo.png",
+        "normal": "Steel_DarkBrushed_Normal.png",
+        "metallic_smoothness": "Steel_DarkBrushed_MetallicSmoothness.png"
+      },
+      "metallic_channel": "R",
+      "smoothness_channel": "A",
+      "normal_space": "tangent RGB, +Y/OpenGL",
+      "normal_import": "Unity Texture Type Normal map; do not mark Create from Grayscale",
+      "tiling_formula": "renderer physical U,V span in metres divided by physical_repeat_metres",
+      "wrap_mode": "Repeat",
+      "filter_mode": "Trilinear",
+      "recommended_aniso": 8,
+      "description": "Original blackened brushed steel with restrained horizontal hairline grain. Floor/table pedestal/ceiling metal. MetallicR0.90; smoothness about0.57."
+    },
+    "Cladding_Perforated": {
+      "resolution": [
+        1024,
+        1024
+      ],
+      "physical_repeat_metres": [
+        0.08,
+        0.08
+      ],
+      "maps": {
+        "albedo": "Cladding_Perforated_Albedo.png",
+        "normal": "Cladding_Perforated_Normal.png",
+        "metallic_smoothness": "Cladding_Perforated_MetallicSmoothness.png"
+      },
+      "metallic_channel": "R",
+      "smoothness_channel": "A",
+      "normal_space": "tangent RGB, +Y/OpenGL",
+      "normal_import": "Unity Texture Type Normal map; do not mark Create from Grayscale",
+      "tiling_formula": "renderer physical U,V span in metres divided by physical_repeat_metres",
+      "wrap_mode": "Repeat",
+      "filter_mode": "Trilinear",
+      "recommended_aniso": 8,
+      "description": "Original perforated-metal appearance for columns:5mm staggered pitch,2.5mm visual diameter. Holes are opaque shaded recesses for real-time performance, not physical through-holes."
+    },
+    "Fabric_Charcoal": {
+      "resolution": [
+        1024,
+        1024
+      ],
+      "physical_repeat_metres": [
+        0.04,
+        0.04
+      ],
+      "maps": {
+        "albedo": "Fabric_Charcoal_Albedo.png",
+        "normal": "Fabric_Charcoal_Normal.png",
+        "metallic_smoothness": "Fabric_Charcoal_MetallicSmoothness.png"
+      },
+      "metallic_channel": "R",
+      "smoothness_channel": "A",
+      "normal_space": "tangent RGB, +Y/OpenGL",
+      "normal_import": "Unity Texture Type Normal map; do not mark Create from Grayscale",
+      "tiling_formula": "renderer physical U,V span in metres divided by physical_repeat_metres",
+      "wrap_mode": "Repeat",
+      "filter_mode": "Trilinear",
+      "recommended_aniso": 8,
+      "description": "Original charcoal woven upholstery for chair cushions/back/arms.4cm repeat,0.5mm yarn pitch. Use UV at physical scale; reduce normal multiplier to0.4 if camera aliasing."
+    }
+  }
+}

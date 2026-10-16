@@ -1,0 +1,38 @@
+{
+    "unityVersion": "6000.5.8f1",
+    "platform": "OSXPlayer",
+    "mediaFolder": "/Users/eeminionn/Documents/Codex/2026-10-05/es/work/labTecnologiasEmergentes/digitalTwinMLR/Builds/Mac/Proyecciones",
+    "gpu": "Apple M5",
+    "meshRenderers": 109,
+    "chairCount": 11,
+    "projectionSurfaces": 9,
+    "uniqueVideoPlayers": 2,
+    "dimensions": {
+        "x": 8.000001907348633,
+        "y": 2.7655029296875,
+        "z": 8.999999046325684
+    },
+    "meterScale": true,
+    "spawnFloorSupport": true,
+    "collisionStopsBody": true,
+    "videosPlaying": true,
+    "collisionTravelMeters": 1.6677501201629639,
+    "errors": [],
+    "videos": [
+        {
+            "name": "MP4_mesa",
+            "prepared": true,
+            "frame": 79,
+            "width": 720,
+            "height": 1120
+        },
+        {
+            "name": "MP4_pared01",
+            "prepared": true,
+            "frame": 79,
+            "width": 720,
+            "height": 1200
+        }
+    ],
+    "passed": true
+}

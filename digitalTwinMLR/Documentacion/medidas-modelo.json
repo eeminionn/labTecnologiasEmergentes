@@ -1,0 +1,586 @@
+{
+  "source": "/Users/eeminionn/Downloads/sala opcion 2 .fbx",
+  "source_unchanged": true,
+  "units": "meters",
+  "normalization_translation_blender": [
+    -30.30336570739746,
+    -4.573962211608887,
+    -0.0
+  ],
+  "room_center_xy_original_blender": [
+    30.30336570739746,
+    4.573962211608887,
+    0.0
+  ],
+  "room_outer_dimensions_m": [
+    8,
+    9,
+    2.7
+  ],
+  "floor_inside_dimensions_m": [
+    7.72,
+    8.72
+  ],
+  "entry_width_m": 0.9,
+  "entry_center_blender": [
+    1.2500002926025395,
+    4.426037788391113,
+    0
+  ],
+  "floor_top_z": 0,
+  "wall_height_m": 2.7,
+  "table_top_z": 0.76,
+  "table_bbox_m": [
+    2,
+    3.099911,
+    0.1
+  ],
+  "ceiling_feature_min_clearance_m": 2.190484,
+  "source_meshes": 391,
+  "source_polygons": 152809,
+  "original_topology_preserved": true,
+  "decorative_ring_meshes_merged": 360,
+  "final_meshes": 109,
+  "final_polygons": 167423,
+  "overall_bounds_blender": {
+    "min": [
+      -4.0,
+      -4.5,
+      -0.029999999329447746
+    ],
+    "max": [
+      4.000001907348633,
+      4.5,
+      2.735502004623413
+    ]
+  },
+  "display_planes": [
+    {
+      "name": "Projection_Table",
+      "source_name": "Object_4",
+      "kind": "table",
+      "center_blender": [
+        0.11637210845947266,
+        0.429449200630188,
+        0.7599999904632568
+      ],
+      "right_blender": [
+        1,
+        0,
+        0
+      ],
+      "up_blender": [
+        0,
+        1,
+        0
+      ],
+      "normal_blender": [
+        0,
+        0,
+        1
+      ],
+      "bbox_width_m": 1.3999996185302734,
+      "bbox_depth_m": 2.499999761581421,
+      "u_vector_blender": [
+        1.3999996185302734,
+        0.315,
+        0
+      ],
+      "v_vector_blender": [
+        0,
+        2.185,
+        0
+      ],
+      "width_m": 1.4,
+      "height_m": 2.185,
+      "uv": "0..1 affine on original parallelogram; no replacement geometry"
+    },
+    {
+      "name": "Projection_Wall_01",
+      "source_name": "Object_192",
+      "kind": "wall",
+      "center_blender": [
+        3.760000228881836,
+        3.4091827869415283,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        0,
+        -1,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        -1,
+        0,
+        0
+      ],
+      "width_m": 1.200000286102295,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_02",
+      "source_name": "Object_193",
+      "kind": "wall",
+      "center_blender": [
+        3.760000228881836,
+        1.3150763511657715,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        0,
+        -1,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        -1,
+        0,
+        0
+      ],
+      "width_m": 1.1999998092651367,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_03",
+      "source_name": "Object_194",
+      "kind": "wall",
+      "center_blender": [
+        3.760000228881836,
+        -0.8007303476333618,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        0,
+        -1,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        -1,
+        0,
+        0
+      ],
+      "width_m": 1.2000000476837158,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_04",
+      "source_name": "Object_195",
+      "kind": "wall",
+      "center_blender": [
+        3.760000228881836,
+        -2.873136043548584,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        0,
+        -1,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        -1,
+        0,
+        0
+      ],
+      "width_m": 1.2000000476837158,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_06",
+      "source_name": "Object_207",
+      "kind": "wall",
+      "center_blender": [
+        1.2929315567016602,
+        -4.24965763092041,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        -1,
+        0,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        0,
+        1,
+        0
+      ],
+      "width_m": 1.1999988555908203,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_07",
+      "source_name": "Object_208",
+      "kind": "wall",
+      "center_blender": [
+        -0.8053760528564453,
+        -4.24965763092041,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        -1,
+        0,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        0,
+        1,
+        0
+      ],
+      "width_m": 1.2000007629394531,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_08",
+      "source_name": "Object_209",
+      "kind": "wall",
+      "center_blender": [
+        -2.9081859588623047,
+        -4.24965763092041,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        -1,
+        0,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        0,
+        1,
+        0
+      ],
+      "width_m": 1.2000007629394531,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    },
+    {
+      "name": "Projection_Wall_05",
+      "source_name": "Object_210",
+      "kind": "wall",
+      "center_blender": [
+        3.152597427368164,
+        -4.24965763092041,
+        1.3499999046325684
+      ],
+      "right_blender": [
+        -1,
+        0,
+        0
+      ],
+      "up_blender": [
+        0,
+        0,
+        1
+      ],
+      "normal_blender": [
+        0,
+        1,
+        0
+      ],
+      "width_m": 0.7317581176757812,
+      "height_m": 1.9999999105930328,
+      "uv": "0..1 planar; u right when viewed from room; v up"
+    }
+  ],
+  "chairs": [
+    {
+      "name": "Chair_01",
+      "center_floor_blender": [
+        -1.3136269378662109,
+        -0.8155513954162598,
+        0
+      ],
+      "rotation_z_radians": -1.5707963267948966,
+      "layout": "long_west",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_02",
+      "center_floor_blender": [
+        -1.3136269378662109,
+        -0.12555139541625984,
+        0
+      ],
+      "rotation_z_radians": -1.5707963267948966,
+      "layout": "long_west",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_03",
+      "center_floor_blender": [
+        -1.3136269378662109,
+        0.5644486045837401,
+        0
+      ],
+      "rotation_z_radians": -1.5707963267948966,
+      "layout": "long_west",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_04",
+      "center_floor_blender": [
+        -1.3136269378662109,
+        1.25444860458374,
+        0
+      ],
+      "rotation_z_radians": -1.5707963267948966,
+      "layout": "long_west",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_05",
+      "center_floor_blender": [
+        1.546373062133789,
+        -0.3655513954162598,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966,
+      "layout": "long_east",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_06",
+      "center_floor_blender": [
+        1.546373062133789,
+        0.32444860458374014,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966,
+      "layout": "long_east",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_07",
+      "center_floor_blender": [
+        1.546373062133789,
+        1.0144486045837402,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966,
+      "layout": "long_east",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_08",
+      "center_floor_blender": [
+        1.546373062133789,
+        1.7044486045837401,
+        0
+      ],
+      "rotation_z_radians": 1.5707963267948966,
+      "layout": "long_east",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_09",
+      "center_floor_blender": [
+        -0.533626937866211,
+        -1.471756263464355,
+        0
+      ],
+      "rotation_z_radians": 0,
+      "layout": "short_south",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_10",
+      "center_floor_blender": [
+        0.11637306213378906,
+        -1.3255062634643553,
+        0
+      ],
+      "rotation_z_radians": 0,
+      "layout": "short_south",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    },
+    {
+      "name": "Chair_11",
+      "center_floor_blender": [
+        0.7663730621337891,
+        -1.1792562634643555,
+        0
+      ],
+      "rotation_z_radians": 0,
+      "layout": "short_south",
+      "width_m": 0.646,
+      "height_m": 0.995,
+      "seat_top_height_m": 0.47,
+      "linked_prototype": "Chair_01"
+    }
+  ],
+  "projectors": [
+    {
+      "name": "Projector_01_Table_Provisional",
+      "position_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        2.47
+      ],
+      "target_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        0.76
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_02_East_North_Provisional",
+      "position_blender": [
+        1.65,
+        2.18,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        2.18,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_03_East_South_Provisional",
+      "position_blender": [
+        1.65,
+        -1.84,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        -1.84,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_04_South_Provisional",
+      "position_blender": [
+        -1.1,
+        -2.18,
+        2.47
+      ],
+      "target_blender": [
+        -1.1,
+        -4.2,
+        1.4
+      ],
+      "provisional": true
+    }
+  ],
+  "additions_provisional": [
+    "11office chairs: modeled from plan typology, not selected manufacturer product",
+    "4projector housings and mounts: layout/optics not engineering verified",
+    "4short oval suspension rods"
+  ],
+  "notes": [
+    "FBX geometry is authority for final shapes. Table is original skewed parallelogram; no dimensional distortion.",
+    "Wall projection count8 plus table1. Each has unique material/UV0..1.",
+    "Materials are editable placeholders; no external copyrighted models/textures.",
+    "Blender axes: X horizontal room width, Y room depth (entry at +Y), Z up. FBX export forward -Z/upY."
+  ],
+  "non_projection_uv": "Object meters, per-face dominant-axis planar; original source coordinates baked centered, linked chair UVs shared. Unity tiling reciprocal of physical repeat in meters.",
+  "anchors_blender": {
+    "Spawn_Entrance": [
+      1.25,
+      4.0,
+      0
+    ],
+    "Spawn_Left": [
+      -2.7,
+      0.5,
+      0
+    ],
+    "Spawn_Right": [
+      2.9,
+      0.5,
+      0
+    ],
+    "Spawn_Far": [
+      0,
+      -3.55,
+      0
+    ],
+    "View_Seated": [
+      0.11637306213378906,
+      -1.3255062634643553,
+      1.2
+    ],
+    "Target_Table": [
+      0.11637306213378906,
+      0.42944860458374023,
+      0.76
+    ]
+  },
+  "table_center_blender": [
+    0.11637306213378906,
+    0.42944860458374023,
+    0.0
+  ]
+}
