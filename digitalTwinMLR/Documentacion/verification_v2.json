@@ -1,0 +1,32 @@
+{
+  "fbx_roundtrip": true,
+  "continuous_shared_uv_vertices": true,
+  "uv_bounds": [
+    [
+      0.0,
+      0.0
+    ],
+    [
+      1.0,
+      1.0
+    ]
+  ],
+  "removed_objects_absent": true,
+  "seating_anchor_max_error_m": 3.371747880871523e-07,
+  "chair02_materials": {
+    "Chair_02_Casters": [
+      "Rubber"
+    ],
+    "Chair_02_Frame": [
+      "Steel"
+    ],
+    "Chair_02_Upholstery": [
+      "Fabric"
+    ]
+  },
+  "single_projection_material": true,
+  "only_two_projection_surfaces": true,
+  "room_8x9m_unchanged": true,
+  "panorama_faces": 99,
+  "panorama_vertices": 200
+}

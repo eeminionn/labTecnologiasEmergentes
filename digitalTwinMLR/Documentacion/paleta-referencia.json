@@ -1,0 +1,113 @@
+{
+  "source": "/Users/eeminionn/Downloads/la reina grafica (1).pdf",
+  "page": 1,
+  "page_count": 1,
+  "measurement": "PDF vector RGB fill values verified against center samples of six top-right color swatches in 120dpi rendering; sRGB hex rounded to 8-bit.",
+  "palette": [
+    {
+      "name": "Azul petróleo",
+      "hex": "#006A85",
+      "rgb": [
+        0,
+        106,
+        133
+      ],
+      "rgb_0_1": [
+        0.0,
+        0.415686,
+        0.521569
+      ]
+    },
+    {
+      "name": "Turquesa",
+      "hex": "#00ADB2",
+      "rgb": [
+        0,
+        173,
+        178
+      ],
+      "rgb_0_1": [
+        0.0,
+        0.678431,
+        0.698039
+      ]
+    },
+    {
+      "name": "Morado",
+      "hex": "#6E2663",
+      "rgb": [
+        110,
+        38,
+        99
+      ],
+      "rgb_0_1": [
+        0.431373,
+        0.14902,
+        0.388235
+      ]
+    },
+    {
+      "name": "Verde",
+      "hex": "#008D36",
+      "rgb": [
+        0,
+        141,
+        54
+      ],
+      "rgb_0_1": [
+        0.0,
+        0.552941,
+        0.211765
+      ]
+    },
+    {
+      "name": "Lima",
+      "hex": "#AFC439",
+      "rgb": [
+        175,
+        196,
+        57
+      ],
+      "rgb_0_1": [
+        0.686275,
+        0.768627,
+        0.223529
+      ]
+    },
+    {
+      "name": "Fucsia",
+      "hex": "#E82D81",
+      "rgb": [
+        232,
+        45,
+        129
+      ],
+      "rgb_0_1": [
+        0.909804,
+        0.176471,
+        0.505882
+      ]
+    }
+  ],
+  "neutral": [
+    "#FFFFFF",
+    "#000000"
+  ],
+  "fonts": {
+    "institution_name": "Futura PT Heavy",
+    "tagline": "Futura PT Light",
+    "numeric_callouts": "Futura PT Demi",
+    "chart_labels": "Myriad Pro Regular"
+  },
+  "font_note": "Names verified from embedded PDF font resources; no font extraction or redistribution performed. The document does not label a new typeface as a final choice.",
+  "motifs": [
+    "flat circles and donut rings",
+    "rounded-end bars",
+    "teardrop/location-pin silhouettes",
+    "concentric translucent teal circles",
+    "simple person pictograms",
+    "rounded-square percentage cards",
+    "white backgrounds and restrained black text"
+  ],
+  "scope_note": "The attached 2026-10-16 graphic reference presents the municipal six-color identity and chart explorations. It does not contain the black/cyberpunk board described in an earlier version of the project. Do not treat illustrative census screenshots as verified factual sources for a new statistical exhibit."
+}

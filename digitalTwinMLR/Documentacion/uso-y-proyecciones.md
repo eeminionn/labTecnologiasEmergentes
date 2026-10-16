@@ -1,15 +1,16 @@
 # Uso y cambio de contenido
 
-Estas notas quedan como documentación de apoyo. La bitácora principal registra el proceso del proyecto.
+Estas notas quedan como documentación de apoyo. La [bitácora principal](../README.md) registra el proceso del proyecto.
 
-## Recorrer en Mac
+## Recorrer y sentarse
 
-Abre la aplicación incluida en la entrega. Pulsa **Enter** o haz clic sobre la vista para comenzar; **Esc** libera el mouse.
+En Mac, pulsa **Enter** o haz clic sobre la vista para comenzar; **Esc** libera el mouse. Acércate a una silla y mírala: cuando aparezca la indicación, pulsa **E** para sentarte. El mismo botón permite levantarte y retomar el recorrido.
 
-| Control | Acción |
+| Control en Mac | Acción |
 | --- | --- |
 | WASD o flechas | Caminar |
-| Mouse | Mirar alrededor |
+| Mouse | Mirar alrededor, también desde la silla |
+| E | Sentarse o levantarse |
 | Enter / clic | Entrar al recorrido |
 | Esc | Liberar el mouse |
 | R | Volver al acceso |
@@ -18,58 +19,65 @@ Abre la aplicación incluida en la entrega. Pulsa **Enter** o haz clic sobre la 
 | Espacio | Pausar o continuar los videos |
 | H | Mostrar u ocultar la ayuda |
 
-La sala está organizada en metros, con colisiones para recorrerla. El modelo conserva la geometría final del FBX; las sillas y las carcasas de proyectores son aproximaciones de la propuesta, sin selección de fabricante ni cálculo óptico.
+Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas avanzan con la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada; su avance se detiene mientras está sentado.
+
+En Meta Quest, el control previsto para sentarse o levantarse es **A del mando derecho**. El stick izquierdo permite caminar, el derecho gira en pasos de 30° y el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. El visor conserva el seguimiento natural de la cabeza, también sentado. **La comprobación en un visor real sigue pendiente.**
 
 ## Reemplazar los MP4
 
-La entrega puede usar una carpeta **Proyecciones** al lado de la aplicación. Allí se guardan los videos y **proyecciones.json**. En el proyecto editable, los archivos de respaldo están en `Unity/Assets/StreamingAssets/Proyecciones/`.
+La entrega lee una carpeta **Proyecciones** junto a la aplicación, con los videos y **proyecciones.json**. El proyecto guarda el contenido de respaldo en `Unity/Assets/StreamingAssets/Proyecciones/`.
 
-1. Guarda el nuevo MP4 dentro de **Proyecciones**. Usa un nombre simple, sin rutas a otras carpetas.
-2. En **proyecciones.json**, cambia `file` en el canal correspondiente. También puedes reemplazar un video conservando su nombre.
-3. Abre los ajustes con **Tab** y pulsa **Recargar archivos de proyección**.
+1. Guarda el nuevo MP4 en **Proyecciones**, con un nombre simple y sin rutas a otras carpetas.
+2. Cambia `file` en el canal correspondiente de **proyecciones.json**, o conserva el nombre del archivo que estás reemplazando.
+3. Abre **Tab** y pulsa **Recargar archivos de proyección**.
 
-| ID | Superficie |
-| --- | --- |
-| `mesa` | Centro de la mesa |
-| `pared01` a `pared08` | Ocho superficies de pared |
+| Canal | Superficie | Muestra incluida |
+| --- | --- | --- |
+| `mesa` | Centro de la mesa | `mesa_demo.mp4`, 720 × 1120 px |
+| `panorama` | Una superficie continua en U sobre las paredes | `panorama.mp4`, 4096 × 456 px |
 
-Ejemplo de un canal:
+Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas.
+
+Ejemplo del panorama:
 
 ```json
 {
-  "id": "mesa",
-  "file": "nuevo-video.mp4",
+  "id": "panorama",
+  "file": "panorama.mp4",
   "loop": true,
-  "brightness": 0.9
+  "brightness": 1,
+  "fit": "cover",
+  "maxResolution": 4096
 }
 ```
 
-`loop` controla la repetición y `brightness` el brillo. Conserva la lista `channels` y un ID único por superficie. De forma inicial, las ocho paredes comparten **pared_demo.mp4** y un solo reproductor, para evitar decodificar el mismo archivo ocho veces. La mesa usa **mesa_demo.mp4**. Es posible asignar otro archivo a cada pared, considerando el rendimiento del equipo.
+Conserva la lista `channels` y los ID `mesa` y `panorama`. `loop` controla la repetición y `brightness`, el brillo. `maxResolution` limita el lado mayor de la textura de video, entre 720 y 4096 px; el panorama usa 4096 para mantener su resolución horizontal.
 
-Las muestras duran ocho segundos, no tienen audio y están codificadas en H.264: pared 720 × 1200 y mesa 720 × 1120. Incluyen el contorno comunal del GeoJSON del proyecto; los nodos y curvas son demostrativos. La atribución está en `MEDIA.json`.
-
-## Preparación para realidad virtual
-
-El proyecto contempla OpenXR para una futura versión en Meta Quest. El recorrido de Mac usa pantalla, teclado y mouse. **Todavía no se ha comprobado el funcionamiento en un visor.**
-
-| Control previsto | Acción |
+| Ajuste `fit` | Resultado |
 | --- | --- |
-| Stick izquierdo | Caminar |
-| Stick derecho | Girar en pasos de 30° |
-| Gatillo izquierdo | Mantener para apuntar al piso y soltar para teletransportarse |
+| `cover` | Llena toda la superficie conservando proporciones; recorta lo que sobra. Es el ajuste inicial del panorama. |
+| `contain` | Conserva la imagen completa y sus proporciones; puede dejar espacio libre. Es el ajuste inicial de la mesa. |
+| `stretch` | Llena la superficie estirando la imagen; puede deformarla. |
 
-El teletransporte comprueba el suelo y el espacio de llegada. Antes de usarlo en una presentación debemos probar seguimiento, escala, comodidad y rendimiento en el dispositivo real.
+El panorama tiene un desarrollo de **24,267 m por 2,70 m de alto**, con dos curvas de **0,90 m de radio** y una sola coordenada de imagen compartida. Conviene preparar el contenido en una proporción cercana a **8,99:1**. Esta continuidad digital no sustituye la calibración de mapping, óptica y mezcla entre proyectores que necesitará el montaje físico.
 
-## Archivos de trabajo y fuentes
+En Quest, el APK incluye los videos de respaldo. También se contempla la carpeta `Proyecciones` en `Android/data/cl.mlr.sala.lareina/files/`, con el mismo JSON y los MP4. La carga desde esa carpeta debe comprobarse en el dispositivo. Antes de compilar, el JSON de `StreamingAssets/Proyecciones` se sincroniza con su copia para Android.
 
-- `Unity/`: escena, materiales, scripts y videos de respaldo. Editor: Unity 6000.5.8f1.
-- `Modelado/Sala_MLR.blend`: modelo editable.
-- `Documentacion/medidas-modelo.json`: dimensiones medidas y elementos añadidos.
-- [Propuesta espacial del equipo](https://github.com/eeminionn/labTecnologiasEmergentes/tree/main/propuestaEspacialMLR).
-- [Presentación del equipo, páginas 33–39](./propuesta-espacial-extracto.pdf).
-- [Unity OpenXR 1.17](https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.17/manual/index.html).
-- [Unity Video Player](https://docs.unity3d.com/6000.5/Documentation/Manual/VideoPlayer-rendertexture.html).
+## Referencia gráfica y contenido
 
-En Quest, los videos de respaldo se incluyen dentro del APK. Para sustituirlos después, el programa también lee una carpeta `Proyecciones` dentro de `Android/data/cl.mlr.sala.lareina/files/`, con el mismo JSON y los MP4. No se encontró un visor conectado para comprobar esta carga en el dispositivo.
+La paleta se obtuvo de los seis círculos del PDF **La Reina gráfica (1)** entregado por el equipo, página 1:
 
-En el proyecto, edita el JSON de `StreamingAssets/Proyecciones`; su copia de respaldo para Android se sincroniza automáticamente antes de compilar. La visualización usa texturas de video sobre las superficies: la posición de los proyectores es una aproximación, sin simulación óptica ni medición real de lúmenes.
+| Color | HEX sRGB |
+| --- | --- |
+| Azul petróleo | `#006A85` |
+| Turquesa | `#00ADB2` |
+| Morado | `#6E2663` |
+| Verde | `#008D36` |
+| Lima | `#AFC439` |
+| Fucsia | `#E82D81` |
+
+La mesa retoma el fondo blanco, los círculos y las barras redondeadas. Usa Futura instalada en Mac para generar las imágenes; no incluye archivos de fuente. El contorno conserva el GeoJSON comunal del proyecto, atribuido a IDE Chile / SUBDERE, DPA 2023. Sus tres nodos son esquemáticos y el rótulo **Contenido de demostración** permanece visible.
+
+El panorama reúne fotografías de Mahuida, el entorno urbano, huertas, Plaza Gabriela Mistral, Parque Padre Hurtado y reforestación. Es un montaje de imágenes distintas con uniones suaves, no una toma de un único lugar. Sus colores son los originales y no contiene gráficos de datos.
+
+**Fuentes y archivos de apoyo:** [paleta del PDF](./paleta-referencia.json), [fuentes de las fotografías](./fuentes-panorama.json), [contenido de la mesa](./fuentes-mesa-v2.json), [geometría del panorama](./panorama_geometry_v2.json) y [propuesta espacial](../../propuestaEspacialMLR/README.md). El modelo editable está en `Modelado/Sala_MLR.blend` y el proyecto en `Unity/` (editor 6000.5.8f1).

@@ -6,6 +6,7 @@ Shader "LaReina/Projection"
         _BaseColor("Intensidad",Color)=(1,1,1,1)
         _SurfaceAspect("Proporción de la superficie",Float)=1
         _VideoAspect("Proporción del video",Float)=1
+        _FitMode("Ajuste: contener / cubrir / estirar",Float)=0
     }
     SubShader
     {
@@ -28,6 +29,7 @@ Shader "LaReina/Projection"
                 half4 _BaseColor;
                 float _SurfaceAspect;
                 float _VideoAspect;
+                float _FitMode;
             CBUFFER_END
             Varyings Vert(Attributes input)
             {
@@ -43,8 +45,16 @@ Shader "LaReina/Projection"
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 float aspect = max(.001,_VideoAspect);
                 float2 uv = input.uv;
-                if (_SurfaceAspect >= aspect) uv.x = (uv.x-.5)*_SurfaceAspect/aspect+.5;
-                else uv.y = (uv.y-.5)*aspect/_SurfaceAspect+.5;
+                if (_FitMode < .5)
+                {
+                    if (_SurfaceAspect >= aspect) uv.x = (uv.x-.5)*_SurfaceAspect/aspect+.5;
+                    else uv.y = (uv.y-.5)*aspect/_SurfaceAspect+.5;
+                }
+                else if (_FitMode < 1.5)
+                {
+                    if (_SurfaceAspect >= aspect) uv.y = (uv.y-.5)*aspect/_SurfaceAspect+.5;
+                    else uv.x = (uv.x-.5)*_SurfaceAspect/aspect+.5;
+                }
                 if (any(uv<0) || any(uv>1)) return half4(.008,.012,.018,1);
                 return half4(SAMPLE_TEXTURE2D(_BaseMap,sampler_BaseMap,uv).rgb*_BaseColor.rgb,1);
             }

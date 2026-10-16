@@ -1,0 +1,133 @@
+{
+  "title": "La Reina: contexto territorial y comunidad",
+  "purpose": "Muestra audiovisual de contexto para probar el panorama continuo de las paredes del gemelo digital; no exhibe datos duros.",
+  "source_type": "Photographs published by Municipalidad de La Reina and official Parque Padre Hurtado website. No generative images.",
+  "resolution": [
+    4096,
+    456
+  ],
+  "aspect_ratio": 8.982456140350877,
+  "target_physical_aspect": 8.98789,
+  "duration_seconds": 8,
+  "fps": 24,
+  "frames": 192,
+  "codec": "H264",
+  "pixel_format": "yuv420p",
+  "color_primaries": "bt709",
+  "color_transfer": "bt709",
+  "color_matrix": "bt709",
+  "color_range": "limited (tv)",
+  "audio": false,
+  "composition": "Six separate contextual photographs arranged left-to-right with approximately 160px smoothstep alpha overlaps. Cropped without geometric stretching. No charts, captions, frames, graphic borders, or invented catastrophes. The montage is illustrative, not a stitched photograph of one continuous viewpoint.",
+  "animation": "Each photographic crop shifts only 6px sinusoidally over 8s. Periodic motion returns to identical state at t=8 for a seamless loop.",
+  "palette_note": "Photographs preserve natural colors. No recoloring; graphic identity is applied elsewhere in room materials and guidance.",
+  "order": [
+    "mahuida_reserva",
+    "la_reina_aerea",
+    "huertas_urbanas",
+    "plaza_gabriela_mistral",
+    "padre_hurtado",
+    "reforestacion_mahuida"
+  ],
+  "sources": [
+    {
+      "id": "mahuida_reserva",
+      "label": "Reserva natural municipal Mawida / Parque Mahuida",
+      "source_url": "https://lareina.cl/la-reina-tiene-la-primera-reserva-natural-de-la-region-metropolitana/",
+      "image_url": "https://lareina.cl/wp-content/uploads/2021/03/Parque-Mahuida.jpe",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/mahuida_reserva.jpg",
+      "dimensions": [
+        1280,
+        800
+      ],
+      "credit": "Municipalidad de La Reina",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    },
+    {
+      "id": "la_reina_aerea",
+      "label": "Entorno urbano de La Reina",
+      "source_url": "https://lareina.cl/plan-de-accion-comunal-de-cambio-climatico/",
+      "image_url": "https://lareina.cl/wp-content/uploads/2025/07/comuna-1.jpg",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/la_reina_aerea.jpg",
+      "dimensions": [
+        2048,
+        1536
+      ],
+      "credit": "Municipalidad de La Reina",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    },
+    {
+      "id": "huertas_urbanas",
+      "label": "Huertas Urbanas de La Reina",
+      "source_url": "https://lareina.cl/el-futuro-es-verde-por-una-vida-mucho-mas-sustentable/",
+      "image_url": "https://lareina.cl/wp-content/uploads/2021/07/Huertas-Portada.jpg",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/huertas_urbanas.jpg",
+      "dimensions": [
+        1260,
+        700
+      ],
+      "credit": "Municipalidad de La Reina",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    },
+    {
+      "id": "plaza_gabriela_mistral",
+      "label": "Plaza Gabriela Mistral renovada",
+      "source_url": "https://lareina.cl/nueva-plaza-gabriela-mistral/",
+      "image_url": "https://lareina.cl/wp-content/uploads/2025/04/IMG-20250410-WA0020.jpg",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/plaza_gabriela_mistral.jpg",
+      "dimensions": [
+        1280,
+        960
+      ],
+      "credit": "Municipalidad de La Reina",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    },
+    {
+      "id": "padre_hurtado",
+      "label": "Parque Padre Hurtado",
+      "source_url": "https://www.parquesanalbertohurtado.cl/",
+      "image_url": "https://www.parquesanalbertohurtado.cl/wp-content/uploads/2022/09/WhatsApp-Image-2024-12-12-at-17.50.30-e1734036814614.jpeg",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/padre_hurtado.jpg",
+      "dimensions": [
+        1600,
+        587
+      ],
+      "credit": "Parque Padre Hurtado",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    },
+    {
+      "id": "reforestacion_mahuida",
+      "label": "Reforestación en Parque Mahuida",
+      "source_url": "https://lareina.cl/4-000-nuevos-arboles-en-parque-mahuida/",
+      "image_url": "https://lareina.cl/wp-content/uploads/2023/02/MAHUIDA-ARBOLES-1.jpg",
+      "local_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v2/media/reforestacion_mahuida.jpg",
+      "dimensions": [
+        800,
+        450
+      ],
+      "credit": "Municipalidad de La Reina",
+      "license": "No explicit reuse license stated on source page",
+      "used_in_panorama": true
+    }
+  ],
+  "sha256": "2a0e2d0d12aa1e97084b307944721f6a4a5cef8aeffab0c79c425dbd9dd3b166",
+  "bitstream_metadata": "Explicit H264 SPS VUI colour_primaries=1, transfer_characteristics=1, matrix_coefficients=1, full_range=0 added and probed.",
+  "verification": {
+    "codec_name": "h264",
+    "width": 4096,
+    "height": 456,
+    "pix_fmt": "yuv420p",
+    "color_range": "tv",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709",
+    "r_frame_rate": "24/1",
+    "duration": "8.000000",
+    "nb_frames": "192"
+  }
+}

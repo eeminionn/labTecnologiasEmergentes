@@ -14,6 +14,8 @@ namespace LaReina.DigitalTwin
             public string file;
             public bool loop = true;
             public float brightness = 1f;
+            public string fit = "contain";
+            public int maxResolution = 1920;
         }
         [Serializable] public sealed class Configuration { public Channel[] channels; }
         public ProjectionSurface[] surfaces;
@@ -122,7 +124,7 @@ namespace LaReina.DigitalTwin
                 {
                     // Use the movie's native aspect ratio, including portrait wall/table content.
                     rt.Release();
-                    float scale = Mathf.Min(1f, 1920f / Mathf.Max(p.width, p.height));
+                    float scale = Mathf.Min(1f, Mathf.Clamp(channel.maxResolution,720,4096) / (float)Mathf.Max(p.width, p.height));
                     rt.width = Mathf.Max(16, Mathf.RoundToInt(p.width * scale));
                     rt.height = Mathf.Max(16, Mathf.RoundToInt(p.height * scale));
                     rt.Create();
@@ -141,6 +143,7 @@ namespace LaReina.DigitalTwin
                 if (surface.channelId == channel.id)
                 {
                     surface.brightness = Mathf.Clamp(channel.brightness, .1f, 3f);
+                    surface.fitMode = channel.fit == "cover" ? 1 : channel.fit == "stretch" ? 2 : 0;
                     surface.Bind(texture);
                 }
         }

@@ -29,6 +29,7 @@ Material:
         m_Offset: {x: 0, y: 0}
     m_Ints: []
     m_Floats:
+    - _FitMode: 0
     - _SurfaceAspect: 0.6407323
     - _VideoAspect: 0.5
     m_Colors:

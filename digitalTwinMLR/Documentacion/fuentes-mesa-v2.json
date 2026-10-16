@@ -1,0 +1,67 @@
+{
+  "title": "Mesa: exploración territorial de demostración",
+  "graphic_reference": "/Users/eeminionn/Downloads/la reina grafica (1).pdf",
+  "reference_page": 1,
+  "palette": {
+    "petrol": "#006A85",
+    "teal": "#00ADB2",
+    "purple": "#6E2663",
+    "green": "#008D36",
+    "lime": "#AFC439",
+    "fuchsia": "#E82D81",
+    "white": "#FFFFFF",
+    "gray": "#637479"
+  },
+  "style": "White field, flat geometry, rounded bars, circular nodes, petroleum titles. No neon, cyberpunk grid or invented data.",
+  "duration_seconds": 8,
+  "fps": 24,
+  "frames": 192,
+  "resolution": [
+    720,
+    1120
+  ],
+  "font_used_for_raster_only": {
+    "family": "Futura",
+    "faces": [
+      "Medium",
+      "Bold"
+    ],
+    "path": "/System/Library/Fonts/Supplemental/Futura.ttc",
+    "note": "Installed macOS font used for raster rendering only. No font file redistributed. Futura PT from PDF is not the same cut; this is the local Futura fallback."
+  },
+  "geographic_source": {
+    "CUT_REG": "13",
+    "CUT_PROV": "131",
+    "CUT_COM": "13113",
+    "REGION": "Metropolitana de Santiago",
+    "PROVINCIA": "Santiago",
+    "COMUNA": "La Reina",
+    "SUPERFICIE": 23.39,
+    "source": "SUBDERE / IDE Chile — DPA 2023",
+    "source_url": "https://geoportal.cl/geoportal/catalog/36391/Divisi%C3%B3n%20Pol%C3%ADtica%20Administrativa%202023",
+    "source_published": "2023-09-29",
+    "retrieved": "2026-10-06",
+    "original_crs": "EPSG:5360",
+    "output_crs": "EPSG:4326",
+    "circulation_authorization": "Resolución Nº50 de 2019, Dirección Nacional de Fronteras y Límites del Estado"
+  },
+  "geojson_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/work/labTecnologiasEmergentes/mapaGestualMLR/assets/la-reina.geojson",
+  "geojson_sha256": "598c9ad17d1e1088ac9847cda674f0db4496a2631ba9ab23dd4ede76675b3818",
+  "geographic_transformation": "Supplied polygon kept in vertex order. X multiplied by cosine of average latitude then uniform scaling/translation for visual display.",
+  "demo_content": "Exactly three schematic exploration nodes and a cycling activity cue; no claimed real quantities. Label Contenido de demostración is always visible.",
+  "video_verification": {
+    "codec_name": "h264",
+    "width": 720,
+    "height": 1120,
+    "pix_fmt": "yuv420p",
+    "color_range": "tv",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709",
+    "r_frame_rate": "24/1",
+    "duration": "8.000000",
+    "nb_frames": "192"
+  },
+  "video_sha256": "d867f3bd0140e4977848f22419b65362014851c8bba61b17914b9748a4e813cc",
+  "poster_sha256": "d3ae561aaa8894e404cdc672a672ae3010df9d91b8d91d63fe7b47a55b60d199"
+}

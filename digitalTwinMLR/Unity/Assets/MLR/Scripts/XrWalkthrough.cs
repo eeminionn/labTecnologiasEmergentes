@@ -15,6 +15,7 @@ namespace LaReina.DigitalTwin
     {
         public Camera headsetCamera;
         public GameObject desktopRig;
+        public SeatInteraction seating;
         public bool smoothLocomotion = true;
         [Min(0.1f)] public float movementSpeed = 1.35f;
         [Range(0.05f, 0.5f)] public float stickDeadzone = 0.2f;
@@ -39,6 +40,9 @@ namespace LaReina.DigitalTwin
         bool headPoseValid;
         float verticalVelocity;
         float nextOriginRetry;
+        bool rightPrimaryWasPressed;
+        Vector3 nativeHeadPosition;
+        Quaternion nativeHeadRotation;
 
         public void Configure(Camera camera, GameObject desktop)
         {
@@ -57,6 +61,7 @@ namespace LaReina.DigitalTwin
         void Initialize()
         {
             body = GetComponent<CharacterController>();
+            if (!seating) seating = GetComponent<SeatInteraction>();
             body.radius = 0.2f;
             body.stepOffset = 0.12f;
             body.slopeLimit = 45f;
@@ -83,10 +88,12 @@ namespace LaReina.DigitalTwin
         {
             Application.onBeforeRender -= ApplyHeadPose;
             CancelTeleport();
+            // Preserve the chair across headset sleep or a temporary XR pause.
             SetRigActive(false);
             wasActive = false;
             verticalVelocity = 0f;
             headPoseValid = false;
+            rightPrimaryWasPressed = false;
         }
 
         void Update()
@@ -98,7 +105,7 @@ namespace LaReina.DigitalTwin
                 {
                     ConfigureTrackingOrigin();
                 }
-                else CancelTeleport();
+                else { CancelTeleport(); rightPrimaryWasPressed = false; }
                 SetRigActive(active);
                 wasActive = active;
             }
@@ -108,6 +115,23 @@ namespace LaReina.DigitalTwin
             ApplyHeadPose();
             if (!headPoseValid) { CancelTeleport(); return; }
             var head = headsetCamera.transform;
+            seating?.RefreshCandidate();
+            var rightHand = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
+            bool rightTracked;
+            bool rightPrimary;
+            bool primaryPressed = rightHand.isValid &&
+                (!rightHand.TryGetFeatureValue(CommonUsages.isTracked, out rightTracked) || rightTracked) &&
+                rightHand.TryGetFeatureValue(CommonUsages.primaryButton, out rightPrimary) && rightPrimary;
+            if (primaryPressed && !rightPrimaryWasPressed && seating && seating.TryToggleSeat(nativeHeadPosition, nativeHeadRotation))
+            {
+                CancelTeleport();
+                verticalVelocity = 0f;
+                ApplyHeadPose();
+            }
+            rightPrimaryWasPressed = primaryPressed;
+            // Physical headset rotation and leaning still run in ApplyHeadPose.
+            // Stick motion, teleport and snap turns are suspended in a chair.
+            if (seating && seating.IsSeated) { CancelTeleport(); return; }
             body.height = Mathf.Max(body.radius * 2f, Mathf.Clamp(head.localPosition.y, 0.55f, 2.3f) + 0.12f);
             body.center = new Vector3(head.localPosition.x, body.height * 0.5f, head.localPosition.z);
 
@@ -129,7 +153,6 @@ namespace LaReina.DigitalTwin
             body.Move(velocity * Time.deltaTime);
 
             Vector2 turn;
-            var rightHand = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
             if (!rightHand.TryGetFeatureValue(CommonUsages.primary2DAxis, out turn)) turn = Vector2.zero;
             if (Mathf.Abs(turn.x) < 0.25f) turnReady = true;
             if (!teleportAiming && turnReady && Mathf.Abs(turn.x) > 0.7f)
@@ -308,14 +331,16 @@ namespace LaReina.DigitalTwin
             if (!device.TryGetFeatureValue(CommonUsages.devicePosition, out position) ||
                 !device.TryGetFeatureValue(CommonUsages.deviceRotation, out rotation)) return;
             if (!usesFloorOrigin) position.y += deviceOriginEyeHeight;
-            headsetCamera.transform.localPosition = position;
+            nativeHeadPosition = position;
+            nativeHeadRotation = rotation;
+            headsetCamera.transform.localPosition = seating && seating.IsSeated ? seating.SeatedTrackedPosition(position) : position;
             headsetCamera.transform.localRotation = rotation;
             headPoseValid = true;
         }
 
         void SetRigActive(bool active)
         {
-            if (body != null) body.enabled = active;
+            if (body != null) body.enabled = active && !(seating && seating.IsSeated);
             if (headsetCamera != null) headsetCamera.enabled = active;
             if (listener != null) listener.enabled = active;
             if (desktopRig != null && desktopRig != gameObject) desktopRig.SetActive(!active);

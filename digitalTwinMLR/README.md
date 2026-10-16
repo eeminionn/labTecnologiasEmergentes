@@ -1,33 +1,43 @@
 # Recorrido virtual de la sala
 
-**Avance:** 16 de octubre de 2026<br>
+**Avance:** 16 de octubre de 2026 · versión 0.2<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
 
-Pasamos la propuesta espacial a Unity para poder recorrerla y revisar cómo se sienten la mesa, los puestos y las proyecciones desde adentro. También nos permite preparar una futura experiencia en realidad virtual usando el mismo modelo.
+Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y preparar una futura experiencia en realidad virtual.
 
-## Del modelo al recorrido
+## Una sala más inmersiva
 
-Usamos el FBX como referencia final, conservando sus formas y su escala en metros. La sala mide **8 × 9 m**, con **2,70 m de altura**; la mesa mide aproximadamente **2 × 3,10 m** y tiene **76 cm de alto**. Mantuvimos esta mesa porque corresponde al modelo más reciente, aunque el plano anterior mostraba 2 × 2,80 m.
+En esta versión dejamos las paredes lisas y quitamos las divisiones, marcos y anillos que interrumpían la imagen. Unimos las proyecciones en un panorama continuo en U, de piso a techo, con las dos esquinas frente a las sillas redondeadas. La idea es que las paredes acompañen los datos con imágenes del contexto: vecinos, barrios, áreas verdes y vida de La Reina. La muestra usa fotografías publicadas por la Municipalidad y el Parque Padre Hurtado; los datos quedan en la mesa.
 
-Agregamos once sillas siguiendo la distribución de la planta. Los materiales oscuros, las superficies metálicas y la iluminación azul y fucsia retoman la propuesta. Las carcasas de proyectores representan un montaje provisional que todavía debemos revisar.
+También cambiamos la línea azul del piso por huellas de zapatos. El recorrido rodea la mesa de izquierda a derecha desde la entrada, y las huellas se iluminan y apagan según avanzamos. Así la guía se relaciona con el movimiento de la persona.
 
-## Proyecciones y siguientes pruebas
+## Escala, gráfica y puntos de vista
 
-La mesa y ocho superficies de pared reproducen MP4 locales. Así podemos cambiar el contenido sin rehacer la sala. El modelo editable y los elementos separados también permiten seguir sumando cosas.
+Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m**, la mesa de **2 × 3,10 m y 76 cm de alto**, y las once sillas con el asiento a **47 cm**. Ahora podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
 
-Por ahora es una **representación conceptual**, sin conexión con datos municipales en tiempo real. Queda pendiente probar la experiencia con un visor.
+La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de la mesa. Las fotografías mantienen sus colores originales. Ambos contenidos siguen siendo MP4 reemplazables.
 
 <table>
   <tr>
-    <td><img src="./Imagenes/sala-general.png" alt="Vista general del recorrido virtual" width="380" /></td>
-    <td><img src="./Imagenes/mesa-proyeccion.png" alt="Mesa y superficies de proyección" width="380" /></td>
+    <td><img src="./Imagenes/sala-general.png" alt="Sala con paredes lisas y panorama continuo" width="380" /></td>
+    <td><img src="./Imagenes/mesa-proyeccion.png" alt="Proyección de mesa con la nueva paleta gráfica" width="380" /></td>
   </tr>
   <tr>
-    <td>Distribución y ambiente de la sala.</td>
-    <td>Contenido de demostración reemplazable.</td>
+    <td>Panorama de contexto que envuelve la sala.</td>
+    <td>Contenido de demostración en la mesa.</td>
+  </tr>
+  <tr>
+    <td><img src="./Imagenes/sentado.png" alt="Punto de vista desde una silla" width="380" /></td>
+    <td><img src="./Imagenes/huellas.png" alt="Huellas luminosas alrededor de la mesa" width="380" /></td>
+  </tr>
+  <tr>
+    <td>Vista a la altura de una persona sentada.</td>
+    <td>Guía de recorrido que responde al movimiento.</td>
   </tr>
 </table>
 
-**Fuentes:** [propuesta espacial](https://github.com/eeminionn/labTecnologiasEmergentes/tree/main/propuestaEspacialMLR), [presentación del equipo, pp. 33–39](./Documentacion/propuesta-espacial-extracto.pdf), [Unity OpenXR](https://docs.unity3d.com/Packages/com.unity.xr.openxr@1.17/manual/index.html) y [Unity Video Player](https://docs.unity3d.com/6000.5/Documentation/Manual/VideoPlayer-rendertexture.html).
+Por ahora es una **representación conceptual**, sin datos municipales en tiempo real. Las ubicaciones de los proyectores son provisionales y falta comprobar la experiencia en un visor Meta Quest.
+
+**Fuentes:** [propuesta espacial del equipo](../propuestaEspacialMLR/README.md), [referencia gráfica entregada para este avance](./Documentacion/paleta-referencia.json) y [fotografías oficiales del panorama](./Documentacion/fuentes-panorama.json).

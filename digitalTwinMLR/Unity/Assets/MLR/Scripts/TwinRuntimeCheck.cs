@@ -15,6 +15,7 @@ namespace LaReina.DigitalTwin
         public GameObject modelRoot;
         public ProjectionDirector projections;
         public RoomLighting lighting;
+        public WalkingFootprintGuide footprints;
         [Serializable] public class VideoResult { public string name; public bool prepared; public long frame; public int width; public int height; }
         [Serializable] public class CheckReport
         {
@@ -29,6 +30,9 @@ namespace LaReina.DigitalTwin
             public string[] errors;
             public VideoResult[] videos;
             public bool passed;
+            public SeatingQa.SeatTestResult[] seats;
+            public bool seatingPassed, footprintProgressPassed, continuousPanorama, oldDividersRemoved;
+            public int footprintCount;
         }
         IEnumerator Start()
         {
@@ -71,8 +75,19 @@ namespace LaReina.DigitalTwin
             report.videosPlaying=players.Length==2 && players.All(p=>p.isPrepared && p.isPlaying && p.frame>0) &&
                 players.Where((p,i)=>p.frame!=framesBefore[i]).Count()==players.Length;
             report.errors=projections.Errors.ToArray();
-            report.passed=report.meterScale && report.chairCount==11 && report.projectionSurfaces==9 &&
-                report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0;
+            report.continuousPanorama=projections.surfaces.Count(s=>s.channelId=="panorama")==1 && report.projectionSurfaces==2;
+            report.oldDividersRemoved=!modelRoot.GetComponentsInChildren<Transform>().Any(t=>t.name.Contains("DecorativeRings") || t.name.Contains("Cladding_East") || t.name.Contains("Floor_PerimeterGuide"));
+            yield return SeatingQa.Run(desktop,r=>report.seats=r);
+            report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
+            report.footprintCount=footprints.StepCount;
+            footprints.RefreshProgress(true);int firstStep=footprints.CurrentStep;
+            int nextStep=Mathf.Min(10,footprints.StepCount-1);
+            body.enabled=false;desktop.transform.position=footprints.stepPositions[nextStep]+Vector3.up*.04f;
+            footprints.RefreshProgress(true);
+            report.footprintProgressPassed=footprints.StepCount>30 && footprints.CurrentStep==nextStep && footprints.CurrentStep!=firstStep;
+            desktop.ResetPosition();footprints.RefreshProgress(true);
+            report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
+                report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed && report.footprintProgressPassed;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)
@@ -96,10 +111,31 @@ namespace LaReina.DigitalTwin
             yield return new WaitForSeconds(1);
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"05_luz_revision.png"));
+            lighting.Toggle();
+            var spot=desktop.seating.Seats.First(s=>s.chair.name=="Chair_10");
+            desktop.ResetPosition();body.enabled=false;desktop.transform.position=spot.standAnchor.position+Vector3.up*.025f;
+            desktop.eye.transform.LookAt(spot.chair.position+Vector3.up*.78f);body.enabled=true;Physics.SyncTransforms();
+            desktop.ToggleSeat();
+            yield return new WaitForSeconds(.7f);yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"06_sentado.png"));
+            desktop.transform.Rotate(Vector3.up,90);
+            yield return new WaitForSeconds(.5f);yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"07_sentado_lateral.png"));
+            desktop.ToggleSeat();
+            yield return new WaitForSeconds(.5f);yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"08_de_pie.png"));
+            desktop.ResetPosition();body.enabled=false;
+            desktop.eye.transform.LookAt(footprints.stepPositions[3]);footprints.RefreshProgress(true);
+            yield return new WaitForSeconds(1);yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"09_huellas.png"));
+            desktop.transform.position=footprints.stepPositions[10]+Vector3.up*.04f;
+            desktop.eye.transform.LookAt(footprints.stepPositions[14]);footprints.RefreshProgress(true);
+            yield return new WaitForSeconds(1);yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"10_huellas_avance.png"));
             File.WriteAllText(Path.Combine(folder,"validacion-runtime.json"),JsonUtility.ToJson(report,true));
             Debug.Log("TWIN_RUNTIME_CHECK "+JsonUtility.ToJson(report));
             yield return new WaitForSeconds(.5f);
-            lighting.Toggle();desktop.ResetPosition();desktop.automation=false;
+            desktop.ResetPosition();desktop.automation=false;
             if(Array.IndexOf(args,"-twinSelfTest")>=0)Application.Quit(report.passed?0:1);
         }
         Transform Find(string name)=>modelRoot.GetComponentsInChildren<Transform>().First(t=>t.name==name);

@@ -9,12 +9,13 @@ namespace LaReina.DigitalTwin
         public Camera eye;
         public ProjectionDirector projections;
         public RoomLighting lighting;
+        public SeatInteraction seating;
         [Min(.1f)] public float walkingSpeed = 1.35f;
         public float eyeHeight = 1.65f;
         public Vector3 startPosition;
         public float startYaw;
         CharacterController body;
-        float pitch, verticalSpeed;
+        float pitch = 12f, verticalSpeed;
         bool help = true;
         bool settings;
         bool Captured => Cursor.lockState == CursorLockMode.Locked;
@@ -23,10 +24,12 @@ namespace LaReina.DigitalTwin
         void Start()
         {
             body = GetComponent<CharacterController>();
+            if (!seating) seating = GetComponent<SeatInteraction>();
             body.height = 1.78f; body.radius = .22f;
             body.center = Vector3.up * .89f;
             body.stepOffset = .12f; body.skinWidth = .02f;
             eye.transform.localPosition = Vector3.up * eyeHeight;
+            eye.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
@@ -45,10 +48,14 @@ namespace LaReina.DigitalTwin
             if (keyboard.spaceKey.wasPressedThisFrame && projections) projections.TogglePause();
             if (keyboard.lKey.wasPressedThisFrame && lighting) lighting.Toggle();
             if (!Captured) return;
+            seating?.RefreshCandidate();
+            if (keyboard.eKey.wasPressedThisFrame) ToggleSeat();
             Vector2 look = mouse != null ? mouse.delta.ReadValue() : Vector2.zero;
             transform.Rotate(Vector3.up, look.x * .12f);
             pitch = Mathf.Clamp(pitch - look.y * .12f, -75f, 75f);
             eye.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
+            // Keep the eye at the chair while allowing a complete look around.
+            if (seating && seating.IsSeated) return;
             Vector2 axis = new Vector2(
                 ((keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed) ? 1 : 0) - ((keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed) ? 1 : 0),
                 ((keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed) ? 1 : 0) - ((keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed) ? 1 : 0));
@@ -66,13 +73,23 @@ namespace LaReina.DigitalTwin
             Cursor.lockState = value ? CursorLockMode.Locked : CursorLockMode.None;
             Cursor.visible = !value;
         }
+        public bool ToggleSeat()
+        {
+            if (!seating || !seating.TryToggleSeat()) return false;
+            verticalSpeed = 0f;
+            pitch = 0f;
+            eye.transform.localRotation = Quaternion.identity;
+            eye.transform.localPosition = Vector3.up * (seating.IsSeated ? seating.CurrentEyeHeight : eyeHeight);
+            return true;
+        }
         public void ResetPosition()
         {
             if (!body) body = GetComponent<CharacterController>();
+            seating?.CancelSeat();
             body.enabled = false;
             transform.SetPositionAndRotation(startPosition, Quaternion.Euler(0,startYaw,0));
-            pitch = 0; verticalSpeed = 0;
-            eye.transform.localRotation = Quaternion.identity;
+            pitch = 12f; verticalSpeed = 0;
+            eye.transform.localRotation = Quaternion.Euler(pitch, 0, 0);
             eye.transform.localPosition = Vector3.up * eyeHeight;
             body.enabled = true;
         }
@@ -85,9 +102,9 @@ namespace LaReina.DigitalTwin
             var style = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
             if (!Captured)
             {
-                GUI.Box(new Rect(24,24,370, settings ? 290 : 200), "");
+                GUI.Box(new Rect(24,24,370, settings ? 290 : 220), "");
                 GUI.Label(new Rect(44,39,330,30), "Sala La Reina", new GUIStyle(style) { fontSize = 23, fontStyle = FontStyle.Bold });
-                GUI.Label(new Rect(44,80,325,80), "Enter para recorrer\nWASD / flechas · mover    Mouse · mirar\nEsc · liberar mouse    R · volver al acceso", style);
+                GUI.Label(new Rect(44,80,325,90), "Enter para recorrer\nWASD / flechas · mover    Mouse · mirar\nE · sentarse / levantarse junto a una silla\nEsc · liberar mouse    R · volver al acceso", style);
                 if (settings)
                 {
                     GUI.Label(new Rect(44,165,320,30), "Ambiente", style);
@@ -95,12 +112,14 @@ namespace LaReina.DigitalTwin
                     if (GUI.Button(new Rect(205,200,150,32), projections && projections.Paused ? "Reproducir MP4" : "Pausar MP4")) projections?.TogglePause();
                     if (GUI.Button(new Rect(44,245,311,32), "Recargar archivos de proyección")) projections?.LoadConfiguration();
                 }
-                else GUI.Label(new Rect(44,165,320,25), "Tab · ajustes    L · luz    Espacio · video", style);
+                else GUI.Label(new Rect(44,185,320,25), "Tab · ajustes    L · luz    Espacio · video", style);
             }
             else if (help)
             {
-                GUI.Box(new Rect(20,Screen.height-48,490,30), "WASD · mover   Mouse · mirar   Esc · pausa   Tab · ajustes   H · ocultar");
+                GUI.Box(new Rect(20,Screen.height-48,555,30), "WASD · mover   Mouse · mirar   E · silla   Esc · pausa   Tab · ajustes   H · ocultar");
             }
+            if (Captured && seating && seating.Prompt.Length != 0)
+                GUI.Box(new Rect(Screen.width * .5f-170,Screen.height-95,340,34), seating.Prompt);
         }
     }
 }

@@ -10,6 +10,7 @@ namespace LaReina.DigitalTwin
         public int materialSlot;
         public Texture fallback;
         public float surfaceAspect = .6f;
+        public int fitMode;
         [Range(0.1f, 3f)] public float brightness = 1f;
 
         Material instance;
@@ -27,6 +28,7 @@ namespace LaReina.DigitalTwin
             instance.SetTexture("_BaseMap", texture ? texture : fallback);
             instance.SetColor("_BaseColor", Color.white * brightness);
             instance.SetFloat("_SurfaceAspect", surfaceAspect);
+            instance.SetFloat("_FitMode", fitMode);
             RefreshTextureDimensions();
         }
         public void RefreshTextureDimensions()

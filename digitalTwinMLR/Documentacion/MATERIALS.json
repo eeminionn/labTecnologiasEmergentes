@@ -107,5 +107,6 @@
       "recommended_aniso": 8,
       "description": "Original charcoal woven upholstery for chair cushions/back/arms.4cm repeat,0.5mm yarn pitch. Use UV at physical scale; reduce normal multiplier to0.4 if camera aliasing."
     }
-  }
+  },
+  "revision_0_2": "Walls and ceiling cladding use plain materials without procedural cladding texture. Floor, chair fabric and steel retain procedural maps. Cladding_Perforated files are kept as prior iteration assets, unused in current scene."
 }

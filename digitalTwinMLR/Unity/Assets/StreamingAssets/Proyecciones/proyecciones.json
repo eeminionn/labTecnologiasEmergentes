@@ -4,55 +4,17 @@
       "id": "mesa",
       "file": "mesa_demo.mp4",
       "loop": true,
-      "brightness": 0.9
+      "brightness": 1,
+      "fit": "contain",
+      "maxResolution": 1920
     },
     {
-      "id": "pared01",
-      "file": "pared_demo.mp4",
+      "id": "panorama",
+      "file": "panorama.mp4",
       "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared02",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared03",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared04",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared05",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared06",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared07",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
-    },
-    {
-      "id": "pared08",
-      "file": "pared_demo.mp4",
-      "loop": true,
-      "brightness": 0.85
+      "brightness": 1,
+      "fit": "cover",
+      "maxResolution": 4096
     }
   ]
 }

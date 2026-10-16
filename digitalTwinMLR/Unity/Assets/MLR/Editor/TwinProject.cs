@@ -56,13 +56,14 @@ namespace LaReina.DigitalTwin.Editor
                         var surface = renderer.gameObject.AddComponent<ProjectionSurface>();
                         surface.targetRenderer = renderer;
                         surface.materialSlot = i;
-                        surface.channelId = id == "Projection_Table" ? "mesa" : "pared" + id.Substring(id.Length - 2);
-                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.4f/2.185f :
-                            Mathf.Max(renderer.bounds.size.x,renderer.bounds.size.z)/renderer.bounds.size.y;
+                        surface.channelId = id == "Projection_Table" ? "mesa" : "panorama";
+                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.4f/2.185f : 8.987891565f;
+                        surface.fitMode = surface.channelId == "panorama" ? 1 : 0;
                         surface.fallback = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" +
-                            (surface.channelId == "mesa" ? "mesa" : "pared") + "_demo_Poster.png");
+                            (surface.channelId == "mesa" ? "mesa_demo_Poster.png" : "panorama_Poster.png"));
                         replacement[i].SetTexture("_BaseMap", surface.fallback);
                         replacement[i].SetFloat("_SurfaceAspect", surface.surfaceAspect);
+                        replacement[i].SetFloat("_FitMode", surface.fitMode);
                         replacement[i].SetFloat("_VideoAspect", surface.fallback ? (float)surface.fallback.width/surface.fallback.height : surface.surfaceAspect);
                         surfaces.Add(surface);
                     }
@@ -131,17 +132,24 @@ namespace LaReina.DigitalTwin.Editor
             var xrCamera = MakeCamera(xrRoot.transform,"Camera_Quest");
             xrCamera.enabled = false;
             xrCamera.GetComponent<AudioListener>().enabled = false;
-            xrCamera.stereoTargetEye = StereoTargetEyeMask.Both;
             var xr = xrRoot.AddComponent<XrWalkthrough>();
             var so = new SerializedObject(xr);
             so.FindProperty("headsetCamera").objectReferenceValue = xrCamera;
             so.FindProperty("desktopRig").objectReferenceValue = desktop;
             so.ApplyModifiedPropertiesWithoutUndo();
+            var seatSpots = model.GetComponentsInChildren<Transform>(true)
+                .Where(t=>System.Text.RegularExpressions.Regex.IsMatch(t.name,"^Chair_[0-9]{2}$"))
+                .Select(t=>new SeatInteraction.SeatSpot {chair=t,eyeAnchor=Find(model,"Seat_"+t.name.Substring(6)),
+                    standAnchor=Find(model,"Stand_"+t.name.Substring(6))}).ToArray();
+            var desktopSeats=desktop.AddComponent<SeatInteraction>();desktopSeats.Initialize(camera,seatSpots,target,false);controller.seating=desktopSeats;
+            var xrSeats=xrRoot.AddComponent<SeatInteraction>();xrSeats.Initialize(xrCamera,seatSpots,target,true);xr.seating=xrSeats;
+            var footprintGuide=CreateFootprints(entrance,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
             var qa = new GameObject("Verificacion — solo con argumento de captura").AddComponent<TwinRuntimeCheck>();
             qa.desktop = controller;
             qa.modelRoot = model;
             qa.projections = director;
             qa.lighting = lightRig;
+            qa.footprints = footprintGuide;
             new GameObject("Calidad por plataforma").AddComponent<RoomPlatformSettings>();
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
@@ -176,7 +184,7 @@ namespace LaReina.DigitalTwin.Editor
             var camera = o.AddComponent<Camera>();
             camera.nearClipPlane = .05f;
             camera.farClipPlane = 40f;
-            camera.fieldOfView = 72f;
+            camera.fieldOfView = 60f;
             camera.clearFlags = CameraClearFlags.SolidColor;
             camera.backgroundColor = new Color(.025f,.035f,.05f);
             camera.allowHDR = true;
@@ -185,6 +193,28 @@ namespace LaReina.DigitalTwin.Editor
             data.renderPostProcessing = true;
             data.antialiasing = AntialiasingMode.None;
             return camera;
+        }
+
+        static WalkingFootprintGuide CreateFootprints(Vector3 entrance,Transform desktopEye,Transform xrEye,SeatInteraction desktopSeat,SeatInteraction xrSeat)
+        {
+            var o=new GameObject("Huellas reactivas — izquierda a derecha");
+            var guide=o.AddComponent<WalkingFootprintGuide>();
+            guide.desktopEye=desktopEye;guide.xrEye=xrEye;guide.desktopSeat=desktopSeat;guide.xrSeat=xrSeat;
+            var mesh=guide.CreateMesh(entrance);
+            string meshPath=Root+"Models/FootprintPath.asset";
+            if(AssetDatabase.LoadAssetAtPath<Mesh>(meshPath))AssetDatabase.DeleteAsset(meshPath);
+            AssetDatabase.CreateAsset(mesh,meshPath);
+            o.AddComponent<MeshFilter>().sharedMesh=mesh;
+            var renderer=o.AddComponent<MeshRenderer>();renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
+            var material=new Material(Shader.Find("LaReina/Footprint"));material.name="Huellas";
+            material.SetColor("_BaseColor",ProjectPalette.Teal.linear);material.SetColor("_Accent",ProjectPalette.Lime.linear);
+            material.SetFloat("_Count",guide.StepCount);
+            string path=Root+"Materials/Huellas.mat";
+            if(AssetDatabase.LoadAssetAtPath<Material>(path))AssetDatabase.DeleteAsset(path);
+            AssetDatabase.CreateAsset(material,path);renderer.sharedMaterial=material;guide.trailRenderer=renderer;
+            guide.stepLights=new[]{PointLight(o.transform,"Luz de huella",Vector3.zero,ProjectPalette.Teal,.20f,.45f,false),
+                PointLight(o.transform,"Luz del siguiente paso",Vector3.zero,ProjectPalette.Teal,.15f,.40f,false)};
+            return guide;
         }
 
         static RoomLighting CreateLighting()
@@ -196,8 +226,8 @@ namespace LaReina.DigitalTwin.Editor
                 white.Add(PointLight(rig.transform,"Luz neutra",new Vector3(x,2.48f,z),new Color(.84f,.9f,1),8f,6.5f,true));
             foreach(float z in new[] {-2.7f,0,2.7f})
             {
-                accent.Add(PointLight(rig.transform,"Rebote azul",new Vector3(-2.9f,.28f,z),new Color(.015f,.32f,1f),1.3f,3.5f,false));
-                accent.Add(PointLight(rig.transform,"Rebote fucsia",new Vector3(1.6f,2.30f,z*.6f),new Color(1,.015f,.65f),1.3f,3.3f,false));
+                accent.Add(PointLight(rig.transform,"Acento turquesa",new Vector3(-1.6f,2.3f,z*.6f),ProjectPalette.Teal,.5f,2.8f,false));
+                accent.Add(PointLight(rig.transform,"Acento fucsia",new Vector3(1.6f,2.30f,z*.6f),ProjectPalette.Pink,.5f,2.8f,false));
             }
             rig.whiteLights = white.ToArray();
             rig.accentLights = accent.ToArray();
@@ -221,7 +251,7 @@ namespace LaReina.DigitalTwin.Editor
             var profile=ScriptableObject.CreateInstance<VolumeProfile>();
             var bloom=profile.Add<Bloom>(true);bloom.intensity.Override(.22f);bloom.threshold.Override(1.2f);bloom.scatter.Override(.55f);
             var tone=profile.Add<Tonemapping>(true);tone.mode.Override(TonemappingMode.ACES);
-            var color=profile.Add<ColorAdjustments>(true);color.postExposure.Override(.45f);color.saturation.Override(-4f);
+            var color=profile.Add<ColorAdjustments>(true);color.postExposure.Override(.15f);color.saturation.Override(0f);
             if(AssetDatabase.LoadAssetAtPath<VolumeProfile>(path))AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(profile,path);
             foreach(var component in profile.components)AssetDatabase.AddObjectToAsset(component,profile);
@@ -242,18 +272,18 @@ namespace LaReina.DigitalTwin.Editor
                 {
                     case "Floor": texture="Floor_DarkTile";tile=new Vector2(1f/1.6f,1f/.8f);break;
                     case "Steel": case "TableBase": texture="Steel_DarkBrushed";tile=Vector2.one*2;break;
-                    case "Cladding": texture="Cladding_Perforated";tile=Vector2.one*12.5f;break;
+                    case "Cladding":mat.SetColor("_BaseColor",ProjectPalette.Petrol*.5f);mat.SetFloat("_Smoothness",.22f);mat.SetFloat("_Metallic",.2f);break;
                     case "Fabric": texture="Fabric_Charcoal";tile=Vector2.one*25;break;
                     case "TableWhite":mat.SetColor("_BaseColor",new Color(.73f,.77f,.80f));mat.SetFloat("_Smoothness",.48f);break;
-                    case "Wall":mat.SetColor("_BaseColor",new Color(.28f,.30f,.34f));mat.SetFloat("_Smoothness",.2f);break;
+                    case "Wall":mat.SetColor("_BaseColor",new Color(.84f,.85f,.85f));mat.SetFloat("_Smoothness",.04f);break;
                     case "Rubber":mat.SetColor("_BaseColor",new Color(.025f,.03f,.038f));mat.SetFloat("_Smoothness",.15f);break;
                     case "Glass":
                         mat.SetColor("_BaseColor",new Color(.25f,.4f,.46f,.20f));mat.SetFloat("_Surface",1);
                         mat.SetFloat("_SrcBlend",(float)BlendMode.SrcAlpha);mat.SetFloat("_DstBlend",(float)BlendMode.OneMinusSrcAlpha);
                         mat.SetFloat("_ZWrite",0);mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");mat.renderQueue=3000;mat.SetFloat("_Smoothness",.85f);break;
                     case "LED_Cyan": case "LED_Magenta":
-                        Color c=id=="LED_Cyan"?new Color(.005f,.3f,1):new Color(1,.008f,.8f);
-                        mat.SetColor("_BaseColor",c*.6f);mat.EnableKeyword("_EMISSION");mat.SetColor("_EmissionColor",c*2.7f);break;
+                        Color c=id=="LED_Cyan"?ProjectPalette.Teal:ProjectPalette.Pink;
+                        mat.SetColor("_BaseColor",c*.7f);mat.EnableKeyword("_EMISSION");mat.SetColor("_EmissionColor",c*1.2f);break;
                 }
                 if(texture!=null)
                 {
@@ -263,7 +293,7 @@ namespace LaReina.DigitalTwin.Editor
                     mat.EnableKeyword("_NORMALMAP");mat.EnableKeyword("_METALLICSPECGLOSSMAP");
                     mat.SetTextureScale("_BaseMap",tile);mat.SetTextureScale("_BumpMap",tile);mat.SetTextureScale("_MetallicGlossMap",tile);
                     mat.SetFloat("_Smoothness",1);mat.SetFloat("_BumpScale",.5f);
-                    if(id=="TableBase")mat.SetColor("_BaseColor",new Color(.48f,.52f,.6f));
+                    if(id=="TableBase")mat.SetColor("_BaseColor",ProjectPalette.Petrol);
                 }
             }
             string asset=Root+"Materials/"+id+".mat";
@@ -278,7 +308,7 @@ namespace LaReina.DigitalTwin.Editor
                 var texture=(TextureImporter)AssetImporter.GetAtPath(file.Replace('\\','/'));
                 texture.textureType=file.Contains("_Normal")?TextureImporterType.NormalMap:TextureImporterType.Default;
                 texture.sRGBTexture=!file.Contains("_MetallicSmoothness") && !file.Contains("_Normal");
-                texture.alphaIsTransparency=false;texture.maxTextureSize=1024;
+                texture.alphaIsTransparency=false;texture.maxTextureSize=file.Contains("panorama")?4096:1024;
                 texture.wrapMode=file.Contains("Poster")?TextureWrapMode.Clamp:TextureWrapMode.Repeat;
                 texture.mipmapEnabled=true;texture.anisoLevel=4;texture.SaveAndReimport();
             }
@@ -287,7 +317,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.1.0";
+            PlayerSettings.bundleVersion="0.2.0";PlayerSettings.Android.bundleVersionCode=2;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -313,12 +343,15 @@ namespace LaReina.DigitalTwin.Editor
         {
             var surfaces=UnityEngine.Object.FindObjectsByType<ProjectionSurface>();
             var metadata=UnityEngine.Object.FindAnyObjectByType<RoomMetadata>();
-            if(!metadata || surfaces.Length!=9)throw new InvalidDataException("Se requieren sala y 9 superficies de proyección.");
+            if(!metadata || surfaces.Length!=2)throw new InvalidDataException("Se requieren una pared panorámica y la mesa.");
             var renderers=metadata.GetComponentsInChildren<Renderer>();
             var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);
             if(Mathf.Abs(bounds.size.x-8)>.03f || Mathf.Abs(bounds.size.z-9)>.03f)throw new InvalidDataException("Escala incorrecta: "+bounds.size);
             int chairs=metadata.GetComponentsInChildren<Transform>().Count(t=>System.Text.RegularExpressions.Regex.IsMatch(t.name,"^Chair_[0-9]{2}$"));
             if(chairs!=11)throw new InvalidDataException("Se requieren11sillas; encontradas"+chairs);
+            foreach(var seats in UnityEngine.Object.FindObjectsByType<SeatInteraction>())
+                if(seats.Seats.Length!=11 || seats.Seats.Any(s=>!s.eyeAnchor || !s.standAnchor || Mathf.Abs(s.eyeAnchor.position.y-1.18f)>.02f))
+                    throw new InvalidDataException("Faltan anclas para sentarse o su altura no es correcta.");
             if(renderers.Any(r=>r.sharedMaterials.Any(m=>!m || !m.shader || m.shader.name=="Hidden/InternalErrorShader")))throw new InvalidDataException("Material inválido.");
             Debug.Log("TWIN_VALIDATED dimensions="+bounds.size+" chairs="+chairs+" projections="+surfaces.Length+" meshes="+renderers.Length);
         }

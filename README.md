@@ -46,7 +46,7 @@ También desarrollamos un **[recorrido virtual de la sala en Unity](./digitalTwi
 
 ## Propuesta gráfica del proyecto
 
-Estamos desarrollando un concepto inicial que busca mantener la paleta original de La Reina y explorar una presencia más futurista, estilo cyberpunk. La gráfica y la elección tipográfica siguen en evaluación.
+Partimos explorando una gráfica más futurista, estilo cyberpunk. Para el avance actual de la sala virtual retomamos los seis colores municipales, fondos blancos y formas redondeadas de la nueva referencia del equipo. La gráfica y la elección tipográfica siguen en evaluación.
 
 **[Bitácora de la propuesta gráfica: concepto inicial, referentes y pruebas](./propuestaGraficaMLR/)**
 

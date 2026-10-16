@@ -1,6 +1,6 @@
 {
   "created": "2026-10-16",
-  "purpose": "Original demonstrative projection loops for Unity digital twin. Editable/replacable media slots. No claim of real municipal measurements or data series.",
+  "purpose": "Replaceable local MP4 channels: demonstration data on table; contextual photographs without data graphics on continuous U wall.",
   "duration_seconds": 8,
   "fps": 24,
   "codec": "H264",
@@ -11,9 +11,9 @@
       720,
       1120
     ],
-    "pared_demo.mp4": [
-      720,
-      1200
+    "panorama.mp4": [
+      4096,
+      456
     ]
   },
   "geographic_source": {
@@ -35,5 +35,11 @@
   "geojson_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/work/labTecnologiasEmergentes/mapaGestualMLR/assets/la-reina.geojson",
   "geojson_sha256": "598c9ad17d1e1088ac9847cda674f0db4496a2631ba9ab23dd4ede76675b3818",
   "derived_content": "Boundary preserves source geometry after local planar latitude correction for display. Internal network, nodes, curves and motion are original abstract demonstration graphics and do not represent factual street or municipal statistics.",
-  "rights": "Procedural graphic content original for project; geographic boundary attribution preserved above. No third-party bitmap or video input."
+  "rights": "Mesa: original demonstration graphics. Panorama: official photographs, sources and attribution in fuentes-panorama.json.",
+  "version": "0.2.0",
+  "color_space": "BT.709",
+  "details": [
+    "fuentes-mesa-v2.json",
+    "fuentes-panorama.json"
+  ]
 }
