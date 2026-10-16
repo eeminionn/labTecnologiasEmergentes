@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "units": "meters",
   "source_original_unchanged": true,
   "geometry_source": "panorama_geometry_v2.json",
@@ -386,5 +386,15 @@
     }
   ],
   "axes": "Blender X width, Y depth (entry +Y), Z up; Unity X width, Z depth, Y up. FBX imported at one unit per meter.",
-  "note": "Walls and seating anchors revised with team authorization. Furniture dimensions preserved. Optical mapping and actual Quest use require physical validation."
+  "note": "Walls and seating anchors revised with team authorization. Furniture dimensions preserved. Optical mapping and actual Quest use require physical validation.",
+  "ceiling_event_display": {
+    "geometry": "ceiling-event-geometry.json",
+    "live_panel": [
+      2048,
+      256
+    ],
+    "repetitions": 2,
+    "countdown_seconds": 900,
+    "font_assets": "Raster Futura PT Heavy/Demi; no font programs redistributed"
+  }
 }

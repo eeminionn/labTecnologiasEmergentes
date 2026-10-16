@@ -144,12 +144,15 @@ namespace LaReina.DigitalTwin.Editor
             var desktopSeats=desktop.AddComponent<SeatInteraction>();desktopSeats.Initialize(camera,seatSpots,target,false);controller.seating=desktopSeats;
             var xrSeats=xrRoot.AddComponent<SeatInteraction>();xrSeats.Initialize(xrCamera,seatSpots,target,true);xr.seating=xrSeats;
             var footprintGuide=CreateFootprints(entrance,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
+            var ceilingDisplay=CreateCeilingDisplay();
+            controller.ceilingDisplay=ceilingDisplay;
             var qa = new GameObject("Verificacion — solo con argumento de captura").AddComponent<TwinRuntimeCheck>();
             qa.desktop = controller;
             qa.modelRoot = model;
             qa.projections = director;
             qa.lighting = lightRig;
             qa.footprints = footprintGuide;
+            qa.ceilingDisplay = ceilingDisplay;
             new GameObject("Calidad por plataforma").AddComponent<RoomPlatformSettings>();
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
@@ -212,9 +215,33 @@ namespace LaReina.DigitalTwin.Editor
             string path=Root+"Materials/Huellas.mat";
             if(AssetDatabase.LoadAssetAtPath<Material>(path))AssetDatabase.DeleteAsset(path);
             AssetDatabase.CreateAsset(material,path);renderer.sharedMaterial=material;guide.trailRenderer=renderer;
-            guide.stepLights=new[]{PointLight(o.transform,"Luz de huella",Vector3.zero,ProjectPalette.Teal,.20f,.45f,false),
-                PointLight(o.transform,"Luz del siguiente paso",Vector3.zero,ProjectPalette.Teal,.15f,.40f,false)};
+            guide.stepLights=new[]{PointLight(o.transform,"Luz de huella",Vector3.zero,ProjectPalette.Teal,.20f,.45f,false)};
             return guide;
+        }
+
+        static CeilingEventDisplay CreateCeilingDisplay()
+        {
+            string path=Root+"Models/Ceiling_Event_Display.fbx";
+            var importer=(ModelImporter)AssetImporter.GetAtPath(path);
+            importer.globalScale=1;importer.useFileScale=true;importer.importNormals=ModelImporterNormals.Import;
+            importer.importCameras=false;importer.importLights=false;importer.importAnimation=false;
+            importer.meshCompression=ModelImporterMeshCompression.Off;importer.SaveAndReimport();
+            var source=AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            var ring=(GameObject)PrefabUtility.InstantiatePrefab(source);
+            ring.name="Pantalla circular — información de la sesión";
+            var renderer=ring.GetComponentInChildren<MeshRenderer>();
+            renderer.shadowCastingMode=ShadowCastingMode.Off;renderer.receiveShadows=false;
+            var panel=AssetDatabase.LoadAssetAtPath<Texture2D>(Root+"Textures/EventDisplay/ceiling_panel_base.png");
+            var material=new Material(Shader.Find("LaReina/CeilingEvent")){name="Pantalla de sesión municipal"};
+            material.SetTexture("_BaseMap",panel);material.SetFloat("_Repeats",2);
+            string materialPath=Root+"Materials/CeilingEvent.mat";
+            if(AssetDatabase.LoadAssetAtPath<Material>(materialPath))AssetDatabase.DeleteAsset(materialPath);
+            AssetDatabase.CreateAsset(material,materialPath);renderer.sharedMaterial=material;
+            var display=ring.AddComponent<CeilingEventDisplay>();
+            display.targetRenderer=renderer;display.basePanel=panel;
+            display.digitAtlas=AssetDatabase.LoadAssetAtPath<Texture2D>(Root+"Textures/EventDisplay/ceiling_digits.png");
+            display.durationSeconds=900;display.repetitions=2;
+            return display;
         }
 
         static RoomLighting CreateLighting()
@@ -303,13 +330,16 @@ namespace LaReina.DigitalTwin.Editor
 
         static void ConfigureTextures()
         {
-            foreach(string file in Directory.GetFiles(Root+"Textures","*.png"))
+            foreach(string file in Directory.GetFiles(Root+"Textures","*.png",SearchOption.AllDirectories))
             {
                 var texture=(TextureImporter)AssetImporter.GetAtPath(file.Replace('\\','/'));
                 texture.textureType=file.Contains("_Normal")?TextureImporterType.NormalMap:TextureImporterType.Default;
                 texture.sRGBTexture=!file.Contains("_MetallicSmoothness") && !file.Contains("_Normal");
-                texture.alphaIsTransparency=false;texture.maxTextureSize=file.Contains("panorama")?4096:1024;
-                texture.wrapMode=file.Contains("Poster")?TextureWrapMode.Clamp:TextureWrapMode.Repeat;
+                bool eventDisplay=file.Contains("EventDisplay");
+                texture.isReadable=eventDisplay;
+                texture.textureCompression=eventDisplay?TextureImporterCompression.Uncompressed:TextureImporterCompression.Compressed;
+                texture.alphaIsTransparency=false;texture.maxTextureSize=file.Contains("panorama")?4096:eventDisplay?2048:1024;
+                texture.wrapMode=file.Contains("Poster") || eventDisplay?TextureWrapMode.Clamp:TextureWrapMode.Repeat;
                 texture.mipmapEnabled=true;texture.anisoLevel=4;texture.SaveAndReimport();
             }
         }
@@ -317,7 +347,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.2.0";PlayerSettings.Android.bundleVersionCode=2;
+            PlayerSettings.bundleVersion="0.3.0";PlayerSettings.Android.bundleVersionCode=3;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -344,6 +374,9 @@ namespace LaReina.DigitalTwin.Editor
             var surfaces=UnityEngine.Object.FindObjectsByType<ProjectionSurface>();
             var metadata=UnityEngine.Object.FindAnyObjectByType<RoomMetadata>();
             if(!metadata || surfaces.Length!=2)throw new InvalidDataException("Se requieren una pared panorámica y la mesa.");
+            var ceiling=UnityEngine.Object.FindAnyObjectByType<CeilingEventDisplay>();
+            if(!ceiling || !ceiling.basePanel || !ceiling.digitAtlas || !ceiling.basePanel.isReadable || !ceiling.digitAtlas.isReadable)
+                throw new InvalidDataException("Faltan los recursos legibles para la pantalla circular.");
             var renderers=metadata.GetComponentsInChildren<Renderer>();
             var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);
             if(Mathf.Abs(bounds.size.x-8)>.03f || Mathf.Abs(bounds.size.z-9)>.03f)throw new InvalidDataException("Escala incorrecta: "+bounds.size);

@@ -1,0 +1,65 @@
+{
+  "created_utc": "2026-10-16T05:03:53.434313+00:00",
+  "project_graphic_reference": {
+    "file": "/Users/eeminionn/Downloads/la reina grafica (1).pdf",
+    "page": 1,
+    "sha256": "a60f51b002edf444dc1e3800d034c3a8a84b2fa3492943cf608451cd3f1a3f10",
+    "extraction": "240 dpi direct PDF vector rasterization. Leaf cropped at x3100,y1750,w750,h850. Municipal wordmark at x120,y460,w1960,h760. White matte removed with straight-alpha correction; name changed from petroleum blue to white as demonstrated by official website dark-background logo. Shape preserved."
+  },
+  "official_identity_reference": {
+    "page": "https://lareina.cl/nuestra-imagen/",
+    "description": "Municipal identity page confirms the leaf represents environmental identity and Alma de Barrio the residential sense of belonging.",
+    "leaf_source": "https://www.lareina.cl/wp-content/uploads/2020/05/hoja.jpg",
+    "white_wordmark_variant": "https://lareina.cl/wp-content/uploads/2020/05/logo-blanco.png",
+    "note": "Website variant is calligraphic La Reina. Panel uses the institutional Municipality La Reina wordmark present in the supplied graphic PDF, not a newly typed substitute."
+  },
+  "fonts": {
+    "reference_names": [
+      "Futura PT Heavy",
+      "Futura PT Light",
+      "Futura PT Demi"
+    ],
+    "raster_faces": {
+      "heavy": "/Users/eeminionn/Library/Application Support/Adobe/CoreSync/plugins/livetype/.w/.10881.otf",
+      "light": "/Users/eeminionn/Library/Application Support/Adobe/CoreSync/plugins/livetype/.w/.10886.otf",
+      "demi": "/Users/eeminionn/Library/Application Support/Adobe/CoreSync/plugins/livetype/.w/.15586.otf"
+    },
+    "redistribution": "Only raster PNG artwork is included. No OTF/TTF font files are copied, embedded or redistributed."
+  },
+  "palette": {
+    "petrol": "#006A85",
+    "teal": "#00ADB2",
+    "purple": "#6E2663",
+    "green": "#008D36",
+    "lime": "#AFC439",
+    "pink": "#E82D81",
+    "white": "#FFFFFF",
+    "background": "#03191F"
+  },
+  "files": {
+    "municipal_leaf.png": {
+      "sha256": "e71f50b2c742caf443026b24ba1c8dd02174722343c175d38e324bcb7bbccae9",
+      "bytes": 21250
+    },
+    "municipal_wordmark_white.png": {
+      "sha256": "29a1dc11281a3d84bd316d97ef92a872a0f055f1f73a31ce10a9b1c15c61eeb6",
+      "bytes": 46052
+    },
+    "ceiling_panel_base.png": {
+      "sha256": "a3bda77c5f1d846ad77abe37d32efa1929bb6bf9bb6061903e847480e4a45834",
+      "bytes": 50743
+    },
+    "ceiling_digits.png": {
+      "sha256": "288e3bde96e7136b4ecc0c56a4977942578b9c9ab1befe6b0664cb3db0d5f3a6",
+      "bytes": 10903
+    },
+    "ceiling_panel_preview.png": {
+      "sha256": "f2cc0c8dc991a1fda8f37112432faf08b68f73dd378498b0c2b61a7e9c18c5a9",
+      "bytes": 61945
+    },
+    "ceiling_panel_layout.json": {
+      "sha256": "bc8a6af7003896889a656d5c0f5c46f369f13e1b7cade65489e7c2ed35142441",
+      "bytes": 2892
+    }
+  }
+}

@@ -16,6 +16,7 @@ namespace LaReina.DigitalTwin
         public ProjectionDirector projections;
         public RoomLighting lighting;
         public WalkingFootprintGuide footprints;
+        public CeilingEventDisplay ceilingDisplay;
         [Serializable] public class VideoResult { public string name; public bool prepared; public long frame; public int width; public int height; }
         [Serializable] public class CheckReport
         {
@@ -33,6 +34,10 @@ namespace LaReina.DigitalTwin
             public SeatingQa.SeatTestResult[] seats;
             public bool seatingPassed, footprintProgressPassed, continuousPanorama, oldDividersRemoved;
             public int footprintCount;
+            public bool alternatingFootsteps, singleFootLight, ceilingDisplayPassed;
+            public int[] illuminatedSteps;
+            public string displayedClock, displayedCountdown;
+            public int countdownStart, countdownAfterWait, displayRepetitions;
         }
         IEnumerator Start()
         {
@@ -86,8 +91,34 @@ namespace LaReina.DigitalTwin
             footprints.RefreshProgress(true);
             report.footprintProgressPassed=footprints.StepCount>30 && footprints.CurrentStep==nextStep && footprints.CurrentStep!=firstStep;
             desktop.ResetPosition();footprints.RefreshProgress(true);
+            footprints.enabled=false;
+            for(int i=0;i<100 && footprints.PulseIntensity<.99f;i++)footprints.AdvanceAnimation(.01f);
+            var gaitSteps=new List<int>();
+            report.alternatingFootsteps=footprints.StepCount%2==0;report.singleFootLight=true;
+            for(int i=0;i<8;i++)
+            {
+                footprints.AdvanceAnimation(WalkingFootprintGuide.StepDuration);
+                gaitSteps.Add(footprints.IlluminatedStep);
+                report.singleFootLight &= footprints.ActiveLightCount==1;
+                if(i>0)report.alternatingFootsteps &= (gaitSteps[i]&1)!=(gaitSteps[i-1]&1);
+            }
+            report.illuminatedSteps=gaitSteps.ToArray();
+            footprints.enabled=true;
+            ceilingDisplay.RestartCountdown();
+            report.countdownStart=ceilingDisplay.RemainingSeconds;
+            int renderBefore=ceilingDisplay.RenderCount;
+            yield return new WaitForSecondsRealtime(1.2f);
+            report.countdownAfterWait=ceilingDisplay.RemainingSeconds;
+            report.displayedClock=ceilingDisplay.DisplayedClock;report.displayedCountdown=ceilingDisplay.DisplayedCountdown;
+            report.displayRepetitions=ceilingDisplay.repetitions;
+            report.ceilingDisplayPassed=report.countdownStart==900 && report.countdownAfterWait<900 && report.countdownAfterWait>=897 &&
+                ceilingDisplay.RenderCount>renderBefore && ceilingDisplay.OutputTexture && ceilingDisplay.OutputTexture.width==2048 &&
+                ceilingDisplay.repetitions==2 && CeilingEventDisplay.CalculateRemaining(450)==450 &&
+                CeilingEventDisplay.CalculateRemaining(900)==0 && CeilingEventDisplay.CalculateRemaining(1000)==0 &&
+                CeilingEventDisplay.FormatCountdown(900)=="15:00";
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
-                report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed && report.footprintProgressPassed;
+                report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
+                report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)
@@ -126,12 +157,30 @@ namespace LaReina.DigitalTwin
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"08_de_pie.png"));
             desktop.ResetPosition();body.enabled=false;
             desktop.eye.transform.LookAt(footprints.stepPositions[3]);footprints.RefreshProgress(true);
-            yield return new WaitForSeconds(1);yield return new WaitForEndOfFrame();
+            footprints.enabled=false;
+            for(int i=0;i<5;i++)footprints.AdvanceAnimation(WalkingFootprintGuide.StepDuration);
+            for(int i=0;i<100 && footprints.PulseIntensity<.99f;i++)footprints.AdvanceAnimation(.01f);
+            yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"09_huellas.png"));
+            footprints.AdvanceAnimation(WalkingFootprintGuide.StepDuration);
+            yield return null;yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"12_huellas_otro_pie.png"));
             desktop.transform.position=footprints.stepPositions[10]+Vector3.up*.04f;
             desktop.eye.transform.LookAt(footprints.stepPositions[14]);footprints.RefreshProgress(true);
-            yield return new WaitForSeconds(1);yield return new WaitForEndOfFrame();
+            footprints.AdvanceAnimation(WalkingFootprintGuide.StepDuration);
+            yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"10_huellas_avance.png"));
+            footprints.enabled=true;
+            desktop.ResetPosition();body.enabled=false;
+            desktop.eye.transform.LookAt(ceilingDisplay.targetRenderer.bounds.center);
+            ceilingDisplay.RestartCountdown();
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"11_pantalla_circular.png"));
+            File.WriteAllBytes(Path.Combine(folder,"13_panel_sesion.png"),ceilingDisplay.OutputTexture.EncodeToPNG());
+            desktop.transform.position=Find("Spawn_Right").position+Vector3.up*.04f;
+            desktop.eye.transform.LookAt(ceilingDisplay.targetRenderer.bounds.center);
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"14_pantalla_lateral.png"));
             File.WriteAllText(Path.Combine(folder,"validacion-runtime.json"),JsonUtility.ToJson(report,true));
             Debug.Log("TWIN_RUNTIME_CHECK "+JsonUtility.ToJson(report));
             yield return new WaitForSeconds(.5f);

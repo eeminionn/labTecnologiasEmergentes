@@ -1,8 +1,8 @@
 # Revisión y alcance
 
-## Cambios de la versión 0.2
+## Cambios de la versión 0.3
 
-La revisión geométrica queda registrada en [verification_v2.json](./verification_v2.json) y las medidas, en [panorama_geometry_v2.json](./panorama_geometry_v2.json). La prueba de ejecución de la versión 0.2 en Mac comprobó la escala, las colisiones, los dos videos y el uso de las once sillas.
+La revisión de las paredes queda registrada en [verification_v2.json](./verification_v2.json) y las medidas, en [panorama_geometry_v2.json](./panorama_geometry_v2.json). La prueba de ejecución de la versión 0.3 en Mac comprobó la escala, las colisiones, los dos videos y el uso de las once sillas.
 
 | Revisión | Estado |
 | --- | --- |
@@ -13,8 +13,9 @@ La revisión geométrica queda registrada en [verification_v2.json](./verificati
 | Panorama | Un solo material y coordenadas continuas de imagen; desarrollo aproximado de 24,267 × 2,70 m. |
 | Gráfica y videos | Paleta extraída del PDF. Los dos MP4 se reproducen y avanzan: panorama de 4096 × 456 px y mesa de 720 × 1120 px. Duración y BT.709 registrados en sus metadatos. |
 | Sentarse y levantarse | Prueba aprobada en las once sillas: ojos a 1,18 m, posición fija al mirar alrededor y regreso a un espacio libre. No se registró desplazamiento de la cámara durante el giro. |
-| Huellas y recorrido | Escala y colisiones comprobadas en Mac. Se verificó el avance del recorrido de 47 huellas. Las capturas muestran las suelas, el tramo iluminado y cómo cambia al avanzar. |
-| APK para Meta Quest | Compilado en ARM64, versión 0.2.0, y firma verificada. Falta probar esta versión en el visor: seguimiento, controles, comodidad y rendimiento. |
+| Huellas y recorrido | Escala y colisiones comprobadas en Mac. Se verificó el avance del recorrido de 46 huellas. Se comprobó la secuencia 1 → 2 → 3 → 4, con cambio de pie y una sola luz encendida en cada pulso. Las capturas muestran dos pasos consecutivos. |
+| Pantalla circular | Geometría exterior del techo conservada; panel repetido dos veces. Reloj local y contador comprobados: 900 → 899 segundos. El tiempo llega a cero sin hacerse negativo y puede reiniciarse desde ajustes. Lectura revisada desde el frente y un costado. |
+| APK para Meta Quest | Compilado en ARM64, versión 0.3.0, y firma verificada. Falta probar esta versión en el visor: seguimiento, controles, comodidad y rendimiento. |
 
 ## Qué representa el modelo
 
@@ -24,4 +25,4 @@ La altura de ojos de escritorio es una referencia de **1,65 m de pie y 1,18 m se
 
 Los proyectores y soportes mantienen una ubicación provisional. La imagen continua en Unity no calcula tiro, lúmenes, sombras, corrección óptica ni mezcla entre varios proyectores. Esas decisiones requieren medir y calibrar el espacio físico.
 
-El archivo [validacion-runtime-mac.json](./validacion-runtime-mac.json) reúne los resultados de ejecución en Mac de la **versión 0.2**, incluida la revisión por silla y la progresión de las huellas. La verificación del modelo original queda en [verificacion-modelado.json](./verificacion-modelado.json); la versión 0.2 modifica las paredes y conserva las dimensiones principales y los muebles.
+El archivo [validacion-runtime-mac.json](./validacion-runtime-mac.json) reúne los resultados de ejecución en Mac de la **versión 0.3**, incluida la revisión por silla y la progresión de las huellas. La pantalla añade una superficie sin cambiar el tamaño de la estructura; sus medidas están en [ceiling-event-geometry.json](./ceiling-event-geometry.json). La verificación del modelo original queda en [verificacion-modelado.json](./verificacion-modelado.json); la versión 0.2 modifica las paredes y conserva las dimensiones principales y los muebles.

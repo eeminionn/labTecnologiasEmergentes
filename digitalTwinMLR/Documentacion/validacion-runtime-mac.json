@@ -272,17 +272,38 @@
   "footprintProgressPassed": true,
   "continuousPanorama": true,
   "oldDividersRemoved": true,
-  "footprintCount": 47,
-  "buildVersion": "0.2.0",
+  "footprintCount": 46,
+  "alternatingFootsteps": true,
+  "singleFootLight": true,
+  "ceilingDisplayPassed": true,
+  "illuminatedSteps": [
+    2,
+    3,
+    4,
+    1,
+    2,
+    3,
+    4,
+    1
+  ],
+  "displayedClock": "02:05",
+  "displayedCountdown": "14:59",
+  "countdownStart": 900,
+  "countdownAfterWait": 899,
+  "displayRepetitions": 2,
+  "buildVersion": "0.3.0",
   "visualReview": {
-    "footprintsVisible": true,
-    "activeSectionFollowsVisitor": true,
-    "panoramaFloorToCeiling": true,
-    "roundedCornersContinuous": true,
+    "oneFootAtATime": true,
+    "oppositeFootNext": true,
+    "ceilingTextReadable": true,
+    "logoShapePreserved": true,
+    "frontAndSideViewsVerified": true,
     "screenshots": [
       "../Imagenes/huellas.png",
-      "../Imagenes/huellas-avance.png",
-      "../Imagenes/sala-general.png"
+      "../Imagenes/huellas-otro-pie.png",
+      "../Imagenes/pantalla-circular.png",
+      "../Imagenes/pantalla-lateral.png",
+      "../Imagenes/panel-sesion.png"
     ]
   }
 }

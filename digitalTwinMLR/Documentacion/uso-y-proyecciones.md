@@ -19,9 +19,19 @@ En Mac, pulsa **Enter** o haz clic sobre la vista para comenzar; **Esc** libera 
 | Espacio | Pausar o continuar los videos |
 | H | Mostrar u ocultar la ayuda |
 
-Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas avanzan con la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada; su avance se detiene mientras está sentado.
+Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas avanzan con la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada; su avance se detiene mientras está sentado. La luz principal marca una sola pisada por vez, alternando derecha e izquierda.
 
 En Meta Quest, el control previsto para sentarse o levantarse es **A del mando derecho**. El stick izquierdo permite caminar, el derecho gira en pasos de 30° y el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. El visor conserva el seguimiento natural de la cabeza, también sentado. **La comprobación en un visor real sigue pendiente.**
+
+## Pantalla de la sesión en el techo
+
+La franja circular del techo muestra un panel que se repite **dos veces** alrededor de la mesa. Incluye la marca de la Municipalidad de La Reina, la hora local del dispositivo, el rótulo **ALCALDE** y el tiempo restante de intervención. El rótulo es parte de la demostración: todavía no identifica automáticamente a quien habla.
+
+Al abrir la aplicación, el contador parte en **15:00 (900 segundos)** y baja hasta **00:00**, sin seguir a números negativos. La barra se va vaciando con el tiempo restante. Para comenzar otra intervención en Mac, abre **Tab** y pulsa **Reiniciar intervención · 15 minutos**.
+
+Este contenido lo actualiza la aplicación, por lo que **no es un MP4**. La marca y la hoja se extrajeron del PDF gráfico del equipo; los textos y números se generaron con **Futura PT Heavy y Demi** instaladas mediante Adobe. Se incluyen imágenes rasterizadas, no los archivos de las fuentes. La paleta y la procedencia están en [los recursos gráficos de la pantalla](./ceiling_assets_provenance.json), y la disposición en [el panel de sesión](./ceiling_panel_layout.json).
+
+La pantalla se guarda como un elemento aparte en `Modelado/Ceiling_Event_Display.blend`, para conservar la geometría base de la sala.
 
 ## Reemplazar los MP4
 
@@ -36,7 +46,7 @@ La entrega lee una carpeta **Proyecciones** junto a la aplicación, con los vide
 | `mesa` | Centro de la mesa | `mesa_demo.mp4`, 720 × 1120 px |
 | `panorama` | Una superficie continua en U sobre las paredes | `panorama.mp4`, 4096 × 456 px |
 
-Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas.
+Solo la mesa y el panorama usan estos MP4. Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas.
 
 Ejemplo del panorama:
 

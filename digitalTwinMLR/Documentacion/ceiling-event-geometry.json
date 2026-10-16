@@ -1,0 +1,83 @@
+{
+  "source": "digitalTwinMLR/Modelado/Sala_MLR.blend",
+  "sourceObject": "Ceiling_InnerOvalBaffle_Original",
+  "sourceMaterial": "Cladding",
+  "sourcePolygonRangeInclusive": [
+    0,
+    389
+  ],
+  "sourceTotalPolygons": 2117,
+  "originalUntouched": true,
+  "overlay": "Ceiling_Event_Display.fbx",
+  "overlayObject": "Ceiling_Event_Display",
+  "materialName": "Ceiling_Event_Display",
+  "vertices": 456,
+  "polygons": 390,
+  "offsetMeters": 0.002,
+  "sourceBoundsBlender": [
+    [
+      -1.573781967163086,
+      1.8310832977294922
+    ],
+    [
+      -1.87912917137146,
+      2.7658705711364746
+    ],
+    [
+      2.190483570098877,
+      2.5904836654663086
+    ]
+  ],
+  "centerBlender": [
+    0.12865066528320312,
+    0.4433706998825073
+  ],
+  "heightMeters": 0.40000009536743164,
+  "topRadiiMeters": [
+    1.702432632446289,
+    2.3224998712539673
+  ],
+  "bottomRadiiMeters": [
+    1.053135871887207,
+    1.9124997854232788
+  ],
+  "topContourCircumferenceMeters": 12.718555728329969,
+  "approxMidContourCircumferenceMeters": 11.09820330043852,
+  "bottomContourCircumferenceMeters": 9.510748595053936,
+  "slantHeightRangeMeters": [
+    0.5728002676981971,
+    0.7626180954884774
+  ],
+  "uv": {
+    "u": "0..1 once around, arclength along actual top contour; slight >1 at seam loops",
+    "v": "0 bottom, 1 top",
+    "seam": "positive Blender X side",
+    "uDirection": "counterclockwise viewed from above in Blender; reads correctly from outside",
+    "frontPanelCenterU": 0.25,
+    "backPanelCenterU": 0.75,
+    "repeatRecommended": 2
+  },
+  "import": {
+    "globalScale": 1,
+    "useFileScale": true,
+    "normals": "Import",
+    "instantiate": "identity position/rotation/scale in same scene space as Sala_MLR.fbx; exporter is identical -Z forward, Y up"
+  },
+  "rendering": {
+    "cull": "Back (outward/downward source normals)",
+    "castShadows": false,
+    "receiveShadows": false,
+    "shader": "URP unlit emissive live RenderTexture, no new VideoPlayer required",
+    "recommendedTextureDimensions": [
+      4096,
+      256
+    ],
+    "layout": "Two identical 2048x256 horizontal panels around circumference; layout phase editable by UV offset"
+  },
+  "notes": [
+    "Only exterior tapered fascia is overlaid. Inner well, underside, pink outer ring, hanging supports and projectors are preserved.",
+    "The original fascia is tapered: it is intentionally not replaced by a true vertical cylinder.",
+    "Mesh has no collider and must not be assigned a wall video ProjectionSurface.",
+    "No source media, fonts or logos are included; root provides live event UI."
+  ]
+}
