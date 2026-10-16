@@ -1,0 +1,10 @@
+/* The twin captures only the map. Camera images stay on this computer and
+   never enter the texture sent to Unity. The oval mask belongs to the table. */
+.twin-projection .topbar,.twin-projection footer{display:none}
+.twin-projection #workspace{height:100vh}
+.twin-projection #diagnostics{visibility:hidden;pointer-events:none}
+.twin-projection .map-tools{top:21%;right:18%;box-shadow:0 2px 8px #1f232814}
+.twin-projection #notice{bottom:20%;max-width:440px}
+.twin-projection .leaflet-bottom.leaflet-right{bottom:11%;left:16%;right:16%;display:flex;justify-content:center}
+.twin-projection .leaflet-control-attribution{margin:0;text-align:center;max-width:100%;font-size:9px!important}
+.twin-projection .boundary-attribution{bottom:13%;left:16%;right:16%;text-align:center}

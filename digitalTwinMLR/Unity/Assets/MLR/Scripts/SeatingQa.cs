@@ -28,6 +28,7 @@ namespace LaReina.DigitalTwin
             public float measuredStandingEyeHeight;
             public bool standingFloorSupport;
             public bool standingClearance;
+            public bool gestureGateCorrect;
             public string error;
             public bool passed;
         }
@@ -84,6 +85,8 @@ namespace LaReina.DigitalTwin
                 Physics.SyncTransforms();
                 yield return null;
                 result.correctChair = seats.CurrentChair == spot.chair;
+                result.gestureGateCorrect = desktop.gestureBridge != null &&
+                    desktop.gestureBridge.PrincipalSeatOccupied == (spot.chair == desktop.gestureBridge.principalChair);
                 result.seatedControllerDisabled = !body.enabled;
                 result.measuredSeatedEyeHeight = desktop.eye.transform.position.y - spot.chair.position.y;
                 result.seatAnchorErrorMeters = Vector3.Distance(desktop.eye.transform.position, spot.eyeAnchor.position);
@@ -104,6 +107,7 @@ namespace LaReina.DigitalTwin
                     }
                     result.fixedWhileLooking = result.maximumEyeDriftMeters < .002f && seats.IsSeated && !body.enabled;
                     result.stood = desktop.ToggleSeat() && !seats.IsSeated;
+                    result.gestureGateCorrect &= desktop.gestureBridge != null && !desktop.gestureBridge.PrincipalSeatOccupied;
                     Physics.SyncTransforms();
                     yield return null;
                     result.standingControllerEnabled = body.enabled;
@@ -116,7 +120,7 @@ namespace LaReina.DigitalTwin
                 }
                 result.passed = result.candidateCorrect && result.sat && result.correctChair && result.seatedControllerDisabled &&
                     result.seatedEyeHeight && result.fixedWhileLooking && result.stood && result.standingControllerEnabled &&
-                    result.standingEyeHeight && result.standingFloorSupport && result.standingClearance;
+                    result.standingEyeHeight && result.standingFloorSupport && result.standingClearance && result.gestureGateCorrect;
                 if (!result.passed && result.error == null) result.error = "Revisar campos de esta silla en la validación.";
                 seats.CancelSeat();
             }

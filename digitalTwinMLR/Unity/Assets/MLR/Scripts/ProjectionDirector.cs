@@ -28,6 +28,26 @@ namespace LaReina.DigitalTwin
         readonly List<VideoPlayer> players = new List<VideoPlayer>();
         readonly List<RenderTexture> textures = new List<RenderTexture>();
         readonly Dictionary<string, Texture> outputs = new Dictionary<string, Texture>();
+        readonly Dictionary<string, Texture> channelOutputs = new Dictionary<string, Texture>();
+        readonly Dictionary<string, Texture> liveOverrides = new Dictionary<string, Texture>();
+
+        public void SetLiveOverride(string channelId, Texture texture)
+        {
+            if (!texture) { ClearLiveOverride(channelId); return; }
+            liveOverrides[channelId] = texture;
+            foreach (var surface in surfaces) if (surface.channelId == channelId) surface.Bind(texture);
+        }
+        public void ClearLiveOverride(string channelId)
+        {
+            if (!liveOverrides.Remove(channelId)) return;
+            channelOutputs.TryGetValue(channelId, out var texture);
+            foreach (var surface in surfaces) if (surface.channelId == channelId) surface.Bind(texture ? texture : surface.fallback);
+        }
+        void BindOutput(ProjectionSurface surface, Texture texture)
+        {
+            channelOutputs[surface.channelId] = texture;
+            surface.Bind(liveOverrides.TryGetValue(surface.channelId, out var live) && live ? live : texture);
+        }
 
         void Start() { LoadConfiguration(); }
 
@@ -62,14 +82,14 @@ namespace LaReina.DigitalTwin
                     Connect(channel);
                 }
                 foreach (var surface in surfaces)
-                    if (!channelIds.Contains(surface.channelId)) surface.Bind(surface.fallback);
+                    if (!channelIds.Contains(surface.channelId)) BindOutput(surface,surface.fallback);
             }
             catch (Exception e)
             {
                 ReleasePlayers();
                 ReadyPlayers = 0;
                 Report("Configuración: " + e.Message);
-                foreach (var surface in surfaces) surface.Bind(surface.fallback);
+                foreach (var surface in surfaces) BindOutput(surface,surface.fallback);
             }
         }
 
@@ -77,7 +97,7 @@ namespace LaReina.DigitalTwin
         {
             if (string.IsNullOrWhiteSpace(channel.file))
             {
-                foreach (var surface in surfaces) if (surface.channelId == channel.id) surface.Bind(surface.fallback);
+                foreach (var surface in surfaces) if (surface.channelId == channel.id) BindOutput(surface,surface.fallback);
                 return;
             }
             // Only local MP4 files below the media folder are accepted; no web/network dependency.
@@ -88,7 +108,7 @@ namespace LaReina.DigitalTwin
             if (!path.Contains("://") && !File.Exists(path))
             {
                 Report(channel.id + ": no se encontró " + channel.file);
-                foreach (var surface in surfaces) if (surface.channelId == channel.id) surface.Bind(surface.fallback);
+                foreach (var surface in surfaces) if (surface.channelId == channel.id) BindOutput(surface,surface.fallback);
                 return;
             }
             string key = path + (channel.loop ? "|loop" : "|once");
@@ -144,7 +164,7 @@ namespace LaReina.DigitalTwin
                 {
                     surface.brightness = Mathf.Clamp(channel.brightness, .1f, 3f);
                     surface.fitMode = channel.fit == "cover" ? 1 : channel.fit == "stretch" ? 2 : 0;
-                    surface.Bind(texture);
+                    BindOutput(surface,texture);
                 }
         }
 
@@ -158,7 +178,7 @@ namespace LaReina.DigitalTwin
         {
             foreach (var player in players) if (player) { player.Stop(); Destroy(player.gameObject); }
             foreach (var rt in textures) if (rt) { rt.Release(); Destroy(rt); }
-            players.Clear(); textures.Clear(); outputs.Clear();
+            players.Clear(); textures.Clear(); outputs.Clear(); channelOutputs.Clear();
         }
         void OnDestroy() { ReleasePlayers(); }
     }

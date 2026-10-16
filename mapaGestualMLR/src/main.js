@@ -1,4 +1,5 @@
 import './style.css';
+import './twin-projection.css';
 import { GestureEngine, classifyHand, pointerReference } from './gestures.js';
 import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
@@ -8,9 +9,13 @@ import { SelectionFeedback, hoverTarget } from './selection.js';
 
 const $ = id => document.getElementById(id);
 const smoke = new URLSearchParams(location.search).has('smoke');
-const defaults = { cameraId:'', mirror:false, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
+const twinProjection = window.desktop?.twinBridge === true;
+let twinLeaseActive = false, twinError = '';
+if(twinProjection)document.body.classList.add('twin-projection');
+const defaults = { cameraId:'', cameraLabel:'', mirror:false, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
 let config;
 try { config = { ...defaults, ...JSON.parse(localStorage.getItem('mlr-config') || '{}') }; } catch { config={...defaults}; }
+if(twinProjection)config={...defaults,...await window.desktop.loadTwinConfig()};
 if (smoke) config={...defaults};
 // Full-frame mapping replaces saved table calibration in every session.
 delete config.corners;
@@ -38,7 +43,7 @@ let lastFreshResult=0;
 let smokeStage='empty',emptyFrameResult,smokeFixtureDimensions;
 let cameraGeneration=0;
 let hasFreshCameraResult=false;
-function notify(message,kind='general') { noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
+function notify(message,kind='general') { if(twinProjection && kind==='camera')return;noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
 function save() { localStorage.setItem('mlr-config',JSON.stringify(config)); }
 function updateStatus() {
   $('status').className=active ? (paused?'paused':'active') : '';
@@ -47,10 +52,14 @@ function updateStatus() {
   $('diagnostics').hidden=false;
   $('camera-preview-state').hidden=active;
   if(!active)clearTrackingPreview();
+  reportTwinState();
+}
+function reportTwinState() {
+  if(twinProjection)window.desktop.reportTwinState({cameraActive:active && twinLeaseActive,hands:latestHands.length,error:twinError,detectorReady:workerReady,inferenceFrames:counters.frames,cameraLabel:stream?.getVideoTracks()[0]?.label || ''});
 }
 function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
 function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();renderedSelectionHandId=null;highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
-function isBlocked() { return paused || !document.hasFocus() || $('settings').open || $('help').open; }
+function isBlocked() { return paused || (twinProjection ? !twinLeaseActive : !document.hasFocus()) || $('settings').open || $('help').open; }
 function mapPoint(p) { return cameraToMap(p,config); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
 async function loadMap() {
@@ -60,11 +69,13 @@ async function loadMap() {
 }
 function initializeWorker() {
   worker?.terminate(); workerReady=false; busy=false;
+  const workerGeneration=cameraGeneration;
   worker=new Worker(new URL('./vision.worker.js',import.meta.url));
   worker.onmessage=event=>{
+    if(!smoke && workerGeneration!==cameraGeneration)return;
     const data=event.data;
     if(data.type==='ready') { workerReady=true; telemetryBlocked=data.telemetryBlocked; if(smoke) smokeFrame(); }
-    else if(data.type==='error') { busy=false; notify(`Detector: ${data.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:data.message}); else stopCamera(); }
+    else if(data.type==='error') { busy=false; if(twinProjection)twinError=`Detector: ${data.message}`;notify(`Detector: ${data.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:data.message}); else stopCamera(); }
     else if(data.type==='result') {
       busy=false;
       if(smoke) {
@@ -101,7 +112,7 @@ function initializeWorker() {
       renderGesture(result,latestHands.length,{blocked});
     }
   };
-  worker.onerror=event=>{ notify(`No se pudo iniciar el detector: ${event.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:event.message}); stopCamera(); };
+  worker.onerror=event=>{if(!smoke && workerGeneration!==cameraGeneration)return;if(twinProjection)twinError=`No se pudo iniciar el detector: ${event.message}`;notify(`No se pudo iniciar el detector: ${event.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:event.message}); stopCamera(); };
   worker.postMessage({type:'init',origin:location.origin,confidence:+config.confidence,probe:smoke});
 }
 async function smokeFrame() {
@@ -351,26 +362,47 @@ async function verifyQualityFeedback() {
   return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap,conditionalCameraControls:unavailableHidden&&availableVisible};
 }
 async function startCamera() {
-  if(active) return;
+  if(active || (twinProjection && !twinLeaseActive)) return;
   const generation=++cameraGeneration;
   $('camera-toggle').disabled=true;
   try {
-    const acquired=await navigator.mediaDevices.getUserMedia({video:{ deviceId:config.cameraId?{exact:config.cameraId}:undefined,width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}},audio:false});
+    // Device IDs are salted per web origin, which changes with Unity's random
+    // loopback port. A saved device label resolves the current ID each launch.
+    let cameraId=config.cameraId;
+    if(twinProjection) {
+      const devices=await navigator.mediaDevices.enumerateDevices();
+      cameraId=config.cameraLabel?devices.find(device=>device.kind==='videoinput' && device.label===config.cameraLabel)?.deviceId:'';
+    }
+    const constraints=id=>({video:{deviceId:id?{exact:id}:undefined,width:{ideal:640},height:{ideal:480},frameRate:{ideal:30,max:30}},audio:false});
+    let acquired=await navigator.mediaDevices.getUserMedia(constraints(cameraId));
+    if(twinProjection && config.cameraLabel && generation===cameraGeneration) {
+      const devices=await navigator.mediaDevices.enumerateDevices();
+      const wanted=devices.find(device=>device.kind==='videoinput' && device.label===config.cameraLabel);
+      if(wanted && wanted.deviceId!==acquired.getVideoTracks()[0].getSettings().deviceId) {
+        acquired.getTracks().forEach(track=>track.stop());
+        acquired=await navigator.mediaDevices.getUserMedia(constraints(wanted.deviceId));
+      }
+    }
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
     stream=acquired;
     $('video').srcObject=stream;await $('video').play();
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
     const controls=cameraControlReport=await applyCameraControls(stream.getVideoTracks()[0],config.cameraControls,{continuous:config.cameraAuto});
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
-    if(['failed','invalid','mismatch'].includes(controls.status))notify('La cámara no confirmó los ajustes solicitados. Revisa el diagnóstico.');
+    if(['failed','invalid','mismatch'].includes(controls.status))notify('La cámara no confirmó los ajustes solicitados. Revisa el diagnóstico.','camera');
     const aspect=$('video').videoWidth/$('video').videoHeight;
     $('video').parentElement.style.aspectRatio=String(aspect);
     engine=new GestureEngine({aspectRatio:aspect});
     qualityGate=new FrameQualityGate();qualityState={allowActions:true,state:'good',reasons:[]};qualityWarningShown=false;
     active=true;paused=false;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
-    stream.getVideoTracks()[0].addEventListener('ended',()=>{stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Iniciar cámara.');});
+    stream.getVideoTracks()[0].addEventListener('ended',()=>{if(generation!==cameraGeneration)return;if(twinProjection)twinError='La cámara se desconectó.';stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Iniciar cámara.');});
     updateStatus(); enumerateCameras(); frameLoop(generation);
-  } catch(error) { stopCamera(); notify(error.name==='NotAllowedError'?'Autoriza la cámara en Ajustes del Sistema → Privacidad y seguridad → Cámara.':`No se pudo abrir la cámara USB: ${error.message}`); }
+  } catch(error) {
+    if(generation!==cameraGeneration)return;
+    const message=error.name==='NotAllowedError'?'Autoriza la cámara en Ajustes del Sistema → Privacidad y seguridad → Cámara.':`No se pudo abrir la cámara USB: ${error.message}`;
+    if(twinProjection)twinError=message;
+    stopCamera();notify(message);
+  }
   finally { $('camera-toggle').disabled=false; }
 }
 function stopCamera() {
@@ -745,6 +777,7 @@ function verifyPreviewFeedback(data) {
 }
 async function enumerateCameras() {
   const devices=await navigator.mediaDevices.enumerateDevices();
+  if(twinProjection)window.desktop.reportTwinCameras(devices.filter(d=>d.kind==='videoinput').map(d=>({deviceId:d.deviceId,label:d.label})));
   $('camera-select').replaceChildren(new Option('Cámara predeterminada',''));
   devices.filter(d=>d.kind==='videoinput').forEach((d,i)=>$('camera-select').add(new Option(d.label||`Cámara ${i+1}`,d.deviceId)));
   $('camera-select').value=config.cameraId;
@@ -798,8 +831,24 @@ document.addEventListener('keydown',event=>{
   if(event.code==='Space' && !$('settings').open && !$('help').open) {event.preventDefault();if(active){paused=!paused;cancelGesture();updateStatus();}}
   if(event.key==='Escape')cancelGesture();
 });
-window.addEventListener('blur',()=>{if(active){paused=true;cancelGesture();updateStatus();}});
-document.addEventListener('visibilitychange',()=>{if(document.hidden && active){paused=true;cancelGesture();updateStatus();}});
+window.addEventListener('blur',()=>{if(!twinProjection && active){paused=true;cancelGesture();updateStatus();}});
+document.addEventListener('visibilitychange',()=>{if(!twinProjection && document.hidden && active){paused=true;cancelGesture();updateStatus();}});
 await loadMap();
 updateStatus();
+if(twinProjection) {
+  window.desktop.onTwinPreferences(preferences=>{
+    stopCamera();Object.assign(config,preferences);twinError='';
+    if(twinLeaseActive)startCamera();
+  });
+  window.desktop.onTwinControl(state=>{
+    const enabled=state.active===true && state.chair==='Chair_10';
+    if(enabled===twinLeaseActive)return;
+    twinLeaseActive=enabled;
+    twinError='';
+    if(enabled) { paused=false;cancelGesture();startCamera(); }
+    else { stopCamera(); }
+  });
+  setInterval(reportTwinState,500);
+  window.addEventListener('pagehide',stopCamera);
+}
 if(smoke)initializeWorker();

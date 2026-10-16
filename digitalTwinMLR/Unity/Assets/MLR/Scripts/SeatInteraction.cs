@@ -27,6 +27,7 @@ namespace LaReina.DigitalTwin
         public LayerMask obstructionMask = ~0;
 
         public bool IsSeated { get; private set; }
+        public event System.Action SeatChanged;
         public Transform CurrentChair { get; private set; }
         public Transform AvailableChair { get; private set; }
         public float CurrentEyeHeight => currentSeat != null && currentSeat.eyeAnchor != null ?
@@ -132,6 +133,7 @@ namespace LaReina.DigitalTwin
                 currentSeat.eyeAnchor.position - Vector3.up * CurrentEyeHeight : CurrentChair.position;
             transform.SetPositionAndRotation(seatedFloor, Quaternion.Euler(0f, yaw, 0f));
             IsSeated = true;
+            SeatChanged?.Invoke();
             blockedUntil = 0f;
             UpdateXrPrompt();
             return true;
@@ -162,6 +164,7 @@ namespace LaReina.DigitalTwin
             CurrentChair = null;
             currentSeat = null;
             body.enabled = true;
+            SeatChanged?.Invoke();
             blockedUntil = 0f;
             RefreshCandidate();
             return true;
@@ -218,6 +221,7 @@ namespace LaReina.DigitalTwin
             availableSeat = null;
             blockedUntil = 0f;
             if (body != null) body.enabled = true;
+            SeatChanged?.Invoke();
             UpdateXrPrompt();
         }
 

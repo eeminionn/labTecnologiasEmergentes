@@ -157,6 +157,9 @@ namespace LaReina.DigitalTwin.Editor
                     standAnchor=Find(model,"Stand_"+t.name.Substring(6))}).ToArray();
             var desktopSeats=desktop.AddComponent<SeatInteraction>();desktopSeats.Initialize(camera,seatSpots,target,false);controller.seating=desktopSeats;
             var xrSeats=xrRoot.AddComponent<SeatInteraction>();xrSeats.Initialize(xrCamera,seatSpots,target,true);xr.seating=xrSeats;
+            var gestureBridge=new GameObject("Mapa gestual — solo silla principal").AddComponent<GestureTableBridge>();
+            gestureBridge.desktopSeat=desktopSeats;gestureBridge.principalChair=Find(model,"Chair_10");gestureBridge.projections=director;
+            controller.gestureBridge=gestureBridge;
             var footprintGuide=CreateFootprints(entrance,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
             var ceilingDisplay=CreateCeilingDisplay();
             controller.ceilingDisplay=ceilingDisplay;
@@ -167,6 +170,7 @@ namespace LaReina.DigitalTwin.Editor
             qa.lighting = lightRig;
             qa.footprints = footprintGuide;
             qa.ceilingDisplay = ceilingDisplay;
+            qa.gestureBridge = gestureBridge;
             new GameObject("Calidad por plataforma").AddComponent<RoomPlatformSettings>();
 
             RenderSettings.ambientMode = AmbientMode.Trilight;
@@ -361,7 +365,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.4.0";PlayerSettings.Android.bundleVersionCode=4;
+            PlayerSettings.bundleVersion="0.5.0";PlayerSettings.Android.bundleVersionCode=5;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -402,6 +406,9 @@ namespace LaReina.DigitalTwin.Editor
             if(Mathf.Abs(bounds.size.x-8)>.03f || Mathf.Abs(bounds.size.z-9)>.03f)throw new InvalidDataException("Escala incorrecta: "+bounds.size);
             int chairs=metadata.GetComponentsInChildren<Transform>().Count(t=>System.Text.RegularExpressions.Regex.IsMatch(t.name,"^Chair_[0-9]{2}$"));
             if(chairs!=11)throw new InvalidDataException("Se requieren11sillas; encontradas"+chairs);
+            var bridge=UnityEngine.Object.FindAnyObjectByType<GestureTableBridge>();
+            if(!bridge || bridge.principalChair!=Find(metadata.gameObject,"Chair_10") || !bridge.desktopSeat || !bridge.projections)
+                throw new InvalidDataException("Falta la autorización del mapa en la silla central.");
             foreach(var seats in UnityEngine.Object.FindObjectsByType<SeatInteraction>())
                 if(seats.Seats.Length!=11 || seats.Seats.Any(s=>!s.eyeAnchor || !s.standAnchor || Mathf.Abs(s.eyeAnchor.position.y-1.18f)>.02f))
                     throw new InvalidDataException("Faltan anclas para sentarse o su altura no es correcta.");

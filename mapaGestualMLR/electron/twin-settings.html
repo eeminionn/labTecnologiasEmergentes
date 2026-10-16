@@ -1,0 +1,15 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; base-uri 'none'; object-src 'none'">
+<title>Cámara de la mesa</title><style>
+*{box-sizing:border-box}body{margin:0;padding:28px;font:14px -apple-system,BlinkMacSystemFont,sans-serif;color:#1f2328;background:#f6f8fa}
+h1{font-size:19px;margin:0 0 12px}p{font-size:12px;color:#59636e;line-height:1.6}label{display:block;font-size:12px;font-weight:600;margin-top:18px}
+select{display:block;width:100%;margin-top:6px;padding:9px;border:1px solid #d1d9e0;border-radius:6px;background:white;font:inherit}
+input{accent-color:#0969da;margin-right:7px}button{font:inherit;padding:8px 14px;border:1px solid #d1d9e0;border-radius:6px;background:white;cursor:pointer}
+.actions{display:flex;justify-content:flex-end;gap:8px;margin-top:25px}.primary{background:#1f883d;color:white;border-color:#1a7f37}#state{min-height:40px}
+</style></head><body><h1>Cámara de la mesa</h1><p>El control funciona sólo desde la silla principal. La imagen de cámara no se proyecta en la mesa.</p>
+<label>Cámara frontal<select id="camera"></select></label>
+<label><input type="checkbox" id="mirror">Reflejar horizontalmente</label>
+<label>Orientación<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label>
+<label>Sensibilidad<select id="confidence"><option value="0.7">Equilibrada · 0,70</option><option value="0.8">Conservadora · 0,80</option><option value="0.6">Más sensible · 0,60</option></select></label>
+<p id="state"></p><div class="actions"><button id="close">Cerrar</button><button id="save" class="primary">Aplicar y reiniciar cámara</button></div>
+<script src="twin-settings.js"></script></body></html>

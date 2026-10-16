@@ -23,9 +23,11 @@ Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazar
 
 En Meta Quest, el control previsto para sentarse o levantarse es **A del mando derecho**. El stick izquierdo permite caminar, el derecho gira en pasos de 30° y el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. El visor conserva el seguimiento natural de la cabeza, también sentado. **La comprobación en un visor real sigue pendiente.**
 
-## Mesa y disposición de las sillas · versión 0.4
+## Mesa y disposición de las sillas · versión 0.5
 
 Se incorporó únicamente la mesa de **sala 002.fbx**. El resto de las modificaciones de ese archivo no se trasladó a la sala. Las once sillas y sus puntos para sentarse y levantarse se reacomodaron alrededor del nuevo tablero.
+
+La disposición actual vuelve a una **U compacta**: cuatro sillas paralelas por lado y tres al fondo, con **72 cm entre centros contiguos**. El lado hacia la puerta queda sin sillas. No se cambió la escala ni la forma de los muebles; los ojos siguen a 1,18 m y el punto de regreso queda 82 cm detrás de cada silla. **Chair_10** es la silla central del fondo y el único puesto habilitado para el mapa gestual. Las posiciones y verificaciones están en [chairs_u_v5.json](./chairs_u_v5.json) y [verification_v5.json](./verification_v5.json).
 
 La mesa conserva las dimensiones del archivo: **2,27046 × 2,80172 m**, con la parte superior del tablero a **0,762753 m** del piso. Se bajó el conjunto **5,3 cm** para apoyar la base en el suelo, sin escalarlo. El área de proyección interior mide aproximadamente **1,67046 × 2,20172 m** y queda a **0,773177–0,773822 m** del piso, ligeramente sobre el tablero para evitar superposición de superficies.
 
@@ -54,7 +56,7 @@ La entrega lee una carpeta **Proyecciones** junto a la aplicación, con los vide
 | `mesa` | Área ovalada interior de la mesa | `mesa_demo.mp4`, 720 × 950 px |
 | `panorama` | Una superficie continua en U sobre las paredes | `panorama.mp4`, 4096 × 456 px |
 
-Solo la mesa y el panorama usan estos MP4. Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas.
+Solo la mesa y el panorama usan estos MP4. Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas. Al usar por primera vez la silla principal en Mac, la imagen en vivo del mapa reemplaza el MP4 de la mesa. Al levantarse queda visible la última imagen del mapa, sin cámara ni gestos activos; el MP4 sirve como muestra inicial, antes de recibir el mapa.
 
 Ejemplo del panorama:
 
@@ -100,10 +102,44 @@ La mesa retoma el fondo blanco, los círculos y las barras redondeadas. Usa Futu
 
 El panorama reúne fotografías de Mahuida, el entorno urbano, huertas, Plaza Gabriela Mistral, Parque Padre Hurtado y reforestación. Es un montaje de imágenes distintas con uniones suaves, no una toma de un único lugar. Sus colores son los originales y no contiene gráficos de datos.
 
-## Posible conexión con el mapa gestual · todavía no aplicada
+## Mapa gestual en la silla principal · Mac
 
-La opción más directa es conservar la aplicación Electron y MediaPipe que ya funciona con la **cámara frontal**, y enviar su imagen en vivo a una textura de la mesa en Unity. Así se pueden mantener el desplazamiento, el zoom, la selección de 1,5 segundos y las sombras sin rehacer los gestos. [Electron permite obtener la imagen de una ventana como bitmap o textura GPU](https://www.electronjs.org/docs/latest/tutorial/offscreen-rendering); conectarla requiere un puente adicional. En una instalación física, la Mac podría enviar la salida directamente al proyector, con el contorno ovalado y la corrección de perspectiva correspondientes.
+El mapa conserva la aplicación Electron y MediaPipe del [prototipo gestual](../../mapaGestualMLR/README.md), con la **cámara frontal**. Unity recibe su imagen y la coloca dentro de la máscara ovalada, sin sustituir el motor de gestos ni controlar un navegador externo. La selección mantiene el índice sobre un punto durante **1,5 segundos**; el desplazamiento usa al menos un puño y el zoom, las dos manos en pinza/OK.
 
-Antes de conectarlo hay que resolver un detalle del programa actual: al perder el foco o quedar oculto pausa los gestos, y sus clics requieren una ventana enfocada. Haría falta un modo explícito de proyección que mantenga activa solo esa sesión, junto con una zona segura para que los puntos y popups no queden fuera del óvalo. El mapeo frontal de las manos se conservaría. Para Quest se podría estudiar recibir la imagen desde la Mac; usar el seguimiento de manos propio del visor sería otra integración. **Por ahora no se modificó ni se conectó la aplicación gestual.**
+1. Sentarse con **E** en **Chair_10**, la silla central del fondo, mirando hacia la entrada.
+2. Esperar a que se inicie la cámara y aparezca el mapa sobre la mesa. En **Tab** se puede abrir la configuración de cámara del mapa.
+3. Usar los gestos habituales. El modo de proyección permite procesarlos aunque el recorrido de Unity conserve el foco.
+4. Levantarse con **E**: se desactiva la sesión y se libera la cámara, pero la mesa conserva la última imagen del mapa. Sentarse en cualquiera de las otras diez sillas permite verla sin iniciar el control. Al volver a Chair_10 se reanuda la imagen en vivo y los gestos.
+
+La comunicación ocurre solo en la Mac, por una conexión local a `127.0.0.1`, con una autorización temporal del puesto principal. La entrega incluye la aplicación auxiliar dentro de `Sala La Reina.app/Contents/Helpers/`. La imagen se envía como JPEG de **720 × 950 px**, con un máximo de **15 imágenes por segundo**; esto es la frecuencia de transmisión a Unity, no la frecuencia de detección de manos. Si Unity deja de renovar la autorización, la sesión expira en tres segundos y se bloquean los gestos y la entrega de imágenes.
+
+El puente corresponde a `GestureTableBridge.cs` en Unity y a `electron/twin-bridge.cjs` en el prototipo. Se detiene al abandonar el puesto, desactivar el componente o cerrar la aplicación. Mantener la última textura en la mesa no mantiene activa la cámara ni permite gestos desde otro lugar. **Esta conexión está disponible solo en Mac; el mapa gestual todavía no está conectado en Quest.** El seguimiento de manos del visor no sustituye automáticamente a la cámara frontal del prototipo.
+
+## Compilar y empaquetar la entrega para Mac
+
+Estas instrucciones son de apoyo técnico. Desde la raíz del repositorio, primero se compila la aplicación gestual con Node y sus dependencias:
+
+```sh
+cd mapaGestualMLR
+npm ci
+npm run build
+./node_modules/.bin/electron-builder --mac dir --arm64 --publish never
+cd ..
+```
+
+Después se genera el recorrido con **Unity 6000.5.8f1**. El proyecto debe estar cerrado en el editor al usar esta compilación por línea de comandos:
+
+```sh
+"/Applications/Unity/Hub/Editor/6000.5.8f1/Unity.app/Contents/MacOS/Unity" \
+  -batchmode -buildTarget StandaloneOSX \
+  -projectPath "$PWD/digitalTwinMLR/Unity" \
+  -executeMethod LaReina.DigitalTwin.Editor.TwinProject.RebuildMac \
+  -quit -logFile /tmp/mlr-unity-mac.log
+node digitalTwinMLR/Tools/package-mac.cjs
+```
+
+El último paso incorpora `Mapa Gestual MLR.app` dentro de la aplicación de Unity, añade el texto de permiso de cámara si falta y firma y verifica el conjunto con una firma local. Falla si falta alguna aplicación o sus identificadores no corresponden al proyecto. El resultado queda en `digitalTwinMLR/Builds/Mac/Sala La Reina.app`.
+
+Para empaquetar otra copia de la misma aplicación, se puede indicar su ruta: `node digitalTwinMLR/Tools/package-mac.cjs "/ruta/Sala La Reina.app"`. Este paso corresponde a Mac; no incorpora Electron al APK de Quest.
 
 **Fuentes y archivos de apoyo:** [paleta del PDF](./paleta-referencia.json), [fuentes de las fotografías](./fuentes-panorama.json), [contenido de la mesa ovalada](./fuentes-mesa-v4.json), [medidas de la mesa nueva](./table_geometry_v4.json), [geometría del panorama](./panorama_geometry_v2.json) y [propuesta espacial](../../propuestaEspacialMLR/README.md). El modelo editable está en `Modelado/Sala_MLR.blend` y el proyecto en `Unity/` (editor 6000.5.8f1).

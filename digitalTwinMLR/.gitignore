@@ -14,3 +14,5 @@ Unity/*.slnx
 Builds/
 *.blend1
 .DS_Store
+Unity/Assets/Resources/PerformanceTestRunInfo.json*
+Unity/Assets/Resources/PerformanceTestRunSettings.json*

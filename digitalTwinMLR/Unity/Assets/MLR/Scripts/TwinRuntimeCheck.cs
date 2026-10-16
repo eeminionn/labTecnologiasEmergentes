@@ -17,6 +17,7 @@ namespace LaReina.DigitalTwin
         public RoomLighting lighting;
         public WalkingFootprintGuide footprints;
         public CeilingEventDisplay ceilingDisplay;
+        public GestureTableBridge gestureBridge;
         [Serializable] public class VideoResult { public string name; public bool prepared; public long frame; public int width; public int height; }
         [Serializable] public class CheckReport
         {
@@ -43,6 +44,8 @@ namespace LaReina.DigitalTwin
             public float tabletopHeight, pedestalFloorHeight, ovalUvArea;
             public bool ovalTablePassed, footprintRouteClear;
             public int[] blockedFootsteps;
+            public bool gestureGatePassed;
+            public GestureBridgeQa.Result gestureIntegration;
         }
         IEnumerator Start()
         {
@@ -51,6 +54,7 @@ namespace LaReina.DigitalTwin
             if(index<0 || index+1>=args.Length){Destroy(gameObject);yield break;}
             string folder=Path.GetFullPath(args[index+1]);Directory.CreateDirectory(folder);
             desktop.automation=true;
+            gestureBridge.suppressAutomatic=true;gestureBridge.StopSession();
             Cursor.visible=false;Cursor.lockState=CursorLockMode.None;
             yield return null;
             float timeout=Time.realtimeSinceStartup+15;
@@ -98,6 +102,7 @@ namespace LaReina.DigitalTwin
             report.oldDividersRemoved=!modelRoot.GetComponentsInChildren<Transform>().Any(t=>t.name.Contains("DecorativeRings") || t.name.Contains("Cladding_East") || t.name.Contains("Floor_PerimeterGuide"));
             yield return SeatingQa.Run(desktop,r=>report.seats=r);
             report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
+            report.gestureGatePassed=report.seats.Length==11 && report.seats.All(s=>s.gestureGateCorrect);
             var blockedSteps=new List<int>();
             for(int i=0;i<footprints.StepCount;i++)
             {
@@ -142,7 +147,7 @@ namespace LaReina.DigitalTwin
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
                 report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
-                report.ovalTablePassed && report.footprintRouteClear;
+                report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)
@@ -205,10 +210,16 @@ namespace LaReina.DigitalTwin
             desktop.eye.transform.LookAt(ceilingDisplay.targetRenderer.bounds.center);
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"14_pantalla_lateral.png"));
+            if(Array.IndexOf(args,"-twinBridgeValidation")>=0)
+            {
+                yield return GestureBridgeQa.Run(desktop,gestureBridge,folder,result=>report.gestureIntegration=result);
+                report.passed &= report.gestureIntegration!=null && report.gestureIntegration.passed;
+            }
             File.WriteAllText(Path.Combine(folder,"validacion-runtime.json"),JsonUtility.ToJson(report,true));
             Debug.Log("TWIN_RUNTIME_CHECK "+JsonUtility.ToJson(report));
             yield return new WaitForSeconds(.5f);
             desktop.ResetPosition();desktop.automation=false;
+            gestureBridge.suppressAutomatic=false;
             if(Array.IndexOf(args,"-twinSelfTest")>=0)Application.Quit(report.passed?0:1);
         }
         Transform Find(string name)=>modelRoot.GetComponentsInChildren<Transform>().First(t=>t.name==name);

@@ -1,0 +1,517 @@
+{
+  "version": "0.4.0",
+  "units": "meters",
+  "source_original_unchanged": true,
+  "geometry_source": "panorama_geometry_v2.json",
+  "previous_revision": "medidas-modelo-v0.1.json",
+  "room_outer_dimensions_m": [
+    8,
+    9,
+    2.7
+  ],
+  "overall_bounds_blender_m": {
+    "min": [
+      -4.0,
+      -4.5,
+      -0.029999999329447746
+    ],
+    "max": [
+      4.000001907348633,
+      4.5,
+      2.7300000190734863
+    ],
+    "dimensions": [
+      8.000001907348633,
+      9.0,
+      2.760000018402934
+    ]
+  },
+  "entry_width_m": 0.9,
+  "table": {
+    "center_blender_xy_m": [
+      0.16560649871826172,
+      0.4168052673339844
+    ],
+    "bbox_dimensions_m": [
+      2.270456314086914,
+      2.801717758178711,
+      0.10082066059112549
+    ],
+    "min_blender_m": [
+      -0.9696216583251953,
+      -0.9840536117553711,
+      0.6619324684143066
+    ],
+    "max_blender_m": [
+      1.3008346557617188,
+      1.8176641464233398,
+      0.7627531290054321
+    ],
+    "physical_top_height_m": 0.7627531290054321,
+    "physical_inset_top_height_m": 0.771822452545166,
+    "physical_inset_bottom_height_m": 0.7511774301528931,
+    "physical_meshes": [
+      "Table_Top_Original",
+      "Table_Base_Original",
+      "Table_Inset_Original"
+    ],
+    "registered_pedestal_bottom_m": 0.0,
+    "registered_pedestal_top_m": 0.6505277156829834,
+    "source_relative_heights_preserved": true,
+    "source_absolute_height_translation_only_m": -0.053036388009786606
+  },
+  "chair": {
+    "world_bbox_m": [
+      0.6544060707092285,
+      0.6459999084472656,
+      0.9950000047683716
+    ],
+    "seat_width_m": 0.5,
+    "seat_depth_m": 0.49,
+    "seat_top_height_m": 0.47,
+    "overall_height_m": 0.9950000047683716,
+    "dimensions_changed": false
+  },
+  "chair_count": 11,
+  "seats": [
+    {
+      "chair": "Chair_01",
+      "center_floor_blender": [
+        -1.2704118490219116,
+        -0.49551546573638916,
+        0.0
+      ],
+      "rotation_z_rad": -1.0048154592514038,
+      "angle_oval_degrees": 210,
+      "seat_anchor": "Seat_01",
+      "eye_anchor_blender": [
+        -1.2577508687973022,
+        -0.4874718189239502,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_01",
+      "stand_blender": [
+        -1.9625434875488281,
+        -0.9352355003356934,
+        0.0
+      ],
+      "previous_center_blender": [
+        -1.3136268854141235,
+        -0.8155514001846313,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_02",
+      "center_floor_blender": [
+        -1.4696216583251953,
+        0.4168052673339844,
+        0.0
+      ],
+      "rotation_z_rad": -1.5707963705062866,
+      "angle_oval_degrees": 180,
+      "seat_anchor": "Seat_02",
+      "eye_anchor_blender": [
+        -1.45462167263031,
+        0.4168052673339844,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_02",
+      "stand_blender": [
+        -2.289621591567993,
+        0.41680529713630676,
+        0.0
+      ],
+      "previous_center_blender": [
+        -1.3136268854141235,
+        -0.12555140256881714,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_03",
+      "center_floor_blender": [
+        -1.2704118490219116,
+        1.329126000404358,
+        0.0
+      ],
+      "rotation_z_rad": -2.13677716255188,
+      "angle_oval_degrees": 150,
+      "seat_anchor": "Seat_03",
+      "eye_anchor_blender": [
+        -1.2577508687973022,
+        1.321082353591919,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_03",
+      "stand_blender": [
+        -1.9625434875488281,
+        1.768846035003662,
+        0.0
+      ],
+      "previous_center_blender": [
+        -1.3136268854141235,
+        0.5644485950469971,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_04",
+      "center_floor_blender": [
+        -0.6921297907829285,
+        2.037205696105957,
+        0.0
+      ],
+      "rotation_z_rad": -2.654752492904663,
+      "angle_oval_degrees": 120,
+      "seat_anchor": "Seat_04",
+      "eye_anchor_blender": [
+        -0.6851122379302979,
+        2.0239484310150146,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_04",
+      "stand_blender": [
+        -1.0757548809051514,
+        2.761934280395508,
+        0.0
+      ],
+      "previous_center_blender": [
+        -1.3136268854141235,
+        1.254448652267456,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_05",
+      "center_floor_blender": [
+        1.601624846458435,
+        -0.49551546573638916,
+        0.0
+      ],
+      "rotation_z_rad": 1.0048154592514038,
+      "angle_oval_degrees": 330,
+      "seat_anchor": "Seat_05",
+      "eye_anchor_blender": [
+        1.5889638662338257,
+        -0.4874718189239502,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_05",
+      "stand_blender": [
+        2.2937564849853516,
+        -0.9352355003356934,
+        0.0
+      ],
+      "previous_center_blender": [
+        1.5463730096817017,
+        -0.3655513823032379,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_06",
+      "center_floor_blender": [
+        1.8008346557617188,
+        0.4168052673339844,
+        0.0
+      ],
+      "rotation_z_rad": 1.5707963705062866,
+      "angle_oval_degrees": 0,
+      "seat_anchor": "Seat_06",
+      "eye_anchor_blender": [
+        1.7858346700668335,
+        0.4168052673339844,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_06",
+      "stand_blender": [
+        2.6208345890045166,
+        0.41680529713630676,
+        0.0
+      ],
+      "previous_center_blender": [
+        1.5463730096817017,
+        0.3244486153125763,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_07",
+      "center_floor_blender": [
+        1.601624846458435,
+        1.329126000404358,
+        0.0
+      ],
+      "rotation_z_rad": 2.13677716255188,
+      "angle_oval_degrees": 30,
+      "seat_anchor": "Seat_07",
+      "eye_anchor_blender": [
+        1.5889638662338257,
+        1.321082353591919,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_07",
+      "stand_blender": [
+        2.2937564849853516,
+        1.768846035003662,
+        0.0
+      ],
+      "previous_center_blender": [
+        1.5463730096817017,
+        1.014448642730713,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_08",
+      "center_floor_blender": [
+        1.0233428478240967,
+        2.037205696105957,
+        0.0
+      ],
+      "rotation_z_rad": 2.654752492904663,
+      "angle_oval_degrees": 60,
+      "seat_anchor": "Seat_08",
+      "eye_anchor_blender": [
+        1.0163253545761108,
+        2.0239484310150146,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_08",
+      "stand_blender": [
+        1.4069679975509644,
+        2.761934280395508,
+        0.0
+      ],
+      "previous_center_blender": [
+        1.5463730096817017,
+        1.7044485807418823,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_09",
+      "center_floor_blender": [
+        -0.6921297907829285,
+        -1.2035952806472778,
+        0.0
+      ],
+      "rotation_z_rad": -0.48684003949165344,
+      "angle_oval_degrees": 240,
+      "seat_anchor": "Seat_09",
+      "eye_anchor_blender": [
+        -0.6851122379302979,
+        -1.1903380155563354,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_09",
+      "stand_blender": [
+        -1.0757548809051514,
+        -1.9283239841461182,
+        0.0
+      ],
+      "previous_center_blender": [
+        -0.533626914024353,
+        -1.4717562198638916,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_10",
+      "center_floor_blender": [
+        0.16560649871826172,
+        -1.484053611755371,
+        0.0
+      ],
+      "rotation_z_rad": -0.0,
+      "angle_oval_degrees": 270,
+      "seat_anchor": "Seat_10",
+      "eye_anchor_blender": [
+        0.16560649871826172,
+        -1.4690536260604858,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_10",
+      "stand_blender": [
+        0.16560649871826172,
+        -2.304053544998169,
+        0.0
+      ],
+      "previous_center_blender": [
+        0.11637306213378906,
+        -1.3255062103271484,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_11",
+      "center_floor_blender": [
+        1.0233428478240967,
+        -1.2035952806472778,
+        0.0
+      ],
+      "rotation_z_rad": 0.48684003949165344,
+      "angle_oval_degrees": 300,
+      "seat_anchor": "Seat_11",
+      "eye_anchor_blender": [
+        1.0163253545761108,
+        -1.1903380155563354,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_11",
+      "stand_blender": [
+        1.4069678783416748,
+        -1.9283239841461182,
+        0.0
+      ],
+      "previous_center_blender": [
+        0.7663730382919312,
+        -1.1792563199996948,
+        0.0
+      ]
+    }
+  ],
+  "panorama": {
+    "object": "Projection_Wall_Panorama",
+    "material": "Projection_Panorama",
+    "shape": "U: west wall, rounded southwest, south wall, rounded southeast, east wall",
+    "inner_bounds_xy_m": [
+      [
+        -3.84,
+        -4.34
+      ],
+      [
+        3.84,
+        4.34
+      ]
+    ],
+    "corner_radius_m": 0.9,
+    "quarter_circle_segments": 48,
+    "height_m": 2.7,
+    "uv_width_m": 24.267307225056932,
+    "height_to_width_ratio": 0.11126079935280771,
+    "projection_uv_minmax": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "interior_normals": true,
+    "wall_dividers": false
+  },
+  "projection_surfaces": [
+    "Projection_Table",
+    "Projection_Wall_Panorama"
+  ],
+  "meshes": 89,
+  "polygons": 30143,
+  "projectors_provisional": [
+    {
+      "name": "Projector_01_Table_Provisional",
+      "position_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        2.47
+      ],
+      "target_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        0.76
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_02_East_North_Provisional",
+      "position_blender": [
+        1.65,
+        2.18,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        2.18,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_03_East_South_Provisional",
+      "position_blender": [
+        1.65,
+        -1.84,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        -1.84,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_04_South_Provisional",
+      "position_blender": [
+        -1.1,
+        -2.18,
+        2.47
+      ],
+      "target_blender": [
+        -1.1,
+        -4.2,
+        1.4
+      ],
+      "provisional": true
+    }
+  ],
+  "axes": "Blender X width, Y depth (entry +Y), Z up; Unity X width, Z depth, Y up. FBX imported at one unit per meter.",
+  "note": "Walls and seating anchors revised with team authorization. Furniture dimensions preserved. Optical mapping and actual Quest use require physical validation.",
+  "ceiling_event_display": {
+    "geometry": "ceiling-event-geometry.json",
+    "live_panel": [
+      2048,
+      256
+    ],
+    "repetitions": 2,
+    "countdown_seconds": 900,
+    "font_assets": "Raster Futura PT Heavy/Demi; no font programs redistributed"
+  },
+  "table_projection": {
+    "object": "Projection_Table",
+    "shape": "original source oval upper surface; no rectangular quad",
+    "center_blender_m": [
+      0.1656055450439453,
+      0.416805624961853,
+      0.7734999656677246
+    ],
+    "min_blender_m": [
+      -0.6696243286132812,
+      -0.6840555667877197,
+      0.773177444934845
+    ],
+    "max_blender_m": [
+      1.0008354187011719,
+      1.5176668167114258,
+      0.7738224267959595
+    ],
+    "width_m": 1.6704597473144531,
+    "depth_m": 2.2017223834991455,
+    "aspect_width_over_depth": 0.7587058930924937,
+    "overlay_offset_m": 0.002,
+    "uv": "U +BlenderX, V +BlenderY; rectangular coordinates 0..1 clipped by original oval contour",
+    "uv_bounds": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "top_faces": 168,
+    "vertices": 152,
+    "lowest_projection_height_m": 0.773177444934845,
+    "highest_projection_height_m": 0.7738224267959595,
+    "surface_facing": "Blender+Z / Unity+Y",
+    "source_mesh_tilt_max_height_difference_m": 0.000644981861114502
+  },
+  "current_table_source": "sala 002.fbx",
+  "current_geometry_verification": "verification_v4.json"
+}

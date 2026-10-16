@@ -11,6 +11,7 @@ namespace LaReina.DigitalTwin
         public RoomLighting lighting;
         public SeatInteraction seating;
         public CeilingEventDisplay ceilingDisplay;
+        public GestureTableBridge gestureBridge;
         [Min(.1f)] public float walkingSpeed = 1.35f;
         public float eyeHeight = 1.65f;
         public Vector3 startPosition;
@@ -103,7 +104,7 @@ namespace LaReina.DigitalTwin
             var style = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
             if (!Captured)
             {
-                GUI.Box(new Rect(24,24,370, settings ? 340 : 220), "");
+                GUI.Box(new Rect(24,24,370, settings ? (gestureBridge && gestureBridge.Authorized ? 385 : 340) : 220), "");
                 GUI.Label(new Rect(44,39,330,30), "Sala La Reina", new GUIStyle(style) { fontSize = 23, fontStyle = FontStyle.Bold });
                 GUI.Label(new Rect(44,80,325,90), "Enter para recorrer\nWASD / flechas · mover    Mouse · mirar\nE · sentarse / levantarse junto a una silla\nEsc · liberar mouse    R · volver al acceso", style);
                 if (settings)
@@ -113,6 +114,7 @@ namespace LaReina.DigitalTwin
                     if (GUI.Button(new Rect(205,200,150,32), projections && projections.Paused ? "Reproducir MP4" : "Pausar MP4")) projections?.TogglePause();
                     if (GUI.Button(new Rect(44,245,311,32), "Recargar archivos de proyección")) projections?.LoadConfiguration();
                     if (GUI.Button(new Rect(44,290,311,32), "Reiniciar intervención · 15 minutos")) ceilingDisplay?.RestartCountdown();
+                    if (gestureBridge && gestureBridge.Authorized && GUI.Button(new Rect(44,335,311,32), "Ajustes de cámara")) gestureBridge.OpenCameraSettings();
                 }
                 else GUI.Label(new Rect(44,185,320,25), "Tab · ajustes    L · luz    Espacio · video", style);
             }
@@ -122,6 +124,8 @@ namespace LaReina.DigitalTwin
             }
             if (Captured && seating && seating.Prompt.Length != 0)
                 GUI.Box(new Rect(Screen.width * .5f-170,Screen.height-95,340,34), seating.Prompt);
+            if (gestureBridge && gestureBridge.PrincipalSeatOccupied && gestureBridge.Message.Length!=0)
+                GUI.Box(new Rect(Screen.width-390,24,365,32),gestureBridge.Message);
         }
     }
 }

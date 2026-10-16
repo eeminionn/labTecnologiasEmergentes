@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 16 de octubre de 2026 · versión 0.4<br>
+**Avance:** 16 de octubre de 2026 · versión 0.5<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -17,11 +17,15 @@ Al revisar el recorrido, vimos que las luces parecían avanzar de a pares. Las a
 
 En este avance tomamos **solo la mesa del nuevo archivo sala 002.fbx** y reacomodamos las once sillas a su alrededor. Ajustamos su apoyo en el piso sin cambiar el tamaño del mueble. También hicimos que la proyección siga la forma ovalada de la mesa, porque una imagen rectangular se salía del tablero. El contenido ahora se organiza dentro de ese contorno.
 
+Después acercamos las sillas y volvimos a una **disposición en U**, con cuatro a cada lado y tres al fondo. Dejamos libre el lado que mira a la puerta para entrar y acercarse a la mesa con más claridad.
+
+También conectamos el **mapa gestual en vivo** a la mesa. En Mac funciona únicamente cuando nos sentamos en la silla central del fondo, **Chair_10**, usando la cámara frontal. Conservamos los gestos que ya habíamos probado; al levantarnos o usar otra silla, se apagan la cámara y los gestos, pero la mesa mantiene la última imagen del mapa. Así podemos mirar lo que quedó seleccionado desde cualquier puesto, con un solo lugar para interactuar.
+
 ## Escala, gráfica y puntos de vista
 
 Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La nueva mesa mide **2,27 × 2,80 m**, con el tablero a **76,3 cm** del piso. Podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
 
-La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de la mesa. Las fotografías mantienen sus colores originales. Ambos contenidos siguen siendo MP4 reemplazables.
+La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de muestra de la mesa. Las fotografías mantienen sus colores originales. El panorama y la muestra inicial de la mesa siguen siendo MP4 reemplazables; una vez usado el mapa, su última imagen queda visible cuando dejamos el puesto principal.
 
 <table>
   <tr>
@@ -48,10 +52,18 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
     <td>La información de la sesión rodea la mesa.</td>
     <td>Marca municipal y tiempo restante con la gráfica del proyecto.</td>
   </tr>
+  <tr>
+    <td><img src="./Imagenes/sillas-u.png" alt="Once sillas más juntas en U y espacio libre hacia la puerta" width="380" /></td>
+    <td><img src="./Imagenes/mapa-gestual.png" alt="Mapa gestual en vivo sobre la mesa desde la silla central" width="380" /></td>
+  </tr>
+  <tr>
+    <td>La U compacta deja abierto el acceso a la mesa.</td>
+    <td>El control con las manos se activa solo desde el puesto principal.</td>
+  </tr>
 </table>
 
 Por ahora es una **representación conceptual**, sin datos municipales en tiempo real. Las ubicaciones de los proyectores son provisionales y falta comprobar la experiencia en un visor Meta Quest.
 
-Revisamos también la posibilidad de mostrar el mapa gestual funcionando en vivo sobre la mesa: es viable conservar la aplicación que ya probamos y conectar su imagen, pero esa integración todavía no está aplicada.
+La conexión gestual está implementada para **Mac**. Su uso en Quest todavía no está conectado y la revisión del recorrido con un visor real sigue pendiente.
 
 **Fuentes:** [propuesta espacial del equipo](../propuestaEspacialMLR/README.md), [referencia gráfica entregada para este avance](./Documentacion/paleta-referencia.json) [fotografías oficiales del panorama](./Documentacion/fuentes-panorama.json) y [marca y tipografía de la pantalla](./Documentacion/ceiling_assets_provenance.json).
