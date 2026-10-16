@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 16 de octubre de 2026 · versión 0.3<br>
+**Avance:** 16 de octubre de 2026 · versión 0.4<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -15,20 +15,22 @@ También cambiamos la línea azul del piso por huellas de zapatos. El recorrido 
 
 Al revisar el recorrido, vimos que las luces parecían avanzar de a pares. Las ajustamos para marcar una huella derecha y luego una izquierda, como al caminar. También usamos la franja circular del techo como pantalla de la sesión: muestra la hora, quién está hablando y una cuenta regresiva de 15 minutos. Repetimos la información dos veces para verla desde distintos puestos y dejamos las paredes para las fotografías del contexto.
 
+En este avance tomamos **solo la mesa del nuevo archivo sala 002.fbx** y reacomodamos las once sillas a su alrededor. Ajustamos su apoyo en el piso sin cambiar el tamaño del mueble. También hicimos que la proyección siga la forma ovalada de la mesa, porque una imagen rectangular se salía del tablero. El contenido ahora se organiza dentro de ese contorno.
+
 ## Escala, gráfica y puntos de vista
 
-Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m**, la mesa de **2 × 3,10 m y 76 cm de alto**, y las once sillas con el asiento a **47 cm**. Ahora podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
+Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La nueva mesa mide **2,27 × 2,80 m**, con el tablero a **76,3 cm** del piso. Podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
 
 La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de la mesa. Las fotografías mantienen sus colores originales. Ambos contenidos siguen siendo MP4 reemplazables.
 
 <table>
   <tr>
     <td><img src="./Imagenes/sala-general.png" alt="Sala con paredes lisas y panorama continuo" width="380" /></td>
-    <td><img src="./Imagenes/mesa-proyeccion.png" alt="Proyección de mesa con la nueva paleta gráfica" width="380" /></td>
+    <td><img src="./Imagenes/mesa-proyeccion.png" alt="Nueva mesa con la proyección adaptada a su contorno ovalado" width="380" /></td>
   </tr>
   <tr>
     <td>Panorama de contexto que envuelve la sala.</td>
-    <td>Contenido de demostración en la mesa.</td>
+    <td>Nueva mesa y contenido de demostración dentro del óvalo.</td>
   </tr>
   <tr>
     <td><img src="./Imagenes/sentado.png" alt="Punto de vista desde una silla" width="380" /></td>
@@ -49,5 +51,7 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
 </table>
 
 Por ahora es una **representación conceptual**, sin datos municipales en tiempo real. Las ubicaciones de los proyectores son provisionales y falta comprobar la experiencia en un visor Meta Quest.
+
+Revisamos también la posibilidad de mostrar el mapa gestual funcionando en vivo sobre la mesa: es viable conservar la aplicación que ya probamos y conectar su imagen, pero esa integración todavía no está aplicada.
 
 **Fuentes:** [propuesta espacial del equipo](../propuestaEspacialMLR/README.md), [referencia gráfica entregada para este avance](./Documentacion/paleta-referencia.json) [fotografías oficiales del panorama](./Documentacion/fuentes-panorama.json) y [marca y tipografía de la pantalla](./Documentacion/ceiling_assets_provenance.json).

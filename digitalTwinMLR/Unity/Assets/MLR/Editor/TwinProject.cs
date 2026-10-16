@@ -57,13 +57,27 @@ namespace LaReina.DigitalTwin.Editor
                         surface.targetRenderer = renderer;
                         surface.materialSlot = i;
                         surface.channelId = id == "Projection_Table" ? "mesa" : "panorama";
-                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.4f/2.185f : 8.987891565f;
+                        surface.surfaceAspect = surface.channelId == "mesa" ? 1.67046f/2.20172f : 8.987891565f;
                         surface.fitMode = surface.channelId == "panorama" ? 1 : 0;
+                        surface.ovalMask = surface.channelId == "mesa";
+                        if(surface.ovalMask)
+                        {
+                            // Inspect the source mesh before Unity combines static geometry in the player.
+                            var mesh=renderer.GetComponent<MeshFilter>().sharedMesh;
+                            var uv=mesh.uv;var indices=mesh.triangles;
+                            for(int n=0;n<indices.Length;n+=3)
+                            {
+                                Vector2 a=uv[indices[n+1]]-uv[indices[n]],b=uv[indices[n+2]]-uv[indices[n]];
+                                surface.sourceUvArea+=Mathf.Abs(a.x*b.y-a.y*b.x)*.5f;
+                            }
+                            surface.sourceUvsWithinOval=uv.All(p=>(p*2-Vector2.one).sqrMagnitude<1.002f);
+                        }
                         surface.fallback = AssetDatabase.LoadAssetAtPath<Texture2D>(Root + "Textures/" +
                             (surface.channelId == "mesa" ? "mesa_demo_Poster.png" : "panorama_Poster.png"));
                         replacement[i].SetTexture("_BaseMap", surface.fallback);
                         replacement[i].SetFloat("_SurfaceAspect", surface.surfaceAspect);
                         replacement[i].SetFloat("_FitMode", surface.fitMode);
+                        replacement[i].SetFloat("_OvalMask", surface.ovalMask ? 1f : 0f);
                         replacement[i].SetFloat("_VideoAspect", surface.fallback ? (float)surface.fallback.width/surface.fallback.height : surface.surfaceAspect);
                         surfaces.Add(surface);
                     }
@@ -347,7 +361,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.3.0";PlayerSettings.Android.bundleVersionCode=3;
+            PlayerSettings.bundleVersion="0.4.0";PlayerSettings.Android.bundleVersionCode=4;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -374,6 +388,12 @@ namespace LaReina.DigitalTwin.Editor
             var surfaces=UnityEngine.Object.FindObjectsByType<ProjectionSurface>();
             var metadata=UnityEngine.Object.FindAnyObjectByType<RoomMetadata>();
             if(!metadata || surfaces.Length!=2)throw new InvalidDataException("Se requieren una pared panorámica y la mesa.");
+            var tabletop=Find(metadata.gameObject,"Table_Top_Original").GetComponent<MeshRenderer>().bounds;
+            if(Mathf.Abs(tabletop.size.x-2.270456f)>.003f || Mathf.Abs(tabletop.size.z-2.801718f)>.003f ||
+                Mathf.Abs(tabletop.max.y-.762753f)>.002f || !surfaces.First(s=>s.channelId=="mesa").ovalMask ||
+                surfaces.First(s=>s.channelId=="mesa").sourceUvArea<.775f || surfaces.First(s=>s.channelId=="mesa").sourceUvArea>.795f ||
+                !surfaces.First(s=>s.channelId=="mesa").sourceUvsWithinOval)
+                throw new InvalidDataException("La mesa o su máscara ovalada no coinciden con sala 002.fbx.");
             var ceiling=UnityEngine.Object.FindAnyObjectByType<CeilingEventDisplay>();
             if(!ceiling || !ceiling.basePanel || !ceiling.digitAtlas || !ceiling.basePanel.isReadable || !ceiling.digitAtlas.isReadable)
                 throw new InvalidDataException("Faltan los recursos legibles para la pantalla circular.");

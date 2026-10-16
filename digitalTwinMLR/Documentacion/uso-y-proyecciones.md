@@ -23,6 +23,14 @@ Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazar
 
 En Meta Quest, el control previsto para sentarse o levantarse es **A del mando derecho**. El stick izquierdo permite caminar, el derecho gira en pasos de 30° y el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. El visor conserva el seguimiento natural de la cabeza, también sentado. **La comprobación en un visor real sigue pendiente.**
 
+## Mesa y disposición de las sillas · versión 0.4
+
+Se incorporó únicamente la mesa de **sala 002.fbx**. El resto de las modificaciones de ese archivo no se trasladó a la sala. Las once sillas y sus puntos para sentarse y levantarse se reacomodaron alrededor del nuevo tablero.
+
+La mesa conserva las dimensiones del archivo: **2,27046 × 2,80172 m**, con la parte superior del tablero a **0,762753 m** del piso. Se bajó el conjunto **5,3 cm** para apoyar la base en el suelo, sin escalarlo. El área de proyección interior mide aproximadamente **1,67046 × 2,20172 m** y queda a **0,773177–0,773822 m** del piso, ligeramente sobre el tablero para evitar superposición de superficies.
+
+La proyección tiene una malla con contorno ovalado y una máscara en el material, procesada por la GPU, para no mostrar las esquinas de una imagen rectangular fuera de la mesa. El contenido se adapta al área interior manteniendo sus proporciones, y los elementos importantes quedan dentro del óvalo.
+
 ## Pantalla de la sesión en el techo
 
 La franja circular del techo muestra un panel que se repite **dos veces** alrededor de la mesa. Incluye la marca de la Municipalidad de La Reina, la hora local del dispositivo, el rótulo **ALCALDE** y el tiempo restante de intervención. El rótulo es parte de la demostración: todavía no identifica automáticamente a quien habla.
@@ -43,7 +51,7 @@ La entrega lee una carpeta **Proyecciones** junto a la aplicación, con los vide
 
 | Canal | Superficie | Muestra incluida |
 | --- | --- | --- |
-| `mesa` | Centro de la mesa | `mesa_demo.mp4`, 720 × 1120 px |
+| `mesa` | Área ovalada interior de la mesa | `mesa_demo.mp4`, 720 × 950 px |
 | `panorama` | Una superficie continua en U sobre las paredes | `panorama.mp4`, 4096 × 456 px |
 
 Solo la mesa y el panorama usan estos MP4. Ambas muestras duran **8 segundos**, a **24 fps**, sin audio, en H.264 y BT.709. Cada canal usa un reproductor. Las paredes ya no se manejan como ocho pantallas separadas.
@@ -65,9 +73,11 @@ Conserva la lista `channels` y los ID `mesa` y `panorama`. `loop` controla la re
 
 | Ajuste `fit` | Resultado |
 | --- | --- |
-| `cover` | Llena toda la superficie conservando proporciones; recorta lo que sobra. Es el ajuste inicial del panorama. |
-| `contain` | Conserva la imagen completa y sus proporciones; puede dejar espacio libre. Es el ajuste inicial de la mesa. |
+| `cover` | Llena toda la superficie conservando proporciones; recorta lo que sobra. Es el ajuste inicial de la mesa y del panorama. |
+| `contain` | Conserva la imagen completa y sus proporciones; puede dejar espacio libre. |
 | `stretch` | Llena la superficie estirando la imagen; puede deformarla. |
+
+Para la mesa, prepara el contenido cerca de la proporción **0,759:1** de su área interior; el video incluido usa **720 × 950 px**. Aunque el archivo sea rectangular, la proyección visible mantiene el recorte ovalado. Deja textos, botones y puntos dentro de ese contorno: cambiar el ajuste de imagen no vuelve visibles las esquinas recortadas.
 
 El panorama tiene un desarrollo de **24,267 m por 2,70 m de alto**, con dos curvas de **0,90 m de radio** y una sola coordenada de imagen compartida. Conviene preparar el contenido en una proporción cercana a **8,99:1**. Esta continuidad digital no sustituye la calibración de mapping, óptica y mezcla entre proyectores que necesitará el montaje físico.
 
@@ -90,4 +100,10 @@ La mesa retoma el fondo blanco, los círculos y las barras redondeadas. Usa Futu
 
 El panorama reúne fotografías de Mahuida, el entorno urbano, huertas, Plaza Gabriela Mistral, Parque Padre Hurtado y reforestación. Es un montaje de imágenes distintas con uniones suaves, no una toma de un único lugar. Sus colores son los originales y no contiene gráficos de datos.
 
-**Fuentes y archivos de apoyo:** [paleta del PDF](./paleta-referencia.json), [fuentes de las fotografías](./fuentes-panorama.json), [contenido de la mesa](./fuentes-mesa-v2.json), [geometría del panorama](./panorama_geometry_v2.json) y [propuesta espacial](../../propuestaEspacialMLR/README.md). El modelo editable está en `Modelado/Sala_MLR.blend` y el proyecto en `Unity/` (editor 6000.5.8f1).
+## Posible conexión con el mapa gestual · todavía no aplicada
+
+La opción más directa es conservar la aplicación Electron y MediaPipe que ya funciona con la **cámara frontal**, y enviar su imagen en vivo a una textura de la mesa en Unity. Así se pueden mantener el desplazamiento, el zoom, la selección de 1,5 segundos y las sombras sin rehacer los gestos. [Electron permite obtener la imagen de una ventana como bitmap o textura GPU](https://www.electronjs.org/docs/latest/tutorial/offscreen-rendering); conectarla requiere un puente adicional. En una instalación física, la Mac podría enviar la salida directamente al proyector, con el contorno ovalado y la corrección de perspectiva correspondientes.
+
+Antes de conectarlo hay que resolver un detalle del programa actual: al perder el foco o quedar oculto pausa los gestos, y sus clics requieren una ventana enfocada. Haría falta un modo explícito de proyección que mantenga activa solo esa sesión, junto con una zona segura para que los puntos y popups no queden fuera del óvalo. El mapeo frontal de las manos se conservaría. Para Quest se podría estudiar recibir la imagen desde la Mac; usar el seguimiento de manos propio del visor sería otra integración. **Por ahora no se modificó ni se conectó la aplicación gestual.**
+
+**Fuentes y archivos de apoyo:** [paleta del PDF](./paleta-referencia.json), [fuentes de las fotografías](./fuentes-panorama.json), [contenido de la mesa ovalada](./fuentes-mesa-v4.json), [medidas de la mesa nueva](./table_geometry_v4.json), [geometría del panorama](./panorama_geometry_v2.json) y [propuesta espacial](../../propuestaEspacialMLR/README.md). El modelo editable está en `Modelado/Sala_MLR.blend` y el proyecto en `Unity/` (editor 6000.5.8f1).

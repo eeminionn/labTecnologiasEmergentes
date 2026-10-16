@@ -21,6 +21,7 @@ namespace LaReina.DigitalTwin
         [Serializable] public class CheckReport
         {
             public string unityVersion;
+            public string buildVersion;
             public string platform;
             public string mediaFolder;
             public string gpu;
@@ -38,6 +39,10 @@ namespace LaReina.DigitalTwin
             public int[] illuminatedSteps;
             public string displayedClock, displayedCountdown;
             public int countdownStart, countdownAfterWait, displayRepetitions;
+            public Vector3 tabletopDimensions;
+            public float tabletopHeight, pedestalFloorHeight, ovalUvArea;
+            public bool ovalTablePassed, footprintRouteClear;
+            public int[] blockedFootsteps;
         }
         IEnumerator Start()
         {
@@ -51,7 +56,7 @@ namespace LaReina.DigitalTwin
             float timeout=Time.realtimeSinceStartup+15;
             while(projections.ReadyPlayers<2 && Time.realtimeSinceStartup<timeout)yield return null;
             yield return new WaitForSeconds(2);
-            var report=new CheckReport{unityVersion=Application.unityVersion,platform=Application.platform.ToString(),gpu=SystemInfo.graphicsDeviceName,mediaFolder=projections.MediaFolder};
+            var report=new CheckReport{unityVersion=Application.unityVersion,buildVersion=Application.version,platform=Application.platform.ToString(),gpu=SystemInfo.graphicsDeviceName,mediaFolder=projections.MediaFolder};
             var renderers=modelRoot.GetComponentsInChildren<MeshRenderer>();
             report.meshRenderers=renderers.Length;
             var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);
@@ -59,6 +64,15 @@ namespace LaReina.DigitalTwin
             report.meterScale=Mathf.Abs(bounds.size.x-8)<.03f && Mathf.Abs(bounds.size.z-9)<.03f;
             report.chairCount=modelRoot.GetComponentsInChildren<Transform>().Count(t=>System.Text.RegularExpressions.Regex.IsMatch(t.name,"^Chair_[0-9]{2}$"));
             report.projectionSurfaces=projections.surfaces.Length;
+            var top=Find("Table_Top_Original").GetComponent<MeshRenderer>();
+            var pedestal=Find("Table_Base_Original").GetComponent<MeshRenderer>();
+            var tableProjection=projections.surfaces.First(s=>s.channelId=="mesa");
+            report.ovalUvArea=tableProjection.sourceUvArea;
+            report.tabletopDimensions=top.bounds.size;report.tabletopHeight=top.bounds.max.y;report.pedestalFloorHeight=pedestal.bounds.min.y;
+            report.ovalTablePassed=Mathf.Abs(top.bounds.size.x-2.270456f)<.003f && Mathf.Abs(top.bounds.size.z-2.801718f)<.003f &&
+                Mathf.Abs(report.tabletopHeight-.762753f)<.002f && Mathf.Abs(report.pedestalFloorHeight)<.001f &&
+                tableProjection.ovalMask && tableProjection.sourceUvsWithinOval && report.ovalUvArea>.775f && report.ovalUvArea<.795f &&
+                tableProjection.targetRenderer.sharedMaterials[tableProjection.materialSlot].GetFloat("_OvalMask")>.5f;
             report.spawnFloorSupport=true;
             foreach(string name in new[]{"Spawn_Entrance","Spawn_Left","Spawn_Right","Spawn_Far"})
             {
@@ -84,6 +98,15 @@ namespace LaReina.DigitalTwin
             report.oldDividersRemoved=!modelRoot.GetComponentsInChildren<Transform>().Any(t=>t.name.Contains("DecorativeRings") || t.name.Contains("Cladding_East") || t.name.Contains("Floor_PerimeterGuide"));
             yield return SeatingQa.Run(desktop,r=>report.seats=r);
             report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
+            var blockedSteps=new List<int>();
+            for(int i=0;i<footprints.StepCount;i++)
+            {
+                Vector3 side=Vector3.Cross(Vector3.up,footprints.stepDirections[i]);
+                Vector3 p=footprints.stepPositions[i]-side*(i%2==0?-.10f:.10f);p.y=0;
+                var contacts=Physics.OverlapCapsule(p+Vector3.up*.32f,p+Vector3.up*1.59f,.255f,~0,QueryTriggerInteraction.Ignore);
+                if(contacts.Any(c=>!c.transform.IsChildOf(desktop.transform)))blockedSteps.Add(i);
+            }
+            report.blockedFootsteps=blockedSteps.ToArray();report.footprintRouteClear=blockedSteps.Count==0;
             report.footprintCount=footprints.StepCount;
             footprints.RefreshProgress(true);int firstStep=footprints.CurrentStep;
             int nextStep=Mathf.Min(10,footprints.StepCount-1);
@@ -118,7 +141,8 @@ namespace LaReina.DigitalTwin
                 CeilingEventDisplay.FormatCountdown(900)=="15:00";
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
-                report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed;
+                report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
+                report.ovalTablePassed && report.footprintRouteClear;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)

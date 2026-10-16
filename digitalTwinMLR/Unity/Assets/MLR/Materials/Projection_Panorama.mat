@@ -30,6 +30,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _FitMode: 1
+    - _OvalMask: 0
     - _SurfaceAspect: 8.987891
     - _VideoAspect: 8
     m_Colors:

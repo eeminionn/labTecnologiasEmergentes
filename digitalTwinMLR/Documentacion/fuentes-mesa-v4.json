@@ -1,0 +1,91 @@
+{
+  "title": "Mesa ovalada: exploración territorial de demostración",
+  "graphic_reference": "/Users/eeminionn/Downloads/la reina grafica (1).pdf",
+  "reference_page": 1,
+  "palette": {
+    "petrol": "#006A85",
+    "teal": "#00ADB2",
+    "purple": "#6E2663",
+    "green": "#008D36",
+    "lime": "#AFC439",
+    "fuchsia": "#E82D81",
+    "white": "#FFFFFF",
+    "gray": "#637479"
+  },
+  "style": "Same white field, flat municipal palette, rounded selection bars, circular nodes and petroleum titles as the existing demo. Layout reflowed inside the new oval safe area.",
+  "duration_seconds": 8,
+  "fps": 24,
+  "frames": 192,
+  "resolution": [
+    720,
+    950
+  ],
+  "target_projection_dimensions_m": [
+    1.67046,
+    2.20172
+  ],
+  "target_projection_aspect": 0.758706829206257,
+  "font_used_for_raster_only": {
+    "family": "Futura PT",
+    "faces": [
+      "Demi",
+      "Heavy"
+    ],
+    "paths": {
+      "False": "/Users/eeminionn/Library/Application Support/Adobe/CoreSync/plugins/livetype/.w/.15586.otf",
+      "True": "/Users/eeminionn/Library/Application Support/Adobe/CoreSync/plugins/livetype/.w/.10881.otf"
+    },
+    "note": "Locally activated Adobe font rasterized only. No font file redistributed."
+  },
+  "geographic_source": {
+    "CUT_REG": "13",
+    "CUT_PROV": "131",
+    "CUT_COM": "13113",
+    "REGION": "Metropolitana de Santiago",
+    "PROVINCIA": "Santiago",
+    "COMUNA": "La Reina",
+    "SUPERFICIE": 23.39,
+    "source": "SUBDERE / IDE Chile — DPA 2023",
+    "source_url": "https://geoportal.cl/geoportal/catalog/36391/Divisi%C3%B3n%20Pol%C3%ADtica%20Administrativa%202023",
+    "source_published": "2023-09-29",
+    "retrieved": "2026-10-06",
+    "original_crs": "EPSG:5360",
+    "output_crs": "EPSG:4326",
+    "circulation_authorization": "Resolución Nº50 de 2019, Dirección Nacional de Fronteras y Límites del Estado"
+  },
+  "geojson_path": "/Users/eeminionn/Documents/Codex/2026-10-05/es/work/labTecnologiasEmergentes/mapaGestualMLR/assets/la-reina.geojson",
+  "geojson_sha256": "598c9ad17d1e1088ac9847cda674f0db4496a2631ba9ab23dd4ede76675b3818",
+  "geographic_transformation": "Original supplied polygon vertex order retained with cosine longitude correction and uniform scaling, no oval distortion.",
+  "demo_content": "Exactly three schematic exploration nodes and the existing cycling activity cue; no real quantitative municipal claims. The demonstration label remains visible.",
+  "oval_safe_area_verification": {
+    "max_ink_ellipse_radius": 0.8436535600996989,
+    "ink_pixels_outside_ellipse": 0,
+    "content_bbox_px": [
+      99,
+      141,
+      621,
+      816
+    ],
+    "content_bbox_normalized": [
+      0.1375,
+      0.14842105263157895,
+      0.8625,
+      0.8589473684210527
+    ]
+  },
+  "video_verification": {
+    "codec_name": "h264",
+    "width": 720,
+    "height": 950,
+    "pix_fmt": "yuv420p",
+    "color_range": "tv",
+    "color_space": "bt709",
+    "color_transfer": "bt709",
+    "color_primaries": "bt709",
+    "r_frame_rate": "24/1",
+    "duration": "8.000000",
+    "nb_frames": "192"
+  },
+  "video_sha256": "86740376a1c554ae29fb992581865a7a8e6c1f7113e476eaae0dc327620c5ce8",
+  "poster_sha256": "a0cdaf0439d57bacd310974bcf1d3047796a5a3b37f64c71619b891a653b349c"
+}

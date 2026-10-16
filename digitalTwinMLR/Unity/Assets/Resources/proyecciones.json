@@ -5,7 +5,7 @@
       "file": "mesa_demo.mp4",
       "loop": true,
       "brightness": 1,
-      "fit": "contain",
+      "fit": "cover",
       "maxResolution": 1920
     },
     {

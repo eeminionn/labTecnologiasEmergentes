@@ -7,6 +7,7 @@ Shader "LaReina/Projection"
         _SurfaceAspect("Proporción de la superficie",Float)=1
         _VideoAspect("Proporción del video",Float)=1
         _FitMode("Ajuste: contener / cubrir / estirar",Float)=0
+        _OvalMask("Máscara ovalada",Float)=0
     }
     SubShader
     {
@@ -30,6 +31,7 @@ Shader "LaReina/Projection"
                 float _SurfaceAspect;
                 float _VideoAspect;
                 float _FitMode;
+                float _OvalMask;
             CBUFFER_END
             Varyings Vert(Attributes input)
             {
@@ -43,6 +45,9 @@ Shader "LaReina/Projection"
             half4 Frag(Varyings input):SV_Target
             {
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                // The mask belongs to the tabletop, independently of the video's fit mode.
+                float2 mask=input.uv*2-1;
+                if (_OvalMask>.5) clip(1-dot(mask,mask));
                 float aspect = max(.001,_VideoAspect);
                 float2 uv = input.uv;
                 if (_FitMode < .5)

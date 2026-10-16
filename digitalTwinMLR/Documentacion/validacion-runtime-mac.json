@@ -1,9 +1,10 @@
 {
   "unityVersion": "6000.5.8f1",
+  "buildVersion": "0.4.0",
   "platform": "OSXPlayer",
   "mediaFolder": "/Users/eeminionn/Documents/Codex/2026-10-05/es/work/labTecnologiasEmergentes/digitalTwinMLR/Builds/Mac/Proyecciones",
   "gpu": "Apple M5",
-  "meshRenderers": 88,
+  "meshRenderers": 89,
   "chairCount": 11,
   "projectionSurfaces": 2,
   "uniqueVideoPlayers": 2,
@@ -16,7 +17,7 @@
   "spawnFloorSupport": true,
   "collisionStopsBody": true,
   "videosPlaying": true,
-  "collisionTravelMeters": 1.6677501201629639,
+  "collisionTravelMeters": 1.5206996202468872,
   "errors": [],
   "videos": [
     {
@@ -24,7 +25,7 @@
       "prepared": true,
       "frame": 79,
       "width": 720,
-      "height": 1120
+      "height": 950
     },
     {
       "name": "MP4_panorama",
@@ -128,7 +129,7 @@
       "correctChair": true,
       "seatedControllerDisabled": true,
       "seatedEyeHeight": true,
-      "measuredSeatedEyeHeight": 1.1799999475479126,
+      "measuredSeatedEyeHeight": 1.179999828338623,
       "seatAnchorErrorMeters": 0.0,
       "fixedWhileLooking": true,
       "maximumEyeDriftMeters": 0.0,
@@ -254,7 +255,7 @@
       "correctChair": true,
       "seatedControllerDisabled": true,
       "seatedEyeHeight": true,
-      "measuredSeatedEyeHeight": 1.1799999475479126,
+      "measuredSeatedEyeHeight": 1.1799997091293335,
       "seatAnchorErrorMeters": 0.0,
       "fixedWhileLooking": true,
       "maximumEyeDriftMeters": 0.0,
@@ -286,24 +287,31 @@
     4,
     1
   ],
-  "displayedClock": "02:05",
+  "displayedClock": "02:26",
   "displayedCountdown": "14:59",
   "countdownStart": 900,
   "countdownAfterWait": 899,
   "displayRepetitions": 2,
-  "buildVersion": "0.3.0",
+  "tabletopDimensions": {
+    "x": 2.270456314086914,
+    "y": 0.10082030296325684,
+    "z": 2.801717758178711
+  },
+  "tabletopHeight": 0.7627528309822083,
+  "pedestalFloorHeight": 5.960464477539063e-08,
+  "ovalUvArea": 0.7827050089836121,
+  "ovalTablePassed": true,
+  "footprintRouteClear": true,
+  "blockedFootsteps": [],
   "visualReview": {
-    "oneFootAtATime": true,
-    "oppositeFootNext": true,
-    "ceilingTextReadable": true,
-    "logoShapePreserved": true,
-    "frontAndSideViewsVerified": true,
+    "ovalContourVisible": true,
+    "insetPhysicalSidesPresent": true,
+    "contentInsideOval": true,
+    "seatedViewVerified": true,
     "screenshots": [
-      "../Imagenes/huellas.png",
-      "../Imagenes/huellas-otro-pie.png",
-      "../Imagenes/pantalla-circular.png",
-      "../Imagenes/pantalla-lateral.png",
-      "../Imagenes/panel-sesion.png"
+      "../Imagenes/sala-general.png",
+      "../Imagenes/mesa-proyeccion.png",
+      "../Imagenes/sentado.png"
     ]
   }
 }
