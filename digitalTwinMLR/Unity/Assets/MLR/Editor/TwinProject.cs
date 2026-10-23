@@ -418,7 +418,7 @@ namespace LaReina.DigitalTwin.Editor
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
             PlayerSettings.macOS.cameraUsageDescription=CameraUsageDescription;
-            PlayerSettings.bundleVersion="0.9.1";PlayerSettings.Android.bundleVersionCode=8;
+            PlayerSettings.bundleVersion="0.9.2";PlayerSettings.Android.bundleVersionCode=8;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;

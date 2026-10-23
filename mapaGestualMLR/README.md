@@ -1,7 +1,7 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 23 de octubre de 2026 · versión 0.2.1<br>
+**Última actualización:** 23 de octubre de 2026 · versión 0.2.2<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)

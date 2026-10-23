@@ -10,13 +10,13 @@
 .twin-projection .boundary-attribution{bottom:13%;left:16%;right:16%;text-align:center}
 
 /* Everything essential stays inside the oval table's safe central area. */
-.twin-projection .map-category-legend{left:50%;bottom:17%;width:29%;gap:3px}
+.twin-projection .map-category-legend{left:50%;bottom:4%;width:29%;gap:3px}
 .twin-projection .map-category-legend-row{font-size:9px;line-height:1.25;padding:4px 19px 4px 9px}
 /* The principal chair is beside the bottom of the captured texture. Keep the
    full page in the near half of the table, with controls outside its sides. */
-.twin-projection .content-stage{inset:40% 12% 20%}
-.twin-projection .content-control{top:60%;width:60px;height:54px;font-size:32px}
-.twin-projection #content-previous{left:6.8%}
-.twin-projection #content-next{left:93.2%}
-.twin-projection #content-close{left:50%;top:35.5%}
+.twin-projection .content-stage{inset:46% 14% 14%}
+.twin-projection .content-control{top:66%;width:60px;height:54px;font-size:32px}
+.twin-projection #content-previous{left:8.4%}
+.twin-projection #content-next{left:91.6%}
+.twin-projection #content-close{left:50%;top:41.5%}
 .twin-projection.content-open .map-tools{top:25%;right:20%}

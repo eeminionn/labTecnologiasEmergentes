@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 23 de octubre de 2026 · versión 0.9.1<br>
+**Avance:** 23 de octubre de 2026 · versión 0.9.2<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -13,7 +13,7 @@ Sumamos a la mesa la nueva secuencia del mapa gestual. Desde la silla principal,
 
 La X vuelve al mapa y las flechas recorren los gráficos, manteniendo el índice **1,5 segundos**. Conservamos el zoom con dos OK y el arrastre con un puño. También incorporamos los pines originales, separados y acompañados de su leyenda de colores; el primero pulsa suavemente y los otros dos temas siguen en preparación. Este avance corresponde a la versión de computador.
 
-Al verlo desde la silla, los gráficos quedaban demasiado lejos. Los acercamos al puesto principal y dejamos las flechas a los lados, con la X centrada encima. También achicamos y centramos la leyenda. Los créditos del mapa quedaron en el menú inicial y en ajustes para despejar la mesa.
+Al verlo desde la silla, los gráficos quedaban demasiado lejos. Los acercamos al puesto principal y dejamos las flechas a los lados, con la X centrada encima. También achicamos y centramos la leyenda; después de probarla otra vez, la bajamos hasta dejar la viñeta rosada casi junto al borde cercano y acercamos un poco más los gráficos. Los créditos del mapa quedaron en el menú inicial y en ajustes para despejar la mesa.
 
 <table>
   <tr>
