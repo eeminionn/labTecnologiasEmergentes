@@ -1,0 +1,577 @@
+{
+  "version": "0.8.0",
+  "units": "meters",
+  "source_original_unchanged": true,
+  "geometry_source": "geometry_v7.json",
+  "previous_revision": "medidas-modelo-v0.7.json",
+  "room_outer_dimensions_m": [
+    8,
+    9,
+    2.7
+  ],
+  "overall_bounds_blender_m": {
+    "min": [
+      -4.0,
+      -4.5,
+      -0.029999999329447746
+    ],
+    "max": [
+      4.000001907348633,
+      4.5,
+      2.7300000190734863
+    ],
+    "dimensions": [
+      8.000001907348633,
+      9.0,
+      2.760000018402934
+    ]
+  },
+  "entry_width_m": 0.9,
+  "table": {
+    "center_blender_xy_m": [
+      0.16560649871826172,
+      0.4168052673339844
+    ],
+    "bbox_dimensions_m": [
+      2.270456314086914,
+      2.801717758178711,
+      0.025820672512054443
+    ],
+    "min_blender_m": [
+      -0.9696216583251953,
+      -0.9840536117553711,
+      0.7543537616729736
+    ],
+    "max_blender_m": [
+      1.3008346557617188,
+      1.8176641464233398,
+      0.7801744341850281
+    ],
+    "physical_top_height_m": 0.7801744341850281,
+    "physical_inset_top_height_m": 0.7901648171246052,
+    "physical_inset_bottom_height_m": 0.7695197947323322,
+    "physical_meshes": [
+      "Table_Top_Original",
+      "Table_Base_Original",
+      "Table_Inset_Original"
+    ],
+    "registered_pedestal_bottom_m": 0.0,
+    "registered_pedestal_top_m": 0.7429893016815186,
+    "source_relative_heights_preserved": true,
+    "source_absolute_height_translation_only_m": -0.024694036692380905,
+    "white_rim_axis_width_m": 0.2,
+    "white_rim_open_hole": true,
+    "physical_inset_dimensions_m": [
+      1.8704562187194824,
+      2.4017176628112793,
+      0.02064502239227295
+    ],
+    "source_slab_nominal_thickness_m": 0.025
+  },
+  "chair": {
+    "world_bbox_m": [
+      0.6544060707092285,
+      0.6459999084472656,
+      0.9950000047683716
+    ],
+    "seat_width_m": 0.5,
+    "seat_depth_m": 0.49,
+    "seat_top_height_m": 0.47,
+    "overall_height_m": 0.9950000047683716,
+    "dimensions_changed": false
+  },
+  "chair_count": 11,
+  "seats": [
+    {
+      "chair": "Chair_01",
+      "center_floor_blender": [
+        -1.4196217060089111,
+        -0.6631947755813599,
+        0.0
+      ],
+      "rotation_z_rad": -1.5707963267948966,
+      "row": "left",
+      "principal": false,
+      "seat_anchor": "Seat_01",
+      "eye_anchor_blender": [
+        -1.4046217203140259,
+        -0.6631947755813599,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_01",
+      "stand_blender": [
+        -2.239621639251709,
+        -0.6631947159767151,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_02",
+      "center_floor_blender": [
+        -1.4196217060089111,
+        0.05680525302886963,
+        0.0
+      ],
+      "rotation_z_rad": -1.5707963267948966,
+      "row": "left",
+      "principal": false,
+      "seat_anchor": "Seat_02",
+      "eye_anchor_blender": [
+        -1.4046217203140259,
+        0.05680525302886963,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_02",
+      "stand_blender": [
+        -2.239621639251709,
+        0.056805290281772614,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_03",
+      "center_floor_blender": [
+        -1.4196217060089111,
+        0.7768052816390991,
+        0.0
+      ],
+      "rotation_z_rad": -1.5707963267948966,
+      "row": "left",
+      "principal": false,
+      "seat_anchor": "Seat_03",
+      "eye_anchor_blender": [
+        -1.4046217203140259,
+        0.7768052816390991,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_03",
+      "stand_blender": [
+        -2.239621639251709,
+        0.7768053412437439,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_04",
+      "center_floor_blender": [
+        -1.4196217060089111,
+        1.4968053102493286,
+        0.0
+      ],
+      "rotation_z_rad": -1.5707963267948966,
+      "row": "left",
+      "principal": false,
+      "seat_anchor": "Seat_04",
+      "eye_anchor_blender": [
+        -1.4046217203140259,
+        1.4968053102493286,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_04",
+      "stand_blender": [
+        -2.239621639251709,
+        1.4968053102493286,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_05",
+      "center_floor_blender": [
+        1.7508347034454346,
+        -0.6631947755813599,
+        0.0
+      ],
+      "rotation_z_rad": 1.5707963267948966,
+      "row": "right",
+      "principal": false,
+      "seat_anchor": "Seat_05",
+      "eye_anchor_blender": [
+        1.7358347177505493,
+        -0.6631947755813599,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_05",
+      "stand_blender": [
+        2.5708346366882324,
+        -0.6631947159767151,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_06",
+      "center_floor_blender": [
+        1.7508347034454346,
+        0.05680525302886963,
+        0.0
+      ],
+      "rotation_z_rad": 1.5707963267948966,
+      "row": "right",
+      "principal": false,
+      "seat_anchor": "Seat_06",
+      "eye_anchor_blender": [
+        1.7358347177505493,
+        0.05680525302886963,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_06",
+      "stand_blender": [
+        2.5708346366882324,
+        0.056805290281772614,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_07",
+      "center_floor_blender": [
+        1.7508347034454346,
+        0.7768052816390991,
+        0.0
+      ],
+      "rotation_z_rad": 1.5707963267948966,
+      "row": "right",
+      "principal": false,
+      "seat_anchor": "Seat_07",
+      "eye_anchor_blender": [
+        1.7358347177505493,
+        0.7768052816390991,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_07",
+      "stand_blender": [
+        2.5708346366882324,
+        0.7768053412437439,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_08",
+      "center_floor_blender": [
+        1.7508347034454346,
+        1.4968053102493286,
+        0.0
+      ],
+      "rotation_z_rad": 1.5707963267948966,
+      "row": "right",
+      "principal": false,
+      "seat_anchor": "Seat_08",
+      "eye_anchor_blender": [
+        1.7358347177505493,
+        1.4968053102493286,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_08",
+      "stand_blender": [
+        2.5708346366882324,
+        1.4968053102493286,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_09",
+      "center_floor_blender": [
+        -0.5543935298919678,
+        -1.434053659439087,
+        0.0
+      ],
+      "rotation_z_rad": 0.0,
+      "row": "rear",
+      "principal": false,
+      "seat_anchor": "Seat_09",
+      "eye_anchor_blender": [
+        -0.5543935298919678,
+        -1.4190536737442017,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_09",
+      "stand_blender": [
+        -0.5543935298919678,
+        -2.2540535926818848,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_10",
+      "center_floor_blender": [
+        0.16560649871826172,
+        -1.434053659439087,
+        0.0
+      ],
+      "rotation_z_rad": 0.0,
+      "row": "rear",
+      "principal": true,
+      "seat_anchor": "Seat_10",
+      "eye_anchor_blender": [
+        0.16560649871826172,
+        -1.4190536737442017,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_10",
+      "stand_blender": [
+        0.16560649871826172,
+        -2.2540535926818848,
+        0.0
+      ]
+    },
+    {
+      "chair": "Chair_11",
+      "center_floor_blender": [
+        0.8856065273284912,
+        -1.434053659439087,
+        0.0
+      ],
+      "rotation_z_rad": 0.0,
+      "row": "rear",
+      "principal": false,
+      "seat_anchor": "Seat_11",
+      "eye_anchor_blender": [
+        0.8856065273284912,
+        -1.4190536737442017,
+        1.1799999475479126
+      ],
+      "stand_anchor": "Stand_11",
+      "stand_blender": [
+        0.8856065273284912,
+        -2.2540535926818848,
+        0.0
+      ]
+    }
+  ],
+  "panorama": {
+    "object": "Projection_Wall_Panorama",
+    "material": "Projection_Panorama",
+    "shape": "U: west wall, rounded southwest, south wall, rounded southeast, east wall",
+    "inner_bounds_xy_m": [
+      [
+        -3.84,
+        -4.34
+      ],
+      [
+        3.84,
+        4.34
+      ]
+    ],
+    "corner_radius_m": 0.9,
+    "quarter_circle_segments": 48,
+    "height_m": 2.7,
+    "uv_width_m": 24.267307225056932,
+    "height_to_width_ratio": 0.11126079935280771,
+    "projection_uv_minmax": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "interior_normals": true,
+    "wall_dividers": false
+  },
+  "projection_surfaces": [
+    "Projection_Table",
+    "Projection_Wall_Panorama"
+  ],
+  "meshes": 91,
+  "projectors_provisional": [
+    {
+      "name": "Projector_01_Table_Provisional",
+      "position_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        2.47
+      ],
+      "target_blender": [
+        0.11637306213378906,
+        0.42944860458374023,
+        0.76
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_02_East_North_Provisional",
+      "position_blender": [
+        1.65,
+        2.18,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        2.18,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_03_East_South_Provisional",
+      "position_blender": [
+        1.65,
+        -1.84,
+        2.47
+      ],
+      "target_blender": [
+        3.75,
+        -1.84,
+        1.4
+      ],
+      "provisional": true
+    },
+    {
+      "name": "Projector_04_South_Provisional",
+      "position_blender": [
+        -1.1,
+        -2.18,
+        2.47
+      ],
+      "target_blender": [
+        -1.1,
+        -4.2,
+        1.4
+      ],
+      "provisional": true
+    }
+  ],
+  "axes": "Blender X width, Y depth (entry +Y), Z up; verified FBX conversion to Unity (-x,z,-y), imported at one unit per metre.",
+  "note": "V0.8 changes temporary height controls and visitor tracking of floor/ceiling guides only. The V0.7 Blender geometry, initial table/map heights, room, oval map, 20 cm rim, chairs and anchors remain unchanged. K lowers the inset/map up to 20 cm while the pedestal adapts without overlap; I raises them up to 5 cm. U/J still move the whole table; 0 restores the initial heights. Adjustments do not persist.",
+  "ceiling_event_display": {
+    "geometry": "ceiling-event-geometry.json",
+    "live_panel": [
+      2048,
+      256
+    ],
+    "repetitions": 2,
+    "countdown_seconds": 900,
+    "font_assets": "Raster Futura PT Heavy/Demi; no font programs redistributed"
+  },
+  "table_projection": {
+    "object": "Projection_Table",
+    "shape": "expanded source oval upper surface; real open white annulus",
+    "center_blender_m": [
+      0.16560646891593933,
+      0.416805237531662,
+      0.7918423116207123
+    ],
+    "min_blender_m": [
+      -0.7696216702461243,
+      -0.7840536236763,
+      0.791519820690155
+    ],
+    "max_blender_m": [
+      1.100834608078003,
+      1.617664098739624,
+      0.7921648025512695
+    ],
+    "width_m": 1.8704562187194824,
+    "depth_m": 2.4017176628112793,
+    "aspect_width_over_depth": 0.7787993821532895,
+    "overlay_offset_m": 0.002,
+    "uv": "U +BlenderX, V +BlenderY; rectangular coordinates 0..1 clipped by original oval contour",
+    "uv_bounds": [
+      0,
+      1,
+      0,
+      1
+    ],
+    "top_faces": 168,
+    "vertices": 152,
+    "lowest_projection_height_m": 0.791519820690155,
+    "highest_projection_height_m": 0.7921648025512695,
+    "surface_facing": "Blender+Z / Unity+Y",
+    "source_mesh_tilt_max_height_difference_m": 0.000644981861114502
+  },
+  "current_table_source": "Oficina_actual_copia.blend (copy of the open Blender model, 2026-10-22)",
+  "current_geometry_verification": "verification_v7.json",
+  "chair_layout": "U compacta:4+4+3; lado hacia la puerta abierto",
+  "principal_chair": "Chair_10",
+  "current_table_geometry": "geometry_v7.json",
+  "table_height_adjustment": {
+    "controls": {
+      "U": "raise entire table",
+      "J": "lower entire table",
+      "I": "raise inset and map relative to table, up to 5 cm",
+      "K": "lower inset and map relative to table, up to 20 cm; pedestal adapts to clear the inset",
+      "0": "restore initial table/map heights"
+    },
+    "persistent": false,
+    "initial_heights_match_current_model": true,
+    "table_offset_limits_m": [
+      -0.2,
+      0.1
+    ],
+    "map_offset_limits_m": [
+      -0.2,
+      0.05
+    ],
+    "pedestal_adapts_to_lowered_inset": true,
+    "pedestal_remains_floor_supported": true,
+    "runtime_verification": "Aprobado en Mac 0.8.0; ver validacion-runtime-mac.json",
+    "runtime_results": {
+      "initial_projection_height_m": 0.7921648621559143,
+      "map_only_minimum_projection_height_m": 0.5921648740768433,
+      "combined_minimum_projection_height_m": 0.3921649158000946,
+      "pedestal_floor_supported": true,
+      "inset_clears_pedestal": true,
+      "colliders_aligned": true,
+      "reset_restores_initial": true
+    }
+  },
+  "ceiling_led_guide": {
+    "channel_object": "Ceiling_Led_Channel",
+    "diffuser_object": "Ceiling_Led_Diffuser",
+    "channel_bounds_blender_m": [
+      [
+        -3.225893020629883,
+        -3.836515426635742,
+        2.5
+      ],
+      [
+        2.999208450317383,
+        4.359999656677246,
+        2.700000047683716
+      ]
+    ],
+    "channel_dimensions_m": [
+      6.225101470947266,
+      8.196515083312988,
+      0.20000004768371582
+    ],
+    "diffuser_height_m": 2.498,
+    "width_m": 0.05,
+    "route_length_m": 26.418002748006373,
+    "route_point_count": 475,
+    "closed_loop": false,
+    "route_json": "../Unity/Assets/MLR/Models/Ceiling_Led_Route.json",
+    "route_unity_start": {
+      "x": -1.3665771484375,
+      "y": 2.497999906539917,
+      "z": -4.359999656677246
+    },
+    "route_unity_end": {
+      "x": -0.9664821624755859,
+      "y": 2.497999906539917,
+      "z": -3.4408490657806396
+    },
+    "uv_x": "cumulative route distance in metres",
+    "uv_y": "cross-strip position 0..1",
+    "look_ahead_start_m": 1.35,
+    "illuminated_length_m": 1.25,
+    "look_ahead_end_m": 2.6,
+    "led_pitch_m": 0.035,
+    "pause_when_seated": true,
+    "fade_when_movement_released": true,
+    "tracking_reference": "nearest route position in XZ to desktop visitor camera; supports forward/backward travel and re-entry at another section",
+    "materials": [
+      "Steel",
+      "CeilingLed"
+    ],
+    "runtime_verification": "Aprobado en Mac 0.8.0; 13 casos; ver validacion-runtime-mac.json",
+    "scope": "Mac; independent Quest2 copy unchanged",
+    "hold_last_location_outside_activation_distance": true
+  },
+  "floor_footprint_guide": {
+    "tracking_reference": "nearest footprint to visitor in XZ; supports forward/backward travel and re-entry at another section",
+    "hold_last_location_outside_activation_distance": true,
+    "pause_when_seated": true,
+    "initial_pause_preserved": true,
+    "alternating_feet": true,
+    "single_illuminated_footprint": true,
+    "geometry_unchanged": true,
+    "runtime_verification": "Aprobado en Mac 0.8.0; 7 casos; ver validacion-runtime-mac.json"
+  }
+}

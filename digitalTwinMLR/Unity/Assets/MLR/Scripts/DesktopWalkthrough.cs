@@ -15,6 +15,7 @@ namespace LaReina.DigitalTwin
         public RuntimeTableAdjustment tableAdjustment;
         [Min(.1f)] public float walkingSpeed = 1.35f;
         public float eyeHeight = 1.65f;
+        [Min(0f)] public float seatedViewLift = .35f;
         public Vector3 startPosition;
         public float startYaw;
         CharacterController body;
@@ -89,7 +90,7 @@ namespace LaReina.DigitalTwin
             verticalSpeed = 0f;
             pitch = 0f;
             eye.transform.localRotation = Quaternion.identity;
-            eye.transform.localPosition = Vector3.up * (seating.IsSeated ? seating.CurrentEyeHeight : eyeHeight);
+            eye.transform.localPosition = Vector3.up * (seating.IsSeated ? seating.CurrentEyeHeight + seatedViewLift : eyeHeight);
             return true;
         }
         public void ResetPosition()

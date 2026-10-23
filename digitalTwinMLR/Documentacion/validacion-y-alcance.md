@@ -1,8 +1,14 @@
 # Revisión y alcance
 
+## Revisión de la versión 0.8.1
+
+La vista elevada quedó **aprobada en las once sillas de Mac**: cámara a **1,53 m al sentarse** y **1,65 m al levantarse**, sin mover los anclajes ni perder la posición al mirar alrededor. Pasaron la autorización del puesto principal, las colisiones, el descenso del mapa y las guías del piso y del techo. Los resultados están en [validacion-runtime-mac.json](./validacion-runtime-mac.json).
+
+Los 35 cm añadidos son un ajuste de visualización para leer la mesa. **La cámara física y la inferencia gestual no se volvieron a ensayar**; el gestor y la copia VR permanecen intactos. El resultado anterior está en [validacion-runtime-mac-v0.8.json](./validacion-runtime-mac-v0.8.json).
+
 ## Revisión de la versión 0.8 · 22 de octubre de 2026
 
-La ejecución en Mac quedó **aprobada** en [validacion-runtime-mac.json](./validacion-runtime-mac.json). Se comprobó el descenso del mapa de **20 cm con K**, de **79,2 a 59,2 cm** del piso, y su combinación con el ajuste de la mesa. El pedestal mantiene el apoyo en el piso, se adapta sin atravesar el inserto y recupera su altura al restablecer con **0**. También pasaron la revisión de colisiones, la separación de 2 mm, la máscara y las proporciones del mapa.
+La ejecución de la versión 0.8 en Mac quedó **aprobada** en [validacion-runtime-mac-v0.8.json](./validacion-runtime-mac-v0.8.json). Se comprobó el descenso del mapa de **20 cm con K**, de **79,2 a 59,2 cm** del piso, y su combinación con el ajuste de la mesa. El pedestal mantiene el apoyo en el piso, se adapta sin atravesar el inserto y recupera su altura al restablecer con **0**. También pasaron la revisión de colisiones, la separación de 2 mm, la máscara y las proporciones del mapa.
 
 Pasaron los **13 casos de la guía del techo** y los **7 del piso**: avance, retroceso, cambio de tramo, salida y reingreso. Fuera de la ruta conservan la última ubicación y al sentarse se pausan. El anticipo del techo sigue siendo **1,35 m**. Las once sillas, los videos y la autorización exclusiva de Chair_10 también pasaron.
 
@@ -35,7 +41,7 @@ La versión 0.6 está aprobada en ejecución en Mac con cámara física: inicio 
 
 El recorrido permite evaluar el espacio y sustituir contenido audiovisual. Las paredes muestran contexto fotográfico de La Reina. La mesa parte con una muestra gráfica y pasa al mapa gestual en vivo desde el puesto principal en Mac. Al dejar ese puesto se conserva la última imagen del mapa, con cámara y gestos apagados; todavía no hay conexión con datos municipales en tiempo real.
 
-La altura de ojos de escritorio es una referencia de **1,65 m de pie y 1,18 m sentado**, con campo de visión vertical de **60°**. Sirve para comparar proporciones, pero no representa las medidas de todas las personas. En realidad virtual se conserva el movimiento natural de la cabeza.
+La cámara de escritorio está a **1,65 m de pie** y, desde la versión 0.8.1, usa una **vista sentada elevada a 1,53 m**: suma 35 cm al anclaje original de 1,18 m para leer mejor la mesa. Esta elevación es una decisión de visualización, no una medida antropométrica. El campo de visión vertical es de **60°**. En realidad virtual se conserva el movimiento natural de la cabeza y no se aplica este cambio.
 
 Los proyectores y soportes mantienen una ubicación provisional. La imagen continua en Unity no calcula tiro, lúmenes, sombras, corrección óptica ni mezcla entre varios proyectores. Esas decisiones requieren medir y calibrar el espacio físico.
 

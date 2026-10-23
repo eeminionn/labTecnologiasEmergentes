@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 22 de octubre de 2026 · versión 0.8<br>
+**Avance:** 22 de octubre de 2026 · versión 0.8.1<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -8,6 +8,17 @@
 Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y comparar la experiencia de pie y sentados.
 
 ## Ajustes al recorrido y a la lectura del mapa
+
+Elevamos **35 cm la cámara al sentarnos en Mac**, de 1,18 a **1,53 m**, para ver mejor la mesa. Es una vista de visualización más alta, no una nueva medida de la persona sentada; las sillas y sus anclajes siguen iguales.
+
+<table>
+  <tr>
+    <td><img src="./Imagenes/vista-sentada-alta.png" alt="Vista de Mac desde la silla principal con la cámara elevada para mirar la mesa" width="760" /></td>
+  </tr>
+  <tr>
+    <td>Vista elevada para leer mejor el mapa desde la silla, sin cambiar el modelo.</td>
+  </tr>
+</table>
 
 Al probar la mesa sentados, quisimos comparar una posición más baja del mapa. Ahora podemos bajarlo hasta **20 cm con K**; el inserto y el pedestal se adaptan para que no se atraviesen. **I** permite subirlo, **U/J** siguen moviendo la mesa completa y **0** vuelve al inicio. Los ajustes no se guardan al cerrar.
 
@@ -55,7 +66,7 @@ En la versión 0.6 redujimos el borde blanco de **30 a 20 cm** para darle más e
 
 ## Escala, gráfica y puntos de vista
 
-Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La mesa mide **2,27 × 2,80 m**, con el tablero a **78,0 cm** del piso en el modelo actual. Podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
+Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La mesa mide **2,27 × 2,80 m**, con el tablero a **78,0 cm** del piso en el modelo actual. Podemos sentarnos virtualmente, mirar alrededor y volver a caminar. En Mac, la cámara sentada se eleva a **1,53 m** para facilitar la lectura; el anclaje original sigue a **1,18 m**. Esto nos permite comparar la experiencia de pie y sentados.
 
 La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de muestra de la mesa. Las fotografías mantienen sus colores originales. El panorama y la muestra inicial de la mesa siguen siendo MP4 reemplazables; una vez usado el mapa, su última imagen queda visible cuando dejamos el puesto principal.
 
@@ -73,7 +84,7 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
     <td><img src="./Imagenes/huellas.png" alt="Huellas luminosas alrededor de la mesa" width="380" /></td>
   </tr>
   <tr>
-    <td>Vista a la altura de una persona sentada.</td>
+    <td>Registro anterior de la vista sentada, con la cámara a 1,18 m.</td>
     <td>Una huella a la vez, alternando derecha e izquierda.</td>
   </tr>
   <tr>

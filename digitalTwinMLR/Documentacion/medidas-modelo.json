@@ -1,9 +1,9 @@
 {
-  "version": "0.8.0",
+  "version": "0.8.1",
   "units": "meters",
   "source_original_unchanged": true,
   "geometry_source": "geometry_v7.json",
-  "previous_revision": "medidas-modelo-v0.7.json",
+  "previous_revision": "medidas-modelo-v0.8.json",
   "room_outer_dimensions_m": [
     8,
     9,
@@ -428,7 +428,7 @@
     }
   ],
   "axes": "Blender X width, Y depth (entry +Y), Z up; verified FBX conversion to Unity (-x,z,-y), imported at one unit per metre.",
-  "note": "V0.8 changes temporary height controls and visitor tracking of floor/ceiling guides only. The V0.7 Blender geometry, initial table/map heights, room, oval map, 20 cm rim, chairs and anchors remain unchanged. K lowers the inset/map up to 20 cm while the pedestal adapts without overlap; I raises them up to 5 cm. U/J still move the whole table; 0 restores the initial heights. Adjustments do not persist.",
+  "note": "V0.8.1 raises the desktop seated camera by 0.35 m, from the unchanged 1.18 m Blender anchor to 1.53 m. This is an elevated visualization viewpoint, not an anthropometric seated eye height. Standing desktop camera remains 1.65 m. All V0.7 geometry and V0.8 interaction controls are preserved; the independent VR copy is unchanged.",
   "ceiling_event_display": {
     "geometry": "ceiling-event-geometry.json",
     "live_panel": [
@@ -500,7 +500,7 @@
     ],
     "pedestal_adapts_to_lowered_inset": true,
     "pedestal_remains_floor_supported": true,
-    "runtime_verification": "Aprobado en Mac 0.8.0; ver validacion-runtime-mac.json",
+    "runtime_verification": "Aprobado en Mac 0.8.1; ver validacion-runtime-mac.json",
     "runtime_results": {
       "initial_projection_height_m": 0.7921648621559143,
       "map_only_minimum_projection_height_m": 0.5921648740768433,
@@ -560,7 +560,7 @@
       "Steel",
       "CeilingLed"
     ],
-    "runtime_verification": "Aprobado en Mac 0.8.0; 13 casos; ver validacion-runtime-mac.json",
+    "runtime_verification": "Aprobado en Mac 0.8.1; 13 casos; ver validacion-runtime-mac.json",
     "scope": "Mac; independent Quest2 copy unchanged",
     "hold_last_location_outside_activation_distance": true
   },
@@ -572,6 +572,26 @@
     "alternating_feet": true,
     "single_illuminated_footprint": true,
     "geometry_unchanged": true,
-    "runtime_verification": "Aprobado en Mac 0.8.0; 7 casos; ver validacion-runtime-mac.json"
+    "runtime_verification": "Aprobado en Mac 0.8.1; 7 casos; ver validacion-runtime-mac.json"
+  },
+  "desktop_camera": {
+    "standing_view_height_m": 1.65,
+    "seated_anchor_height_m": 1.18,
+    "seated_view_lift_m": 0.35,
+    "seated_view_height_m": 1.53,
+    "vertical_field_of_view_degrees": 60,
+    "scope": "Mac desktop only; independent VR copy unchanged",
+    "purpose": "Elevated visualization viewpoint for table readability; not an anthropometric seated eye height",
+    "blender_anchors_changed": false,
+    "runtime_verification": "Aprobado en las 11 sillas de Mac 0.8.1; ver validacion-runtime-mac.json",
+    "runtime_results": {
+      "tested_chairs": 11,
+      "measured_seated_height_min_m": 1.529999852180481,
+      "measured_seated_height_max_m": 1.5299999713897705,
+      "measured_standing_height_m": 1.649999976158142,
+      "maximum_seat_anchor_error_m": 0.0,
+      "seated_lift_correct_all_chairs": true,
+      "physical_camera_and_inference_retested": false
+    }
   }
 }

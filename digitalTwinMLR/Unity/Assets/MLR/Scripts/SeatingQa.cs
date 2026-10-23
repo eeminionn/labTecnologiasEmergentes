@@ -18,6 +18,9 @@ namespace LaReina.DigitalTwin
             public bool correctChair;
             public bool seatedControllerDisabled;
             public bool seatedEyeHeight;
+            public bool seatedViewLiftCorrect;
+            public float configuredSeatedViewLift;
+            public float expectedSeatedEyeHeight;
             public float measuredSeatedEyeHeight;
             public float seatAnchorErrorMeters;
             public bool fixedWhileLooking;
@@ -88,9 +91,14 @@ namespace LaReina.DigitalTwin
                 result.gestureGateCorrect = desktop.gestureBridge != null &&
                     desktop.gestureBridge.PrincipalSeatOccupied == (spot.chair == desktop.gestureBridge.principalChair);
                 result.seatedControllerDisabled = !body.enabled;
+                result.configuredSeatedViewLift = desktop.seatedViewLift;
+                result.seatedViewLiftCorrect = Mathf.Abs(desktop.seatedViewLift - .35f) < .001f;
+                result.expectedSeatedEyeHeight = seats.CurrentEyeHeight + desktop.seatedViewLift;
                 result.measuredSeatedEyeHeight = desktop.eye.transform.position.y - spot.chair.position.y;
-                result.seatAnchorErrorMeters = Vector3.Distance(desktop.eye.transform.position, spot.eyeAnchor.position);
-                result.seatedEyeHeight = Mathf.Abs(result.measuredSeatedEyeHeight - 1.18f) <= .03f && result.seatAnchorErrorMeters <= .03f;
+                result.seatAnchorErrorMeters = Vector3.Distance(desktop.eye.transform.position,
+                    spot.eyeAnchor.position + Vector3.up * desktop.seatedViewLift);
+                result.seatedEyeHeight = Mathf.Abs(result.measuredSeatedEyeHeight - result.expectedSeatedEyeHeight) <= .03f &&
+                    Mathf.Abs(result.measuredSeatedEyeHeight - 1.53f) <= .03f && result.seatAnchorErrorMeters <= .03f;
 
                 if (result.sat)
                 {
@@ -112,14 +120,15 @@ namespace LaReina.DigitalTwin
                     yield return null;
                     result.standingControllerEnabled = body.enabled;
                     result.measuredStandingEyeHeight = desktop.eye.transform.localPosition.y;
-                    result.standingEyeHeight = Mathf.Abs(result.measuredStandingEyeHeight - desktop.eyeHeight) < .005f;
+                    result.standingEyeHeight = Mathf.Abs(result.measuredStandingEyeHeight - desktop.eyeHeight) < .005f &&
+                        Mathf.Abs(result.measuredStandingEyeHeight - 1.65f) < .005f;
                     RaycastHit floor;
                     result.standingFloorSupport = Physics.Raycast(desktop.eye.transform.position, Vector3.down,
                         out floor, desktop.eyeHeight + .3f, seats.floorMask, QueryTriggerInteraction.Ignore);
                     result.standingClearance = result.standingFloorSupport && seats.CanStandAt(floor.point);
                 }
                 result.passed = result.candidateCorrect && result.sat && result.correctChair && result.seatedControllerDisabled &&
-                    result.seatedEyeHeight && result.fixedWhileLooking && result.stood && result.standingControllerEnabled &&
+                    result.seatedEyeHeight && result.seatedViewLiftCorrect && result.fixedWhileLooking && result.stood && result.standingControllerEnabled &&
                     result.standingEyeHeight && result.standingFloorSupport && result.standingClearance && result.gestureGateCorrect;
                 if (!result.passed && result.error == null) result.error = "Revisar campos de esta silla en la validación.";
                 seats.CancelSeat();
