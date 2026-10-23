@@ -1,6 +1,6 @@
 # Recorrido virtual de la sala
 
-**Avance:** 23 de octubre de 2026 · versión 0.9.0<br>
+**Avance:** 23 de octubre de 2026 · versión 0.9.1<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
@@ -13,12 +13,16 @@ Sumamos a la mesa la nueva secuencia del mapa gestual. Desde la silla principal,
 
 La X vuelve al mapa y las flechas recorren los gráficos, manteniendo el índice **1,5 segundos**. Conservamos el zoom con dos OK y el arrastre con un puño. También incorporamos los pines originales, separados y acompañados de su leyenda de colores; el primero pulsa suavemente y los otros dos temas siguen en preparación. Este avance corresponde a la versión de computador.
 
+Al verlo desde la silla, los gráficos quedaban demasiado lejos. Los acercamos al puesto principal y dejamos las flechas a los lados, con la X centrada encima. También achicamos y centramos la leyenda. Los créditos del mapa quedaron en el menú inicial y en ajustes para despejar la mesa.
+
 <table>
   <tr>
-    <td><img src="./Imagenes/mapa-pines.jpg" alt="Mapa con pines temáticos y leyenda sobre la mesa ovalada desde el puesto principal" width="760" /></td>
+    <td><img src="./Imagenes/mapa-leyenda-centrada.png" alt="Mapa con leyenda pequeña y centrada desde la silla principal" width="380" /></td>
+    <td><img src="./Imagenes/graficos-vista-sentada.png" alt="Gráfico más cercano a la persona sentada, con flechas a los lados y cierre encima" width="380" /></td>
   </tr>
   <tr>
-    <td>Pines y leyenda de la nueva gráfica sobre la mesa, desde la silla principal.</td>
+    <td>Leyenda más pequeña, centrada cerca del puesto principal.</td>
+    <td>Reordenamos el contenido después de probar su lectura desde la silla.</td>
   </tr>
 </table>
 

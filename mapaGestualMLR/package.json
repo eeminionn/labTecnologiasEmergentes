@@ -1,6 +1,6 @@
 {
   "name": "mapa-gestual-mlr",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "Prototipo de interacción territorial mediante manos con cámara frontal",
   "author": "Emilio Abarca",

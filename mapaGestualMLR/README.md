@@ -1,7 +1,7 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 23 de octubre de 2026 · versión 0.2.0<br>
+**Última actualización:** 23 de octubre de 2026 · versión 0.2.1<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
@@ -12,7 +12,7 @@ Incorporamos la gráfica actualizada del equipo para probar cómo pasamos del te
 
 Dejamos siempre visibles la **X para volver al mapa** y las **flechas para cambiar de gráfico**. Se seleccionan manteniendo el índice durante **1,5 segundos**, igual que los puntos. También podemos acercar la información con dos OK y arrastrarla con un puño, para conservar una sola forma de interactuar.
 
-Separamos los tres puntos y usamos los pines originales del PDF, con sus colores y una leyenda pequeña abajo a la izquierda. El primero crece y se achica suavemente para invitar a comenzar, sin cambiar de tono. Los otros dos temas quedan con su contenido en preparación.
+Separamos los tres puntos y usamos los pines originales del PDF, con sus colores y una leyenda pequeña abajo al centro. El primero crece y se achica suavemente para invitar a comenzar, sin cambiar de tono. Los otros dos temas quedan con su contenido en preparación. Al probar la proyección en la mesa, acercamos los gráficos a la persona sentada y movimos las flechas a los extremos, con la X encima del contenido.
 
 <table>
   <tr>

@@ -1,0 +1,6 @@
+/* In the desktop simulation, map credits live on Unity's start/pause menu.
+   OSM permits this for games/simulations. The standalone map keeps its credits,
+   and Google's own attribution is never changed by these selectors.
+   https://osmfoundation.org/wiki/Licence/Attribution_Guidelines#Computer_games_and_simulations */
+.twin-projection .leaflet-control-attribution,
+.twin-projection .boundary-attribution{display:none}

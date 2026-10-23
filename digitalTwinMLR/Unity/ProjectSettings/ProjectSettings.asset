@@ -148,7 +148,7 @@ PlayerSettings:
   loadStoreDebugModeEnabled: 0
   visionOSBundleVersion: 1.0
   tvOSBundleVersion: 1.0
-  bundleVersion: 0.9.0
+  bundleVersion: 0.9.1
   preloadedAssets: []
   metroInputSource: 0
   wsaTransparentSwapchain: 0
@@ -430,7 +430,8 @@ PlayerSettings:
   enableInternalProfiler: 0
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 0
-  cameraUsageDescription: La cámara frontal detecta las manos para controlar el mapa desde la silla principal.
+  cameraUsageDescription: "La c\xE1mara frontal detecta las manos para controlar
+    el mapa desde la silla principal."
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: 

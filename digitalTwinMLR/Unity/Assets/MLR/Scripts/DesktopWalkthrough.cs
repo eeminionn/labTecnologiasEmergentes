@@ -113,7 +113,9 @@ namespace LaReina.DigitalTwin
             var style = new GUIStyle(GUI.skin.label) { fontSize = 15, wordWrap = true };
             if (!Captured)
             {
-                GUI.Box(new Rect(24,24,370, settings ? (gestureBridge && gestureBridge.Authorized ? 385 : 340) : 220), "");
+                bool cameraSettingsAvailable = settings && gestureBridge && gestureBridge.Authorized;
+                float creditsY = settings ? (cameraSettingsAvailable ? 385 : 340) : 220;
+                GUI.Box(new Rect(24,24,370,creditsY + 80), "");
                 GUI.Label(new Rect(44,39,330,30), "Sala La Reina", new GUIStyle(style) { fontSize = 23, fontStyle = FontStyle.Bold });
                 GUI.Label(new Rect(44,80,325,90), "Enter para recorrer\nWASD / flechas · mover    Mouse · mirar\nE · sentarse / levantarse junto a una silla\nEsc · liberar mouse    R · volver al acceso", style);
                 if (settings)
@@ -126,6 +128,13 @@ namespace LaReina.DigitalTwin
                     if (gestureBridge && gestureBridge.Authorized && GUI.Button(new Rect(44,335,311,32), "Ajustes de cámara")) gestureBridge.OpenCameraSettings();
                 }
                 else GUI.Label(new Rect(44,185,320,25), "Tab · ajustes    L · luz    Espacio · video", style);
+                // Credits stay on the start/pause menu so the projected table
+                // can remain clear. OSM's games/simulations guideline allows it.
+                var creditStyle = new GUIStyle(style) { fontSize = 11 };
+                if (GUI.Button(new Rect(44,creditsY,320,23), "Mapa: © OpenStreetMap contributors · ODbL ↗"))
+                    Application.OpenURL("https://www.openstreetmap.org/copyright");
+                GUI.Label(new Rect(44,creditsY + 28,320,47),
+                    "Límite: SUBDERE · IDE Chile · DPA 2023\nPuntos de exploración ilustrativos.", creditStyle);
             }
             else if (help)
             {

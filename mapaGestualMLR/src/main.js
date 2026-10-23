@@ -1,5 +1,6 @@
 import './style.css';
 import './twin-projection.css';
+import './map-credits.css';
 import { GestureEngine, classifyHand, pointerReference } from './gestures.js';
 import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
