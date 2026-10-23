@@ -85,8 +85,8 @@ namespace LaReina.DigitalTwin.Editor
                 renderer.sharedMaterials = replacement;
                 renderer.shadowCastingMode = renderer.name.StartsWith("Projection_") ? ShadowCastingMode.Off : ShadowCastingMode.On;
                 renderer.receiveShadows = !renderer.name.StartsWith("Projection_");
-                bool adjustableTable=renderer.name.StartsWith("Table_") || renderer.name=="Projection_Table";
-                GameObjectUtility.SetStaticEditorFlags(renderer.gameObject, adjustableTable ? 0 : StaticEditorFlags.BatchingStatic | StaticEditorFlags.ReflectionProbeStatic);
+                bool dynamicSurface=renderer.name.StartsWith("Table_") || renderer.name=="Projection_Table" || renderer.name=="Ceiling_Led_Diffuser";
+                GameObjectUtility.SetStaticEditorFlags(renderer.gameObject, dynamicSurface ? 0 : StaticEditorFlags.BatchingStatic | StaticEditorFlags.ReflectionProbeStatic);
                 bool chair = renderer.name.StartsWith("Chair_");
                 bool decorative = renderer.name.Contains("DecorativeRings") || renderer.name.Contains("Guide") ||
                     renderer.name.Contains("Ceiling_") || renderer.name.Contains("Projector_") || renderer.name.Contains("OvalSupport_");
@@ -166,6 +166,7 @@ namespace LaReina.DigitalTwin.Editor
             tableAdjustment.inset=Find(model,"Table_Inset_Original");tableAdjustment.projection=Find(model,"Projection_Table");
             controller.tableAdjustment=tableAdjustment;
             var footprintGuide=CreateFootprints(entrance,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
+            var ceilingGuide=CreateCeilingGuide(model,controller,camera.transform,xrCamera.transform,desktopSeats,xrSeats);
             var ceilingDisplay=CreateCeilingDisplay();
             controller.ceilingDisplay=ceilingDisplay;
             var qa = new GameObject("Verificacion — solo con argumento de captura").AddComponent<TwinRuntimeCheck>();
@@ -174,6 +175,7 @@ namespace LaReina.DigitalTwin.Editor
             qa.projections = director;
             qa.lighting = lightRig;
             qa.footprints = footprintGuide;
+            qa.ceilingGuide = ceilingGuide;
             qa.ceilingDisplay = ceilingDisplay;
             qa.gestureBridge = gestureBridge;
             new GameObject("Calidad por plataforma").AddComponent<RoomPlatformSettings>();
@@ -267,6 +269,43 @@ namespace LaReina.DigitalTwin.Editor
             return display;
         }
 
+        [Serializable] sealed class CeilingRoute
+        {
+            public bool closedLoop;
+            public float lengthMeters;
+            public Vector3[] routePoints;
+        }
+
+        static CeilingLedGuide CreateCeilingGuide(GameObject model,DesktopWalkthrough desktop,
+            Transform desktopEye,Transform xrEye,SeatInteraction desktopSeat,SeatInteraction xrSeat)
+        {
+            string path=Root+"Models/Ceiling_Led_Route.json";
+            var route=JsonUtility.FromJson<CeilingRoute>(File.ReadAllText(path));
+            if(route?.routePoints==null || route.routePoints.Length<8)
+                throw new InvalidDataException("Falta el recorrido orgánico del techo exportado desde Blender.");
+            var o=new GameObject("Guía LED del techo — anticipa el recorrido");
+            var guide=o.AddComponent<CeilingLedGuide>();
+            guide.desktop=desktop;guide.desktopEye=desktopEye;guide.xrEye=xrEye;
+            guide.desktopSeat=desktopSeat;guide.xrSeat=xrSeat;
+            guide.routePoints=route.routePoints;guide.closedLoop=route.closedLoop;
+            guide.emissiveRenderer=Find(model,"Ceiling_Led_Diffuser").GetComponent<MeshRenderer>();
+            // Inspect imported geometry once in the editor; the player can keep
+            // its mesh data on the GPU without retaining a second readable copy.
+            var uv=guide.emissiveRenderer.GetComponent<MeshFilter>().sharedMesh.uv;
+            guide.sourceUvLength=uv.Length>0?uv.Max(p=>p.x):0f;
+            guide.sourceUvMetres=uv.Length>3 && uv.Min(p=>p.x)>=-.002f &&
+                Mathf.Abs(guide.sourceUvLength-route.lengthMeters)<.03f &&
+                uv.All(p=>p.y>=-.001f && p.y<=1.001f);
+            guide.emissiveRenderer.shadowCastingMode=ShadowCastingMode.Off;
+            guide.emissiveRenderer.receiveShadows=false;
+            guide.guidanceLight=PointLight(o.transform,"Halo de la guía del techo",route.routePoints[0],ProjectPalette.Teal,.32f,1.2f,false);
+            guide.RebuildRouteCache();
+            if(Mathf.Abs(guide.RouteLength-route.lengthMeters)>.01f || route.routePoints.Any(p=>
+                Mathf.Abs(p.x)>4.01f || Mathf.Abs(p.z)>4.51f || p.y<2f || p.y>2.75f))
+                throw new InvalidDataException("La guía superior no conserva escala y coordenadas del modelo.");
+            return guide;
+        }
+
         static RoomLighting CreateLighting()
         {
             var rig = new GameObject("Iluminación regulable — revisión y proyección").AddComponent<RoomLighting>();
@@ -312,9 +351,16 @@ namespace LaReina.DigitalTwin.Editor
         {
             if(materials.TryGetValue(id,out var found))return found;
             bool projection=id.StartsWith("Projection_");
-            var mat=new Material(Shader.Find(projection?"LaReina/Projection":"Universal Render Pipeline/Lit"));mat.name=id;
+            bool ceilingLed=id=="CeilingLed";
+            var mat=new Material(Shader.Find(projection?"LaReina/Projection":ceilingLed?"LaReina/CeilingLedGuide":"Universal Render Pipeline/Lit"));mat.name=id;
             mat.enableInstancing=true;
-            if(!projection)
+            if(ceilingLed)
+            {
+                mat.SetColor("_BaseColor",new Color(.012f,.025f,.032f));
+                mat.SetColor("_EmissionColor",ProjectPalette.Teal.linear*3f);
+                mat.SetFloat("_Visibility",0f);
+            }
+            else if(!projection)
             {
                 mat.SetColor("_BaseColor",Color.white);mat.SetFloat("_Smoothness",.35f);
                 string texture=null;Vector2 tile=Vector2.one;
@@ -370,7 +416,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
-            PlayerSettings.bundleVersion="0.6.0";PlayerSettings.Android.bundleVersionCode=6;
+            PlayerSettings.bundleVersion="0.7.0";PlayerSettings.Android.bundleVersionCode=7;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -399,10 +445,17 @@ namespace LaReina.DigitalTwin.Editor
             if(!metadata || surfaces.Length!=2)throw new InvalidDataException("Se requieren una pared panorámica y la mesa.");
             var tabletop=Find(metadata.gameObject,"Table_Top_Original").GetComponent<MeshRenderer>().bounds;
             if(Mathf.Abs(tabletop.size.x-2.270456f)>.003f || Mathf.Abs(tabletop.size.z-2.801718f)>.003f ||
-                Mathf.Abs(tabletop.max.y-.762753f)>.002f || !surfaces.First(s=>s.channelId=="mesa").ovalMask ||
+                Mathf.Abs(tabletop.max.y-.7801744f)>.002f || Mathf.Abs(tabletop.size.y-.0258207f)>.002f || !surfaces.First(s=>s.channelId=="mesa").ovalMask ||
                 surfaces.First(s=>s.channelId=="mesa").sourceUvArea<.775f || surfaces.First(s=>s.channelId=="mesa").sourceUvArea>.795f ||
                 !surfaces.First(s=>s.channelId=="mesa").sourceUvsWithinOval)
-                throw new InvalidDataException("La mesa o su máscara ovalada no coinciden con sala 002.fbx.");
+                throw new InvalidDataException("La mesa delgada o su máscara ovalada no coinciden con el modelo de oficina actualizado.");
+            var guide=UnityEngine.Object.FindAnyObjectByType<CeilingLedGuide>();
+            if(!guide || !guide.emissiveRenderer || !guide.desktopEye || !guide.desktopSeat || guide.routePoints.Length<8 || !guide.sourceUvMetres ||
+                guide.emissiveRenderer.sharedMaterial.shader.name!="LaReina/CeilingLedGuide")
+                throw new InvalidDataException("Falta la guía LED del techo o su material de recorrido.");
+            guide.RebuildRouteCache();
+            if(guide.RouteLength<20f || guide.RouteLength>35f || Mathf.Abs(guide.sourceUvLength-guide.RouteLength)>.03f || Mathf.Abs(guide.LookAhead-1.35f)>.001f)
+                throw new InvalidDataException("La tira del techo no conserva el recorrido o la anticipación configurada.");
             var ceiling=UnityEngine.Object.FindAnyObjectByType<CeilingEventDisplay>();
             if(!ceiling || !ceiling.basePanel || !ceiling.digitAtlas || !ceiling.basePanel.isReadable || !ceiling.digitAtlas.isReadable)
                 throw new InvalidDataException("Faltan los recursos legibles para la pantalla circular.");

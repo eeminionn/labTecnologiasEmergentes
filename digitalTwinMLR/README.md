@@ -1,11 +1,26 @@
 # Recorrido virtual de la sala
 
-**Avance:** 16 de octubre de 2026 · versión 0.6<br>
+**Avance:** 22 de octubre de 2026 · versión 0.7<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
 
-Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y preparar una futura experiencia en realidad virtual.
+Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y comparar la experiencia de pie y sentados.
+
+## Mesa más delgada y guía en el techo
+
+Tomamos del modelo actualizado de Blender la mesa más delgada y la línea orgánica del techo. El tablero ahora tiene **2,58 cm de espesor** y queda a **78,0 cm del piso**. Conservamos su tamaño, el borde blanco de 20 cm y la proyección ovalada, junto con las sillas en U que ya veníamos probando.
+
+La línea del techo funciona como una **tira LED turquesa** sobre una estructura metálica oscura. Se enciende un tramo entre **1,35 y 2,60 m por delante** de la persona, siguiendo la curva. Queremos que indique hacia dónde avanzar, por eso la luz va adelantada y se apaga al sentarnos o pausar el recorrido. Este cambio corresponde a la versión de computador.
+
+<table>
+  <tr>
+    <td><img src="./Imagenes/mesa-delgada.png" alt="Vista desde la silla con el tablero más delgado y la proyección ovalada" width="760" /></td>
+  </tr>
+  <tr>
+    <td>Mesa del modelo actualizado, con el borde más delgado y la misma área para el mapa.</td>
+  </tr>
+</table>
 
 ## Una sala más inmersiva
 
@@ -15,17 +30,17 @@ También cambiamos la línea azul del piso por huellas de zapatos. El recorrido 
 
 Al revisar el recorrido, vimos que las luces parecían avanzar de a pares. Las ajustamos para marcar una huella derecha y luego una izquierda, como al caminar. También usamos la franja circular del techo como pantalla de la sesión: muestra la hora, quién está hablando y una cuenta regresiva de 15 minutos. Repetimos la información dos veces para verla desde distintos puestos y dejamos las paredes para las fotografías del contexto.
 
-En este avance tomamos **solo la mesa del nuevo archivo sala 002.fbx** y reacomodamos las once sillas a su alrededor. Ajustamos su apoyo en el piso sin cambiar el tamaño del mueble. También hicimos que la proyección siga la forma ovalada de la mesa, porque una imagen rectangular se salía del tablero. El contenido ahora se organiza dentro de ese contorno.
+En la versión 0.4 tomamos **solo la mesa del archivo sala 002.fbx** y reacomodamos las once sillas a su alrededor. Ajustamos su apoyo en el piso sin cambiar el tamaño del mueble. También hicimos que la proyección siga la forma ovalada de la mesa, porque una imagen rectangular se salía del tablero. El contenido ahora se organiza dentro de ese contorno.
 
 Después acercamos las sillas y volvimos a una **disposición en U**, con cuatro a cada lado y tres al fondo. Dejamos libre el lado que mira a la puerta para entrar y acercarse a la mesa con más claridad.
 
 También conectamos el **mapa gestual en vivo** a la mesa. En Mac funciona únicamente cuando nos sentamos en la silla central del fondo, **Chair_10**, usando la cámara frontal. Conservamos los gestos que ya habíamos probado; al levantarnos o usar otra silla, se apagan la cámara y los gestos, pero la mesa mantiene la última imagen del mapa. Así podemos mirar lo que quedó seleccionado desde cualquier puesto, con un solo lugar para interactuar.
 
-En este ajuste redujimos el borde blanco de **30 a 20 cm** para darle más espacio al mapa, sin agrandar la mesa. También dejamos probar la altura de la mesa y del mapa por separado; al abrir de nuevo, parten a la misma altura de antes. La cámara siempre inicia en modo espejo y, al entrar a la silla principal, aparece una vista pequeña con el seguimiento de las manos. Se cierra al levantarnos.
+En la versión 0.6 redujimos el borde blanco de **30 a 20 cm** para darle más espacio al mapa, sin agrandar la mesa. También dejamos probar la altura de la mesa y del mapa por separado; al abrir de nuevo, se restablecen las alturas del modelo. La cámara siempre inicia en modo espejo y, al entrar a la silla principal, aparece una vista pequeña con el seguimiento de las manos. Se cierra al levantarnos.
 
 ## Escala, gráfica y puntos de vista
 
-Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La nueva mesa mide **2,27 × 2,80 m**, con el tablero a **76,3 cm** del piso. Podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
+Revisamos las medidas antes de agrandar los muebles: mantuvimos la sala de **8 × 9 m** y las once sillas con el asiento a **47 cm**. La mesa mide **2,27 × 2,80 m**, con el tablero a **78,0 cm** del piso en el modelo actual. Podemos sentarnos virtualmente, mirar alrededor desde una altura de ojos de **1,18 m** y volver a caminar. Esto nos permite comparar la experiencia de pie y sentados.
 
 La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La Reina, fondos blancos, círculos y formas redondeadas en el contenido de muestra de la mesa. Las fotografías mantienen sus colores originales. El panorama y la muestra inicial de la mesa siguen siendo MP4 reemplazables; una vez usado el mapa, su última imagen queda visible cuando dejamos el puesto principal.
 
@@ -67,13 +82,21 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
     <td><img src="./Imagenes/mesa-ajustada.png" alt="Prueba de ajuste temporal de la altura de la mesa y del mapa" width="380" /></td>
   </tr>
   <tr>
-    <td>Borde de 20 cm y altura inicial conservada.</td>
+    <td>Borde de 20 cm para dar más espacio al mapa.</td>
     <td>Ajustes de altura para comparar la lectura desde la silla.</td>
+  </tr>
+  <tr>
+    <td><img src="./Imagenes/guia-techo.png" alt="Tira LED sobre el recorrido orgánico del techo" width="380" /></td>
+    <td><img src="./Imagenes/guia-techo-avance.png" alt="Tramo iluminado por delante de la persona al avanzar" width="380" /></td>
+  </tr>
+  <tr>
+    <td>La curva del modelo se convierte en una guía luminosa.</td>
+    <td>La luz se adelanta para indicar hacia dónde seguir caminando.</td>
   </tr>
 </table>
 
-Por ahora es una **representación conceptual**, sin datos municipales en tiempo real. Las ubicaciones de los proyectores son provisionales y falta comprobar la experiencia en un visor Meta Quest.
+Por ahora es una **representación conceptual**, sin datos municipales en tiempo real. Las ubicaciones de los proyectores son provisionales y todavía requieren una revisión en el espacio físico.
 
-La conexión gestual está implementada para **Mac**. Su uso en Quest todavía no está conectado y la revisión del recorrido con un visor real sigue pendiente.
+También probamos una **copia independiente en Meta Quest 2**, con recorrido, giro continuo y mandos visibles. Esa versión mantiene el mapa como una imagen estática, sin cámara ni gestos. La conexión gestual y los cambios de este avance corresponden a **Mac**; la copia de VR permanece aparte.
 
 **Fuentes:** [propuesta espacial del equipo](../propuestaEspacialMLR/README.md), [referencia gráfica entregada para este avance](./Documentacion/paleta-referencia.json) [fotografías oficiales del panorama](./Documentacion/fuentes-panorama.json) y [marca y tipografía de la pantalla](./Documentacion/ceiling_assets_provenance.json).

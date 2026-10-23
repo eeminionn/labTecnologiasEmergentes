@@ -24,15 +24,23 @@ En Mac, pulsa **Enter** o haz clic sobre la vista para comenzar; **Esc** libera 
 
 Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas avanzan con la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada; su avance se detiene mientras está sentado. La luz principal marca una sola pisada por vez, alternando derecha e izquierda.
 
-En Meta Quest, el control previsto para sentarse o levantarse es **A del mando derecho**. El stick izquierdo permite caminar, el derecho gira en pasos de 30° y el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. El visor conserva el seguimiento natural de la cabeza, también sentado. **La comprobación en un visor real sigue pendiente.**
+La **copia independiente probada en Meta Quest 2** permite sentarse o levantarse con **A del mando derecho**. El stick izquierdo desplaza y el derecho gira de forma continua; el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. **B** reajusta la altura de pie. El visor conserva el seguimiento natural de la cabeza, también sentado, y muestra los mandos. Esta copia usa un mapa estático, sin cámara ni control gestual, y permanece separada de los cambios de Mac descritos aquí.
 
-## Mesa y disposición de las sillas · versión 0.6
+## Mesa y guía superior · versión 0.7
+
+Se tomaron la mesa y la estructura orgánica del techo de una copia del modelo abierto en Blender el **22 de octubre de 2026**. El tablero conserva los **2,27046 × 2,80172 m** en planta, con **2,58 cm de espesor** y su parte superior a **0,780174 m** del piso. La proyección sigue siendo ovalada, de **1,87046 × 2,40172 m**, y llega a **0,792165 m**; mantiene la separación de 2 mm sobre el inserto. Los controles temporales de altura siguen funcionando y **0** vuelve a estas nuevas alturas iniciales.
+
+La guía del techo conserva la curva del modelo: mide **26,42 m**, con un canal metálico oscuro y un difusor turquesa de **5 cm de ancho**, a **2,498 m** del piso. Se ilumina un tramo de **1,25 m**, que comienza **1,35 m por delante** de la posición del personaje. En este gemelo, esa posición hace de referencia para el encendido. La guía sigue el orden de entrada, lado izquierdo, fondo y lado derecho; se atenúa al liberar el mouse y se apaga al sentarse. Su extremo final no vuelve a encender el principio.
+
+Las sillas, sus anclajes, el panorama, las huellas del piso y la pantalla circular se mantienen. La geometría y sus medidas quedan en [geometry_v7.json](./geometry_v7.json) y [verification_v7.json](./verification_v7.json). Las medidas anteriores se guardaron en [medidas-modelo-v0.6.json](./medidas-modelo-v0.6.json). Esta actualización corresponde a la aplicación de Mac.
+
+## Registro anterior: mesa y sillas · versión 0.6
 
 Se incorporó únicamente la mesa de **sala 002.fbx**. El resto de las modificaciones de ese archivo no se trasladó a la sala. Las once sillas y sus puntos para sentarse y levantarse se reacomodaron alrededor del nuevo tablero.
 
 La disposición actual vuelve a una **U compacta**: cuatro sillas paralelas por lado y tres al fondo, con **72 cm entre centros contiguos**. El lado hacia la puerta queda sin sillas. No se cambió la escala ni la forma de los muebles; los ojos siguen a 1,18 m y el punto de regreso queda 82 cm detrás de cada silla. **Chair_10** es la silla central del fondo y el único puesto habilitado para el mapa gestual. Las posiciones y verificaciones están en [chairs_u_v5.json](./chairs_u_v5.json) y [verification_v5.json](./verification_v5.json).
 
-La mesa conserva las dimensiones exteriores del archivo: **2,27046 × 2,80172 m**, con la parte superior del tablero a **0,762753 m** del piso. Se bajó el conjunto **5,3 cm** para apoyar la base en el suelo, sin escalarlo. En la versión 0.6, el borde blanco pasa de **30 a 20 cm**, medidos en los extremos de los dos ejes del óvalo, y el área de proyección aumenta a **1,87046 × 2,40172 m**. La proyección parte a **0,773177–0,773822 m**, igual que antes; se amplió solo en planta.
+En esa versión la mesa conservaba las dimensiones exteriores del archivo: **2,27046 × 2,80172 m**, con la parte superior del tablero a **0,762753 m** del piso. Se bajó el conjunto **5,3 cm** para apoyar la base en el suelo, sin escalarlo. En la versión 0.6, el borde blanco pasó de **30 a 20 cm**, medidos en los extremos de los dos ejes del óvalo, y el área de proyección aumentó a **1,87046 × 2,40172 m**. La proyección partía a **0,773177–0,773822 m**; se amplió solo en planta. La versión 0.7 conserva esa planta y actualiza el espesor y las alturas según el nuevo modelado.
 
 La proyección tiene una malla con contorno ovalado y una máscara en el material, procesada por la GPU, para no mostrar las esquinas de una imagen rectangular fuera de la mesa. El contenido se adapta al área interior manteniendo sus proporciones, y los elementos importantes quedan dentro del óvalo.
 

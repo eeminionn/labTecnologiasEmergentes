@@ -31,8 +31,16 @@ La altura de ojos de escritorio es una referencia de **1,65 m de pie y 1,18 m se
 
 Los proyectores y soportes mantienen una ubicación provisional. La imagen continua en Unity no calcula tiro, lúmenes, sombras, corrección óptica ni mezcla entre varios proyectores. Esas decisiones requieren medir y calibrar el espacio físico.
 
-El archivo [validacion-runtime-mac.json](./validacion-runtime-mac.json) reúne los resultados de ejecución en Mac de la **versión 0.6**, incluida la revisión por silla y la progresión de las huellas. La pantalla añade una superficie sin cambiar el tamaño de la estructura; sus medidas están en [ceiling-event-geometry.json](./ceiling-event-geometry.json). La verificación del modelo original queda en [verificacion-modelado.json](./verificacion-modelado.json); la versión 0.2 modifica las paredes y conserva las dimensiones principales y los muebles.
+El archivo [validacion-runtime-mac-v0.6.json](./validacion-runtime-mac-v0.6.json) reúne los resultados de ejecución en Mac de la **versión 0.6**, incluida la revisión por silla y la progresión de las huellas. La pantalla añade una superficie sin cambiar el tamaño de la estructura; sus medidas están en [ceiling-event-geometry.json](./ceiling-event-geometry.json). La verificación del modelo original queda en [verificacion-modelado.json](./verificacion-modelado.json); la versión 0.2 modifica las paredes y conserva las dimensiones principales y los muebles.
 
 La versión 0.4 tomó solo la mesa del nuevo FBX. En la versión 0.5 se modificaron únicamente las posiciones y rotaciones de las sillas y sus anclajes; las formas, materiales y UV de todos los demás objetos permanecen idénticos. Los puntos para levantarse quedan a 82 cm detrás de cada puesto y a un mínimo conservador de 49,4 cm de los muebles. El funcionamiento del mapa y su alcance se explican en [documentación de apoyo](./uso-y-proyecciones.md#mapa-gestual-en-la-silla-principal--mac).
 
-En la versión 0.6 solo cambian las mallas del borde blanco, el inserto y la proyección. Los hashes confirman que sillas, anclajes, sala y techo no se modificaron. Las medidas anteriores se conservan en [medidas-modelo-v0.5.json](./medidas-modelo-v0.5.json) y las actuales, en [medidas-modelo.json](./medidas-modelo.json).
+En la versión 0.6 solo cambian las mallas del borde blanco, el inserto y la proyección. Los hashes confirman que sillas, anclajes, sala y techo no se modificaron. Las medidas anteriores se conservan en [medidas-modelo-v0.5.json](./medidas-modelo-v0.5.json) y las de esa etapa, en [medidas-modelo-v0.6.json](./medidas-modelo-v0.6.json).
+
+## Avance del 22 de octubre de 2026 · versión 0.7
+
+Incorporamos la mesa más delgada y el recorrido orgánico del techo desde el modelo actualizado de Blender. El tablero queda a **78,0 cm**, con **2,58 cm de espesor**; conserva el borde de 20 cm y la proyección ovalada. La tira LED enciende un tramo entre **1,35 y 2,60 m por delante** para guiar el recorrido.
+
+La ejecución en Mac quedó aprobada en [validacion-runtime-mac.json](./validacion-runtime-mac.json): pasaron los ocho casos de la guía, las once sillas, los ajustes de altura, la máscara del mapa, las huellas y la autorización del puesto principal. La geometría y las UV están revisadas en [verification_v7.json](./verification_v7.json), con las medidas actuales en [medidas-modelo.json](./medidas-modelo.json). La cámara y la inferencia gestual no se volvieron a ensayar en esta comprobación; su prueba física anterior queda en el respaldo de la versión 0.6.
+
+Estos cambios corresponden a **Mac**. La copia independiente probada en **Quest 2**, con giro continuo, mandos visibles y mapa estático sin cámara, permanece aparte.

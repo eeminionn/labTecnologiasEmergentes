@@ -1,0 +1,140 @@
+{
+  "passed": true,
+  "fbx_roundtrip": true,
+  "mesh_count": 91,
+  "all_11_chair_materials_valid": true,
+  "chair_materials": {
+    "Chair_01_Frame": [
+      "Steel"
+    ],
+    "Chair_01_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_01_Casters": [
+      "Rubber"
+    ],
+    "Chair_02_Frame": [
+      "Steel"
+    ],
+    "Chair_02_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_02_Casters": [
+      "Rubber"
+    ],
+    "Chair_03_Frame": [
+      "Steel"
+    ],
+    "Chair_03_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_03_Casters": [
+      "Rubber"
+    ],
+    "Chair_04_Frame": [
+      "Steel"
+    ],
+    "Chair_04_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_04_Casters": [
+      "Rubber"
+    ],
+    "Chair_05_Frame": [
+      "Steel"
+    ],
+    "Chair_05_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_05_Casters": [
+      "Rubber"
+    ],
+    "Chair_06_Frame": [
+      "Steel"
+    ],
+    "Chair_06_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_06_Casters": [
+      "Rubber"
+    ],
+    "Chair_07_Frame": [
+      "Steel"
+    ],
+    "Chair_07_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_07_Casters": [
+      "Rubber"
+    ],
+    "Chair_08_Frame": [
+      "Steel"
+    ],
+    "Chair_08_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_08_Casters": [
+      "Rubber"
+    ],
+    "Chair_09_Frame": [
+      "Steel"
+    ],
+    "Chair_09_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_09_Casters": [
+      "Rubber"
+    ],
+    "Chair_10_Frame": [
+      "Steel"
+    ],
+    "Chair_10_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_10_Casters": [
+      "Rubber"
+    ],
+    "Chair_11_Frame": [
+      "Steel"
+    ],
+    "Chair_11_Upholstery": [
+      "Fabric"
+    ],
+    "Chair_11_Casters": [
+      "Rubber"
+    ]
+  },
+  "table_top_dimensions_m": [
+    2.270456314086914,
+    2.801717758178711,
+    0.02582019567489624
+  ],
+  "tabletop_height_m": 0.7801741361618042,
+  "projection_dimensions_m": [
+    1.8704562187194824,
+    2.4017176628112793,
+    0.0006446242332458496
+  ],
+  "projection_height_m": 0.7921645641326904,
+  "projection_uv_bounds": [
+    0.0,
+    1.0,
+    0.0,
+    1.0
+  ],
+  "projection_uv_area": 0.7827055462101327,
+  "oval_real_opening_no_cap": true,
+  "diffuser_normals_down": true,
+  "diffuser_uv_range": [
+    0.0,
+    26.41800308227539,
+    0.0,
+    1.0
+  ],
+  "route_length_m": 26.418002748006373,
+  "route_points": 475,
+  "unchanged_other_objects_verified": true,
+  "unchanged_object_count": 139,
+  "blender_to_unity_axis_verified": "(-x,z,-y) by Spawn_Entrance and existing Unity scene position",
+  "source_blend_sha256": "8a06a3e28d3b57be793ec6b7f4be704f9a44a5d6b013d4ed52313507d6f47b83"
+}

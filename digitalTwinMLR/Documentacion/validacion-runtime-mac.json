@@ -1,10 +1,10 @@
 {
     "unityVersion": "6000.5.8f1",
-    "buildVersion": "0.6.0",
+    "buildVersion": "0.7.0",
     "platform": "OSXPlayer",
-    "mediaFolder": "/Users/eeminionn/Downloads/Gemelo_Digital_La_Reina/Proyecciones",
+    "mediaFolder": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v7/build/Sala La Reina.app/Contents/Resources/Data/StreamingAssets/Proyecciones",
     "gpu": "Apple M5",
-    "meshRenderers": 89,
+    "meshRenderers": 91,
     "chairCount": 11,
     "projectionSurfaces": 2,
     "uniqueVideoPlayers": 2,
@@ -298,19 +298,20 @@
         4,
         1
     ],
-    "displayedClock": "03:08",
+    "displayedClock": "23:29",
     "displayedCountdown": "14:59",
     "countdownStart": 900,
     "countdownAfterWait": 899,
     "displayRepetitions": 2,
     "tabletopDimensions": {
         "x": 2.270456314086914,
-        "y": 0.10082098841667175,
+        "y": 0.025821004062891008,
         "z": 2.801717519760132
     },
-    "tabletopHeight": 0.7627531886100769,
+    "tabletopHeight": 0.7801744937896729,
+    "tabletopThickness": 0.025821004062891008,
     "pedestalFloorHeight": -1.7881393432617188e-7,
-    "ovalUvArea": 0.7827050089836121,
+    "ovalUvArea": 0.7827050685882568,
     "projectionDimensions": {
         "x": 1.8704562187194825,
         "y": 0.0006452681263908744,
@@ -322,26 +323,26 @@
     "blockedFootsteps": [],
     "gestureGatePassed": true,
     "gestureIntegration": {
-        "supported": true,
-        "principalSeat": true,
-        "liveMap": true,
-        "cameraActive": true,
-        "detectorReady": true,
-        "inferenceProcessed": true,
-        "mirrorDefaultActive": true,
-        "previewActive": true,
-        "previewClosed": true,
-        "mapReloadPreserved": true,
-        "standingGateClosed": true,
-        "lastMapFrozen": true,
-        "cameraStopped": true,
-        "otherChairBlocked": true,
-        "resumedWithoutRelaunch": true,
-        "passed": true,
-        "framesReceived": 18,
-        "inferenceFrames": 3,
-        "launchCount": 1,
-        "resumedFrames": 13,
+        "supported": false,
+        "principalSeat": false,
+        "liveMap": false,
+        "cameraActive": false,
+        "detectorReady": false,
+        "inferenceProcessed": false,
+        "mirrorDefaultActive": false,
+        "previewActive": false,
+        "previewClosed": false,
+        "mapReloadPreserved": false,
+        "standingGateClosed": false,
+        "lastMapFrozen": false,
+        "cameraStopped": false,
+        "otherChairBlocked": false,
+        "resumedWithoutRelaunch": false,
+        "passed": false,
+        "framesReceived": 0,
+        "inferenceFrames": 0,
+        "launchCount": 0,
+        "resumedFrames": 0,
         "error": ""
     },
     "heightAdjustment": {
@@ -357,10 +358,77 @@
         "resetRestoresInitial": true,
         "passed": true,
         "recessedMapVisible": true,
-        "initialProjectionHeight": 0.7738224864006043,
-        "minimumMapOffset": -0.07999999821186066,
+        "initialProjectionHeight": 0.7921648621559143,
+        "minimumMapOffset": -0.018530264496803285,
         "projectionGap": 0.0020000338554382326,
         "pedestalFloorError": 2.9802322387695315e-8,
+        "error": ""
+    },
+    "ceilingGuide": {
+        "configured": true,
+        "importedRouteMatches": true,
+        "metreUvs": true,
+        "ceilingMounted": true,
+        "noGuideColliders": true,
+        "entranceStartsAtBeginning": true,
+        "realCameraAdvances": true,
+        "realCameraReverses": true,
+        "lightLeadsVisitor": true,
+        "visibleBand": true,
+        "routeClear": true,
+        "passed": true,
+        "routeLength": 26.418004989624025,
+        "minimumCeilingHeight": 2.497999906539917,
+        "maximumCeilingHeight": 2.497999906539917,
+        "measuredLookAhead": 1.3499999046325684,
+        "entranceDistance": 0.33955225348472597,
+        "sourceUvLength": 26.41800308227539,
+        "routeStartDistance": 0.33955225348472597,
+        "blockedRouteSamples": [],
+        "blockedRouteDistances": [],
+        "blockedRouteColliderNames": [],
+        "cases": [
+            {
+                "name": "Avance: luz 1,35 m por delante del visitante",
+                "passed": true,
+                "measuredDistance": 3.5999755859375
+            },
+            {
+                "name": "Retroceso corto sin saltar de tramo",
+                "passed": true,
+                "measuredDistance": 3.4000244140625
+            },
+            {
+                "name": "Curva: continúa la distancia sobre el recorrido",
+                "passed": true,
+                "measuredDistance": 4.20001220703125
+            },
+            {
+                "name": "Rama cercana: mantiene el tramo aunque la otra rama esté más cerca",
+                "passed": true,
+                "measuredDistance": 2.0999755859375
+            },
+            {
+                "name": "Reubicación: recupera posición después de un salto real",
+                "passed": true,
+                "measuredDistance": 8.0
+            },
+            {
+                "name": "Fin abierto: apaga sin envolver hacia la entrada",
+                "passed": true,
+                "measuredDistance": 10.0
+            },
+            {
+                "name": "Fuera del recorrido: no guía desde otra zona de la sala",
+                "passed": true,
+                "measuredDistance": 10.0
+            },
+            {
+                "name": "Sentado: apaga la guía y conserva el progreso",
+                "passed": true,
+                "measuredDistance": 3.0
+            }
+        ],
         "error": ""
     }
 }

@@ -16,6 +16,7 @@ namespace LaReina.DigitalTwin
         public ProjectionDirector projections;
         public RoomLighting lighting;
         public WalkingFootprintGuide footprints;
+        public CeilingLedGuide ceilingGuide;
         public CeilingEventDisplay ceilingDisplay;
         public GestureTableBridge gestureBridge;
         [Serializable] public class VideoResult { public string name; public bool prepared; public long frame; public int width; public int height; }
@@ -41,7 +42,7 @@ namespace LaReina.DigitalTwin
             public string displayedClock, displayedCountdown;
             public int countdownStart, countdownAfterWait, displayRepetitions;
             public Vector3 tabletopDimensions;
-            public float tabletopHeight, pedestalFloorHeight, ovalUvArea;
+            public float tabletopHeight, tabletopThickness, pedestalFloorHeight, ovalUvArea;
             public Vector3 projectionDimensions;
             public bool reducedWhiteRim;
             public bool ovalTablePassed, footprintRouteClear;
@@ -49,6 +50,7 @@ namespace LaReina.DigitalTwin
             public bool gestureGatePassed;
             public GestureBridgeQa.Result gestureIntegration;
             public TableAdjustmentQa.Result heightAdjustment;
+            public CeilingLedGuideQa.Result ceilingGuide;
         }
         IEnumerator Start()
         {
@@ -77,9 +79,11 @@ namespace LaReina.DigitalTwin
             report.ovalUvArea=tableProjection.sourceUvArea;
             report.projectionDimensions=tableProjection.targetRenderer.bounds.size;
             report.reducedWhiteRim=Mathf.Abs(report.projectionDimensions.x-1.870456f)<.003f && Mathf.Abs(report.projectionDimensions.z-2.401718f)<.003f;
-            report.tabletopDimensions=top.bounds.size;report.tabletopHeight=top.bounds.max.y;report.pedestalFloorHeight=pedestal.bounds.min.y;
+            report.tabletopDimensions=top.bounds.size;report.tabletopHeight=top.bounds.max.y;
+            report.tabletopThickness=top.bounds.size.y;report.pedestalFloorHeight=pedestal.bounds.min.y;
             report.ovalTablePassed=Mathf.Abs(top.bounds.size.x-2.270456f)<.003f && Mathf.Abs(top.bounds.size.z-2.801718f)<.003f &&
-                Mathf.Abs(report.tabletopHeight-.762753f)<.002f && Mathf.Abs(report.pedestalFloorHeight)<.001f &&
+                Mathf.Abs(report.tabletopHeight-.7801744f)<.002f && Mathf.Abs(report.tabletopThickness-.0258207f)<.002f &&
+                Mathf.Abs(report.pedestalFloorHeight)<.001f &&
                 tableProjection.ovalMask && tableProjection.sourceUvsWithinOval && report.ovalUvArea>.775f && report.ovalUvArea<.795f &&
                 tableProjection.targetRenderer.sharedMaterials[tableProjection.materialSlot].GetFloat("_OvalMask")>.5f;
             report.spawnFloorSupport=true;
@@ -109,6 +113,7 @@ namespace LaReina.DigitalTwin
             report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
             report.gestureGatePassed=report.seats.Length==11 && report.seats.All(s=>s.gestureGateCorrect);
             report.heightAdjustment=TableAdjustmentQa.Run(desktop.tableAdjustment);
+            report.ceilingGuide=CeilingLedGuideQa.Run(ceilingGuide,desktop);
             var blockedSteps=new List<int>();
             for(int i=0;i<footprints.StepCount;i++)
             {
@@ -153,7 +158,8 @@ namespace LaReina.DigitalTwin
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
                 report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
-                report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed && report.heightAdjustment.passed && report.reducedWhiteRim;
+                report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed && report.heightAdjustment.passed && report.reducedWhiteRim &&
+                report.ceilingGuide!=null && report.ceilingGuide.passed;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)
@@ -216,6 +222,24 @@ namespace LaReina.DigitalTwin
             desktop.eye.transform.LookAt(ceilingDisplay.targetRenderer.bounds.center);
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"14_pantalla_lateral.png"));
+            bool guideWasEnabled=ceilingGuide.enabled;
+            // Disabling first clears the previous band; explicit advancement
+            // then renders a stable cue while the capture coroutine waits.
+            ceilingGuide.enabled=false;
+            for(int i=0;i<2;i++)
+            {
+                desktop.ResetPosition();body.enabled=false;
+                Vector3 floor=ceilingGuide.PointAtDistance(3f+i*2f);floor.y=.04f;
+                desktop.transform.SetPositionAndRotation(floor,Quaternion.identity);
+                desktop.eye.transform.localPosition=Vector3.up*desktop.eyeHeight;
+                ceilingGuide.RefreshProgress(true);ceilingGuide.AdvanceVisuals(.3f);
+                desktop.eye.transform.LookAt(ceilingGuide.PointAtDistance(ceilingGuide.CurrentDistance+ceilingGuide.LookAhead+ceilingGuide.LitLength*.5f));
+                yield return new WaitForSeconds(.4f);yield return new WaitForEndOfFrame();
+                ScreenCapture.CaptureScreenshot(Path.Combine(folder,i==0?"17_guia_techo.png":"18_guia_techo_avance.png"));
+                yield return null;
+            }
+            ceilingGuide.enabled=guideWasEnabled;
+            desktop.ResetPosition();ceilingGuide.RefreshProgress(true);ceilingGuide.AdvanceVisuals(.3f);
             if(Array.IndexOf(args,"-twinBridgeValidation")>=0)
             {
                 yield return GestureBridgeQa.Run(desktop,gestureBridge,folder,result=>report.gestureIntegration=result);

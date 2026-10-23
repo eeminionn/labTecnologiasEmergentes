@@ -31,7 +31,7 @@ Material:
     m_Floats:
     - _FitMode: 0
     - _OvalMask: 1
-    - _SurfaceAspect: 0.7787994
+    - _SurfaceAspect: 0.7787992
     - _VideoAspect: 0.5
     m_Colors:
     - _BaseColor: {r: 1, g: 1, b: 1, a: 1}
