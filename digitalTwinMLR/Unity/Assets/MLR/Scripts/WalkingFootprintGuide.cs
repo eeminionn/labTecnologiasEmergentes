@@ -16,6 +16,8 @@ namespace LaReina.DigitalTwin
         public int StepCount => stepPositions.Length;
         public int IlluminatedStep { get; private set; }
         public float PulseIntensity { get; private set; }
+        public bool HasNearbyRoute { get; private set; }
+        public bool HasTrackedPosition { get; private set; }
         public int ActiveLightCount
         {
             get
@@ -27,12 +29,12 @@ namespace LaReina.DigitalTwin
             }
         }
         public float ActivationDistance = 1.5f;
+        [Min(0f)] public float PositionTieTolerance = .025f;
         public const float StepDuration = .62f;
         const int LookAheadSteps = 4;
         Material material;
         float pulseTime, lightIntensity = .20f;
-        Vector3 lastVisitor;
-        bool hasVisitor, gaitInitialized;
+        bool gaitInitialized;
 
         void Start()
         {
@@ -77,6 +79,7 @@ namespace LaReina.DigitalTwin
                 while(pulseTime>=StepDuration)
                 {
                     pulseTime-=StepDuration;
+                    if(!HasNearbyRoute)continue;
                     int next=Wrap(IlluminatedStep+1);
                     int ahead=Wrap(next-CurrentStep);
                     if(ahead<1 || ahead>LookAheadSteps)
@@ -89,7 +92,11 @@ namespace LaReina.DigitalTwin
                 }
             }
             // Each pulse reaches zero before the following shoe starts: never a glowing pair.
-            PulseIntensity=paused?0:Mathf.Sin(Mathf.Clamp01(pulseTime/StepDuration)*Mathf.PI);
+            PulseIntensity=paused || !HasTrackedPosition?0:Mathf.Sin(Mathf.Clamp01(pulseTime/StepDuration)*Mathf.PI);
+            ApplyVisuals();
+        }
+        void ApplyVisuals()
+        {
             if(material)
             {
                 material.SetFloat("_Current",CurrentStep);
@@ -113,22 +120,42 @@ namespace LaReina.DigitalTwin
             if(!visitor)return;
             if((visitor==desktopEye && desktopSeat && desktopSeat.IsSeated) || (visitor==xrEye && xrSeat && xrSeat.IsSeated))return;
             Vector3 point=visitor.position;point.y=0;
-            bool jumped=allowJump || !hasVisitor || Vector3.Distance(point,lastVisitor)>1.5f;
-            lastVisitor=point;hasVisitor=true;
             int best=CurrentStep;float distance=float.PositiveInfinity;
             for(int i=0;i<StepCount;i++)
             {
-                int forward=(i-CurrentStep+StepCount)%StepCount;
-                if(!jumped && forward>7 && forward<StepCount-3)continue;
-                float d=Vector3.SqrMagnitude(point-stepPositions[i]);
+                Vector3 candidate=stepPositions[i];candidate.y=0;
+                float d=Vector3.SqrMagnitude(point-candidate);
                 if(d<distance){best=i;distance=d;}
             }
-            if(distance<ActivationDistance*ActivationDistance)
+            bool wasNearby=HasNearbyRoute;
+            HasNearbyRoute=distance<=ActivationDistance*ActivationDistance;
+            if(!HasNearbyRoute)return;
+            if(HasTrackedPosition && !allowJump && PositionTieTolerance>0)
             {
-                int forward=(best-CurrentStep+StepCount)%StepCount;
-                if(jumped || forward<=7)CurrentStep=best;
+                float limit=Mathf.Min(ActivationDistance,Mathf.Sqrt(distance)+PositionTieTolerance);
+                int continuity=StepDelta(best);
+                for(int i=0;i<StepCount;i++)
+                {
+                    Vector3 candidate=stepPositions[i];candidate.y=0;
+                    if(Vector3.SqrMagnitude(point-candidate)>limit*limit)continue;
+                    int delta=StepDelta(i);
+                    if(delta>=continuity)continue;
+                    best=i;continuity=delta;
+                }
             }
+            if(!HasTrackedPosition || !wasNearby || best!=CurrentStep)
+            {
+                CurrentStep=best;
+                int next=Wrap(CurrentStep+1);
+                // A relocated cue changes foot immediately and remains close
+                // to the new position, rather than waiting for the gait clock.
+                if(gaitInitialized && (next&1)==(IlluminatedStep&1))next=Wrap(next+1);
+                IlluminatedStep=next;gaitInitialized=true;
+            }
+            HasTrackedPosition=true;
+            ApplyVisuals();
         }
+        int StepDelta(int step){int forward=Wrap(step-CurrentStep);return Mathf.Min(forward,StepCount-forward);}
 
         public Mesh CreateMesh(Vector3 entrance)
         {

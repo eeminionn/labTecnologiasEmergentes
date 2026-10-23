@@ -1,5 +1,13 @@
 # Revisión y alcance
 
+## Revisión de la versión 0.8 · 22 de octubre de 2026
+
+La ejecución en Mac quedó **aprobada** en [validacion-runtime-mac.json](./validacion-runtime-mac.json). Se comprobó el descenso del mapa de **20 cm con K**, de **79,2 a 59,2 cm** del piso, y su combinación con el ajuste de la mesa. El pedestal mantiene el apoyo en el piso, se adapta sin atravesar el inserto y recupera su altura al restablecer con **0**. También pasaron la revisión de colisiones, la separación de 2 mm, la máscara y las proporciones del mapa.
+
+Pasaron los **13 casos de la guía del techo** y los **7 del piso**: avance, retroceso, cambio de tramo, salida y reingreso. Fuera de la ruta conservan la última ubicación y al sentarse se pausan. El anticipo del techo sigue siendo **1,35 m**. Las once sillas, los videos y la autorización exclusiva de Chair_10 también pasaron.
+
+La geometría de Blender y las medidas iniciales de la versión 0.7 permanecen iguales. El control gestual y la copia VR no se modificaron; **la cámara física y la inferencia no se volvieron a ensayar** en esta revisión. El resultado aprobado anterior se conserva en [validacion-runtime-mac-v0.7.json](./validacion-runtime-mac-v0.7.json) y sus medidas, en [medidas-modelo-v0.7.json](./medidas-modelo-v0.7.json).
+
 ## Cambios de la versión 0.6
 
 El borde blanco de la mesa pasa de 30 a **20 cm**, y el mapa ocupa un área mayor sin cambiar el tamaño exterior ni las alturas iniciales. Se incorporan ajustes temporales de altura, inicio de cámara en espejo y una vista flotante de seguimiento al usar la silla principal. La geometría está revisada en [verification_v6.json](./verification_v6.json), con medidas en [table_geometry_v6.json](./table_geometry_v6.json). La disposición en U de las sillas permanece idéntica a la registrada en [verification_v5.json](./verification_v5.json) y [chairs_u_v5.json](./chairs_u_v5.json).
@@ -41,6 +49,6 @@ En la versión 0.6 solo cambian las mallas del borde blanco, el inserto y la pro
 
 Incorporamos la mesa más delgada y el recorrido orgánico del techo desde el modelo actualizado de Blender. El tablero queda a **78,0 cm**, con **2,58 cm de espesor**; conserva el borde de 20 cm y la proyección ovalada. La tira LED enciende un tramo entre **1,35 y 2,60 m por delante** para guiar el recorrido.
 
-La ejecución en Mac quedó aprobada en [validacion-runtime-mac.json](./validacion-runtime-mac.json): pasaron los ocho casos de la guía, las once sillas, los ajustes de altura, la máscara del mapa, las huellas y la autorización del puesto principal. La geometría y las UV están revisadas en [verification_v7.json](./verification_v7.json), con las medidas actuales en [medidas-modelo.json](./medidas-modelo.json). La cámara y la inferencia gestual no se volvieron a ensayar en esta comprobación; su prueba física anterior queda en el respaldo de la versión 0.6.
+La ejecución de la versión 0.7 en Mac quedó aprobada en [validacion-runtime-mac-v0.7.json](./validacion-runtime-mac-v0.7.json): pasaron los ocho casos de la guía, las once sillas, los ajustes de altura, la máscara del mapa, las huellas y la autorización del puesto principal. La geometría y las UV están revisadas en [verification_v7.json](./verification_v7.json), con las medidas de esa versión en [medidas-modelo-v0.7.json](./medidas-modelo-v0.7.json). La cámara y la inferencia gestual no se volvieron a ensayar en esta comprobación; su prueba física anterior queda en el respaldo de la versión 0.6.
 
 Estos cambios corresponden a **Mac**. La copia independiente probada en **Quest 2**, con giro continuo, mandos visibles y mapa estático sin cámara, permanece aparte.

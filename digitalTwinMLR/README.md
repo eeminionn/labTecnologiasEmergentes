@@ -1,11 +1,26 @@
 # Recorrido virtual de la sala
 
-**Avance:** 22 de octubre de 2026 · versión 0.7<br>
+**Avance:** 22 de octubre de 2026 · versión 0.8<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
 
 Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y comparar la experiencia de pie y sentados.
+
+## Ajustes al recorrido y a la lectura del mapa
+
+Al probar la mesa sentados, quisimos comparar una posición más baja del mapa. Ahora podemos bajarlo hasta **20 cm con K**; el inserto y el pedestal se adaptan para que no se atraviesen. **I** permite subirlo, **U/J** siguen moviendo la mesa completa y **0** vuelve al inicio. Los ajustes no se guardan al cerrar.
+
+También ajustamos las luces del piso y del techo para que retomen el tramo más cercano, aunque retrocedamos o volvamos al recorrido desde otro lado. Fuera de la ruta conservan la última ubicación; al sentarnos se pausan. La luz del techo sigue adelantándose **1,35 m** para indicar hacia dónde caminar.
+
+<table>
+  <tr>
+    <td><img src="./Imagenes/mapa-descenso.png" alt="Prueba de la superficie del mapa 20 centímetros más baja desde la silla principal" width="760" /></td>
+  </tr>
+  <tr>
+    <td>Prueba del descenso de 20 cm para comparar la lectura del mapa desde la silla.</td>
+  </tr>
+</table>
 
 ## Mesa más delgada y guía en el techo
 

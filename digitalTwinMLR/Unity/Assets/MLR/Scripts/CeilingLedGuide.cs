@@ -22,9 +22,7 @@ namespace LaReina.DigitalTwin
         [Min(.25f)] public float LookAhead = 1.35f;
         [Min(.1f)] public float LitLength = 1.25f;
         [Min(.5f)] public float ActivationDistance = 2.25f;
-        [Min(.1f)] public float ProjectionWindowAhead = 3f;
-        [Min(.1f)] public float ProjectionWindowBehind = .9f;
-        [Min(.1f)] public float RelocationDistance = 1.8f;
+        [Min(0f)] public float PositionTieTolerance = .025f;
         [Min(0f)] public float FadeTime = .20f;
 
         public float CurrentDistance { get; private set; }
@@ -33,6 +31,7 @@ namespace LaReina.DigitalTwin
         public float VisibleIntensity { get; private set; }
         public bool IsGuiding => VisibleIntensity > .01f;
         public bool HasNearbyRoute { get; private set; }
+        public bool HasTrackedPosition { get; private set; }
 
         static readonly int HeadId = Shader.PropertyToID("_HeadDistance");
         static readonly int LengthId = Shader.PropertyToID("_RouteLength");
@@ -42,8 +41,6 @@ namespace LaReina.DigitalTwin
         static readonly int ClosedId = Shader.PropertyToID("_ClosedLoop");
         float[] lengths = new float[0];
         int segmentCount;
-        bool hasVisitor;
-        Vector3 lastVisitor;
         MaterialPropertyBlock properties;
         float lampIntensity = .32f;
 
@@ -70,7 +67,7 @@ namespace LaReina.DigitalTwin
                 lengths[i + 1] = lengths[i] + Vector3.Distance(routePoints[i], routePoints[(i + 1) % routePoints.Length]);
             RouteLength = lengths[segmentCount];
             CurrentDistance = Mathf.Clamp(CurrentDistance, 0f, RouteLength);
-            hasVisitor = false;
+            HasTrackedPosition = false;
             HasNearbyRoute = false;
         }
 
@@ -107,9 +104,9 @@ namespace LaReina.DigitalTwin
         }
 
         /// <summary>
-        /// Project onto the nearby section in XZ, without mistaking height for
-        /// distance. The local arc window prevents jumps to a neighbouring arm
-        /// of the organic route. Only a real relocation permits global search.
+        /// Find the globally nearest section in XZ on every reading. Continuity
+        /// resolves only a small geometric tie; it never blocks a return or a
+        /// slow approach to another section of the room.
         /// </summary>
         public void RefreshProgress(bool allowJump = false)
         {
@@ -118,42 +115,44 @@ namespace LaReina.DigitalTwin
             if (!visitor || VisitorIsSeated(visitor)) return;
             Vector3 point = visitor.position;
             point.y = 0f;
-            float travel = hasVisitor ? Vector3.Distance(point, lastVisitor) : 0f;
-            bool relocate = allowJump || !hasVisitor || travel > RelocationDistance;
-            lastVisitor = point;
-            hasVisitor = true;
-            float bestScore = float.PositiveInfinity, bestDistance = float.PositiveInfinity;
+            float bestDistance = float.PositiveInfinity;
             float nearestArc = CurrentDistance;
             for (int i = 0; i < segmentCount; i++)
             {
-                Vector3 a = routePoints[i], b = routePoints[(i + 1) % routePoints.Length];
-                a.y = b.y = 0f;
-                Vector3 edge = b - a;
-                if (edge.sqrMagnitude < .000001f) continue;
-                float t = Mathf.Clamp01(Vector3.Dot(point - a, edge) / edge.sqrMagnitude);
-                float arc = Mathf.Lerp(lengths[i], lengths[i + 1], t);
-                float delta = ArcDelta(arc);
-                if (!relocate && (delta < -ProjectionWindowBehind || delta > ProjectionWindowAhead)) continue;
-                float squaredDistance = (point - (a + edge * t)).sqrMagnitude;
-                // A small continuity preference also resolves intersections
-                // where two modelled segments occupy the same floor position.
-                float score = squaredDistance + (relocate ? 0f : delta * delta * .003f);
-                if (score >= bestScore) continue;
-                bestScore = score;
+                if (!ProjectSegment(point, i, out float arc, out float squaredDistance) || squaredDistance >= bestDistance) continue;
                 bestDistance = squaredDistance;
                 nearestArc = arc;
             }
             HasNearbyRoute = bestDistance <= ActivationDistance * ActivationDistance;
             if (!HasNearbyRoute) return;
-            if (relocate) CurrentDistance = nearestArc;
-            else
+            if (HasTrackedPosition && !allowJump && PositionTieTolerance > 0f)
             {
-                // The leading edge can move only as fast as the visitor plus
-                // a small tolerance; a curve never makes the cue jump ahead.
-                float maximumAdvance = Mathf.Max(.012f, travel * 1.3f);
-                float delta = Mathf.Clamp(ArcDelta(nearestArc), -maximumAdvance, maximumAdvance);
-                CurrentDistance = closedLoop ? Wrap(CurrentDistance + delta) : Mathf.Clamp(CurrentDistance + delta, 0f, RouteLength);
+                float limit = Mathf.Min(ActivationDistance, Mathf.Sqrt(bestDistance) + PositionTieTolerance);
+                float bestContinuity = Mathf.Abs(ArcDelta(nearestArc));
+                for (int i = 0; i < segmentCount; i++)
+                {
+                    if (!ProjectSegment(point, i, out float arc, out float squaredDistance) || squaredDistance > limit * limit) continue;
+                    float continuity = Mathf.Abs(ArcDelta(arc));
+                    if (continuity >= bestContinuity) continue;
+                    bestContinuity = continuity;
+                    nearestArc = arc;
+                }
             }
+            CurrentDistance = nearestArc;
+            HasTrackedPosition = true;
+            ApplyVisuals();
+        }
+
+        bool ProjectSegment(Vector3 point, int index, out float arc, out float squaredDistance)
+        {
+            Vector3 a = routePoints[index], b = routePoints[(index + 1) % routePoints.Length];
+            a.y = b.y = 0f;
+            Vector3 edge = b - a;
+            if (edge.sqrMagnitude < .000001f) { arc = 0f; squaredDistance = float.PositiveInfinity; return false; }
+            float t = Mathf.Clamp01(Vector3.Dot(point - a, edge) / edge.sqrMagnitude);
+            arc = Mathf.Lerp(lengths[index], lengths[index + 1], t);
+            squaredDistance = (point - (a + edge * t)).sqrMagnitude;
+            return true;
         }
 
         public Vector3 PointAtDistance(float distance)
@@ -173,8 +172,14 @@ namespace LaReina.DigitalTwin
         public void AdvanceVisuals(float deltaTime)
         {
             bool hasAhead = closedLoop || CurrentDistance + LookAhead < RouteLength;
-            float target = HasNearbyRoute && hasAhead && !IsPaused(ActiveVisitor()) ? 1f : 0f;
+            // Loss of range freezes the last valid cue; it does not erase it.
+            float target = HasTrackedPosition && hasAhead && !IsPaused(ActiveVisitor()) ? 1f : 0f;
             VisibleIntensity = FadeTime <= 0f ? target : Mathf.MoveTowards(VisibleIntensity, target, Mathf.Max(0f, deltaTime) / FadeTime);
+            ApplyVisuals();
+        }
+
+        void ApplyVisuals()
+        {
             if (emissiveRenderer)
             {
                 if (properties == null) properties = new MaterialPropertyBlock();

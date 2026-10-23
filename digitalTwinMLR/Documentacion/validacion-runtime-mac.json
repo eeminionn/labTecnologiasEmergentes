@@ -1,8 +1,8 @@
 {
     "unityVersion": "6000.5.8f1",
-    "buildVersion": "0.7.0",
+    "buildVersion": "0.8.0",
     "platform": "OSXPlayer",
-    "mediaFolder": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v7/build/Sala La Reina.app/Contents/Resources/Data/StreamingAssets/Proyecciones",
+    "mediaFolder": "/Users/eeminionn/Documents/Codex/2026-10-05/es/tmp/digital_twin_v8/build/Sala La Reina.app/Contents/Resources/Data/StreamingAssets/Proyecciones",
     "gpu": "Apple M5",
     "meshRenderers": 91,
     "chairCount": 11,
@@ -298,7 +298,7 @@
         4,
         1
     ],
-    "displayedClock": "23:29",
+    "displayedClock": "23:46",
     "displayedCountdown": "14:59",
     "countdownStart": 900,
     "countdownAfterWait": 899,
@@ -358,10 +358,19 @@
         "resetRestoresInitial": true,
         "passed": true,
         "recessedMapVisible": true,
+        "fullMapTravel": true,
+        "combinedLowering": true,
+        "pedestalCompressionTracksInset": true,
+        "pedestalRestoresWithMap": true,
+        "pedestalColliderAligned": true,
+        "surfaceCollidersAligned": true,
         "initialProjectionHeight": 0.7921648621559143,
-        "minimumMapOffset": -0.018530264496803285,
+        "minimumMapOffset": -0.20000000298023225,
         "projectionGap": 0.0020000338554382326,
-        "pedestalFloorError": 2.9802322387695315e-8,
+        "pedestalFloorError": 5.960464477539063e-8,
+        "mapOnlyProjectionHeight": 0.5921648740768433,
+        "lowestProjectionHeight": 0.3921649158000946,
+        "minimumPedestalHeight": 0.3615197539329529,
         "error": ""
     },
     "ceilingGuide": {
@@ -404,9 +413,14 @@
                 "measuredDistance": 4.20001220703125
             },
             {
-                "name": "Rama cercana: mantiene el tramo aunque la otra rama esté más cerca",
+                "name": "Empate entre ramas: conserva continuidad con distancias casi iguales",
                 "passed": true,
                 "measuredDistance": 2.0999755859375
+            },
+            {
+                "name": "Rama más cercana: cambia de tramo sin exigir un salto",
+                "passed": true,
+                "measuredDistance": 9.91998291015625
             },
             {
                 "name": "Reubicación: recupera posición después de un salto real",
@@ -419,14 +433,76 @@
                 "measuredDistance": 10.0
             },
             {
-                "name": "Fuera del recorrido: no guía desde otra zona de la sala",
+                "name": "Fuera del recorrido: conserva la última posición iluminada",
                 "passed": true,
-                "measuredDistance": 10.0
+                "measuredDistance": 3.0
+            },
+            {
+                "name": "Reentrada lenta: recupera otro tramo con pasos menores a 12 cm",
+                "passed": true,
+                "measuredDistance": 8.0
+            },
+            {
+                "name": "Retroceso largo: acompaña toda la vuelta sin bloqueo de avance",
+                "passed": true,
+                "measuredDistance": 3.0
+            },
+            {
+                "name": "Otro tramo: reubica inmediatamente sin allowJump",
+                "passed": true,
+                "measuredDistance": 20.0
+            },
+            {
+                "name": "Pérdida sostenida de alcance: no desplaza el foco retenido",
+                "passed": true,
+                "measuredDistance": 19.0
             },
             {
                 "name": "Sentado: apaga la guía y conserva el progreso",
                 "passed": true,
                 "measuredDistance": 3.0
+            }
+        ],
+        "error": ""
+    },
+    "footprintTracking": {
+        "configured": true,
+        "passed": true,
+        "cases": [
+            {
+                "name": "Piso: avance y foco actualizados inmediatamente",
+                "passed": true,
+                "measuredDistance": 11.0
+            },
+            {
+                "name": "Piso: retroceso sin ventana de avance",
+                "passed": true,
+                "measuredDistance": 7.0
+            },
+            {
+                "name": "Piso: otro tramo sin allowJump y cambio de pie",
+                "passed": true,
+                "measuredDistance": 23.0
+            },
+            {
+                "name": "Piso: fuera de alcance conserva posición y huella iluminada",
+                "passed": true,
+                "measuredDistance": 23.0
+            },
+            {
+                "name": "Piso: reentrada lenta desde fuera a otro tramo",
+                "passed": true,
+                "measuredDistance": 39.0
+            },
+            {
+                "name": "Piso: diez pasos de retroceso consecutivos",
+                "passed": true,
+                "measuredDistance": 29.0
+            },
+            {
+                "name": "Piso: reanuda alternancia con una sola luz",
+                "passed": true,
+                "measuredDistance": 29.0
             }
         ],
         "error": ""

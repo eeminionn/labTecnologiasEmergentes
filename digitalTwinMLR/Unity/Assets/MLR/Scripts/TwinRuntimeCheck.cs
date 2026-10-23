@@ -51,6 +51,7 @@ namespace LaReina.DigitalTwin
             public GestureBridgeQa.Result gestureIntegration;
             public TableAdjustmentQa.Result heightAdjustment;
             public CeilingLedGuideQa.Result ceilingGuide;
+            public WalkingFootprintGuideQa.Result footprintTracking;
         }
         IEnumerator Start()
         {
@@ -113,6 +114,7 @@ namespace LaReina.DigitalTwin
             report.seatingPassed=report.seats.Length==11 && report.seats.All(s=>s.passed);
             report.gestureGatePassed=report.seats.Length==11 && report.seats.All(s=>s.gestureGateCorrect);
             report.heightAdjustment=TableAdjustmentQa.Run(desktop.tableAdjustment);
+            report.footprintTracking=WalkingFootprintGuideQa.Run(footprints,desktop);
             report.ceilingGuide=CeilingLedGuideQa.Run(ceilingGuide,desktop);
             var blockedSteps=new List<int>();
             for(int i=0;i<footprints.StepCount;i++)
@@ -159,7 +161,8 @@ namespace LaReina.DigitalTwin
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
                 report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
                 report.ovalTablePassed && report.footprintRouteClear && report.gestureGatePassed && report.heightAdjustment.passed && report.reducedWhiteRim &&
-                report.ceilingGuide!=null && report.ceilingGuide.passed;
+                report.ceilingGuide!=null && report.ceilingGuide.passed &&
+                report.footprintTracking!=null && report.footprintTracking.passed;
             body.enabled=false;
             string[] views={"Spawn_Entrance","Spawn_Left","Spawn_Far","View_Seated"};
             for(int i=0;i<views.Length;i++)
@@ -190,6 +193,15 @@ namespace LaReina.DigitalTwin
             desktop.ToggleSeat();
             yield return new WaitForSeconds(.7f);yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"06_sentado.png"));
+            yield return null;
+            Quaternion seatedLook=desktop.eye.transform.rotation;
+            desktop.tableAdjustment.MoveMap(-100f);
+            desktop.eye.transform.LookAt(desktop.tableAdjustment.ProjectionBounds.center);
+            yield return new WaitForEndOfFrame();
+            ScreenCapture.CaptureScreenshot(Path.Combine(folder,"19_mapa_bajado.png"));
+            yield return null;
+            desktop.tableAdjustment.ResetAdjustments();
+            desktop.eye.transform.rotation=seatedLook;
             desktop.transform.Rotate(Vector3.up,90);
             yield return new WaitForSeconds(.5f);yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"07_sentado_lateral.png"));

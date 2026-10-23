@@ -1,9 +1,9 @@
 {
-  "version": "0.7.0",
+  "version": "0.8.0",
   "units": "meters",
   "source_original_unchanged": true,
   "geometry_source": "geometry_v7.json",
-  "previous_revision": "medidas-modelo-v0.6.json",
+  "previous_revision": "medidas-modelo-v0.7.json",
   "room_outer_dimensions_m": [
     8,
     9,
@@ -428,7 +428,7 @@
     }
   ],
   "axes": "Blender X width, Y depth (entry +Y), Z up; verified FBX conversion to Unity (-x,z,-y), imported at one unit per metre.",
-  "note": "V0.7 incorporates the thinner tabletop, pedestal and inset from the current Blender model and adds its organic ceiling LED route. The 20cm rim, oval map size, all11chairs and their anchors, room, floor, panorama and existing ceiling elements remain unchanged. Height controls restore the new model baseline and do not persist.",
+  "note": "V0.8 changes temporary height controls and visitor tracking of floor/ceiling guides only. The V0.7 Blender geometry, initial table/map heights, room, oval map, 20 cm rim, chairs and anchors remain unchanged. K lowers the inset/map up to 20 cm while the pedestal adapts without overlap; I raises them up to 5 cm. U/J still move the whole table; 0 restores the initial heights. Adjustments do not persist.",
   "ceiling_event_display": {
     "geometry": "ceiling-event-geometry.json",
     "live_panel": [
@@ -484,12 +484,32 @@
     "controls": {
       "U": "raise entire table",
       "J": "lower entire table",
-      "I": "raise inset and map relative to table",
-      "K": "lower inset and map relative to table",
+      "I": "raise inset and map relative to table, up to 5 cm",
+      "K": "lower inset and map relative to table, up to 20 cm; pedestal adapts to clear the inset",
       "0": "restore initial table/map heights"
     },
     "persistent": false,
-    "initial_heights_match_current_model": true
+    "initial_heights_match_current_model": true,
+    "table_offset_limits_m": [
+      -0.2,
+      0.1
+    ],
+    "map_offset_limits_m": [
+      -0.2,
+      0.05
+    ],
+    "pedestal_adapts_to_lowered_inset": true,
+    "pedestal_remains_floor_supported": true,
+    "runtime_verification": "Aprobado en Mac 0.8.0; ver validacion-runtime-mac.json",
+    "runtime_results": {
+      "initial_projection_height_m": 0.7921648621559143,
+      "map_only_minimum_projection_height_m": 0.5921648740768433,
+      "combined_minimum_projection_height_m": 0.3921649158000946,
+      "pedestal_floor_supported": true,
+      "inset_clears_pedestal": true,
+      "colliders_aligned": true,
+      "reset_restores_initial": true
+    }
   },
   "ceiling_led_guide": {
     "channel_object": "Ceiling_Led_Channel",
@@ -535,12 +555,23 @@
     "led_pitch_m": 0.035,
     "pause_when_seated": true,
     "fade_when_movement_released": true,
-    "tracking_reference": "desktop visitor camera projected onto route in XZ",
+    "tracking_reference": "nearest route position in XZ to desktop visitor camera; supports forward/backward travel and re-entry at another section",
     "materials": [
       "Steel",
       "CeilingLed"
     ],
-    "runtime_verification": "Aprobado en Mac 0.7.0; ver validacion-runtime-mac.json",
-    "scope": "Mac; independent Quest2 copy unchanged"
+    "runtime_verification": "Aprobado en Mac 0.8.0; 13 casos; ver validacion-runtime-mac.json",
+    "scope": "Mac; independent Quest2 copy unchanged",
+    "hold_last_location_outside_activation_distance": true
+  },
+  "floor_footprint_guide": {
+    "tracking_reference": "nearest footprint to visitor in XZ; supports forward/backward travel and re-entry at another section",
+    "hold_last_location_outside_activation_distance": true,
+    "pause_when_seated": true,
+    "initial_pause_preserved": true,
+    "alternating_feet": true,
+    "single_illuminated_footprint": true,
+    "geometry_unchanged": true,
+    "runtime_verification": "Aprobado en Mac 0.8.0; 7 casos; ver validacion-runtime-mac.json"
   }
 }

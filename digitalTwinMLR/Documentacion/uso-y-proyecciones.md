@@ -19,12 +19,18 @@ En Mac, pulsa **Enter** o haz clic sobre la vista para comenzar; **Esc** libera 
 | Espacio | Pausar o continuar los videos |
 | H | Mostrar u ocultar la ayuda |
 | U / J | Subir / bajar la mesa completa |
-| I / K | Subir / bajar el mapa y su inserto respecto de la mesa |
+| I / K | Subir / bajar el mapa y su inserto respecto de la mesa; K permite hasta 20 cm de descenso |
 | 0 | Restablecer las alturas iniciales de mesa y mapa |
 
-Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas avanzan con la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada; su avance se detiene mientras está sentado. La luz principal marca una sola pisada por vez, alternando derecha e izquierda.
+Las once sillas tienen un punto de vista fijo para mirar alrededor sin desplazarse. En el recorrido de escritorio, los ojos están a **1,65 m de pie** y **1,18 m al sentarse**, con un campo de visión vertical de **60°**. Al levantarse se busca espacio libre junto a la silla. Las huellas toman el punto más cercano a la posición del visitante, rodeando la mesa de izquierda a derecha desde la entrada. Siguen tanto el avance como el retroceso y retoman el tramo cercano al reingresar por otra parte del recorrido; fuera de la ruta conservan la última ubicación. Su avance se detiene mientras está sentado. La luz principal marca una sola pisada por vez, alternando derecha e izquierda.
 
 La **copia independiente probada en Meta Quest 2** permite sentarse o levantarse con **A del mando derecho**. El stick izquierdo desplaza y el derecho gira de forma continua; el gatillo izquierdo permite apuntar al piso y soltar para teletransportarse. **B** reajusta la altura de pie. El visor conserva el seguimiento natural de la cabeza, también sentado, y muestra los mandos. Esta copia usa un mapa estático, sin cámara ni control gestual, y permanece separada de los cambios de Mac descritos aquí.
+
+## Ajustes de interacción · versión 0.8
+
+**I/K** cambian la altura del mapa y del inserto respecto del tablero: hasta **5 cm hacia arriba** y **20 cm hacia abajo**. El pedestal adapta su altura cuando hace falta, con su base apoyada en el piso y sin atravesar el inserto. **U/J** mantienen el ajuste de la mesa completa, entre **20 cm abajo y 10 cm arriba** de la altura inicial. **0** restaura los dos valores; nada de esto se guarda entre aperturas. El modelo inicial y sus medidas son los de la versión 0.7.
+
+Las guías del piso y del techo buscan ahora la posición más cercana al visitante durante el recorrido. Esto permite avanzar, retroceder o salir y volver a entrar por otro tramo sin quedar enganchado al anterior. Fuera de su rango de activación mantienen la última ubicación. Se conservan las pausas de inicio y al sentarse; en el techo, el tramo encendido sigue comenzando **1,35 m por delante** y tiene **1,25 m de largo**. La secuencia de las huellas continúa alternando derecha e izquierda, con una sola pisada iluminada cada vez.
 
 ## Mesa y guía superior · versión 0.7
 
@@ -46,7 +52,7 @@ La proyección tiene una malla con contorno ovalado y una máscara en el materia
 
 El borde blanco es un anillo con un hueco real que coincide con el inserto ampliado. Así se puede bajar la imagen sin que quede tapada por una superficie blanca. Se conservan el espesor y el contorno exterior del tablero; las medidas y la revisión están en [table_geometry_v6.json](./table_geometry_v6.json) y [verification_v6.json](./verification_v6.json).
 
-Las teclas **U/J** ajustan la mesa completa y **I/K**, el inserto y el mapa respecto del tablero. **0** restaura ambos valores. Estos ajustes son temporales y **no se guardan**: cada apertura parte con las alturas originales. El programa limita el movimiento para evitar que el inserto atraviese el pedestal. Las sillas y sus puntos de vista no cambian al ajustar la mesa.
+Las teclas **U/J** ajustan la mesa completa y **I/K**, el inserto y el mapa respecto del tablero. **0** restaura ambos valores. Estos ajustes son temporales y **no se guardan**: cada apertura parte con las alturas originales. Hasta la versión 0.7, el pedestal limitaba el descenso del inserto. En la versión 0.8 se adapta para permitir bajar el mapa hasta 20 cm. Las sillas y sus puntos de vista no cambian al ajustar la mesa.
 
 ## Pantalla de la sesión en el techo
 

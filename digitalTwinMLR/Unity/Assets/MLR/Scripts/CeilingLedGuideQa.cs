@@ -130,7 +130,7 @@ namespace LaReina.DigitalTwin
                 result.passed = result.configured && result.importedRouteMatches && result.metreUvs &&
                     result.ceilingMounted && result.noGuideColliders && result.entranceStartsAtBeginning && result.realCameraAdvances &&
                     result.realCameraReverses && result.lightLeadsVisitor && result.visibleBand &&
-                    result.routeClear && cases.Count >= 7 && cases.All(c => c.passed);
+                    result.routeClear && cases.Count >= 12 && cases.All(c => c.passed);
                 if (!result.passed) result.error = "Revisar los campos de recorrido, anticipación o pausa de la guía LED.";
             }
             catch (Exception exception) { result.error = exception.ToString(); }
@@ -196,17 +196,37 @@ namespace LaReina.DigitalTwin
                     Vector3.Distance(test.PointAtDistance(test.IlluminatedStart), origin + new Vector3(4f, 0f, 1.55f)) < .003f);
 
                 route(new[] { Vector3.zero, Vector3.right * 6f, new Vector3(6f, 0f, .12f), new Vector3(0f, 0f, .12f) });
-                move(2f, 0f, true); move(2.1f, .10f, false);
-                record("Rama cercana: mantiene el tramo aunque la otra rama esté más cerca", Mathf.Abs(test.CurrentDistance - 2.1f) < .003f);
+                move(2f, 0f, true); move(2.1f, .06f, false);
+                record("Empate entre ramas: conserva continuidad con distancias casi iguales", Mathf.Abs(test.CurrentDistance - 2.1f) < .003f);
+                move(2.2f, .11f, false);
+                record("Rama más cercana: cambia de tramo sin exigir un salto", Mathf.Abs(test.CurrentDistance - 9.92f) < .003f);
 
                 route(new[] { Vector3.zero, Vector3.right * 10f });
                 move(2f, 0f, true); move(8f, 0f, false);
                 record("Reubicación: recupera posición después de un salto real", Mathf.Abs(test.CurrentDistance - 8f) < .002f);
                 move(10f, 0f, true);
                 record("Fin abierto: apaga sin envolver hacia la entrada", test.IlluminatedStart == test.RouteLength && !test.IsGuiding);
-                move(3f, 5f, true);
-                record("Fuera del recorrido: no guía desde otra zona de la sala", !test.HasNearbyRoute && !test.IsGuiding);
+                move(3f, 0f, false);
+                float lastValid = test.CurrentDistance;
+                move(3f, 5f, false);
+                record("Fuera del recorrido: conserva la última posición iluminada", !test.HasNearbyRoute && test.IsGuiding &&
+                    Mathf.Abs(test.CurrentDistance - lastValid) < .001f && Mathf.Abs(test.IlluminatedStart - 4.35f) < .002f);
+                for(int i=1;i<=60;i++)move(3f+5f*i/60f,5f-5f*i/60f,false);
+                record("Reentrada lenta: recupera otro tramo con pasos menores a 12 cm", test.HasNearbyRoute && test.IsGuiding &&
+                    Mathf.Abs(test.CurrentDistance - 8f) < .002f);
+                for(int i=1;i<=45;i++)move(8f-5f*i/45f,0f,false);
+                record("Retroceso largo: acompaña toda la vuelta sin bloqueo de avance", Mathf.Abs(test.CurrentDistance - 3f) < .002f);
 
+                route(new[] { Vector3.zero, Vector3.right*8f, new Vector3(8f,0f,6f), new Vector3(0f,0f,6f) });
+                move(2f,0f,true);move(2f,6f,false);
+                record("Otro tramo: reubica inmediatamente sin allowJump", Mathf.Abs(test.CurrentDistance-20f)<.002f && test.IsGuiding);
+                move(3f,6f,false);move(3f,10f,false);
+                float retained=test.CurrentDistance;
+                for(int i=0;i<10;i++)move(3f+i*.1f,10f,false);
+                record("Pérdida sostenida de alcance: no desplaza el foco retenido", !test.HasNearbyRoute && test.IsGuiding &&
+                    Mathf.Abs(test.CurrentDistance-retained)<.001f);
+
+                route(new[] { Vector3.zero, Vector3.right*10f });
                 move(3f, 0f, true);
                 var seat = visitor.gameObject.AddComponent<SeatInteraction>();
                 var chair = new GameObject("Silla QA").transform; chair.SetParent(root.transform);
