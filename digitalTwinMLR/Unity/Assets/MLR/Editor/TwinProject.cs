@@ -15,6 +15,7 @@ namespace LaReina.DigitalTwin.Editor
     public static class TwinProject
     {
         const string Root = "Assets/MLR/";
+        const string CameraUsageDescription = "La cámara frontal detecta las manos para controlar el mapa desde la silla principal.";
         public const string ScenePath = Root + "Scenes/Sala_La_Reina.unity";
         static readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
 
@@ -416,6 +417,7 @@ namespace LaReina.DigitalTwin.Editor
         static void ConfigureProject()
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
+            PlayerSettings.macOS.cameraUsageDescription=CameraUsageDescription;
             PlayerSettings.bundleVersion="0.9.0";PlayerSettings.Android.bundleVersionCode=8;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
@@ -479,6 +481,9 @@ namespace LaReina.DigitalTwin.Editor
 
         public static void BuildMac()
         {
+            // macOS attributes the child detector's camera request to Unity.
+            // The containing application must declare camera use as well.
+            PlayerSettings.macOS.cameraUsageDescription=CameraUsageDescription;
             XrProjectSetup.ConfigureQuest();
             EditorSceneManager.OpenScene(ScenePath);ValidateScene();
             string path=Argument("-twinBuildPath")??Path.GetFullPath("../Builds/Mac/Sala La Reina.app");

@@ -430,7 +430,7 @@ PlayerSettings:
   enableInternalProfiler: 0
   logObjCUncaughtExceptions: 1
   enableCrashReportAPI: 0
-  cameraUsageDescription: 
+  cameraUsageDescription: La cámara frontal detecta las manos para controlar el mapa desde la silla principal.
   locationUsageDescription: 
   microphoneUsageDescription: 
   bluetoothUsageDescription: 

@@ -7,11 +7,14 @@ const twinRoot = path.resolve(__dirname, '..');
 const repository = path.resolve(twinRoot, '..');
 const helperSource = path.join(repository, 'mapaGestualMLR/release/mac-arm64/Mapa Gestual MLR.app');
 const arguments = process.argv.slice(2);
-if (arguments.length > 1 || arguments.includes('--help')) {
-  console.log('Uso: node digitalTwinMLR/Tools/package-mac.cjs [ruta/Sala La Reina.app]');
+const verifyOnly = arguments.includes('--verify-only');
+const paths = arguments.filter(argument => !argument.startsWith('--'));
+const invalidArguments = arguments.some(argument => argument.startsWith('--') && argument !== '--verify-only');
+if (paths.length > 1 || invalidArguments || arguments.filter(argument => argument === '--verify-only').length > 1 || arguments.includes('--help')) {
+  console.log('Uso: node digitalTwinMLR/Tools/package-mac.cjs [--verify-only] [ruta/Sala La Reina.app]');
   process.exit(arguments.includes('--help') ? 0 : 1);
 }
-const appPath = path.resolve(arguments[0] || path.join(twinRoot, 'Builds/Mac/Sala La Reina.app'));
+const appPath = path.resolve(paths[0] || path.join(twinRoot, 'Builds/Mac/Sala La Reina.app'));
 const plistBuddy = '/usr/libexec/PlistBuddy';
 const codesign = '/usr/bin/codesign';
 const ditto = '/usr/bin/ditto';
@@ -40,12 +43,31 @@ function validateBundle(bundle, identifier) {
   return plist;
 }
 function run(file, args) { execFileSync(file, args, { stdio: 'inherit' }); }
+function validateCameraDescription(plist) {
+  let description = '';
+  try { description = readPlist(plist, 'NSCameraUsageDescription'); } catch {}
+  if (!description) throw new Error(`NSCameraUsageDescription debe existir y no estar vacía: ${plist}`);
+}
+function verifyPackagedApp() {
+  const appPlist = validateBundle(appPath, 'cl.mlr.sala.lareina');
+  const helperTarget = path.join(appPath, 'Contents/Helpers/Mapa Gestual MLR.app');
+  const helperPlist = validateBundle(helperTarget, 'cl.mlr.mapagestual');
+  requireFile(path.join(helperTarget, 'Contents/Resources/app.asar'), 'Aplicación gestual empaquetada');
+  validateCameraDescription(appPlist);
+  validateCameraDescription(helperPlist);
+  run(codesign, ['--verify', '--deep', '--strict', appPath]);
+}
 
 try {
   if (process.platform !== 'darwin') throw new Error('Este empaque se ejecuta en macOS.');
-  for (const tool of [plistBuddy, codesign, ditto]) requireFile(tool, 'Herramienta de macOS');
+  for (const tool of verifyOnly ? [plistBuddy, codesign] : [plistBuddy, codesign, ditto]) requireFile(tool, 'Herramienta de macOS');
+  if (verifyOnly) {
+    verifyPackagedApp();
+    console.log(`Empaque Mac verificado sin modificaciones: ${appPath}`);
+    process.exit(0);
+  }
   const appPlist = validateBundle(appPath, 'cl.mlr.sala.lareina');
-  validateBundle(helperSource, 'cl.mlr.mapagestual');
+  validateCameraDescription(validateBundle(helperSource, 'cl.mlr.mapagestual'));
   requireFile(path.join(helperSource, 'Contents/Resources/app.asar'), 'Aplicación gestual empaquetada');
   const helpers = path.join(appPath, 'Contents/Helpers');
   if (fs.existsSync(helpers) && (fs.lstatSync(helpers).isSymbolicLink() || !fs.statSync(helpers).isDirectory()))
@@ -66,9 +88,9 @@ try {
   // it on the copied helper before sealing the containing Unity application.
   run(codesign, ['--force', '--deep', '--sign', '-', '--timestamp=none', helperTarget]);
   run(codesign, ['--force', '--sign', '-', '--timestamp=none', appPath]);
-  run(codesign, ['--verify', '--deep', '--strict', appPath]);
+  verifyPackagedApp();
   console.log(`Empaque Mac verificado: ${appPath}`);
 } catch (error) {
-  console.error(`No se pudo empaquetar: ${error.message}`);
+  console.error(`No se pudo ${verifyOnly ? 'verificar' : 'empaquetar'}: ${error.message}`);
   process.exitCode = 1;
 }
