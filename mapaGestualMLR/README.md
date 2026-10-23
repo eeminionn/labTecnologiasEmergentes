@@ -1,10 +1,29 @@
 # Bitácora - Mapa Gestual MLR
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 10 de octubre de 2026<br>
+**Última actualización:** 23 de octubre de 2026 · versión 0.2.0<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
+
+## Del mapa a los gráficos
+
+Incorporamos la gráfica actualizada del equipo para probar cómo pasamos del territorio a la información. El **pin 1, magenta de Seguridad y riesgos**, abre los cinco gráficos de las páginas 2 a 6 del PDF, en el mismo orden. Son materiales de trabajo del equipo, no datos municipales validados.
+
+Dejamos siempre visibles la **X para volver al mapa** y las **flechas para cambiar de gráfico**. Se seleccionan manteniendo el índice durante **1,5 segundos**, igual que los puntos. También podemos acercar la información con dos OK y arrastrarla con un puño, para conservar una sola forma de interactuar.
+
+Separamos los tres puntos y usamos los pines originales del PDF, con sus colores y una leyenda pequeña abajo a la izquierda. El primero crece y se achica suavemente para invitar a comenzar, sin cambiar de tono. Los otros dos temas quedan con su contenido en preparación.
+
+<table>
+  <tr>
+    <td><img src="./Imagenes/mapa-pines-actualizados.jpg" alt="Pines de colores y leyenda temática sobre el mapa" width="380" /></td>
+    <td><img src="./Imagenes/graficos-gestuales.jpg" alt="Primer gráfico de inundación con flechas y cierre" width="380" /></td>
+  </tr>
+  <tr>
+    <td>Los tres pines del equipo, más separados y con su leyenda.</td>
+    <td>El pin 1 abre los gráficos, con controles que también se seleccionan con el índice.</td>
+  </tr>
+</table>
 
 ## PROTOTIPO MESA INTERACTIVA
 

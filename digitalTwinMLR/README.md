@@ -1,11 +1,26 @@
 # Recorrido virtual de la sala
 
-**Avance:** 22 de octubre de 2026 · versión 0.8.1<br>
+**Avance:** 23 de octubre de 2026 · versión 0.9.0<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
 
 Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y comparar la experiencia de pie y sentados.
+
+## Gráficos sobre la mesa
+
+Sumamos a la mesa la nueva secuencia del mapa gestual. Desde la silla principal, el **pin 1 de Seguridad y riesgos** abre los cinco gráficos entregados por el equipo, correspondientes a las páginas 2 a 6 del PDF. Queremos probar el paso entre el mapa y sus explicaciones dentro de la misma superficie; estos gráficos todavía son material de trabajo.
+
+La X vuelve al mapa y las flechas recorren los gráficos, manteniendo el índice **1,5 segundos**. Conservamos el zoom con dos OK y el arrastre con un puño. También incorporamos los pines originales, separados y acompañados de su leyenda de colores; el primero pulsa suavemente y los otros dos temas siguen en preparación. Este avance corresponde a la versión de computador.
+
+<table>
+  <tr>
+    <td><img src="./Imagenes/mapa-pines.jpg" alt="Mapa con pines temáticos y leyenda sobre la mesa ovalada desde el puesto principal" width="760" /></td>
+  </tr>
+  <tr>
+    <td>Pines y leyenda de la nueva gráfica sobre la mesa, desde la silla principal.</td>
+  </tr>
+</table>
 
 ## Ajustes al recorrido y a la lectura del mapa
 

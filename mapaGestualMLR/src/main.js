@@ -5,6 +5,7 @@ import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
 import { getCameraControls, applyCameraControls } from './camera-quality.js';
 import { createMap } from './map.js';
+import { createContentViewer } from './content-viewer.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
 
 const $ = id => document.getElementById(id);
@@ -24,7 +25,7 @@ delete config.corners;
 delete config.showPreview;
 let qualityGate=new FrameQualityGate(),qualityState={allowActions:true,state:'good',reasons:[]};
 let cameraControlsAvailable={ranges:{}},cameraControlReport=null,qualityWarningShown=false;
-let map, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], lastFrame=-1;
+let map, contentViewer, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], lastFrame=-1;
 let engine = new GestureEngine();
 const selection=new SelectionFeedback();
 let renderedSelectionHandId=null;
@@ -66,10 +67,26 @@ function isBlocked() { return paused || (twinProjection ? !twinLeaseActive : !do
 function mapPoint(p) { return cameraToMap(p,config); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
 async function loadMap() {
+  contentViewer?.destroy();
   map?.destroy(); $('map').replaceChildren();
-  map=await createMap($('map'),{...config,offline:smoke},notify,provider=>$('provider-label').textContent=provider);
+  map=await createMap($('map'),{...config,offline:smoke},notify,provider=>$('provider-label').textContent=provider,openPointContent);
+  contentViewer=createContentViewer($('map'),{onChange:state=>{
+    if(!['open','close','slide'].includes(state.reason))return;
+    // A page change consumes this dwell. Keeping the same index on an arrow
+    // must never turn into a second click on the new page.
+    engine.cancelClick(true);selection.reset();highlightTarget(null);
+    $('click-ripple').classList.remove('play');
+  }});
+  try {await contentViewer.ready;} catch(error) {notify(error.message);}
   $('provider-label').textContent=map.provider;
 }
+function openPointContent(item) {
+  if(item.id!=='point-0')return;
+  const slides=contentViewer?.manifest?.slides;
+  if(!slides?.length){notify('No se pudieron cargar los gráficos.');return;}
+  contentViewer.open(slides,0);
+}
+function currentSurface(){return contentViewer?.isOpen?contentViewer:map;}
 function initializeWorker() {
   worker?.terminate(); workerReady=false; busy=false;
   const workerGeneration=cameraGeneration;
@@ -161,17 +178,18 @@ async function finishSmoke(data) {
   const nativeSelection=await verifyNativeSelection();
   const ok=startupMirrorEnabled && emptyFrameResult.hands===0 && emptyFrameResult.qualityValid && data.quality?.valid && data.landmarks.length===1 && telemetryBlocked===true && zoomWorks
     && Object.values(pointerFeedback).every(Boolean) && Object.values(navigationFeedback).every(Boolean)
-    && nativeSelection.popupOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
-    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===4 && nativeSelection.sequenceCompleted && nativeSelection.advancesOnlyOnPoint
+    && nativeSelection.contentOpened && nativeSelection.selectionWorks && nativeSelection.gestureClickAccepted
+    && nativeSelection.buttonClickAccepted && nativeSelection.trustedClicks===nativeSelection.expectedNativeClicks && nativeSelection.sequenceCompleted
+    && nativeSelection.firstBoundary && nativeSelection.lastBoundary && Object.values(nativeSelection.contentGestures).every(Boolean)
     && nativeSelection.pointHold.companionContinuity && nativeSelection.buttonHold.companionContinuity
-    && [nativeSelection.pointHold,nativeSelection.buttonHold,...nativeSelection.sequenceHolds].every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.postureIndependent && h.tremorTolerated && h.emptySpaceNoClick && h.targetAcquiredAtIndex)
+    && nativeSelection.holds.every(h=>h.clickAccepted && h.elapsedMs>=1500 && h.clicks===1 && h.noEarlyClick && h.cursorLocked && h.postureIndependent && h.tremorTolerated && h.emptySpaceNoClick && h.targetAcquiredAtIndex)
     && Object.values(qualityFeedback).every(Boolean) && Object.values(previewFeedback).every(Boolean) && map.info().boundaryLoaded && nativeSelection.holdElapsedMs>=1500
     && Object.values(fistViewsFeedback).every(Boolean)
     && Object.values(indexTrackingFeedback).every(Boolean)
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && Object.values(selectionToleranceFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.1.13',ok,startupMirrorEnabled,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,popupWorks:nativeSelection.popupOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:'0.2.0',ok,startupMirrorEnabled,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,contentWorks:nativeSelection.contentOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
   map.resetSequence();map.home();cancelGesture();
@@ -243,32 +261,74 @@ async function verifySelectionToleranceFeedback(){
   return feedback;
 }
 async function verifyNativeSelection() {
-  map.resetSequence();map.home();map.pan(180,90);cancelGesture();
-  const target=map.targets()[0];
+  contentViewer.close();map.resetSequence();map.home();map.pan(180,90);cancelGesture();
   const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
-  let trustedClicks=0;const observe=event=>{if(event.isTrusted)trustedClicks++;};$('map').addEventListener('click',observe,true);
-  const pointHold=await verifyHoldAt(target,fixture,()=>trustedClicks,true,'changing');
-  await waitFor(()=>$('map').querySelector('.demo-popup button'),2000,`popup (clicks=${pointHold.clicks}, accepted=${pointHold.clickAccepted})`);
-  const button=$('map').querySelector('.demo-popup button');
-  cancelGesture();
-  const buttonTarget=selectionTargets($('map').getBoundingClientRect()).find(t=>t.element===button);
-  if(!buttonTarget)throw new Error('Smoke: botón de popup no disponible');
-  const buttonHold=await verifyHoldAt(buttonTarget,fixture,()=>trustedClicks,false,'always');
-  await waitFor(()=>button.textContent==='Punto seleccionado',2000,`selección de botón (accepted=${buttonHold.clickAccepted}, clicks=${buttonHold.clicks}, elapsed=${buttonHold.elapsedMs}, locked=${buttonHold.cursorLocked}, trusted=${trustedClicks})`);
-  const advancesOnlyOnPoint=map.info().sequence.completedCount===1;
-  const sequenceHolds=[];
-  for(let index=1;index<3;index++){
-    $('map').querySelector('.leaflet-popup-close-button')?.click();cancelGesture();
-    const nextTarget=map.targets()[0];
-    if(!nextTarget || nextTarget.id!==`point-${index}`)throw new Error('Smoke: orden de recorrido inválido');
-    sequenceHolds.push(await verifyHoldAt(nextTarget,fixture,()=>trustedClicks));
-    await waitFor(()=>map.info().sequence.completedCount===index+1,2000,'avance de recorrido');
-  }
-  const sequenceCompleted=map.info().sequence.completed && map.targets().length===0;
-  $('map').removeEventListener('click',observe,true);
-  const result={gestureClickAccepted:pointHold.clickAccepted,popupOpened:true,buttonClickAccepted:buttonHold.clickAccepted,selectionWorks:button.textContent==='Punto seleccionado',trustedClicks,advancesOnlyOnPoint,sequenceCompleted,sequenceHolds,holdElapsedMs:Math.min(pointHold.elapsedMs,buttonHold.elapsedMs),cursorLocked:pointHold.cursorLocked&&buttonHold.cursorLocked,ringHalfVisible:pointHold.ringHalfVisible&&buttonHold.ringHalfVisible,noEarlyClick:pointHold.noEarlyClick&&buttonHold.noEarlyClick,oneClickWhileHeld:pointHold.clicks===1&&buttonHold.clicks===1,pointHold,buttonHold};
-  cancelGesture();map.resetSequence();map.home();
-  return result;
+  let trustedClicks=0;
+  const observe=event=>{if(event.isTrusted)trustedClicks++;};$('map').addEventListener('click',observe,true);
+  const holds=[];
+  const hold=async(target,capture=false,companion=null)=>{
+    if(!target)throw new Error('Smoke: falta objetivo visible de contenido');
+    const result=await verifyHoldAt(target,fixture,()=>trustedClicks,capture,companion);holds.push(result);return result;
+  };
+  const control=id=>selectionTargets($('map').getBoundingClientRect()).find(target=>target.id===id);
+  try {
+    const beforeMap=map.info();
+    const pointHold=await hold(map.targets().find(target=>target.id==='point-0'),true,'changing');
+    await waitFor(()=>contentViewer.isOpen && $('map').querySelector('.content-image')?.naturalWidth>0,2000,'primer gráfico');
+    const contentOpened=contentViewer.info().sourcePage===2 && contentViewer.info().slideCount===5;
+    const firstBoundary=!!$('content-previous')?.disabled && !control('content-previous');
+    cancelGesture();
+    const buttonHold=await hold(control('content-next'),false,'always');
+    await waitFor(()=>contentViewer.info().sourcePage===3,2000,'segundo gráfico');
+    const pages=[2,3];
+    for(let page=4;page<=6;page++) {
+      cancelGesture();await hold(control('content-next'));
+      await waitFor(()=>contentViewer.info().sourcePage===page,2000,'secuencia de gráficos');pages.push(page);
+    }
+    const lastBoundary=!!$('content-next')?.disabled && !control('content-next');
+    const sequenceCompleted=pages.join(',')==='2,3,4,5,6';
+    cancelGesture();await hold(control('content-previous'));
+    const previousWorks=contentViewer.info().sourcePage===5;
+    const contentGestures=await verifyContentGestures(fixture);
+    cancelGesture();await hold(control('content-close'));
+    const closeWorks=!contentViewer.isOpen && sameMapView(beforeMap,map.info());
+    cancelGesture();await hold(map.targets().find(target=>target.id==='point-0'));
+    const reopenWorks=contentViewer.isOpen && contentViewer.info().sourcePage===2;
+    cancelGesture();await hold(control('content-close'));
+    return {contentOpened,selectionWorks:contentOpened&&sequenceCompleted&&previousWorks&&closeWorks&&reopenWorks,
+      firstBoundary,lastBoundary,previousWorks,closeWorks,reopenWorks,pages,sequenceCompleted,contentGestures,
+      gestureClickAccepted:pointHold.clickAccepted,buttonClickAccepted:buttonHold.clickAccepted,
+      trustedClicks,expectedNativeClicks:holds.length,holds,pointHold,buttonHold,
+      holdElapsedMs:Math.min(...holds.map(result=>result.elapsedMs)),
+      cursorLocked:holds.every(result=>result.cursorLocked),ringHalfVisible:holds.every(result=>result.ringHalfVisible),
+      noEarlyClick:holds.every(result=>result.noEarlyClick),oneClickWhileHeld:holds.every(result=>result.clicks===1)};
+  } finally {$('map').removeEventListener('click',observe,true);contentViewer.close();cancelGesture();map.resetSequence();map.home();}
+}
+async function verifyContentGestures(fixture) {
+  const saved=engine, beforeMap=map.info();engine=new GestureEngine();
+  const hands=(pose,positions)=>positions.map(([x,y],index)=>({id:`content-${index}`,landmarks:fixture.poses[pose].map(p=>({...p,
+    x:p.x+x-fixture.poses[pose][8].x,y:p.y+y-fixture.poses[pose][8].y}))}));
+  const tick=async(pose,positions,time)=>{const frame=hands(pose,positions),result=engine.update(frame,time,selectionContext(engine));await renderGesture(result,frame.length);return result;};
+  try {
+    contentViewer.home();
+    for(const time of [0,90,180])await tick('ok',[[.38,.48],[.62,.48]],time);
+    const initialScale=contentViewer.info().scale;
+    for(const [time,separation] of [[220,.15],[260,.19],[300,.23]])await tick('ok',[[.5-separation,.48],[.5+separation,.48]],time);
+    const zoomInWorks=contentViewer.info().scale>initialScale;
+    const enlarged=contentViewer.info().scale;
+    for(const [time,separation] of [[340,.20],[380,.17],[420,.14]])await tick('ok',[[.5-separation,.48],[.5+separation,.48]],time);
+    const zoomOutWorks=contentViewer.info().scale<enlarged;
+    contentViewer.zoom(2,.5*$('map').clientWidth,.5*$('map').clientHeight);
+    engine=new GestureEngine();
+    for(const time of [500,590,680])await tick('fist',[[.44,.45]],time);
+    const beforePan=contentViewer.info().offset;
+    for(const [time,x] of [[720,.46],[760,.49],[800,.52]])await tick('fist',[[x,.45]],time);
+    const afterPan=contentViewer.info().offset;
+    const panWorks=Math.hypot(afterPan.x-beforePan.x,afterPan.y-beforePan.y)>1;
+    const mapUnchanged=sameMapView(beforeMap,map.info());
+    const buttonsFixed=contentViewer.targets().every(target=>target.element.getBoundingClientRect().width>=44);
+    contentViewer.home();return {zoomInWorks,zoomOutWorks,panWorks,mapUnchanged,buttonsFixed};
+  } finally {engine=saved;cancelGesture();}
 }
 async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,companionMode=null) {
   const rect=$('map').getBoundingClientRect();
@@ -278,6 +338,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   const freeX=target.x/rect.width<.5?.8:.2;
   const companion=pose=>({id:'free-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+freeX-fixture.poses[pose][8].x,y:p.y+.5-fixture.poses[pose][8].y}))});
   const currentCursor=result=>[$('cursor'),$('cursor-secondary')].find(cursor=>cursor.dataset.hand===String(result.selectionHandId))||$('cursor');
+  let clicks=0;
   let companionFrames=0,companionFistFrames=0,selectionOnSecondary=false,companionExited=false,hadCompanion=false,lastProgress=0,continued=true,orderReversedDuringHold=false;
   const frame=async (selected,time,elapsed=0)=>{
     const present=companionMode==='always' || (companionMode==='changing' && elapsed>=250 && !(elapsed>=900 && elapsed<1200));
@@ -290,7 +351,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
     selectionOnSecondary ||= currentCursor(result)===$('cursor-secondary') && result.mode==='click-pending';
     if(result.mode==='click-pending' || result.mode==='click-confirmed'){
       orderReversedDuringHold ||= present && reverse;
-      continued &&= result.progress>=lastProgress && !result.events.some(event=>event.type==='pan'||event.type==='zoom');
+      if(!clicks)continued &&= result.progress>=lastProgress && !result.events.some(event=>event.type==='pan'||event.type==='zoom');
       lastProgress=result.progress;
     }
     return {result,accepted,cursor:currentCursor(result)};
@@ -304,7 +365,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   const start=performance.now(),initial=await frame(hand('point'),start);
   if(initial.result.mode!=='click-pending' || initial.result.progress!==0)throw new Error('Smoke: índice sobre objetivo no inició mantenimiento completo');
   const targetAcquiredAtIndex=Math.abs(parseFloat(initial.cursor.style.left)-target.x)<.5 && Math.abs(parseFloat(initial.cursor.style.top)-target.y)<.5;
-  let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,clicks=0,elapsedMs=0,clickAccepted=false,progressCaptured=false,tremorFrames=0,maxTremorPx=0,thumbOutFrames=0,extraFingerFrames=0,invalidWorldFrames=0;
+  let cursorLocked=true,ringHalfVisible=false,noEarlyClick=true,elapsedMs=0,clickAccepted=false,progressCaptured=false,tremorFrames=0,maxTremorPx=0,thumbOutFrames=0,extraFingerFrames=0,invalidWorldFrames=0;
   const anchor={x:target.x,y:target.y};
   while(performance.now()-start<1800){
     const now=performance.now(),elapsed=now-start;
@@ -321,9 +382,9 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
     const {result,accepted,cursor}=await frame(selected,now,elapsed);
     if(elapsed>=500)thumbOutFrames++;
     if(elapsed>=850){extraFingerFrames++;invalidWorldFrames++;}
-    continued &&= result.mode==='click-pending' || result.mode==='click-confirmed';
+    if(!clicks)continued &&= result.mode==='click-pending' || result.mode==='click-confirmed';
     tremorFrames++;maxTremorPx=Math.max(maxTremorPx,Math.hypot(jx,jy));
-    cursorLocked &&= Math.abs(parseFloat(cursor.style.left)-anchor.x)<.5 && Math.abs(parseFloat(cursor.style.top)-anchor.y)<.5;
+    if(!clicks)cursorLocked &&= Math.abs(parseFloat(cursor.style.left)-anchor.x)<.5 && Math.abs(parseFloat(cursor.style.top)-anchor.y)<.5;
     if(result.progress>=.45 && result.progress<=.65){
       const ring=cursor.querySelector('.cursor-progress'),style=getComputedStyle(ring);
       ringHalfVisible ||= style.opacity==='1' && Math.abs(parseFloat(style.strokeDashoffset)-213.63*(1-result.progress))<.2;
@@ -537,11 +598,11 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
       // The visual halo can ease from index to knuckles independently of the
       // navigation baseline. Only physical movement supplied by the engine pans.
       const current=mapPoint(result.cursor),old=mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
-      if(within(current) && within(old)){map.pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
+      if(within(current) && within(old)){currentSurface().pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
     } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2 && result.navigationHandIds?.length===2
       && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       const at=mapPoint(event);if(!within(at))continue;
-      map.zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
+      currentSurface().zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
     }
   }
   return Promise.all(actions);
@@ -559,7 +620,9 @@ function showQuality(analysis,state) {
 }
 
 function selectionTargets(rect) {
-  const targets=map.targets();
+  // Only the visible layer is actionable. Hidden map pins cannot steal a
+  // selection or open a popup while the person is reading a graph.
+  const targets=currentSurface().targets();
   $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button').forEach(element=>{
     if(element.disabled || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
@@ -824,10 +887,10 @@ $('settings').addEventListener('close',async()=>{
   if(oldKey!==config.googleKey || oldProvider!==config.provider) { location.reload();return; }
   if(wasActive)startCamera();
 });
-$('zoom-in').onclick=()=>map.zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
-$('zoom-out').onclick=()=>map.zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);
-$('home').onclick=()=>map.home();
-$('reset-sequence').onclick=()=>{cancelGesture();map.resetSequence();notify('Recorrido reiniciado en el punto 1.');};
+$('zoom-in').onclick=()=>currentSurface().zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
+$('zoom-out').onclick=()=>currentSurface().zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);
+$('home').onclick=()=>currentSurface().home();
+$('reset-sequence').onclick=()=>{contentViewer?.close();cancelGesture();map.resetSequence();notify('Recorrido reiniciado en el punto 1.');};
 const cameraRangeIds={contrast:'camera-contrast',brightness:'camera-brightness',exposureCompensation:'camera-exposure'};
 function populateCameraControls() {
   const track=stream?.getVideoTracks()[0];cameraControlsAvailable=track?getCameraControls(track):{ranges:{}};
@@ -846,7 +909,7 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.1.13',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:'0.2.0',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{

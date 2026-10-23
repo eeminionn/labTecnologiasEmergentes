@@ -7,36 +7,54 @@ const boundaryStyle = { color: '#0f766e', weight: 3, opacity: .9, fillColor: '#0
 const boundaryCredit = 'Límite: SUBDERE · IDE Chile · DPA 2023';
 const circulationLegend = 'Autorizada su circulación por Resolución Nº50 del 2019 de la Dirección Nacional de Fronteras y Límites del Estado';
 const center = { lat: -33.442, lng: -70.536 };
-const markerSize = 56;
+const markerSize = 88;
+const markerHeight = 112;
+const categoryLegend = [
+  { id: 'territorio', label: 'Territorio, movilidad y entorno', color: '#afc439' },
+  { id: 'gobernanza', label: 'Gobernanza y recursos municipales', color: '#00adb2' },
+  { id: 'seguridad', label: 'Seguridad y riesgos', color: '#e82d81' }
+];
 const samples = [
-  { id: 'point-0', number: 1, lat: -33.4409, lng: -70.5381, title: 'Punto 1' },
-  { id: 'point-1', number: 2, lat: -33.4453, lng: -70.5321, title: 'Punto 2' },
-  { id: 'point-2', number: 3, lat: -33.4378, lng: -70.5308, title: 'Punto 3' }
+  { id: 'point-0', number: 1, category: 'seguridad', lat: -33.4409, lng: -70.5550, title: 'Seguridad y riesgos' },
+  { id: 'point-1', number: 2, category: 'gobernanza', lat: -33.4519, lng: -70.5351, title: 'Gobernanza y recursos municipales' },
+  { id: 'point-2', number: 3, category: 'territorio', lat: -33.4375, lng: -70.5149, title: 'Territorio, movilidad y entorno' }
 ];
 
 const popup = item => {
   const div = document.createElement('div'); div.className = 'demo-popup';
   const heading = document.createElement('strong'); heading.textContent = item.title;
-  const button = document.createElement('button'); button.textContent = 'Seleccionar punto';
-  // The popup action never advances the marker sequence a second time.
-  button.onclick = () => { button.textContent = 'Punto seleccionado'; button.disabled = true; };
-  div.append(heading, button); return div;
+  const note = document.createElement('p'); note.textContent = 'Contenido en preparación.';
+  div.append(heading, note); return div;
 };
+
+function addLegend(container) {
+  const legend = document.createElement('aside');
+  legend.className = 'map-category-legend';
+  legend.setAttribute('aria-label', 'Temáticas del mapa');
+  for (const category of categoryLegend) {
+    const row = document.createElement('div'); row.className = 'map-category-legend-row';
+    row.style.setProperty('--category-color', category.color);
+    row.textContent = category.label; legend.append(row);
+  }
+  container.append(legend);
+  return legend;
+}
 
 function updateMarker(element, item, sequence) {
   if (!element) return;
   const state = sequence.state(item.id);
-  const dot = element.querySelector('.demo-dot');
   element.dataset.markerId = item.id;
   element.dataset.state = state;
+  element.dataset.category = item.category;
   element.setAttribute('role', 'button');
-  element.setAttribute('aria-label', `${item.title}, ${state === 'active' ? 'siguiente' : state === 'complete' ? 'completado' : 'pendiente'}`);
-  element.setAttribute('aria-disabled', String(state !== 'active'));
-  element.tabIndex = state === 'active' ? 0 : -1;
+  element.setAttribute('aria-label', `Punto ${item.number}: ${item.title}`);
+  // The numbered route is a guide, never a lock: any topic can be revisited.
+  element.setAttribute('aria-disabled', 'false');
+  element.tabIndex = 0;
+  const dot = element.querySelector('.demo-dot');
   if (dot) {
-    dot.className = `demo-dot is-${state}`;
+    dot.className = `demo-dot category-pin${item.number === 1 ? ' is-featured' : ''}`;
     dot.dataset.state = state;
-    dot.textContent = String(item.number);
     dot.setAttribute('aria-hidden', 'true');
   }
 }
@@ -44,10 +62,13 @@ function updateMarker(element, item, sequence) {
 function markerElement(item, sequence) {
   const element = document.createElement('div');
   element.className = 'demo-marker sequence-marker';
-  // The containing hit area never pulses, changes size or moves with its visual.
-  Object.assign(element.style, { width: `${markerSize}px`, height: `${markerSize}px`, display: 'grid', placeItems: 'center' });
-  const dot = document.createElement('span'); dot.className = 'demo-dot';
-  element.append(dot); updateMarker(element, item, sequence);
+  // The hit area remains fixed while only pin 1's artwork gently changes size.
+  Object.assign(element.style, { width: `${markerSize}px`, height: `${markerHeight}px` });
+  const dot = document.createElement('span'); dot.className = 'demo-dot category-pin';
+  const image = document.createElement('img'); image.src = `/content/pins/${item.category}.svg`;
+  image.alt = ''; image.draggable = false;
+  const number = document.createElement('span'); number.className = 'pin-number'; number.textContent = String(item.number);
+  dot.append(image, number); element.append(dot); updateMarker(element, item, sequence);
   return element;
 }
 
@@ -55,7 +76,7 @@ function diagnostics(sequence, featureCount) {
   return { sequence: sequence.snapshot(), boundaryLoaded: featureCount > 0, boundaryFeatureCount: featureCount };
 }
 
-export async function createMap(container, config, notify, providerChanged = () => {}) {
+export async function createMap(container, config, notify, providerChanged = () => {}, onPointSelected = () => {}) {
   const sequence = new PointSequence(samples.map(item => item.id));
   if (config.provider === 'google' && config.googleKey) {
     let current;
@@ -65,10 +86,14 @@ export async function createMap(container, config, notify, providerChanged = () 
       current = await googleMap(container, config.googleKey, () => {
         initializationFailed = true;
         if (!current) return;
+        // A late provider failure must not remove an open graphic or its
+        // fixed hand targets when the map underneath is replaced.
+        const content = container.querySelector('.content-viewer');
         current.destroy(); container.replaceChildren();
-        current = osmMap(container, notify, config.offline, sequence);
+        current = osmMap(container, notify, config.offline, sequence, onPointSelected);
+        if (content) container.append(content);
         notify(failureMessage); providerChanged(current.provider);
-      }, notify, sequence);
+      }, notify, sequence, onPointSelected);
       if (initializationFailed) { current.destroy(); throw new Error('Google authentication'); }
       return {
         get provider() { return current.provider; },
@@ -78,10 +103,10 @@ export async function createMap(container, config, notify, providerChanged = () 
       };
     } catch { container.replaceChildren(); notify(failureMessage); }
   } else if (config.provider === 'google') notify('Configura una API key para usar Google Maps. Se muestra OpenStreetMap.');
-  return osmMap(container, notify, config.offline, sequence);
+  return osmMap(container, notify, config.offline, sequence, onPointSelected);
 }
 
-function osmMap(container, notify, offline = false, sequence) {
+function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   const map = L.map(container, { zoomControl: false, zoomSnap: 0, zoomDelta: .5, zoomAnimation: false, fadeAnimation: false }).setView([center.lat, center.lng], 14);
   map.attributionControl.setPrefix(false);
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -92,18 +117,20 @@ function osmMap(container, notify, offline = false, sequence) {
   map.attributionControl.addAttribution(`Puntos ficticios · <span title="${circulationLegend}">${boundaryCredit}</span>`);
   const outline = L.geoJSON(boundary, { style: boundaryStyle, interactive: false }).addTo(map);
   const home = () => map.fitBounds(outline.getBounds(), { padding: [64, 64], animate: false });
+  const legend = addLegend(container);
   const markers = samples.map(item => {
     const marker = L.marker([item.lat, item.lng], {
       title: item.title,
-      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerSize], iconAnchor: [markerSize / 2, markerSize / 2] })
-    }).addTo(map).bindPopup(popup(item));
+      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerHeight], iconAnchor: [markerSize / 2, markerHeight * .292] })
+    }).addTo(map);
     // Automatic popup listeners would bypass identity checks, including Enter.
     marker.off('click');
     marker.off('keypress');
     marker.on('click', () => {
-      if (sequence.state(item.id) !== 'active') return;
-      marker.setPopupContent(popup(item)).openPopup();
       if (sequence.activate(item.id)) refreshMarkers();
+      map.closePopup();
+      if (item.number !== 1) L.popup().setLatLng(marker.getLatLng()).setContent(popup(item)).openOn(map);
+      onPointSelected({ ...item });
     });
     marker.on('keydown', event => {
       if (event.originalEvent.key === 'Enter' || event.originalEvent.key === ' ') {
@@ -120,18 +147,18 @@ function osmMap(container, notify, offline = false, sequence) {
     zoom(delta, x, y) { map.setZoomAround(L.point(x, y), Math.min(19, Math.max(3, map.getZoom() + delta)), { animate: false }); },
     home,
     resetSequence() { map.closePopup(); const state = sequence.reset(); refreshMarkers(); return state; },
-    destroy() { map.remove(); container.style.background = ''; },
+    destroy() { legend.remove(); map.remove(); container.style.background = ''; },
     info() { return { zoom: map.getZoom(), center: map.getCenter(), ...diagnostics(sequence, outline.getLayers().length) }; },
     targets() {
-      const index = sequence.activeIndex;
-      if (index === null) return [];
-      const marker = markers[index], p = map.latLngToContainerPoint(marker.getLatLng());
-      return [{ id: samples[index].id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.getElement() }];
+      return markers.map((marker, index) => {
+        const p = map.latLngToContainerPoint(marker.getLatLng());
+        return { id: samples[index].id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.getElement() };
+      });
     }
   };
 }
 
-async function googleMap(container, key, onFatal, notify, sequence) {
+async function googleMap(container, key, onFatal, notify, sequence, onPointSelected) {
   if (!window.google?.maps) await new Promise((resolve, reject) => {
     const script = document.createElement('script');
     const timer = setTimeout(() => reject(new Error('Google timeout')), 12000);
@@ -159,6 +186,7 @@ async function googleMap(container, key, onFatal, notify, sequence) {
   attribution.setAttribute('aria-label', `${boundaryCredit}. ${circulationLegend}`);
   container.append(attribution);
   const info = new InfoWindow();
+  const legend = addLegend(container);
 
   // A public OverlayView keeps the same numbered DOM markers without a cloud Map ID.
   class SequenceMarker extends OverlayView {
@@ -167,9 +195,10 @@ async function googleMap(container, key, onFatal, notify, sequence) {
       this.element = markerElement(this.item, sequence);
       this.element.style.position = 'absolute';
       this.element.addEventListener('click', () => {
-        if (sequence.state(this.item.id) !== 'active') return;
-        info.setContent(popup(this.item)); info.setPosition(this.position); info.open({ map });
         if (sequence.activate(this.item.id)) refreshMarkers();
+        info.close();
+        if (this.item.number !== 1) { info.setContent(popup(this.item)); info.setPosition(this.position); info.open({ map }); }
+        onPointSelected({ ...this.item });
       });
       this.element.addEventListener('keydown', event => {
         if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); event.stopPropagation(); this.element.click(); }
@@ -182,7 +211,7 @@ async function googleMap(container, key, onFatal, notify, sequence) {
       const p = this.getProjection().fromLatLngToDivPixel(this.position);
       if (!p) return;
       this.element.style.left = `${p.x - markerSize / 2}px`;
-      this.element.style.top = `${p.y - markerSize / 2}px`;
+      this.element.style.top = `${p.y - markerHeight * .292}px`;
     }
     onRemove() { this.element?.remove(); this.element = null; }
   }
@@ -210,17 +239,15 @@ async function googleMap(container, key, onFatal, notify, sequence) {
       info.close(); markers.forEach(marker => marker.setMap(null));
       features.forEach(feature => map.data.remove(feature));
       google.maps.event.clearInstanceListeners(map); window.gm_authFailure = () => {};
-      attribution.remove(); container.replaceChildren();
+      attribution.remove(); legend.remove(); container.replaceChildren();
     },
     info() { return { zoom: map.getZoom(), center: map.getCenter()?.toJSON(), ...diagnostics(sequence, features.length) }; },
     targets() {
-      const index = sequence.activeIndex;
-      if (index === null) return [];
-      const marker = markers[index];
-      if (!marker.element) return [];
-      const p = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
-      if (!p) return [];
-      return [{ id: marker.item.id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.element }];
+      return markers.flatMap(marker => {
+        if (!marker.element) return [];
+        const p = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
+        return p ? [{ id: marker.item.id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.element }] : [];
+      });
     }
   };
 }

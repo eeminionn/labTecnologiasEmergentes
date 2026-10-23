@@ -97,7 +97,7 @@ else {
   app.on('second-instance', () => { if (!twinMode) { win?.show(); win?.focus(); } });
   app.whenReady().then(async () => {
     const root = path.resolve(__dirname, '../dist');
-    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.wasm': 'application/wasm', '.task': 'application/octet-stream', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json' };
+    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.wasm': 'application/wasm', '.task': 'application/octet-stream', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json' };
     server = http.createServer(async (req, res) => {
       if (req.headers.host !== `127.0.0.1:${port}`) { res.writeHead(403); return res.end(); }
       let pathname;

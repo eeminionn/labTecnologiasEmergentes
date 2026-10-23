@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 1,
+  "sources": {
+    "slides": "graficos 2.pdf",
+    "pins": "pins colores.pdf"
+  },
+  "slides": [
+    {
+      "id": "graphic-02",
+      "sourcePage": 2,
+      "title": "Demora en los Desplazamientos Durante la Inundación",
+      "src": "/content/charts/graphic-02.webp",
+      "width": 2400,
+      "height": 1567
+    },
+    {
+      "id": "graphic-03",
+      "sourcePage": 3,
+      "title": "Exposición de las Viviendas",
+      "src": "/content/charts/graphic-03.webp",
+      "width": 2400,
+      "height": 1421
+    },
+    {
+      "id": "graphic-04",
+      "sourcePage": 4,
+      "title": "Elementos Expuestos en el Área",
+      "src": "/content/charts/graphic-04.webp",
+      "width": 2400,
+      "height": 1299
+    },
+    {
+      "id": "graphic-05",
+      "sourcePage": 5,
+      "title": "Reportes Recibidos por Vecinos",
+      "src": "/content/charts/graphic-05.webp",
+      "width": 2400,
+      "height": 1902
+    },
+    {
+      "id": "graphic-06",
+      "sourcePage": 6,
+      "title": "Caudal en m3/s en Horas Pick",
+      "src": "/content/charts/graphic-06.webp",
+      "width": 2400,
+      "height": 1609
+    }
+  ],
+  "categories": [
+    {
+      "id": "seguridad",
+      "label": "Seguridad y riesgos",
+      "color": "#e82d81",
+      "outlineColor": "#6e2663",
+      "pinSrc": "/content/pins/seguridad.svg",
+      "sourcePage": 1
+    },
+    {
+      "id": "gobernanza",
+      "label": "Gobernanza y recursos municipales",
+      "color": "#00adb2",
+      "outlineColor": "#006a85",
+      "pinSrc": "/content/pins/gobernanza.svg",
+      "sourcePage": 2
+    },
+    {
+      "id": "territorio",
+      "label": "Territorio, movilidad y entorno",
+      "color": "#afc439",
+      "outlineColor": "#008d36",
+      "pinSrc": "/content/pins/territorio.svg",
+      "sourcePage": 3
+    }
+  ]
+}

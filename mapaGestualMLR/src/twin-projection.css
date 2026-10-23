@@ -8,3 +8,11 @@
 .twin-projection .leaflet-bottom.leaflet-right{bottom:11%;left:16%;right:16%;display:flex;justify-content:center}
 .twin-projection .leaflet-control-attribution{margin:0;text-align:center;max-width:100%;font-size:9px!important}
 .twin-projection .boundary-attribution{bottom:13%;left:16%;right:16%;text-align:center}
+
+/* Everything essential stays inside the oval table's safe central area. */
+.twin-projection .map-category-legend{left:20%;bottom:18%;width:30%;gap:4px}
+.twin-projection .map-category-legend-row{font-size:10px;padding:7px 24px 7px 10px}
+.twin-projection .content-stage{inset:16% 16% 27%}
+.twin-projection .content-controls{left:50%;bottom:19%;width:44%;max-width:none}
+.twin-projection .content-control{width:60px;height:54px;font-size:32px}
+.twin-projection.content-open .map-tools{top:25%;right:20%}
