@@ -1,0 +1,226 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "provider": "OpenStreetMap",
+    "attribution": "© OpenStreetMap contributors",
+    "copyrightUrl": "https://www.openstreetmap.org/copyright",
+    "license": "ODbL-1.0",
+    "licenseUrl": "https://opendatacommons.org/licenses/odbl/1-0/",
+    "snapshot": "2026-11-03T05:20:04+00:00",
+    "snapshotType": "OSM map API retrieval time; no planet snapshot timestamp supplied",
+    "geometry": "Real mapped road centerlines and building footprints; community map, not a topographic survey",
+    "simulation": "Vehicle movement, scenario schedules and priorities are illustrative, not real-time or historical observations",
+    "note": "Los jardines y las farolas son paisajismo representativo de muestra; no son límites de propiedad, un catastro de áreas verdes ni posiciones de luminarias levantadas en terreno. Los árboles sin altura medida utilizan una estimación visual de 7.2–8 m.",
+    "projection": "WGS84 ellipsoid ECEF to local east/north tangent plane at center; x=east, z=-north, y=up; metres"
+  },
+  "query": "GET https://api.openstreetmap.org/api/0.6/map?bbox=-70.55035,-33.4500,-70.5475,-33.4476\n\nOpenStreetMap public map API 0.6; WGS84 bbox order: west,south,east,north.\nDownloaded 2026-11-03. The unmodified XML is sector-caracci.osm.\nThe map endpoint returns complete ways and their referenced nodes. Additional tagged nodes include real trees.\nCopyright: © OpenStreetMap contributors. ODbL 1.0.\nhttps://www.openstreetmap.org/copyright\n\nOverpass was attempted but timed out. No Overpass response is used for the active sector.\n",
+  "queryBoundingBox": {
+    "south": -33.45,
+    "west": -70.55035,
+    "north": -33.4476,
+    "east": -70.5475
+  },
+  "downloadFile": "sector-caracci.osm",
+  "downloadSha256": "1df7429dbad73473b7964143696be948b83be226457232faf7fe5381514b7d55",
+  "originalWayCount": 158,
+  "transform": {
+    "origin": {
+      "lat": -33.4488839,
+      "lng": -70.5489312
+    },
+    "earthModel": "WGS84, a=6378137 m, e²=0.0066943799901413165",
+    "coordinates": "x east, z south, y up; all lengths in metres",
+    "buildingRotation": "Three.js rotation.y = -atan2(world-z edge, world-x edge), adjusted 90° if model footprint fits better rotated",
+    "buildingFit": "Minimum-area rotated OSM roof rectangle; detailed house mesh fills 91% of each plan dimension. uniformScale gives a representative 4–7 m height; scaleXZ adjusts horizontal axes moderately. Concave recesses are approximated instead of shrinking the whole house into a tiny inscribed rectangle. Road and neighboring-model intersections are rejected.",
+    "facadeOrientation": "Choose the 180-degree variant facing the nearest mapped driving road. This is illustrative, not observed facade orientation.",
+    "modelReconstruction": "Detailed downloaded meshes represent typologies. They do not replicate individual local facades or surveyed elevations.",
+    "roadWidths": "OSM width where present; otherwise lane count ×3.15 m +0.30 m or a declared highway-type estimate",
+    "routing": "Directed graph from shared original OSM nodes, limited to the public José Caracci and José Zapiola ways. Oneway=-1 reverses edges; one-way direction honored. Private/no-access ways and the southern condominium access excluded.",
+    "vehicleLane": "Right-side offset in travel direction; representative lanes, not surveyed lane markings. No spline across adjacent parcels."
+  },
+  "selection": {
+    "buildings": {
+      "eligible": 70,
+      "selected": 70,
+      "insideVehicleSector": 40,
+      "excluded": {
+        "outside_context": 27,
+        "outside_context_envelope": 8,
+        "model_overlaps_road": 3
+      }
+    },
+    "routing": {
+      "boundaryNodes": 3,
+      "directedCandidateRoutes": 6,
+      "directedGraphNodes": 10,
+      "directedGraphEdges": 18
+    },
+    "roadCount": 15,
+    "vehicleRoutes": 5,
+    "props": 26,
+    "gardens": 69
+  },
+  "geometryValidation": {
+    "passed": true,
+    "modelBoundsInsideContext": true,
+    "modelBoundsApproximateMappedRoofEnvelopes": true,
+    "modelsOverlapRoads": false,
+    "modelPairsOverlap": false,
+    "gardensClearPavementAndNeighboringBuildings": true,
+    "gardenCount": 69,
+    "propsClearPavementAndBuildings": true,
+    "vehicleEnvelope": {
+      "width": 2.211,
+      "length": 4.2
+    },
+    "endpointNote": "The first/last two samples are omitted from corner-envelope checks where vehicles enter/leave the map boundary.",
+    "routes": [
+      {
+        "id": "recorrido-1-este-oeste",
+        "pointCount": 101,
+        "minimumCenterToRoadEdgeM": 1.8,
+        "minimumVehicleCornerRoadMarginM": 0.694,
+        "onewayGraphRespected": true
+      },
+      {
+        "id": "recorrido-2-norte-este",
+        "pointCount": 104,
+        "minimumCenterToRoadEdgeM": 1.8,
+        "minimumVehicleCornerRoadMarginM": 0.25,
+        "onewayGraphRespected": true
+      },
+      {
+        "id": "recorrido-3-oeste-este",
+        "pointCount": 101,
+        "minimumCenterToRoadEdgeM": 1.8,
+        "minimumVehicleCornerRoadMarginM": 0.655,
+        "onewayGraphRespected": true
+      },
+      {
+        "id": "recorrido-4-este-norte",
+        "pointCount": 102,
+        "minimumCenterToRoadEdgeM": 1.425,
+        "minimumVehicleCornerRoadMarginM": 0.694,
+        "onewayGraphRespected": true
+      },
+      {
+        "id": "recorrido-5-norte-oeste",
+        "pointCount": 104,
+        "minimumCenterToRoadEdgeM": 1.426,
+        "minimumVehicleCornerRoadMarginM": 0.694,
+        "onewayGraphRespected": true
+      }
+    ]
+  },
+  "processedElementIds": {
+    "roads": [
+      24337693,
+      36821262,
+      36821263,
+      36821264,
+      175355266,
+      175355295,
+      175355305,
+      617282421,
+      1342531206,
+      1342531207,
+      1342531208,
+      1342531209,
+      1342531210,
+      1342531211,
+      1342531212
+    ],
+    "buildings": [
+      1466819728,
+      1466819730,
+      1434977411,
+      1466819726,
+      1466819729,
+      1466819697,
+      1434977410,
+      1466819725,
+      1466819727,
+      1466819698,
+      1434977409,
+      1466819724,
+      1466819723,
+      1466819696,
+      1434977412,
+      1466819722,
+      1467624465,
+      1467624467,
+      1467624464,
+      1466819721,
+      1466819695,
+      1434977413,
+      1466819717,
+      1467624471,
+      1467624468,
+      1466819694,
+      1434977414,
+      1466838057,
+      617282435,
+      1467624463,
+      617282434,
+      617282428,
+      1466838056,
+      1467624469,
+      1466819718,
+      1466819693,
+      1466819719,
+      617282430,
+      1466838055,
+      1466819671,
+      1467624462,
+      1467624472,
+      617282432,
+      1466819669,
+      617282429,
+      1473643641,
+      1466838054,
+      1466819699,
+      1469223403,
+      617282436,
+      1466819692,
+      617282431,
+      1466819670,
+      617282433,
+      1467624473,
+      1466838053,
+      1473643647,
+      1469223401,
+      1473643642,
+      1469223402,
+      1466838052,
+      1466819668,
+      1473643646,
+      1469223400,
+      1466819664,
+      1466838050,
+      1479670146,
+      1469223393,
+      1466819663,
+      1469223394
+    ],
+    "trees": [
+      13431049845,
+      13452797570,
+      13453208102
+    ]
+  },
+  "visualReference": {
+    "provider": "Google Maps satellite, manually reviewed by the parent agent",
+    "url": "https://www.google.com/maps/@-33.4488839,-70.5489312,19z/data=!3m1!1e3",
+    "reviewedOn": "2026-11-03",
+    "observations": "T junction: José Caracci extends north from José Zapiola. Low-rise 1–2 storey houses, grey/beige/terracotta roofs and front gardens. Southern access belongs to private Condominio Los Cipreses; no invented continuation. No traffic signal observed from overhead imagery.",
+    "use": "Visual corroboration only; no Google imagery copied, packaged, or used as a texture."
+  },
+  "limitations": [
+    "No turn-restriction relations were requested in this small export; routes honor way direction and shared nodes, not every traffic regulation.",
+    "No live data or historical speed observations are used.",
+    "Widths and untagged building heights are estimates for demonstration.",
+    "Imported low-poly house meshes are representative typologies; roof envelopes and positions come from OSM, but facades are not surveyed reconstructions.",
+    "Garden trees marked as representative are decorative inferred planting, not a tree inventory. Mapped tree nodes retain their OSM IDs. No traffic signal is placed because none was verified.",
+    "Lawn rings extend an illustrative 3 m beyond house envelopes, clipped to pavement clearances and free gaps between neighbors. They do not denote real property boundaries. Four streetlights are a representative lighting sample, not verified locations."
+  ]
+}

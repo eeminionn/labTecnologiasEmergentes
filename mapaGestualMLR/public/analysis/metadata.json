@@ -1,0 +1,132 @@
+{
+  "titulo": "Seguridad en La Reina: base histórica simulada",
+  "descripcion": "60.000 incidentes ficticios para probar la sección Análisis. No representan denuncias, delitos ni resoluciones reales.",
+  "origen": "simulado",
+  "etiqueta": "Datos simulados · Demostración",
+  "cantidad": 60000,
+  "semilla": 20261106,
+  "periodo": {
+    "desde": "2023-01-01",
+    "hasta": "2025-12-31"
+  },
+  "archivo": "seguridad-simulada.csv",
+  "delimitador": ",",
+  "codificacion": "UTF-8",
+  "columnas": [
+    "id",
+    "categoria",
+    "tipo_incidente",
+    "direccion",
+    "latitud",
+    "longitud",
+    "fecha",
+    "hora",
+    "dia_semana",
+    "resuelto",
+    "origen"
+  ],
+  "categoria": "Seguridad",
+  "tipos_incidente": [
+    "Robo con intimidación",
+    "Robo por sorpresa",
+    "Robo de vehículo",
+    "Robo en lugar habitado",
+    "Robo en lugar no habitado"
+  ],
+  "resuelto": {
+    "sí": 22920,
+    "no": 37080
+  },
+  "por_ano": {
+    "2023": 20009,
+    "2024": 20066,
+    "2025": 19925
+  },
+  "por_mes": {
+    "2023-01": 1756,
+    "2023-02": 1452,
+    "2023-03": 1777,
+    "2023-04": 1675,
+    "2023-05": 1670,
+    "2023-06": 1634,
+    "2023-07": 1719,
+    "2023-08": 1674,
+    "2023-09": 1565,
+    "2023-10": 1698,
+    "2023-11": 1654,
+    "2023-12": 1735,
+    "2024-01": 1678,
+    "2024-02": 1615,
+    "2024-03": 1667,
+    "2024-04": 1623,
+    "2024-05": 1706,
+    "2024-06": 1681,
+    "2024-07": 1697,
+    "2024-08": 1654,
+    "2024-09": 1580,
+    "2024-10": 1733,
+    "2024-11": 1650,
+    "2024-12": 1782,
+    "2025-01": 1729,
+    "2025-02": 1542,
+    "2025-03": 1742,
+    "2025-04": 1636,
+    "2025-05": 1687,
+    "2025-06": 1659,
+    "2025-07": 1622,
+    "2025-08": 1715,
+    "2025-09": 1568,
+    "2025-10": 1700,
+    "2025-11": 1629,
+    "2025-12": 1696
+  },
+  "geografia": {
+    "sistema_coordenadas": "WGS84",
+    "limite": "SUBDERE / IDE Chile, DPA 2023",
+    "calles_distintas": 456,
+    "ubicaciones_representativas": 12100,
+    "ubicaciones_utilizadas": 12100,
+    "longitud_vial_metros": 222546,
+    "bbox_incidentes": [
+      -70.584432,
+      -33.465452,
+      -70.502679,
+      -33.428941
+    ],
+    "alcance": "Ubicaciones representativas sobre calles reales, recortadas al límite de La Reina. La numeración es simulada. Los cerros sin calles no reciben incidentes inventados."
+  },
+  "metodo": "Muestreo reproducible sobre la red vial pública. Cobertura general de todas las ubicaciones representativas y concentraciones espaciales distintas para cada año y mes. Fechas, horarios, tipos y resolución sintéticos, sin calibración estadística con delitos reales.",
+  "patrones_temporales": {
+    "version_simulacion": 2,
+    "semilla_espacial": 20261107,
+    "alcance": "Los focos anuales cambian de sector y dos focos mensuales se desplazan por calles reales. Son decisiones de demostración, no tendencias históricas observadas.",
+    "campos_conservados": [
+      "id",
+      "categoria",
+      "tipo_incidente",
+      "fecha",
+      "hora",
+      "dia_semana",
+      "resuelto",
+      "origen"
+    ]
+  },
+  "fuentes": [
+    {
+      "nombre": "OpenStreetMap contributors",
+      "uso": "Calles y cruces; no incidentes",
+      "url": "https://www.openstreetmap.org/copyright",
+      "licencia": "ODbL 1.0",
+      "descarga": "2026-11-06"
+    }
+  ],
+  "archivos_fuente": [
+    {
+      "archivo": "Documentos/fuentes-analisis/calles-la-reina.json",
+      "sha256": "2b7a4d32fd3d0186c606b4db659b7825d758754da3048c1db4e0607986b7be2d"
+    }
+  ],
+  "tamano_bytes": 8493119,
+  "sha256": "703f6f2bcace85d85b86593d55f1ab5ebeb40ceffd5d98c882020807e74146cf",
+  "autoria_csv": "Generado y verificado con @oai/artifact-tool a partir del muestreo reproducible."
+}

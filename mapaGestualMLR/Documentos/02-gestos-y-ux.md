@@ -95,9 +95,7 @@ Revisión por 3–5 evaluadores con heurísticas, seguida por usuarios represent
 
 ## Google Maps dentro de software propio
 
-Electron puede empaquetar la aplicación y renderizar su interfaz con Chromium. Usar Maps JavaScript API en esa ventana cumple una arquitectura de software propio: el programa es dueño de la cámara, detector, estados, interfaz y comandos. No automatiza Chrome ni la página `maps.google.com`. No llamar a esta integración un SDK nativo de escritorio: la capa de mapa sigue siendo un renderer web embebido.
-
-Arquitectura inicial acordada: app Electron y servidor de UI en `http://127.0.0.1:47831`, bridge mínimo de preload e IPC validado, click enviado exclusivamente al WebContents de la propia app. Equipo objetivo principal: macOS arm64 y cámara USB cenital. Se prepara también distribución Windows `.exe`; compilarla desde otro sistema no demuestra compatibilidad, cámara ni latencia en Windows. Registrar por separado build, ejecución básica y ensayo con cámara por plataforma.
+Revisamos Maps JavaScript API como alternativa para controlar la vista del mapa y consultar puntos mediante sus funciones públicas.
 
 ### Qué expone la API
 

@@ -1,0 +1,9 @@
+GET https://api.openstreetmap.org/api/0.6/map?bbox=-70.55035,-33.4500,-70.5475,-33.4476
+
+OpenStreetMap public map API 0.6; WGS84 bbox order: west,south,east,north.
+Downloaded 2026-11-03. The unmodified XML is sector-caracci.osm.
+The map endpoint returns complete ways and their referenced nodes. Additional tagged nodes include real trees.
+Copyright: © OpenStreetMap contributors. ODbL 1.0.
+https://www.openstreetmap.org/copyright
+
+Overpass was attempted but timed out. No Overpass response is used for the active sector.

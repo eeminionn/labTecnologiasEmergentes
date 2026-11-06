@@ -39,8 +39,10 @@ namespace LaReina.DigitalTwin
             public int footprintCount;
             public bool alternatingFootsteps, singleFootLight, ceilingDisplayPassed;
             public int[] illuminatedSteps;
-            public string displayedClock, displayedCountdown;
-            public int countdownStart, countdownAfterWait, displayRepetitions;
+            public string displayedElapsed;
+            public int elapsedStart, elapsedAfterWait, displayRepetitions, displayTimerInstances, ceilingChangedPixels;
+            public bool ceilingStaticPixelsPreserved, ceilingRestartPassed;
+            public bool[] ceilingTimersChanged;
             public Vector3 tabletopDimensions;
             public float tabletopHeight, tabletopThickness, pedestalFloorHeight, ovalUvArea;
             public Vector3 projectionDimensions;
@@ -145,18 +147,51 @@ namespace LaReina.DigitalTwin
             }
             report.illuminatedSteps=gaitSteps.ToArray();
             footprints.enabled=true;
-            ceilingDisplay.RestartCountdown();
-            report.countdownStart=ceilingDisplay.RemainingSeconds;
+            ceilingDisplay.RestartElapsed();
+            report.elapsedStart=ceilingDisplay.ElapsedSeconds;
             int renderBefore=ceilingDisplay.RenderCount;
+            Color32[] ceilingBefore=ceilingDisplay.OutputTexture ? ceilingDisplay.OutputTexture.GetPixels32() : Array.Empty<Color32>();
+            string elapsedBefore=ceilingDisplay.DisplayedElapsed;
+            if(ceilingDisplay.OutputTexture)File.WriteAllBytes(Path.Combine(folder,"13a_panel_inicio.png"),ceilingDisplay.OutputTexture.EncodeToPNG());
             yield return new WaitForSecondsRealtime(1.2f);
-            report.countdownAfterWait=ceilingDisplay.RemainingSeconds;
-            report.displayedClock=ceilingDisplay.DisplayedClock;report.displayedCountdown=ceilingDisplay.DisplayedCountdown;
+            report.elapsedAfterWait=ceilingDisplay.ElapsedSeconds;
+            report.displayedElapsed=ceilingDisplay.DisplayedElapsed;
             report.displayRepetitions=ceilingDisplay.repetitions;
-            report.ceilingDisplayPassed=report.countdownStart==900 && report.countdownAfterWait<900 && report.countdownAfterWait>=897 &&
-                ceilingDisplay.RenderCount>renderBefore && ceilingDisplay.OutputTexture && ceilingDisplay.OutputTexture.width==2048 &&
-                ceilingDisplay.repetitions==2 && CeilingEventDisplay.CalculateRemaining(450)==450 &&
-                CeilingEventDisplay.CalculateRemaining(900)==0 && CeilingEventDisplay.CalculateRemaining(1000)==0 &&
-                CeilingEventDisplay.FormatCountdown(900)=="15:00";
+            report.displayTimerInstances=ceilingDisplay.TimerInstances;
+            report.ceilingStaticPixelsPreserved=ceilingDisplay.LayoutValid && ceilingBefore.Length>0;
+            report.ceilingTimersChanged=new bool[ceilingDisplay.TimerInstances];
+            if(ceilingDisplay.OutputTexture && report.ceilingStaticPixelsPreserved)
+            {
+                var after=ceilingDisplay.OutputTexture.GetPixels32();
+                var beforeBounds=Enumerable.Range(0,ceilingDisplay.TimerInstances).Select(i=>ceilingDisplay.TimerBounds(i,elapsedBefore)).ToArray();
+                var afterBounds=Enumerable.Range(0,ceilingDisplay.TimerInstances).Select(i=>ceilingDisplay.TimerBounds(i,report.displayedElapsed)).ToArray();
+                int width=ceilingDisplay.OutputTexture.width,height=ceilingDisplay.OutputTexture.height;
+                for(int pixel=0;pixel<after.Length;pixel++)
+                {
+                    var a=ceilingBefore[pixel];var b=after[pixel];
+                    if(a.r==b.r && a.g==b.g && a.b==b.b && a.a==b.a)continue;
+                    report.ceilingChangedPixels++;
+                    var position=new Vector2Int(pixel%width,height-1-pixel/width);
+                    bool insideTimer=false;
+                    for(int timer=0;timer<beforeBounds.Length;timer++)
+                        if(beforeBounds[timer].Contains(position) || afterBounds[timer].Contains(position))
+                        { insideTimer=true;report.ceilingTimersChanged[timer]=true; }
+                    report.ceilingStaticPixelsPreserved &= insideTimer;
+                }
+                File.WriteAllBytes(Path.Combine(folder,"13b_panel_avance.png"),ceilingDisplay.OutputTexture.EncodeToPNG());
+            }
+            ceilingDisplay.RestartElapsed();
+            report.ceilingRestartPassed=ceilingDisplay.ElapsedSeconds==0 && ceilingDisplay.DisplayedElapsed=="00:00";
+            report.ceilingDisplayPassed=report.elapsedStart==0 && elapsedBefore=="00:00" && report.elapsedAfterWait>=1 && report.elapsedAfterWait<=3 &&
+                report.displayedElapsed==CeilingEventDisplay.FormatElapsed(report.elapsedAfterWait) &&
+                ceilingDisplay.RenderCount>renderBefore && ceilingDisplay.LayoutValid && ceilingDisplay.OutputTexture &&
+                ceilingDisplay.OutputTexture.width==2048 && ceilingDisplay.OutputTexture.height==256 &&
+                ceilingDisplay.repetitions==2 && ceilingDisplay.TimerInstances==2 && report.ceilingStaticPixelsPreserved &&
+                report.ceilingChangedPixels>0 && report.ceilingTimersChanged.All(changed=>changed) && report.ceilingRestartPassed &&
+                CeilingEventDisplay.CalculateElapsed(-1)==0 && CeilingEventDisplay.CalculateElapsed(.999)==0 &&
+                CeilingEventDisplay.CalculateElapsed(1.001)==1 && CeilingEventDisplay.CalculateElapsed(60)==60 &&
+                CeilingEventDisplay.FormatElapsed(0)=="00:00" && CeilingEventDisplay.FormatElapsed(59)=="00:59" &&
+                CeilingEventDisplay.FormatElapsed(60)=="01:00" && CeilingEventDisplay.FormatElapsed(6000)=="100:00";
             report.passed=report.meterScale && report.chairCount==11 && report.continuousPanorama && report.oldDividersRemoved &&
                 report.spawnFloorSupport && report.collisionStopsBody && report.videosPlaying && report.errors.Length==0 && report.seatingPassed &&
                 report.footprintProgressPassed && report.alternatingFootsteps && report.singleFootLight && report.ceilingDisplayPassed &&
@@ -226,7 +261,7 @@ namespace LaReina.DigitalTwin
             footprints.enabled=true;
             desktop.ResetPosition();body.enabled=false;
             desktop.eye.transform.LookAt(ceilingDisplay.targetRenderer.bounds.center);
-            ceilingDisplay.RestartCountdown();
+            ceilingDisplay.RestartElapsed();
             yield return new WaitForEndOfFrame();
             ScreenCapture.CaptureScreenshot(Path.Combine(folder,"11_pantalla_circular.png"));
             File.WriteAllBytes(Path.Combine(folder,"13_panel_sesion.png"),ceilingDisplay.OutputTexture.EncodeToPNG());

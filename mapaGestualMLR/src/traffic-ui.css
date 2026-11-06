@@ -1,0 +1,265 @@
+/* A quiet municipal interface keeps the real map and its small 3D district
+   in the foreground. All new targets stay inside the native gesture bounds. */
+body:not(.twin-projection) .traffic-experience {
+  background: transparent;
+  opacity: 1;
+  transition: opacity .25s ease;
+}
+body:not(.twin-projection) .traffic-scene { background: transparent; }
+body:not(.twin-projection) .traffic-scene .maplibregl-map { font: inherit; }
+body:not(.twin-projection) .traffic-scene .maplibregl-canvas { outline: none; }
+body:not(.twin-projection) .traffic-context {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  z-index: 5;
+  width: 290px;
+  padding: 20px;
+  color: var(--ink);
+  background: rgba(255,255,255,.86);
+  background-image: var(--glass-sheen);
+  border: 1px solid rgba(255,255,255,.95);
+  border-radius: 22px;
+  -webkit-backdrop-filter: blur(22px) saturate(135%);
+  backdrop-filter: blur(22px) saturate(135%);
+  box-shadow: 0 8px 30px #153d4820, var(--glass-inset);
+}
+body:not(.twin-projection) .traffic-eyebrow {
+  margin: 0 0 8px;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .traffic-title {
+  font-size: 20px;
+  line-height: 1.25;
+  letter-spacing: -.6px;
+  color: #16424f;
+}
+body:not(.twin-projection) .traffic-subtitle {
+  font-size: 11px;
+  line-height: 1.6;
+  margin: 9px 0 12px;
+}
+body:not(.twin-projection) .traffic-status {
+  padding: 4px 9px;
+  font-size: 9px;
+  color: #176653;
+  background: #eff8f3;
+  border-color: #cfe5dc;
+}
+body:not(.twin-projection) .traffic-status::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #008d36;
+}
+body:not(.twin-projection) .traffic-context .traffic-note {
+  font-size: 9px;
+  margin: 10px 0 0;
+  max-width: 220px;
+}
+body:not(.twin-projection) .traffic-context .traffic-exit {
+  display: block;
+  margin: 14px 0 -4px;
+  padding: 5px 0;
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+  color: var(--municipal-petroleo);
+  font-size: 10px;
+  min-height: 32px;
+}
+body:not(.twin-projection) .traffic-toolbar {
+  top: auto;
+  bottom: 35px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 640px;
+  max-height: none;
+  overflow: visible;
+  padding: 16px;
+  border-radius: 22px;
+  background-color: rgba(255,255,255,.9);
+  box-shadow: 0 12px 40px #123d4d24, var(--glass-inset);
+}
+body:not(.twin-projection) .traffic-dock-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  margin: 0 2px 10px;
+}
+body:not(.twin-projection) .traffic-dock-heading strong { font-size: 10px; font-weight: 600; }
+body:not(.twin-projection) .traffic-dock-heading .traffic-time {
+  margin: 0;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: #506b72;
+}
+body:not(.twin-projection) .traffic-scenario-buttons {
+  display: grid;
+  grid-template-columns: repeat(3,1fr);
+  gap: 6px;
+  padding: 4px;
+  margin: 0;
+  background: #e9f0f0;
+  border: 1px solid #dde8e8;
+  border-radius: 15px;
+}
+body:not(.twin-projection) .traffic-scenario {
+  min-height: 44px;
+  padding: 8px 10px;
+  font-size: 11px;
+  border-color: transparent;
+  border-radius: 11px;
+  background: transparent;
+  box-shadow: none;
+  transition: box-shadow .16s ease, border-color .16s ease;
+}
+body:not(.twin-projection) .traffic-scenario small { font-size: 9px; font-weight: 400; }
+body:not(.twin-projection) .traffic-scenario[data-active="true"] {
+  background: var(--municipal-petroleo);
+  border-color: var(--municipal-petroleo);
+  box-shadow: 0 2px 8px #006a8526;
+}
+body:not(.twin-projection) .traffic-density { margin: 12px 2px 0; }
+body:not(.twin-projection) .traffic-density-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+body:not(.twin-projection) .traffic-density-heading label { margin: 0; font-size: 10px; font-weight: 600; }
+body:not(.twin-projection) .traffic-density-heading output {
+  min-width: 35px;
+  padding: 2px 8px;
+  border-radius: 7px;
+  background: #e6f2f3;
+  color: var(--municipal-petroleo);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+body:not(.twin-projection) .traffic-density-control { display: flex; align-items: center; gap: 8px; }
+body:not(.twin-projection) .traffic-density-control button {
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 10px;
+  background: rgba(255,255,255,.6);
+  color: var(--municipal-petroleo);
+  font-size: 22px;
+  font-weight: 400;
+}
+body:not(.twin-projection) #traffic-vehicle-count {
+  --range-progress: 5%;
+  appearance: none;
+  -webkit-appearance: none;
+  flex: 1;
+  min-width: 100px;
+  width: 100%;
+  height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  cursor: pointer;
+}
+body:not(.twin-projection) #traffic-vehicle-count::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(to right, var(--municipal-petroleo) var(--range-progress), #d6e3e5 var(--range-progress));
+}
+body:not(.twin-projection) #traffic-vehicle-count::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: -7px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--municipal-petroleo);
+  box-shadow: 0 1px 5px #16424f45;
+}
+body:not(.twin-projection) #traffic-vehicle-count:focus-visible { outline: 2px solid var(--municipal-petroleo); outline-offset: 2px; }
+body:not(.twin-projection) .traffic-density-scale {
+  display: flex;
+  justify-content: space-between;
+  margin: -5px 52px 0;
+  padding: 0 8px;
+  color: #60787e;
+  font-size: 8px;
+  line-height: 12px;
+  font-variant-numeric: tabular-nums;
+}
+body:not(.twin-projection) .traffic-density-note {
+  min-height: 14px;
+  margin: 4px 0 0;
+  font-size: 9px;
+  line-height: 14px;
+  color: #506b72;
+}
+body:not(.twin-projection) .traffic-playback {
+  display: grid;
+  grid-template-columns: repeat(5,1fr);
+  gap: 6px;
+  margin-top: 10px;
+}
+body:not(.twin-projection) .traffic-playback button {
+  min-height: 36px;
+  padding: 7px 5px;
+  border-radius: 10px;
+  font-size: 10px;
+  background: rgba(255,255,255,.55);
+}
+body:not(.twin-projection) .traffic-playback #traffic-toggle {
+  border-color: #c2d8dd;
+  color: var(--municipal-petroleo);
+  font-weight: 600;
+}
+body:not(.twin-projection) .traffic-playback button[aria-pressed="true"] {
+  background: #eaf5f5;
+  border-color: #bddcdd;
+  color: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .traffic-toolbar > .traffic-note {
+  margin: 9px 2px 0;
+  font-size: 9px;
+  line-height: 1.4;
+}
+body:not(.twin-projection) .traffic-legend {
+  right: 16px;
+  bottom: 7px;
+  padding: 3px 7px;
+  border-radius: 6px;
+  gap: 4px;
+  max-width: none;
+  background: rgba(255,255,255,.86);
+  font-size: 8px;
+  box-shadow: none;
+}
+body:not(.twin-projection).experience-open #diagnostics { width: 150px; bottom: 18px; }
+body:not(.twin-projection).experience-open #diagnostics .video-frame { height: 90px; }
+body:not(.twin-projection).experience-open .map-tools { top: 20px; }
+body:not(.twin-projection).experience-open .map-tools button { width: 40px; height: 40px; }
+@media(max-width: 1150px) {
+  body:not(.twin-projection) .traffic-context { width: 260px; padding: 16px; }
+  body:not(.twin-projection) .traffic-title { font-size: 18px; }
+  body:not(.twin-projection) .traffic-toolbar { left: calc(50% + 70px); width: calc(100% - 240px); max-width: 640px; }
+  body:not(.twin-projection) .traffic-scenario { font-size: 10px; }
+}
+@media(prefers-reduced-motion: reduce) {
+  body:not(.twin-projection) .traffic-experience { transition: none; }
+}
+@media(prefers-reduced-transparency: reduce) {
+  body:not(.twin-projection) .traffic-context,
+  body:not(.twin-projection) .traffic-toolbar { background: #fff; backdrop-filter: none; }
+}

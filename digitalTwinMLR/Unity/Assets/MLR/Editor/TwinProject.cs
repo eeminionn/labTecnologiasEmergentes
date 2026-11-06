@@ -266,7 +266,8 @@ namespace LaReina.DigitalTwin.Editor
             var display=ring.AddComponent<CeilingEventDisplay>();
             display.targetRenderer=renderer;display.basePanel=panel;
             display.digitAtlas=AssetDatabase.LoadAssetAtPath<Texture2D>(Root+"Textures/EventDisplay/ceiling_digits.png");
-            display.durationSeconds=900;display.repetitions=2;
+            display.layoutAsset=AssetDatabase.LoadAssetAtPath<TextAsset>(Root+"Textures/EventDisplay/ceiling_panel_layout.json");
+            display.repetitions=2;
             return display;
         }
 
@@ -407,6 +408,7 @@ namespace LaReina.DigitalTwin.Editor
                 texture.sRGBTexture=!file.Contains("_MetallicSmoothness") && !file.Contains("_Normal");
                 bool eventDisplay=file.Contains("EventDisplay");
                 texture.isReadable=eventDisplay;
+                if(eventDisplay)texture.npotScale=TextureImporterNPOTScale.None;
                 texture.textureCompression=eventDisplay?TextureImporterCompression.Uncompressed:TextureImporterCompression.Compressed;
                 texture.alphaIsTransparency=false;texture.maxTextureSize=file.Contains("panorama")?4096:eventDisplay?2048:1024;
                 texture.wrapMode=file.Contains("Poster") || eventDisplay?TextureWrapMode.Clamp:TextureWrapMode.Repeat;
@@ -418,7 +420,7 @@ namespace LaReina.DigitalTwin.Editor
         {
             PlayerSettings.companyName="MLR";PlayerSettings.productName="Sala La Reina";
             PlayerSettings.macOS.cameraUsageDescription=CameraUsageDescription;
-            PlayerSettings.bundleVersion="0.9.2";PlayerSettings.Android.bundleVersionCode=8;
+            PlayerSettings.bundleVersion="0.9.3";PlayerSettings.Android.bundleVersionCode=8;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone,"cl.mlr.sala.lareina");
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android,"cl.mlr.sala.lareina");
             PlayerSettings.defaultScreenWidth=1600;PlayerSettings.defaultScreenHeight=900;
@@ -459,7 +461,7 @@ namespace LaReina.DigitalTwin.Editor
             if(guide.RouteLength<20f || guide.RouteLength>35f || Mathf.Abs(guide.sourceUvLength-guide.RouteLength)>.03f || Mathf.Abs(guide.LookAhead-1.35f)>.001f)
                 throw new InvalidDataException("La tira del techo no conserva el recorrido o la anticipación configurada.");
             var ceiling=UnityEngine.Object.FindAnyObjectByType<CeilingEventDisplay>();
-            if(!ceiling || !ceiling.basePanel || !ceiling.digitAtlas || !ceiling.basePanel.isReadable || !ceiling.digitAtlas.isReadable)
+            if(!ceiling || !ceiling.basePanel || !ceiling.digitAtlas || !ceiling.layoutAsset || !ceiling.basePanel.isReadable || !ceiling.digitAtlas.isReadable)
                 throw new InvalidDataException("Faltan los recursos legibles para la pantalla circular.");
             var renderers=metadata.GetComponentsInChildren<Renderer>();
             var bounds=renderers[0].bounds;foreach(var r in renderers)bounds.Encapsulate(r.bounds);

@@ -1,31 +1,25 @@
 # Bitácora - Mapa Gestual MLR
 
+### Interacción y análisis de información territorial
+
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 23 de octubre de 2026 · versión 0.2.2<br>
+**Última actualización:** 6 de noviembre de 2026 · versión 0.7.0<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
 
-## Del mapa a los gráficos
+---
 
-Incorporamos la gráfica actualizada del equipo para probar cómo pasamos del territorio a la información. El **pin 1, magenta de Seguridad y riesgos**, abre los cinco gráficos de las páginas 2 a 6 del PDF, en el mismo orden. Son materiales de trabajo del equipo, no datos municipales validados.
+## Material del prototipo
 
-Dejamos siempre visibles la **X para volver al mapa** y las **flechas para cambiar de gráfico**. Se seleccionan manteniendo el índice durante **1,5 segundos**, igual que los puntos. También podemos acercar la información con dos OK y arrastrarla con un puño, para conservar una sola forma de interactuar.
+| Material | Qué muestra |
+|:---|:---|
+| [Referentes de gestos y UX](./Documentos/02-gestos-y-ux.md) | Antecedentes para definir la interacción. |
+| [Análisis territorial](./Documentos/11-analisis-seguridad.md) | Consulta de seguridad, cámaras y cruce de información. |
+| [Fuentes de cámaras](./Documentos/12-camaras-fuentes.md) | Procedencia y alcance de la base. |
 
-Separamos los tres puntos y usamos los pines originales del PDF, con sus colores y una leyenda pequeña abajo al centro. El primero crece y se achica suavemente para invitar a comenzar, sin cambiar de tono. Los otros dos temas quedan con su contenido en preparación. Al probar la proyección en la mesa, acercamos los gráficos a la persona sentada y movimos las flechas a los extremos, con la X encima del contenido.
+## Punto de partida
 
-<table>
-  <tr>
-    <td><img src="./Imagenes/mapa-pines-actualizados.jpg" alt="Pines de colores y leyenda temática sobre el mapa" width="380" /></td>
-    <td><img src="./Imagenes/graficos-gestuales.jpg" alt="Primer gráfico de inundación con flechas y cierre" width="380" /></td>
-  </tr>
-  <tr>
-    <td>Los tres pines del equipo, más separados y con su leyenda.</td>
-    <td>El pin 1 abre los gráficos, con controles que también se seleccionan con el índice.</td>
-  </tr>
-</table>
-
-## PROTOTIPO MESA INTERACTIVA
 
 En la etapa anterior planteamos reunir información municipal en un mismo mapa. Ahora nos concentramos en cómo recorrerlo con las manos frente a una cámara frontal que apunta hacia la persona. Elegimos MediaPipe para obtener los puntos de las manos y dedicar este avance a probar la interacción.
 
@@ -85,52 +79,71 @@ Dejamos una sombra por mano y colores distintos para desplazamiento y zoom, para
   </tr>
 </table>
 
-## Arquitectura por módulos
+## Del mapa a los gráficos
 
-Ordenamos el recorrido de la imagen en nueve módulos, con la misma numeración del diagrama completo. Esto nos ayudó a separar la detección de las manos de las reglas que deciden qué hacer en el mapa.
 
-| Módulo | Qué hace |
-|:---|:---|
-| **1. Inicio y mapa** | Abre la aplicación y carga el mapa y las preferencias. |
-| **2. Cámara frontal** | Pide permiso y captura una imagen por vez. |
-| **3. Detección de manos** | MediaPipe estima los 21 puntos de cada mano en el equipo. |
-| **4. Validación** | Revisa calidad, datos recientes y pausa antes de permitir acciones. |
-| **5. Interpretación** | Sigue cada mano y aplica nuestras reglas de gestos. |
-| **6. Selección** | Mantener el índice sobre un objetivo durante 1,5 segundos confirma el clic. |
-| **7. Navegación** | Uno o dos puños desplazan; dos OK hacen zoom. |
-| **8. Salida al mapa** | Ejecuta las acciones y muestra sombras, colores, aro e información. |
-| **9. Ajustes y cierre** | Configura la cámara, registra métricas y limpia el seguimiento al detenerse. |
+Incorporamos la gráfica actualizada del equipo para probar cómo pasamos del territorio a la información. El **pin 1, magenta de Seguridad y riesgos**, abre los cinco gráficos de las páginas 2 a 6 del PDF, en el mismo orden. Son materiales de trabajo del equipo, no datos municipales validados.
 
-El módulo 5 decide entre selección y navegación: dos OK tienen prioridad de zoom. Los ajustes y controles de seguridad se aplican durante toda la sesión.
+Dejamos siempre visibles la **X para volver al mapa** y las **flechas para cambiar de gráfico**. Se seleccionan manteniendo el índice durante **1,5 segundos**, igual que los puntos. También podemos acercar la información con dos OK y arrastrarla con un puño, para conservar una sola forma de interactuar.
+
+Separamos los tres puntos y usamos los pines originales del PDF, con sus colores y una leyenda pequeña abajo al centro. El primero crece y se achica suavemente para invitar a comenzar, sin cambiar de tono. Los otros dos temas quedan con su contenido en preparación. Al probar la proyección en la mesa, acercamos los gráficos a la persona sentada y movimos las flechas a los extremos, con la X encima del contenido.
 
 <table>
   <tr>
-    <td align="center">
-      <img src="./Imagenes/04-arquitectura-resumen.jpg" alt="Resumen del flujo desde la cámara frontal hasta la interacción con el mapa" width="640" />
-    </td>
+    <td><img src="./Imagenes/mapa-pines-actualizados.jpg" alt="Pines de colores y leyenda temática sobre el mapa" width="380" /></td>
+    <td><img src="./Imagenes/graficos-gestuales.jpg" alt="Primer gráfico de inundación con flechas y cierre" width="380" /></td>
   </tr>
   <tr>
-    <td><strong>Figura 4.</strong> Flujo general de los módulos. La <a href="./Documentos/09-arquitectura-del-sistema.md">arquitectura del sistema</a> reúne el resumen y el detalle completo. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el código del prototipo.</td>
+    <td><strong>Figura 4.</strong> Pines y leyenda temática. <strong>Fuente:</strong> captura de la aplicación.</td>
+    <td>El pin 1 abre los gráficos, con controles que también se seleccionan con el índice.</td>
   </tr>
 </table>
 
-## Cómo seguimos
+## Actualización: análisis territorial
 
-Después de estos ajustes, el usuario confirmó que el control funciona bien. Ahora queremos evaluar el montaje frontal, medir errores y comodidad e incorporar información municipal real.
+**Fecha:** 6 de noviembre de 2026
 
-[Referentes de gestos y UX](./Documentos/02-gestos-y-ux.md) · [Arquitectura del sistema](./Documentos/09-arquitectura-del-sistema.md)
+### Seguridad sobre el mapa
 
-## Vista de la arquitectura completa
+Incorporamos **Análisis** sobre el mismo mapa de La Reina. Preparamos **60.000 incidentes de demostración entre 2023 y 2025** y un mapa de calor que pasa de verde a rojo según su concentración. La consulta combina período, horario, resolución y cuatro grupos de robo: **violencia o intimidación, por sorpresa, de vehículos y en inmuebles**.
+
+Primero elegimos **Todo, Año o Mes** y luego el período concreto. Al pasar el mouse o el índice sobre el mapa aparece una ficha del sector: total, resolución, últimos siete días del período y registro más reciente. Ajustamos los focos por año y mes para comparar cambios en el territorio.
 
 <table>
   <tr>
-    <td align="center">
-      <a href="./Documentos/arquitectura-sistema-0.1.13.jpg">
-        <img src="./Documentos/arquitectura-sistema-0.1.13.jpg" alt="Arquitectura completa del mapa gestual, organizada en nueve módulos" width="640" />
-      </a>
-    </td>
+    <td align="center"><img src="./Imagenes/05-analisis-seguridad.jpg" alt="Mapa de calor de seguridad con filtros de período, resolución, horario y tipo de robo" width="640" /></td>
   </tr>
   <tr>
-    <td><strong>Figura 5.</strong> Arquitectura completa del sistema. <a href="./Documentos/arquitectura-sistema-0.1.13.jpg">Abrir en grande</a> para leer cada módulo. <strong>Fuente:</strong> diagrama propio en draw.io, basado en el prototipo 0.1.13.</td>
+    <td><strong>Figura 5.</strong> Consulta de seguridad sobre la cartografía de La Reina. <strong>Fuente:</strong> captura de la aplicación con datos de demostración.</td>
   </tr>
 </table>
+
+### Cámaras y cruce de información
+
+Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como puntos cian o mapa de calor azul. **Cruzar datos** superpone ambas bases y conserva filtros y transparencia independientes, con un panel a cada lado. Preparamos un ejemplo de **2024** con concentraciones de incidentes y pocas cámaras cercanas para mostrar esta lectura conjunta.
+
+<table>
+  <tr>
+    <td align="center"><img src="./Imagenes/06-analisis-cruzado.jpg" alt="Superposición de cámaras e incidentes con paneles independientes y consulta de un sector" width="640" /></td>
+  </tr>
+  <tr>
+    <td><strong>Figura 6.</strong> Consulta conjunta de ambas bases y detalle de un sector. <strong>Fuente:</strong> captura de la aplicación con datos de demostración.</td>
+  </tr>
+</table>
+
+### Ajustes de la interfaz
+
+Ampliamos los paneles y el espacio de los botones de horario. Los tipos de cámara y de robo permiten **combinar opciones** y quitarlas al volver a pulsar. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**. Retiramos los filtros y rótulos de procedencia de la vista para concentrar la lectura en el mapa.
+
+Los incidentes son simulados y las cámaras combinan referencias publicadas con emplazamientos de demostración. La procedencia permanece en los CSV y sus metadatos; estas bases no representan estadísticas ni un catastro municipal vigente. Las agrupaciones de robo se apoyan en el [glosario de la Biblioteca del Congreso Nacional](https://www.bcn.cl/siit/reportescomunales/glosario.html).
+
+## Próximos pasos
+
+- Probar la consulta y el cruce con usuarios.
+- Incorporar bases municipales verificadas cuando estén disponibles.
+
+---
+
+Documentado por Emilio Abarca, Emilia Armstrong y Victoria Aracena, 2026.
+
+[Volver al README principal](../README.md)

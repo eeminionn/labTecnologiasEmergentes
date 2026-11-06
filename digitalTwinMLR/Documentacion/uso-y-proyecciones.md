@@ -58,15 +58,15 @@ El borde blanco es un anillo con un hueco real que coincide con el inserto ampli
 
 Las teclas **U/J** ajustan la mesa completa y **I/K**, el inserto y el mapa respecto del tablero. **0** restaura ambos valores. Estos ajustes son temporales y **no se guardan**: cada apertura parte con las alturas originales. Hasta la versión 0.7, el pedestal limitaba el descenso del inserto. En la versión 0.8 se adapta para permitir bajar el mapa hasta 20 cm. Las sillas y sus puntos de vista no cambian al ajustar la mesa.
 
-## Pantalla de la sesión en el techo
+## Pantalla de la sesión en el techo · versión 0.9.3
 
-La franja circular del techo muestra un panel que se repite **dos veces** alrededor de la mesa. Incluye la marca de la Municipalidad de La Reina, la hora local del dispositivo, el rótulo **ALCALDE** y el tiempo restante de intervención. El rótulo es parte de la demostración: todavía no identifica automáticamente a quien habla.
+La franja circular muestra la **página 5 de pantallas techo.pdf** entregado por el equipo: marca municipal, tema **Seguridad y Riesgos** y dos campos de tiempo sobre fondo rosado. La lámina de **2048 × 256 px** se repite dos veces alrededor de la mesa; conserva la composición y los elementos estáticos originales.
 
-Al abrir la aplicación, el contador parte en **15:00 (900 segundos)** y baja hasta **00:00**, sin seguir a números negativos. La barra se va vaciando con el tiempo restante. Para comenzar otra intervención en Mac, abre **Tab** y pulsa **Reiniciar intervención · 15 minutos**.
+Ambos campos parten en **00:00** y avanzan sincronizados, segundo a segundo, como tiempo transcurrido de la sesión. Para comenzar de nuevo, abre **Tab** y pulsa **Reiniciar tiempo · 00:00**. El contador usa tiempo real de la aplicación y continúa aunque los videos estén pausados.
 
-Este contenido lo actualiza la aplicación, por lo que **no es un MP4**. La marca y la hoja se extrajeron del PDF gráfico del equipo; los textos y números se generaron con **Futura PT Heavy y Demi** instaladas mediante Adobe. Se incluyen imágenes rasterizadas, no los archivos de las fuentes. La paleta y la procedencia están en [los recursos gráficos de la pantalla](./ceiling_assets_provenance.json), y la disposición en [el panel de sesión](./ceiling_panel_layout.json).
+La aplicación actualiza únicamente los números; **no es un MP4**. Se utilizan imágenes rasterizadas de la gráfica y de los glifos, sin distribuir archivos de fuentes. La procedencia tipográfica y la extracción están documentadas en [los recursos de la pantalla](./ceiling_assets_provenance.json), con las coordenadas en [la disposición del panel](./ceiling_panel_layout.json) y una [vista previa](./ceiling_panel_preview.png).
 
-La pantalla se guarda como un elemento aparte en `Modelado/Ceiling_Event_Display.blend`, para conservar la geometría base de la sala.
+La geometría de la pantalla se conserva como elemento aparte en `Modelado/Ceiling_Event_Display.blend`.
 
 ## Reemplazar los MP4
 

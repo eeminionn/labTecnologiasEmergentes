@@ -1,0 +1,938 @@
+{
+  "schemaVersion": 1,
+  "description": "Downloaded detailed mesh assets for a representative La Reina traffic demonstration.",
+  "license": "CC0-1.0",
+  "attribution": "Modelos 3D: Kenney (CC0). Se conserva el archivo de licencia de cada paquete.",
+  "selectionNote": "Detailed downloaded houses, shops, vehicles, broadleaf trees and street/garden props. Models are representative typologies, not exact local structures or surveyed furniture.",
+  "scaleNote": "Native asset dimensions are measured from glTF meshes and transforms. Target dimensions are demonstrative; placement must use real road and footprint geometry.",
+  "packs": [
+    {
+      "id": "suburban",
+      "title": "City Kit (Suburban)",
+      "author": "Kenney",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "downloadResolver": "https://kenney.nl/download-link/6173736574732f636974792d6b69742d737562757262616e",
+      "archiveSha256": "5869c35cf30b1c87bdb2d197b6d325eebadd2ef08ea27f04797e8e08d77a9a39",
+      "archiveBytes": 3038740,
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseFile": "/traffic/models/kenney/suburban/License.txt"
+    },
+    {
+      "id": "commercial",
+      "title": "City Kit (Commercial)",
+      "author": "Kenney",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-commercial",
+      "downloadResolver": "https://kenney.nl/download-link/6173736574732f636974792d6b69742d636f6d6d65726369616c",
+      "archiveSha256": "f8b09b081c2bb88bcc126e2dec1cb40fd0dad7e7e591b6c26aaefe96fb35276b",
+      "archiveBytes": 4096974,
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseFile": "/traffic/models/kenney/commercial/License.txt"
+    },
+    {
+      "id": "cars",
+      "title": "Car Kit",
+      "author": "Kenney",
+      "sourceUrl": "https://kenney.nl/assets/car-kit",
+      "downloadResolver": "https://kenney.nl/download-link/6173736574732f6361722d6b6974",
+      "archiveSha256": "fac7dacac5c7874348cf19729af3ef205f3d366493edaf0a827d93f4fdf3d0c4",
+      "archiveBytes": 4814237,
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseFile": "/traffic/models/kenney/cars/License.txt"
+    },
+    {
+      "id": "nature",
+      "title": "Nature Kit",
+      "author": "Kenney",
+      "sourceUrl": "https://kenney.nl/assets/nature-kit",
+      "downloadResolver": "https://kenney.nl/download-link/6173736574732f6e61747572652d6b6974",
+      "archiveSha256": "fa7974a0d342bfe63c38664ba9f8ec1a4aab8ea25f099bdc56870e33588c4d9d",
+      "archiveBytes": 10537521,
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseFile": "/traffic/models/kenney/nature/License.txt"
+    },
+    {
+      "id": "roads",
+      "title": "City Kit (Roads)",
+      "author": "Kenney",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-roads",
+      "downloadResolver": "https://kenney.nl/download-link/6173736574732f636974792d6b69742d726f616473",
+      "archiveSha256": "374a4552115cbd11b4ec5c930ee31a533562dc78a09af249a655d03f7ea3b959",
+      "archiveBytes": 2852289,
+      "license": "CC0-1.0",
+      "licenseUrl": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "licenseFile": "/traffic/models/kenney/roads/License.txt"
+    }
+  ],
+  "models": [
+    {
+      "id": "casa-a",
+      "type": "building",
+      "label": "Casa con cubierta inclinada",
+      "pack": "suburban",
+      "url": "/traffic/models/kenney/suburban/building-type-a.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.3,
+        "height": 0.833541,
+        "depth": 1.028138
+      },
+      "boundsMin": [
+        -0.65,
+        0.0,
+        -0.514069
+      ],
+      "boundsMax": [
+        0.65,
+        0.833541,
+        0.514069
+      ],
+      "triangles": 1174,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetWidthM": 12,
+      "sourceArchiveEntry": "Models/GLB format/building-type-a.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "sha256": "49f32e20b9dcd24b1c8f6d6488807b8c8cb684cbb595bfb0bb36ad903e470faa",
+      "bytes": 98604,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/suburban/Textures/colormap.png"
+      ],
+      "recommendedUniformScale": 9.23076923,
+      "demonstrationBoundsM": {
+        "width": 12.0,
+        "height": 7.694225,
+        "depth": 9.490505
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "casa-c",
+      "type": "building",
+      "label": "Casa de dos plantas",
+      "pack": "suburban",
+      "url": "/traffic/models/kenney/suburban/building-type-c.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.28638,
+        "height": 1.033541,
+        "depth": 1.028138
+      },
+      "boundsMin": [
+        -0.64319,
+        0.0,
+        -0.514069
+      ],
+      "boundsMax": [
+        0.64319,
+        1.033541,
+        0.514069
+      ],
+      "triangles": 1196,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetWidthM": 12,
+      "sourceArchiveEntry": "Models/GLB format/building-type-c.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "sha256": "86a69f30f1a09461283e158514945ae5cc9d56357b0ddc83a9a3f0eecd113591",
+      "bytes": 99592,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/suburban/Textures/colormap.png"
+      ],
+      "recommendedUniformScale": 9.32850324,
+      "demonstrationBoundsM": {
+        "width": 12.0,
+        "height": 9.641391,
+        "depth": 9.590989
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "casa-m",
+      "type": "building",
+      "label": "Vivienda de una planta",
+      "pack": "suburban",
+      "url": "/traffic/models/kenney/suburban/building-type-m.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.428,
+        "height": 0.7375,
+        "depth": 1.428
+      },
+      "boundsMin": [
+        -0.714,
+        0.0,
+        -0.714
+      ],
+      "boundsMax": [
+        0.714,
+        0.7375,
+        0.714
+      ],
+      "triangles": 1112,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetWidthM": 14,
+      "sourceArchiveEntry": "Models/GLB format/building-type-m.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "sha256": "36d31f4e45498f6229805b6a7a1577ef00230daeea4c6a4469481e9d5a0fdb7c",
+      "bytes": 96996,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/suburban/Textures/colormap.png"
+      ],
+      "recommendedUniformScale": 9.80392157,
+      "demonstrationBoundsM": {
+        "width": 14.0,
+        "height": 7.230392,
+        "depth": 14.0
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "comercio-c",
+      "type": "building",
+      "label": "Edificio comercial bajo",
+      "pack": "commercial",
+      "url": "/traffic/models/kenney/commercial/building-c.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.883588,
+        "height": 0.893,
+        "depth": 1.09
+      },
+      "boundsMin": [
+        -0.441794,
+        0.0,
+        -0.545
+      ],
+      "boundsMax": [
+        0.441794,
+        0.893,
+        0.545
+      ],
+      "triangles": 1195,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetWidthM": 12,
+      "sourceArchiveEntry": "Models/GLB format/building-c.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-commercial",
+      "sha256": "f6887608a95a165503561730252c30506938803731c6546efca12bd47b1666bd",
+      "bytes": 102788,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/commercial/Textures/colormap.png"
+      ],
+      "recommendedUniformScale": 13.58099024,
+      "demonstrationBoundsM": {
+        "width": 12.0,
+        "height": 12.127824,
+        "depth": 14.803279
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "comercio-e",
+      "type": "building",
+      "label": "Edificio comercial con locales",
+      "pack": "commercial",
+      "url": "/traffic/models/kenney/commercial/building-e.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.64,
+        "height": 0.893,
+        "depth": 1.007892
+      },
+      "boundsMin": [
+        -0.82,
+        0.0,
+        -0.503946
+      ],
+      "boundsMax": [
+        0.82,
+        0.893,
+        0.503946
+      ],
+      "triangles": 1509,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetWidthM": 20,
+      "sourceArchiveEntry": "Models/GLB format/building-e.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-commercial",
+      "sha256": "edbe5b49858a3c83e72d3cf496129c06082ef3a3d6005769f8883138e275b456",
+      "bytes": 128208,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/commercial/Textures/colormap.png"
+      ],
+      "recommendedUniformScale": 12.19512195,
+      "demonstrationBoundsM": {
+        "width": 20.0,
+        "height": 10.890244,
+        "depth": 12.291366
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "auto-hatchback",
+      "type": "car",
+      "label": "Automóvil compacto",
+      "pack": "cars",
+      "url": "/traffic/models/kenney/cars/hatchback-sports.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.3,
+        "height": 1.1,
+        "depth": 2.85
+      },
+      "boundsMin": [
+        -0.65,
+        -0.0,
+        -1.45
+      ],
+      "boundsMax": [
+        0.65,
+        1.1,
+        1.4
+      ],
+      "triangles": 2088,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetLengthM": 4.2,
+      "sourceArchiveEntry": "Models/GLB format/hatchback-sports.glb",
+      "sourceUrl": "https://kenney.nl/assets/car-kit",
+      "sha256": "bd5c9d4c3b4bdd254a66b8426563a68b1487ae7a5076df3a2488e6ffed7be64f",
+      "bytes": 197804,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/cars/Textures/colormap.png"
+      ],
+      "forwardAxis": "+Z",
+      "forwardAxisEvidence": "All wheel-front nodes have positive local Z; wheel-back nodes have negative Z.",
+      "wheelNodeNames": [
+        "wheel-front-right",
+        "wheel-front-left",
+        "wheel-back-right",
+        "wheel-back-left"
+      ],
+      "recommendedUniformScale": 1.47368421,
+      "demonstrationBoundsM": {
+        "width": 1.915789,
+        "height": 1.621053,
+        "depth": 4.2
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "auto-sedan",
+      "type": "car",
+      "label": "Automóvil sedán",
+      "pack": "cars",
+      "url": "/traffic/models/kenney/cars/sedan-sports.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.3,
+        "height": 1.1,
+        "depth": 2.55
+      },
+      "boundsMin": [
+        -0.65,
+        -0.0,
+        -1.3
+      ],
+      "boundsMax": [
+        0.65,
+        1.1,
+        1.25
+      ],
+      "triangles": 2088,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetLengthM": 3.8,
+      "sourceArchiveEntry": "Models/GLB format/sedan-sports.glb",
+      "sourceUrl": "https://kenney.nl/assets/car-kit",
+      "sha256": "2889c428ca1dd9c975c3ff760eb8757883490410555ab60b818f712f583826d6",
+      "bytes": 177676,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/cars/Textures/colormap.png"
+      ],
+      "forwardAxis": "+Z",
+      "forwardAxisEvidence": "All wheel-front nodes have positive local Z; wheel-back nodes have negative Z.",
+      "wheelNodeNames": [
+        "wheel-back-right",
+        "wheel-back-left",
+        "wheel-front-left",
+        "wheel-front-right"
+      ],
+      "recommendedUniformScale": 1.49019608,
+      "demonstrationBoundsM": {
+        "width": 1.937255,
+        "height": 1.639216,
+        "depth": 3.8
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "auto-suv",
+      "type": "car",
+      "label": "Vehículo familiar",
+      "pack": "cars",
+      "url": "/traffic/models/kenney/cars/suv-luxury.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 1.5,
+        "height": 1.3,
+        "depth": 2.85
+      },
+      "boundsMin": [
+        -0.75,
+        -0.0,
+        -1.4
+      ],
+      "boundsMax": [
+        0.75,
+        1.3,
+        1.45
+      ],
+      "triangles": 2086,
+      "nativeUnits": "model units; dimensions are not surveyed buildings or vehicles",
+      "targetLengthM": 4.2,
+      "sourceArchiveEntry": "Models/GLB format/suv-luxury.glb",
+      "sourceUrl": "https://kenney.nl/assets/car-kit",
+      "sha256": "9e2a79dc050189d4555a88d2e9da0f30ff946ba74f1d43b5b3bda3c193d1f7d7",
+      "bytes": 175908,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/cars/Textures/colormap.png"
+      ],
+      "forwardAxis": "+Z",
+      "forwardAxisEvidence": "All wheel-front nodes have positive local Z; wheel-back nodes have negative Z.",
+      "wheelNodeNames": [
+        "wheel-back-right",
+        "wheel-front-right",
+        "wheel-front-left",
+        "wheel-back-left"
+      ],
+      "recommendedUniformScale": 1.47368421,
+      "demonstrationBoundsM": {
+        "width": 2.210526,
+        "height": 1.915789,
+        "depth": 4.2
+      },
+      "scaleNote": "Demonstration normalization only; not a survey or exact reconstruction. Apply a uniform scale."
+    },
+    {
+      "id": "arbol-copa-ancha-a",
+      "type": "prop",
+      "propType": "tree",
+      "label": "Árbol de copa redondeada",
+      "pack": "nature",
+      "url": "/traffic/models/kenney/nature/tree_oak.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.640554,
+        "height": 1.22624,
+        "depth": 0.739648
+      },
+      "boundsMin": [
+        -0.320277,
+        -0.05,
+        -0.369824
+      ],
+      "boundsMax": [
+        0.320277,
+        1.17624,
+        0.369824
+      ],
+      "triangles": 196,
+      "targetHeightM": 7.5,
+      "recommendedUniformScale": 6.11625783,
+      "demonstrationBoundsM": {
+        "width": 3.917793,
+        "height": 7.5,
+        "depth": 4.523878
+      },
+      "footprintRadiusM": 2.261939,
+      "groundOffsetM": 0.305813,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLTF format/tree_oak.glb",
+      "sourceUrl": "https://kenney.nl/assets/nature-kit",
+      "sha256": "d7fd8773674928c50c11b66d12c636d49bdcc15a8b1c7fbb98e6f63a3439a3f3",
+      "bytes": 14644,
+      "license": "CC0-1.0",
+      "textures": [],
+      "materialNames": [
+        "leafsGreen",
+        "woodBark"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "foliageMaterialNames": [
+        "leafsGreen"
+      ],
+      "materialNote": "Original Nature Kit glTF materials use metallicFactor=1. For ordinary foliage/bark, render with metalness=0 and roughness near 1; no change to source GLB."
+    },
+    {
+      "id": "arbol-copa-ancha-b",
+      "type": "prop",
+      "propType": "tree",
+      "label": "Árbol ramificado de copa redondeada",
+      "pack": "nature",
+      "url": "/traffic/models/kenney/nature/tree_thin.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.680436,
+        "height": 1.490298,
+        "depth": 0.616523
+      },
+      "boundsMin": [
+        -0.25745,
+        -0.05,
+        -0.251474
+      ],
+      "boundsMax": [
+        0.422987,
+        1.440298,
+        0.365049
+      ],
+      "triangles": 228,
+      "targetHeightM": 6.4,
+      "recommendedUniformScale": 4.29444312,
+      "demonstrationBoundsM": {
+        "width": 2.922094,
+        "height": 6.4,
+        "depth": 2.647623
+      },
+      "footprintRadiusM": 1.461047,
+      "groundOffsetM": 0.214722,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLTF format/tree_thin.glb",
+      "sourceUrl": "https://kenney.nl/assets/nature-kit",
+      "sha256": "f0f1f6861fe0446963d3be216cc628324f538bb0841bc9a8e14140313f64e2f3",
+      "bytes": 17200,
+      "license": "CC0-1.0",
+      "textures": [],
+      "materialNames": [
+        "leafsGreen",
+        "woodBark"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "foliageMaterialNames": [
+        "leafsGreen"
+      ],
+      "materialNote": "Original Nature Kit glTF materials use metallicFactor=1. For ordinary foliage/bark, render with metalness=0 and roughness near 1; no change to source GLB."
+    },
+    {
+      "id": "arbusto",
+      "type": "prop",
+      "propType": "bush",
+      "label": "Arbusto de jardín",
+      "pack": "nature",
+      "url": "/traffic/models/kenney/nature/plant_bush.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.396,
+        "height": 0.244444,
+        "depth": 0.396
+      },
+      "boundsMin": [
+        -0.198,
+        -0.05,
+        -0.198
+      ],
+      "boundsMax": [
+        0.198,
+        0.194444,
+        0.198
+      ],
+      "triangles": 32,
+      "targetHeightM": 0.75,
+      "recommendedUniformScale": 3.0681874,
+      "demonstrationBoundsM": {
+        "width": 1.215002,
+        "height": 0.75,
+        "depth": 1.215002
+      },
+      "footprintRadiusM": 0.607501,
+      "groundOffsetM": 0.153409,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLTF format/plant_bush.glb",
+      "sourceUrl": "https://kenney.nl/assets/nature-kit",
+      "sha256": "ae7b1beb39e242b13f5f29e3ec23ef21034b814f82297b8aa00a9bf4e1b09590",
+      "bytes": 4396,
+      "license": "CC0-1.0",
+      "textures": [],
+      "materialNames": [
+        "grass"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "foliageMaterialNames": [
+        "grass"
+      ],
+      "materialNote": "Original Nature Kit glTF materials use metallicFactor=1. For ordinary foliage/bark, render with metalness=0 and roughness near 1; no change to source GLB."
+    },
+    {
+      "id": "jardinera",
+      "type": "prop",
+      "propType": "planter",
+      "label": "Jardinera con arbustos",
+      "pack": "suburban",
+      "url": "/traffic/models/kenney/suburban/planter.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.4,
+        "height": 0.17711,
+        "depth": 0.3
+      },
+      "boundsMin": [
+        -0.2,
+        0.0,
+        -0.150573
+      ],
+      "boundsMax": [
+        0.2,
+        0.17711,
+        0.149427
+      ],
+      "triangles": 204,
+      "targetHeightM": 0.5,
+      "recommendedUniformScale": 2.82310429,
+      "demonstrationBoundsM": {
+        "width": 1.129242,
+        "height": 0.5,
+        "depth": 0.846931
+      },
+      "footprintRadiusM": 0.564621,
+      "groundOffsetM": 0.0,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLB format/planter.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "sha256": "a876e87d908f0397dcaf94b7705835447825c4c5b39195319535415386542c17",
+      "bytes": 20368,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/suburban/Textures/colormap.png"
+      ],
+      "materialNames": [
+        "colormap"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration."
+    },
+    {
+      "id": "cerco",
+      "type": "prop",
+      "propType": "fence",
+      "label": "Tramo recto de cerco residencial",
+      "pack": "suburban",
+      "url": "/traffic/models/kenney/suburban/fence.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.475,
+        "height": 0.27,
+        "depth": 0.075
+      },
+      "boundsMin": [
+        -0.2375,
+        0.0,
+        -0.0375
+      ],
+      "boundsMax": [
+        0.2375,
+        0.27,
+        0.0375
+      ],
+      "triangles": 88,
+      "targetHeightM": 1.05,
+      "recommendedUniformScale": 3.88888889,
+      "demonstrationBoundsM": {
+        "width": 1.847222,
+        "height": 1.05,
+        "depth": 0.291667
+      },
+      "footprintRadiusM": 0.923611,
+      "groundOffsetM": 0.0,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLB format/fence.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-suburban",
+      "sha256": "073bd2000ac51879516d49f835d5156dac4d5038085380b1232858fc3f562d02",
+      "bytes": 9672,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/suburban/Textures/colormap.png"
+      ],
+      "materialNames": [
+        "colormap"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "forwardAxis": "+Z",
+      "longitudinalAxis": "+X",
+      "orientationNote": "Straight fence segment along X, symmetric front and back."
+    },
+    {
+      "id": "farola",
+      "type": "prop",
+      "propType": "streetlight",
+      "label": "Farola de brazo curvo",
+      "pack": "roads",
+      "url": "/traffic/models/kenney/roads/light-curved.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.05,
+        "height": 0.675,
+        "depth": 0.225
+      },
+      "boundsMin": [
+        -0.025,
+        0.0,
+        -0.2
+      ],
+      "boundsMax": [
+        0.025,
+        0.675,
+        0.025
+      ],
+      "triangles": 92,
+      "targetHeightM": 6,
+      "recommendedUniformScale": 8.88888889,
+      "demonstrationBoundsM": {
+        "width": 0.444444,
+        "height": 6.0,
+        "depth": 2.0
+      },
+      "footprintRadiusM": 1.0,
+      "groundOffsetM": 0.0,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLB format/light-curved.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-roads",
+      "sha256": "154dcce9d58ec2cd165e26c91a89c97bdd2838cf06d255099b3570df84f82ec6",
+      "bytes": 9492,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/roads/Textures/colormap.png"
+      ],
+      "materialNames": [
+        "colormap"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "forwardAxis": "-Z",
+      "forwardAxisEvidence": "The luminaire arm extends from the upright pole toward negative Z."
+    },
+    {
+      "id": "semaforo",
+      "type": "prop",
+      "propType": "trafficlight",
+      "label": "Semáforo vertical",
+      "pack": "roads",
+      "url": "/traffic/models/kenney/roads/traffic-light.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.1176,
+        "height": 0.515,
+        "depth": 0.09
+      },
+      "boundsMin": [
+        -0.0726,
+        0.0,
+        -0.045
+      ],
+      "boundsMax": [
+        0.045,
+        0.515,
+        0.045
+      ],
+      "triangles": 212,
+      "targetHeightM": 3.2,
+      "recommendedUniformScale": 6.21359223,
+      "demonstrationBoundsM": {
+        "width": 0.730718,
+        "height": 3.2,
+        "depth": 0.559223
+      },
+      "footprintRadiusM": 0.365359,
+      "groundOffsetM": 0.0,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLB format/traffic-light.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-roads",
+      "sha256": "6c9ee253b7370e1043168493b2e662b349484a0cdd02100cff04d9d8d1bd9abb",
+      "bytes": 20344,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/roads/Textures/colormap.png"
+      ],
+      "materialNames": [
+        "colormap"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "forwardAxis": "-X",
+      "forwardAxisEvidence": "The visible colored lens front projects toward negative X.",
+      "placementNote": "Catalog availability does not imply actual installation. Only place on a verified mapped or observed control location."
+    },
+    {
+      "id": "senal-pare",
+      "type": "prop",
+      "propType": "sign",
+      "label": "Señal octogonal de detención",
+      "pack": "roads",
+      "url": "/traffic/models/kenney/roads/road-sign-stop.glb",
+      "format": "glb",
+      "upAxis": "+Y",
+      "bounds": {
+        "width": 0.0775,
+        "height": 0.494075,
+        "depth": 0.138212
+      },
+      "boundsMin": [
+        -0.051404,
+        0.0,
+        -0.069106
+      ],
+      "boundsMax": [
+        0.026096,
+        0.494075,
+        0.069106
+      ],
+      "triangles": 104,
+      "targetHeightM": 2.25,
+      "recommendedUniformScale": 4.55396448,
+      "demonstrationBoundsM": {
+        "width": 0.352932,
+        "height": 2.25,
+        "depth": 0.629413
+      },
+      "footprintRadiusM": 0.314706,
+      "groundOffsetM": 0.0,
+      "nativeUnits": "model units; physical dimensions are representative, not surveyed",
+      "sourceArchiveEntry": "Models/GLB format/road-sign-stop.glb",
+      "sourceUrl": "https://kenney.nl/assets/city-kit-roads",
+      "sha256": "0991181f37171daf8d2501e436a688e46ea2bcebb5e27aa451640fcbaab107ef",
+      "bytes": 10720,
+      "license": "CC0-1.0",
+      "textures": [
+        "/traffic/models/kenney/roads/Textures/colormap.png"
+      ],
+      "materialNames": [
+        "colormap"
+      ],
+      "scaleNote": "Preserve original mesh proportions with a uniform scale. Target height is for demonstration.",
+      "forwardAxis": "-X",
+      "forwardAxisEvidence": "Red sign-front triangles have geometric normals in negative X; verified against the source texture.",
+      "placementNote": "Catalog availability does not imply actual installation. Only place on a verified mapped or observed control location."
+    }
+  ],
+  "files": {
+    "kenney/suburban/License.txt": {
+      "sha256": "d778fa769a89a7d9f167bc337fdf8fc2144e47d9abb0c35eb6ad897c0ee24d0a",
+      "bytes": 706
+    },
+    "kenney/suburban/Textures/colormap.png": {
+      "sha256": "9b5de86078c25ef02351a80d35ff3c978693a1044565b73eedd9ae9b5b80665d",
+      "bytes": 11784
+    },
+    "kenney/suburban/building-type-a.glb": {
+      "sha256": "49f32e20b9dcd24b1c8f6d6488807b8c8cb684cbb595bfb0bb36ad903e470faa",
+      "bytes": 98604
+    },
+    "kenney/suburban/building-type-c.glb": {
+      "sha256": "86a69f30f1a09461283e158514945ae5cc9d56357b0ddc83a9a3f0eecd113591",
+      "bytes": 99592
+    },
+    "kenney/suburban/building-type-m.glb": {
+      "sha256": "36d31f4e45498f6229805b6a7a1577ef00230daeea4c6a4469481e9d5a0fdb7c",
+      "bytes": 96996
+    },
+    "kenney/commercial/License.txt": {
+      "sha256": "c38cee408d022e57e44e49f1cd655c2fe0dc881a07b881276b795215cdc0de69",
+      "bytes": 708
+    },
+    "kenney/commercial/Textures/colormap.png": {
+      "sha256": "191bec3889aaaca5018380038fecc129ebb5c2182879a099b7b538b3fa050b5d",
+      "bytes": 11002
+    },
+    "kenney/commercial/building-c.glb": {
+      "sha256": "f6887608a95a165503561730252c30506938803731c6546efca12bd47b1666bd",
+      "bytes": 102788
+    },
+    "kenney/commercial/building-e.glb": {
+      "sha256": "edbe5b49858a3c83e72d3cf496129c06082ef3a3d6005769f8883138e275b456",
+      "bytes": 128208
+    },
+    "kenney/cars/License.txt": {
+      "sha256": "c33b7f6453d134deae7b1b8493717d9ccfa754c25ab97f6de89b88f8fda19b00",
+      "bytes": 696
+    },
+    "kenney/cars/Textures/colormap.png": {
+      "sha256": "f3622a03a20c6696065cae9cbe391351be873508af190c2ebd1d420c055787a5",
+      "bytes": 12371
+    },
+    "kenney/cars/hatchback-sports.glb": {
+      "sha256": "bd5c9d4c3b4bdd254a66b8426563a68b1487ae7a5076df3a2488e6ffed7be64f",
+      "bytes": 197804
+    },
+    "kenney/cars/sedan-sports.glb": {
+      "sha256": "2889c428ca1dd9c975c3ff760eb8757883490410555ab60b818f712f583826d6",
+      "bytes": 177676
+    },
+    "kenney/cars/suv-luxury.glb": {
+      "sha256": "9e2a79dc050189d4555a88d2e9da0f30ff946ba74f1d43b5b3bda3c193d1f7d7",
+      "bytes": 175908
+    },
+    "kenney/nature/License.txt": {
+      "sha256": "cb96b75e3560ac78d7a53ce6f083f4cdb5c53faea6141b62d63458dcfe1e4b9d",
+      "bytes": 611
+    },
+    "kenney/nature/tree_oak.glb": {
+      "sha256": "d7fd8773674928c50c11b66d12c636d49bdcc15a8b1c7fbb98e6f63a3439a3f3",
+      "bytes": 14644
+    },
+    "kenney/nature/tree_thin.glb": {
+      "sha256": "f0f1f6861fe0446963d3be216cc628324f538bb0841bc9a8e14140313f64e2f3",
+      "bytes": 17200
+    },
+    "kenney/nature/plant_bush.glb": {
+      "sha256": "ae7b1beb39e242b13f5f29e3ec23ef21034b814f82297b8aa00a9bf4e1b09590",
+      "bytes": 4396
+    },
+    "kenney/suburban/planter.glb": {
+      "sha256": "a876e87d908f0397dcaf94b7705835447825c4c5b39195319535415386542c17",
+      "bytes": 20368
+    },
+    "kenney/suburban/fence.glb": {
+      "sha256": "073bd2000ac51879516d49f835d5156dac4d5038085380b1232858fc3f562d02",
+      "bytes": 9672
+    },
+    "kenney/roads/License.txt": {
+      "sha256": "d23f51360ca2cd81711bc5b09ddfb28ac94da96d7ca2dbdef12c50f33f35c353",
+      "bytes": 703
+    },
+    "kenney/roads/Textures/colormap.png": {
+      "sha256": "a48e2962661ae44368ffddf3054f80ed8491d082b757dcc3011184cd9a98b185",
+      "bytes": 11428
+    },
+    "kenney/roads/light-curved.glb": {
+      "sha256": "154dcce9d58ec2cd165e26c91a89c97bdd2838cf06d255099b3570df84f82ec6",
+      "bytes": 9492
+    },
+    "kenney/roads/traffic-light.glb": {
+      "sha256": "6c9ee253b7370e1043168493b2e662b349484a0cdd02100cff04d9d8d1bd9abb",
+      "bytes": 20344
+    },
+    "kenney/roads/road-sign-stop.glb": {
+      "sha256": "0991181f37171daf8d2501e436a688e46ea2bcebb5e27aa451640fcbaab107ef",
+      "bytes": 10720
+    }
+  },
+  "propPlacementNote": "Traffic-control assets are catalog resources; include instances only at verified locations. Vegetation and garden furniture are illustrative and must not intrude on road or building geometry."
+}

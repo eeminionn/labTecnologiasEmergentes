@@ -1,0 +1,447 @@
+{
+  "titulo": "Cámaras de seguridad en La Reina: base de demostración",
+  "descripcion": "320 emplazamientos representativos. Once ubicaciones proceden de dos publicaciones municipales, geocodificadas aproximadamente. El resto y todos los datos operativos son simulados.",
+  "categoria": "Cámaras",
+  "cantidad": 320,
+  "archivo": "camaras-seguridad.csv",
+  "etiqueta": "Base mixta · Datos operativos simulados",
+  "semilla": 20261108,
+  "consulta_fuentes": "2026-11-06",
+  "delimitador": ",",
+  "codificacion": "UTF-8",
+  "columnas": [
+    "id",
+    "categoria",
+    "tipo_camara",
+    "direccion",
+    "latitud",
+    "longitud",
+    "fecha_instalacion",
+    "estado",
+    "origen_ubicacion",
+    "precision_ubicacion",
+    "fuente_url",
+    "fuente_fecha",
+    "datos_operativos",
+    "observacion"
+  ],
+  "periodo": {
+    "desde": "2023-01-01",
+    "hasta": "2025-12-31"
+  },
+  "por_origen_ubicacion": {
+    "publicada": 11,
+    "simulada": 309
+  },
+  "por_estado": {
+    "Operativa": 240,
+    "Mantención": 50,
+    "Inactiva": 30
+  },
+  "por_tipo": {
+    "Lectora de patentes": 44,
+    "Fija": 141,
+    "Domo": 135
+  },
+  "por_ano_instalacion": {
+    "2023": 101,
+    "2024": 71,
+    "2025": 148
+  },
+  "por_mes_instalacion": {
+    "2023-01": 6,
+    "2023-02": 14,
+    "2023-03": 13,
+    "2023-04": 13,
+    "2023-05": 8,
+    "2023-06": 7,
+    "2023-07": 11,
+    "2023-08": 10,
+    "2023-09": 1,
+    "2023-10": 5,
+    "2023-11": 8,
+    "2023-12": 5,
+    "2024-01": 3,
+    "2024-02": 6,
+    "2024-03": 4,
+    "2024-04": 5,
+    "2024-05": 7,
+    "2024-06": 8,
+    "2024-07": 9,
+    "2024-08": 7,
+    "2024-09": 6,
+    "2024-10": 4,
+    "2024-11": 4,
+    "2024-12": 8,
+    "2025-01": 12,
+    "2025-02": 12,
+    "2025-03": 15,
+    "2025-04": 12,
+    "2025-05": 12,
+    "2025-06": 5,
+    "2025-07": 9,
+    "2025-08": 16,
+    "2025-09": 12,
+    "2025-10": 10,
+    "2025-11": 14,
+    "2025-12": 19
+  },
+  "campos_simulados_en_todas_las_filas": [
+    "fecha_instalacion",
+    "tipo_camara",
+    "estado"
+  ],
+  "campos_publicados": "Solo la referencia de ubicación de once emplazamientos. Las coordenadas no fueron publicadas: se aproximan al cruce de las vías citadas.",
+  "precision": "Un punto representa un emplazamiento de demostración, no un poste o dispositivo levantado en terreno. La Cañada representa un sector con siete cámaras publicadas, sin inferir siete posiciones.",
+  "filtro_temporal": "Inventario al cierre del período elegido: incluye fecha_instalacion menor o igual al último día del año o mes. No cuenta solo altas ocurridas durante ese período.",
+  "estado": "Estado estático de demostración. No es disponibilidad en tiempo real ni historial de mantenciones.",
+  "geografia": {
+    "sistema_coordenadas": "WGS84",
+    "limite": "SUBDERE / IDE Chile, DPA 2023",
+    "calles": "OpenStreetMap contributors",
+    "separacion_minima_simulada_metros": 65
+  },
+  "escenario_2024": {
+    "version": 1,
+    "solicitud": "Ejemplo de sectores con más robos y pocas cámaras instaladas al cierre de 2024.",
+    "metodo": "Tres focos de mayor conteo de incidentes de 2024 en una muestra regular de ubicaciones viales, separados al menos 1.400 metros. Se conserva un máximo de dos cámaras al cierre de 2024 por radio de 650 metros; las demás instalaciones del escenario se retrasan a 2025.",
+    "campos_modificados": [
+      "fecha_instalacion"
+    ],
+    "campos_conservados": [
+      "id",
+      "categoria",
+      "tipo_camara",
+      "direccion",
+      "latitud",
+      "longitud",
+      "estado",
+      "origen_ubicacion",
+      "precision_ubicacion",
+      "fuente_url",
+      "fuente_fecha",
+      "datos_operativos",
+      "observacion"
+    ],
+    "cantidad_fechas_retrasadas": 49,
+    "fechas_retrasadas": [
+      {
+        "id": "12",
+        "antes": "2024-11-29",
+        "despues": "2025-08-04"
+      },
+      {
+        "id": "13",
+        "antes": "2023-06-26",
+        "despues": "2025-05-17"
+      },
+      {
+        "id": "26",
+        "antes": "2023-02-08",
+        "despues": "2025-03-15"
+      },
+      {
+        "id": "34",
+        "antes": "2024-08-18",
+        "despues": "2025-12-23"
+      },
+      {
+        "id": "35",
+        "antes": "2024-05-08",
+        "despues": "2025-03-20"
+      },
+      {
+        "id": "36",
+        "antes": "2024-12-01",
+        "despues": "2025-07-04"
+      },
+      {
+        "id": "45",
+        "antes": "2024-08-09",
+        "despues": "2025-12-06"
+      },
+      {
+        "id": "55",
+        "antes": "2024-08-20",
+        "despues": "2025-10-12"
+      },
+      {
+        "id": "58",
+        "antes": "2023-12-06",
+        "despues": "2025-02-04"
+      },
+      {
+        "id": "84",
+        "antes": "2023-04-16",
+        "despues": "2025-09-09"
+      },
+      {
+        "id": "89",
+        "antes": "2023-06-05",
+        "despues": "2025-01-23"
+      },
+      {
+        "id": "92",
+        "antes": "2023-05-19",
+        "despues": "2025-01-19"
+      },
+      {
+        "id": "104",
+        "antes": "2023-01-26",
+        "despues": "2025-05-05"
+      },
+      {
+        "id": "109",
+        "antes": "2024-10-23",
+        "despues": "2025-01-16"
+      },
+      {
+        "id": "114",
+        "antes": "2024-10-21",
+        "despues": "2025-11-13"
+      },
+      {
+        "id": "117",
+        "antes": "2024-11-25",
+        "despues": "2025-02-19"
+      },
+      {
+        "id": "128",
+        "antes": "2024-11-07",
+        "despues": "2025-04-06"
+      },
+      {
+        "id": "130",
+        "antes": "2023-06-08",
+        "despues": "2025-02-23"
+      },
+      {
+        "id": "133",
+        "antes": "2023-06-10",
+        "despues": "2025-07-06"
+      },
+      {
+        "id": "145",
+        "antes": "2023-12-27",
+        "despues": "2025-12-31"
+      },
+      {
+        "id": "151",
+        "antes": "2023-03-31",
+        "despues": "2025-11-26"
+      },
+      {
+        "id": "162",
+        "antes": "2023-08-10",
+        "despues": "2025-04-16"
+      },
+      {
+        "id": "165",
+        "antes": "2024-01-06",
+        "despues": "2025-01-10"
+      },
+      {
+        "id": "168",
+        "antes": "2023-07-31",
+        "despues": "2025-05-28"
+      },
+      {
+        "id": "172",
+        "antes": "2023-01-10",
+        "despues": "2025-05-21"
+      },
+      {
+        "id": "182",
+        "antes": "2023-03-08",
+        "despues": "2025-05-10"
+      },
+      {
+        "id": "183",
+        "antes": "2024-12-01",
+        "despues": "2025-07-04"
+      },
+      {
+        "id": "189",
+        "antes": "2023-07-08",
+        "despues": "2025-10-26"
+      },
+      {
+        "id": "195",
+        "antes": "2024-10-19",
+        "despues": "2025-11-04"
+      },
+      {
+        "id": "205",
+        "antes": "2023-09-11",
+        "despues": "2025-12-10"
+      },
+      {
+        "id": "209",
+        "antes": "2024-07-23",
+        "despues": "2025-07-19"
+      },
+      {
+        "id": "210",
+        "antes": "2024-08-21",
+        "despues": "2025-05-14"
+      },
+      {
+        "id": "213",
+        "antes": "2024-06-07",
+        "despues": "2025-01-01"
+      },
+      {
+        "id": "227",
+        "antes": "2023-10-28",
+        "despues": "2025-04-16"
+      },
+      {
+        "id": "229",
+        "antes": "2024-06-23",
+        "despues": "2025-01-31"
+      },
+      {
+        "id": "246",
+        "antes": "2023-06-15",
+        "despues": "2025-02-18"
+      },
+      {
+        "id": "248",
+        "antes": "2024-01-16",
+        "despues": "2025-12-22"
+      },
+      {
+        "id": "251",
+        "antes": "2023-12-25",
+        "despues": "2025-04-10"
+      },
+      {
+        "id": "269",
+        "antes": "2024-08-13",
+        "despues": "2025-11-17"
+      },
+      {
+        "id": "271",
+        "antes": "2024-12-14",
+        "despues": "2025-09-29"
+      },
+      {
+        "id": "281",
+        "antes": "2024-10-11",
+        "despues": "2025-12-07"
+      },
+      {
+        "id": "283",
+        "antes": "2024-10-10",
+        "despues": "2025-10-30"
+      },
+      {
+        "id": "285",
+        "antes": "2024-02-02",
+        "despues": "2025-09-07"
+      },
+      {
+        "id": "289",
+        "antes": "2024-12-06",
+        "despues": "2025-03-08"
+      },
+      {
+        "id": "295",
+        "antes": "2023-12-21",
+        "despues": "2025-12-26"
+      },
+      {
+        "id": "300",
+        "antes": "2023-02-26",
+        "despues": "2025-06-04"
+      },
+      {
+        "id": "301",
+        "antes": "2023-12-14",
+        "despues": "2025-12-07"
+      },
+      {
+        "id": "311",
+        "antes": "2023-04-30",
+        "despues": "2025-04-29"
+      },
+      {
+        "id": "320",
+        "antes": "2024-08-01",
+        "despues": "2025-04-09"
+      }
+    ],
+    "zonas": [
+      {
+        "referencia": "Violeta Parra 5523 (numeración simulada)",
+        "latitud": -33.457278,
+        "longitud": -70.563696,
+        "radio_metros": 650,
+        "incidentes_2024": 7844,
+        "camaras_2024_antes": 21,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 30,
+        "ids_camaras_conservadas_2024": [
+          "1",
+          "184"
+        ]
+      },
+      {
+        "referencia": "El Olmo / El Olmo 2",
+        "latitud": -33.452566,
+        "longitud": -70.549195,
+        "radio_metros": 650,
+        "incidentes_2024": 1960,
+        "camaras_2024_antes": 13,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 21,
+        "ids_camaras_conservadas_2024": [
+          "31",
+          "228"
+        ]
+      },
+      {
+        "referencia": "Avenida Echeñique 6431 (numeración simulada)",
+        "latitud": -33.444723,
+        "longitud": -70.565859,
+        "radio_metros": 650,
+        "incidentes_2024": 1407,
+        "camaras_2024_antes": 21,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 31,
+        "ids_camaras_conservadas_2024": [
+          "11",
+          "72"
+        ]
+      }
+    ],
+    "alcance": "Relación construida para mostrar la utilidad del cruce. No describe robos, cobertura ni fechas de instalación reales. La proximidad no acredita cobertura visual.",
+    "sha256_campos_conservados": "3ad1c01eefb1fea9a836a4c40743ba1966ce907d901650562811643ac01dd23e"
+  },
+  "fuentes": [
+    {
+      "nombre": "Municipalidad de La Reina. Cuenta Pública 2018",
+      "url": "https://www.lareina.cl/wp-content/uploads/2020/06/Cuenta_Publica_2018_-_Consolidado.pdf#page=113",
+      "localizador": "Página PDF 113, Iluminación y cámaras de seguridad Torres Unidas",
+      "uso": "Diez cruces explícitos de un proyecto informado en proceso de instalación. No acredita vigencia actual.",
+      "fecha_publicacion": "",
+      "periodo_documento": "2018"
+    },
+    {
+      "nombre": "Municipalidad de La Reina. La nueva cara del Barrio Comercial La Cañada",
+      "url": "https://lareina.cl/barrio-comercial-la-canada/",
+      "uso": "Un emplazamiento representativo en La Cañada con Monseñor Edwards. La nota informa siete cámaras sin posiciones individuales.",
+      "fecha_publicacion": ""
+    },
+    {
+      "nombre": "OpenStreetMap contributors",
+      "url": "https://www.openstreetmap.org/copyright",
+      "uso": "Geometría y nombres de calles, no inventario de cámaras.",
+      "licencia": "ODbL 1.0"
+    }
+  ],
+  "alcance": "No es un catastro completo ni vigente del sistema municipal. No permite inferir zonas sin vigilancia, cobertura efectiva ni disponibilidad real de dispositivos.",
+  "tamano_bytes": 85891,
+  "sha256": "4b168b15b6f44ac4073ac4ec948c4f29376027f8972890ad0d2cca4c1d8d9b83",
+  "autoria_csv": "Generado y verificado con @oai/artifact-tool a partir de fuentes públicas y muestreo reproducible explícitamente simulado."
+}

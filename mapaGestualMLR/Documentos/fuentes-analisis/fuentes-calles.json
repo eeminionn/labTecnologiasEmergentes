@@ -1,0 +1,69 @@
+{
+  "descripcion": "Descargas cartográficas públicas; no contienen registros delictuales. El extracto conserva vías públicas nombradas y su geometría para el muestreo simulado.",
+  "fuente": "https://api.openstreetmap.org/api/0.6/map",
+  "licencia": "ODbL 1.0",
+  "atribucion": "© OpenStreetMap contributors",
+  "fecha": "2026-11-06",
+  "consulta": [
+    {
+      "archivo": "sector-10.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.55997,-33.447155,-70.53544,-33.4379925",
+      "bytes": 6368090,
+      "sha256": "c40dfd776b77030ceb8d114c67842ce120bd3acd78041180e7cdf0af7d706c9a"
+    },
+    {
+      "archivo": "sector-11.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.55997,-33.4379925,-70.53544,-33.42883",
+      "bytes": 5609434,
+      "sha256": "fb6b70cdc98d74f20d994378567360f544250212750b8a1244d08f20d441558f"
+    },
+    {
+      "archivo": "sector-2.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.53544,-33.46548,-70.48638,-33.44715",
+      "bytes": 5498731,
+      "sha256": "fde513de3378e4e20afe43aba0326c070a7d80c6f167fce40ecca4de5c90d12d"
+    },
+    {
+      "archivo": "sector-3.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.53544,-33.44715,-70.48638,-33.42883",
+      "bytes": 5088520,
+      "sha256": "7a101e75fe2b7e341af2e4fd486651774cb8b7fdb8e0eaab3cd9873d4f1b6ffc"
+    },
+    {
+      "archivo": "sector-4.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.5845,-33.46548,-70.55997,-33.4563175",
+      "bytes": 4303125,
+      "sha256": "9a1fa11b385b4b67e9519ad04d303686870cdc8f55041fe8a5f50ee7121ccdea"
+    },
+    {
+      "archivo": "sector-5.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.5845,-33.4563175,-70.55997,-33.447155",
+      "bytes": 6478532,
+      "sha256": "1537c99cc6e90172a02ff599ad339456ea33b1c578c5f90e3e04b2c6934126bd"
+    },
+    {
+      "archivo": "sector-6.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.5845,-33.447155,-70.55997,-33.4379925",
+      "bytes": 8837919,
+      "sha256": "d361e9bb2c4c453ebe83a157a4474e64f9a153425576b76a9d344893814d6a54"
+    },
+    {
+      "archivo": "sector-7.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.5845,-33.4379925,-70.55997,-33.42883",
+      "bytes": 8488494,
+      "sha256": "59466e3f55ee55b2581b389beee7c927dcb4a1eff20e86d480be3689086bdfe5"
+    },
+    {
+      "archivo": "sector-8.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.55997,-33.46548,-70.53544,-33.4563175",
+      "bytes": 2330145,
+      "sha256": "eb5ba35f2b693350e63eff3736b0f241e6f0ec49e69ed3cf60bb399fcf97c0db"
+    },
+    {
+      "archivo": "sector-9.osm",
+      "peticion": "https://api.openstreetmap.org/api/0.6/map?bbox=-70.55997,-33.4563175,-70.53544,-33.447155",
+      "bytes": 4263877,
+      "sha256": "b4e515c5b31aa671fc14602bbb392ebd2e4da8eb163549a1840690e8c5b6e2ff"
+    }
+  ]
+}

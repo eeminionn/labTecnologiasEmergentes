@@ -1,6 +1,10 @@
 import './style.css';
 import './twin-projection.css';
 import './map-credits.css';
+import './glass-ui.css';
+import './traffic-ui.css';
+import './analysis-ui.css';
+import { version as appVersion } from '../package.json';
 import { GestureEngine, classifyHand, pointerReference } from './gestures.js';
 import { cameraToMap } from './mapping.js';
 import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
@@ -11,6 +15,8 @@ import { SelectionFeedback, hoverTarget } from './selection.js';
 
 const $ = id => document.getElementById(id);
 const smoke = new URLSearchParams(location.search).has('smoke');
+const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
+const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
 const twinProjection = window.desktop?.twinBridge === true;
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
@@ -27,6 +33,8 @@ delete config.showPreview;
 let qualityGate=new FrameQualityGate(),qualityState={allowActions:true,state:'good',reasons:[]};
 let cameraControlsAvailable={ranges:{}},cameraControlReport=null,qualityWarningShown=false;
 let map, contentViewer, worker, workerReady=false, busy=false, stream, active=false, paused=false, latestHands=[], lastFrame=-1;
+let trafficExperience, experienceLoading = false, experienceGeneration = 0;
+let analysisView, analysisLoading = false, analysisGeneration = 0;
 let engine = new GestureEngine();
 const selection=new SelectionFeedback();
 let renderedSelectionHandId=null;
@@ -63,11 +71,15 @@ function reportTwinState() {
   if(twinProjection)window.desktop.reportTwinState({cameraActive:active && twinLeaseActive,hands:latestHands.length,error:twinError,detectorReady:workerReady,inferenceFrames:counters.frames,cameraLabel:stream?.getVideoTracks()[0]?.label || ''});
 }
 function highlightTarget(target) { const element=target?.element;if(hoverElement!==element){hoverElement?.classList.remove('gesture-target');element?.classList.add('gesture-target');hoverElement=element;} }
-function cancelGesture(hide=true) { engine.cancelInteraction();engine.cancelClick(true);selection.reset();renderedSelectionHandId=null;highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
+function cancelGesture(hide=true) { analysisView?.clearHover();engine.cancelInteraction();engine.cancelClick(true);selection.reset();renderedSelectionHandId=null;highlightTarget(null);for(const cursor of [$('cursor'),$('cursor-secondary')]){if(hide)cursor.style.display='none';cursor.dataset.state='idle';cursor.querySelector('.cursor-progress').style.strokeDashoffset=213.63;} $('click-ripple').classList.remove('play'); }
 function isBlocked() { return paused || (twinProjection ? !twinLeaseActive : !document.hasFocus()) || $('settings').open || $('help').open; }
 function mapPoint(p) { return cameraToMap(p,config); }
 function within(p) { return p && Number.isFinite(p.x) && Number.isFinite(p.y) && p.x>=0 && p.y>=0 && p.x<=1 && p.y<=1; }
 async function loadMap() {
+  analysisGeneration++; analysisLoading = false; analysisView?.destroy(); analysisView = null;
+  experienceGeneration++; experienceLoading = false;
+  trafficExperience?.destroy(); trafficExperience = null;
+  showSurfaceMode('map');
   contentViewer?.destroy();
   map?.destroy(); $('map').replaceChildren();
   map=await createMap($('map'),{...config,offline:smoke},notify,provider=>$('provider-label').textContent=provider,openPointContent);
@@ -82,12 +94,87 @@ async function loadMap() {
   $('provider-label').textContent=map.provider;
 }
 function openPointContent(item) {
+  if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
   if(item.id!=='point-0')return;
   const slides=contentViewer?.manifest?.slides;
   if(!slides?.length){notify('No se pudieron cargar los gráficos.');return;}
   contentViewer.open(slides,0);
 }
-function currentSurface(){return contentViewer?.isOpen?contentViewer:map;}
+function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
+function showSurfaceMode(mode) {
+  document.body.classList.toggle('experience-open', mode==='experience');
+  document.body.classList.toggle('analysis-open', mode==='analysis');
+  $('mode-map').setAttribute('aria-pressed', String(mode==='map'));
+  $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
+  $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
+  $('gesture-hint').innerHTML=mode!=='map' ? 'Índice sostenido: seleccionar · <span class="hint-pan">Un puño: mover la vista</span> · <span class="hint-zoom">Dos OK: acercar y alejar</span>' : 'Índice sobre el punto 1,5 s: clic · <span class="hint-pan">Un puño: mover</span> · <span class="hint-zoom">Dos OK: zoom</span>';
+}
+function showExperienceMode(enabled) { showSurfaceMode(enabled?'experience':'map'); }
+function leaveExperience() {
+  experienceGeneration++; experienceLoading = false;
+  trafficExperience?.destroy(); trafficExperience = null;
+  $('mode-experiences').disabled = false;
+  showExperienceMode(false); cancelGesture(); map?.home();
+}
+async function enterExperience({ animate = true } = {}) {
+  if(twinProjection || experienceLoading || trafficExperience?.isOpen)return;
+  if(analysisView || analysisLoading)leaveAnalysis();
+  const generation=++experienceGeneration;
+  experienceLoading=true; contentViewer?.close(); cancelGesture(); showExperienceMode(true);
+  $('mode-experiences').disabled=true;
+  let instance;
+  try {
+    const [module, response]=await Promise.all([import('./traffic-experience.js'),fetch('/traffic/scene.json')]);
+    if(!response.ok)throw new Error('No se pudo cargar el sector de muestra.');
+    const scene=await response.json();
+    if(generation!==experienceGeneration)return;
+    await map.focus(scene.center,19,{animate});
+    if(generation!==experienceGeneration)return;
+    instance=await module.createTrafficExperience($('map'),{
+      notify,onChange:()=>cancelGesture(),onExit:leaveExperience,
+      ...(trafficCheck?{initialVehicleCount:5,persistVehicleCount:false}:{})
+    });
+    if(generation!==experienceGeneration){instance.destroy();return;}
+    trafficExperience=instance;
+    await instance.ready;
+    if(generation!==experienceGeneration){instance.destroy();return;}
+    cancelGesture();
+  } catch(error) {
+    instance?.destroy();
+    if(generation===experienceGeneration){leaveExperience();notify(error.message || 'No se pudo abrir la experiencia.');}
+    if(trafficCheck)throw error;
+  } finally {
+    if(generation===experienceGeneration){experienceLoading=false;$('mode-experiences').disabled=false;}
+  }
+}
+function leaveAnalysis() {
+  analysisGeneration++; analysisLoading=false;
+  analysisView?.destroy(); analysisView=null; map?.setAnalysisLayer(null); map?.setAnalysisMode(false);
+  $('mode-analysis').disabled=false; showSurfaceMode('map'); cancelGesture(); map?.home();
+}
+async function enterAnalysis() {
+  if(twinProjection || analysisLoading || analysisView?.isOpen)return;
+  if(trafficExperience || experienceLoading)leaveExperience();
+  const generation=++analysisGeneration;
+  analysisLoading=true; contentViewer?.close(); cancelGesture(); showSurfaceMode('analysis');
+  map.setAnalysisMode(true); $('mode-analysis').disabled=true;
+  let instance;
+  try {
+    const module=await import('./analysis-view.js');
+    if(generation!==analysisGeneration)return;
+    instance=await module.createAnalysisView($('map'),{map,notify,onChange:()=>cancelGesture(),onExit:leaveAnalysis});
+    if(generation!==analysisGeneration){instance.destroy();return;}
+    analysisView=instance; await instance.ready;
+    if(generation!==analysisGeneration){instance.destroy();return;}
+    cancelGesture();
+  } catch(error) {
+    instance?.destroy();
+    if(generation===analysisGeneration){leaveAnalysis();notify(error.message || 'No se pudo abrir Análisis.');}
+    if(analysisCheck)throw error;
+  } finally {
+    if(generation===analysisGeneration){analysisLoading=false;$('mode-analysis').disabled=false;}
+  }
+}
 function initializeWorker() {
   worker?.terminate(); workerReady=false; busy=false;
   const workerGeneration=cameraGeneration;
@@ -190,7 +277,7 @@ async function finishSmoke(data) {
     && Object.values(selectionRecoveryFeedback).every(Boolean)
     && Object.values(selectionToleranceFeedback).every(Boolean)
     && nativeSelection.cursorLocked && nativeSelection.ringHalfVisible && nativeSelection.noEarlyClick && nativeSelection.oneClickWhileHeld;
-  window.desktop.reportSmoke({version:'0.2.0',ok,startupMirrorEnabled,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,contentWorks:nativeSelection.contentOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
+  window.desktop.reportSmoke({version:appVersion,ok,startupMirrorEnabled,provider:map.provider,wasmLoaded:true,telemetryBlockedByWorkerCsp:telemetryBlocked,emptyFrame:emptyFrameResult,positiveFixture:{hands:data.landmarks.length,landmarks:data.landmarks[0]?.length,worldLandmarks:data.worldLandmarks?.[0]?.length,inferenceMs:data.inferenceMs,qualityValid:data.quality?.valid,qualityMs:data.qualityMs},zoomWorks,contentWorks:nativeSelection.contentOpened,selectionWorks:nativeSelection.selectionWorks,pointerFeedback,navigationFeedback,fistViewsFeedback,indexTrackingFeedback,selectionRecoveryFeedback,selectionToleranceFeedback,qualityFeedback,previewFeedback,nativeSelection,mapView:map.info()});
 }
 async function verifySelectionRecoveryFeedback(){
   map.resetSequence();map.home();cancelGesture();
@@ -339,9 +426,11 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   const freeX=target.x/rect.width<.5?.8:.2;
   const companion=pose=>({id:'free-hand',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+freeX-fixture.poses[pose][8].x,y:p.y+.5-fixture.poses[pose][8].y}))});
   const currentCursor=result=>[$('cursor'),$('cursor-secondary')].find(cursor=>cursor.dataset.hand===String(result.selectionHandId))||$('cursor');
-  let clicks=0;
+  let clicks=0,maxFrameGapMs=0,previousFrameTime=null;
   let companionFrames=0,companionFistFrames=0,selectionOnSecondary=false,companionExited=false,hadCompanion=false,lastProgress=0,continued=true,orderReversedDuringHold=false;
   const frame=async (selected,time,elapsed=0)=>{
+    if(previousFrameTime!==null)maxFrameGapMs=Math.max(maxFrameGapMs,time-previousFrameTime);
+    previousFrameTime=time;
     const present=companionMode==='always' || (companionMode==='changing' && elapsed>=250 && !(elapsed>=900 && elapsed<1200));
     const pose=companionMode==='always' || elapsed>=650?'fist':'point';
     const reverse=companionMode==='changing' && elapsed>=450 && elapsed<650;
@@ -358,8 +447,12 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
     return {result,accepted,cursor:currentCursor(result)};
   };
   const beforeClicks=trustedCount();let emptySpaceNoClick=true;
+  const targets=selectionTargets(rect);
+  const emptyPoint=[.2,.4,.6,.8].flatMap(x=>[.15,.3,.45,.6].map(y=>({x:x*rect.width,y:y*rect.height})))
+    .find(point=>!hoverTarget(point,targets) && Math.hypot(point.x-target.x,point.y-target.y)>100);
+  if(!emptyPoint)throw new Error('Smoke: no hay espacio libre para comprobar el inicio del mantenimiento');
   for(let warmupFrame=0;warmupFrame<5;warmupFrame++){
-    const {result}=await frame(hand('point',0,-100),performance.now());
+    const {result}=await frame(hand('point',emptyPoint.x-target.x,emptyPoint.y-target.y),performance.now());
     emptySpaceNoClick &&= result.mode!=='click-pending' && result.events.every(e=>e.type!=='click') && trustedCount()===beforeClicks;
     await sleep(40);
   }
@@ -398,7 +491,7 @@ async function verifyHoldAt(target,fixture,trustedCount,captureProgress=false,co
   const companionContinuity=!companionMode || (continued && companionFrames>0 && companionFistFrames>0 && selectionOnSecondary
     && (companionMode!=='changing' || (companionExited && orderReversedDuringHold)) && clicks===1 && clickAccepted);
   engine=saved;
-  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,postureIndependent:continued && thumbOutFrames>0 && extraFingerFrames>0 && invalidWorldFrames>0 && clicks===1,thumbOutFrames,extraFingerFrames,invalidWorldFrames,emptySpaceNoClick,targetAcquiredAtIndex,tremorTolerated:continued&&maxTremorPx>40&&clicks===1,tremorFrames,maxTremorPx,companionMode,companionContinuity,companionFrames,companionFistFrames,selectionOnSecondary,companionExited,orderReversedDuringHold};
+  return {clickAccepted,elapsedMs,cursorLocked,ringHalfVisible,noEarlyClick,clicks,maxFrameGapMs,postureIndependent:continued && thumbOutFrames>0 && extraFingerFrames>0 && invalidWorldFrames>0 && clicks===1,thumbOutFrames,extraFingerFrames,invalidWorldFrames,emptySpaceNoClick,targetAcquiredAtIndex,tremorTolerated:continued&&maxTremorPx>40&&clicks===1,tremorFrames,maxTremorPx,companionMode,companionContinuity,companionFrames,companionFistFrames,selectionOnSecondary,companionExited,orderReversedDuringHold};
 }
 async function verifyQualityFeedback() {
   const image=value=>({width:4,height:4,data:Uint8ClampedArray.from(Array.from({length:16},()=>[value,value,value,255]).flat())});
@@ -559,6 +652,12 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
   $('gesture-metric').textContent=blocked?`Control en espera${lastActiveSelectionState?.reason?` · último estado: ${selectionReasonLabels[lastActiveSelectionState.reason]||lastActiveSelectionState.reason}`:''}`:stateLabel;
   const pointers=displayPointers(result,detectedHands);
   const selectionHandId=result.selectionHandId??null;
+  if(analysisView?.isOpen){
+    const pointer=pointers.find(item=>item.id===selectionHandId)||pointers[0];
+    const point=pointer && mapPoint(pointer);
+    analysisView.setHoverPoint(!blocked && !navigation && !result.navigationCandidateKind && within(point)
+      ? {x:point.x*rect.width,y:point.y*rect.height,source:'hand'} : null);
+  }
   if(selectionHandId!==renderedSelectionHandId){selection.reset();renderedSelectionHandId=selectionHandId;}
   const selecting=selectionHandId!==null && selectionHandId!==undefined && !blocked && !navigation && !result.navigationCandidateKind
     && pointers.some(pointer=>pointer.id===selectionHandId);
@@ -624,7 +723,7 @@ function selectionTargets(rect) {
   // Only the visible layer is actionable. Hidden map pins cannot steal a
   // selection or open a popup while the person is reading a graph.
   const targets=currentSurface().targets();
-  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button').forEach(element=>{
+  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button').forEach(element=>{
     if(element.disabled || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
     const box=element.getBoundingClientRect();
@@ -659,9 +758,9 @@ function verifyPointerFeedback() {
   const twoHands=[$('cursor'),$('cursor-secondary')].every(c=>c.style.display==='block');
   const clearedRipple=!$('click-ripple').classList.contains('play');
   renderGesture({...dual,mode:'navigate',navigationKind:'pan'},2);
-  const panColor=[$('cursor'),$('cursor-secondary')].every(c=>c.dataset.navigation==='pan' && getComputedStyle(c).getPropertyValue('--cursor-color').trim()==='137,87,229');
+  const panColor=[$('cursor'),$('cursor-secondary')].every(c=>c.dataset.navigation==='pan' && getComputedStyle(c).getPropertyValue('--cursor-color').trim()===(twinProjection?'137,87,229':'110,38,99'));
   renderGesture({...dual,mode:'navigate',navigationKind:'zoom'},2);
-  const zoomColor=[$('cursor'),$('cursor-secondary')].every(c=>c.dataset.navigation==='zoom' && getComputedStyle(c).getPropertyValue('--cursor-color').trim()==='212,143,0');
+  const zoomColor=[$('cursor'),$('cursor-secondary')].every(c=>c.dataset.navigation==='zoom' && getComputedStyle(c).getPropertyValue('--cursor-color').trim()===(twinProjection?'212,143,0':'0,106,133'));
   renderGesture(dual,2,{blocked:true});const blockedVisible=[$('cursor'),$('cursor-secondary')].every(c=>c.style.display==='block' && c.dataset.blocked==='true');
   renderGesture({...sample,cursor:null,pointers:[],hands:0},0);const noHands=[$('cursor'),$('cursor-secondary')].every(c=>c.style.display==='none');
   renderGesture({...sample,cursor:{x:0,y:1},pointers:[{id:1,x:0,y:1}]},1);
@@ -778,7 +877,7 @@ async function verifyNavigationFeedback() {
   const movedSingle=singleEngine.update(single('fist',.04),220);await renderGesture(movedSingle,1);
   const singlePanWorks=movedSingle.navigationKind==='pan' && movedSingle.events.some(e=>e.type==='pan') && map.info().center.lng<beforeSingle.center.lng;
   const singlePanNoZoomOrClick=movedSingle.events.every(e=>e.type==='pan') && map.info().zoom===beforeSingle.zoom;
-  const singlePanColor=$('cursor').style.display==='block' && $('cursor-secondary').style.display==='none' && $('cursor').dataset.navigation==='pan' && getComputedStyle($('cursor')).getPropertyValue('--cursor-color').trim()==='137,87,229';
+  const singlePanColor=$('cursor').style.display==='block' && $('cursor-secondary').style.display==='none' && $('cursor').dataset.navigation==='pan' && getComputedStyle($('cursor')).getPropertyValue('--cursor-color').trim()===(twinProjection?'137,87,229':'110,38,99');
   const singlePanNoSelection=$('cursor').dataset.state==='idle' && !$('map').querySelector('.gesture-target') && Number($('cursor').querySelector('.cursor-progress').style.strokeDashoffset)===213.63;
   const beforeTwo=map.info(),toTwo=[];
   for(const t of [260,360,440]){const r=singleEngine.update(pair('fist',.04),t);toTwo.push(r);await renderGesture(r,2);}
@@ -814,7 +913,7 @@ async function verifyNavigationFeedback() {
   const mixedFistPan=mixed.mode==='navigate' && mixed.navigationKind==='pan' && mixed.events.length===0;
   const fistPointer=mixed.pointers.find(p=>p.id===mixed.navigationHandIds?.[0]);
   const mixedColors=[$('cursor'),$('cursor-secondary')].map(c=>({id:c.dataset.hand,kind:c.dataset.navigation,color:getComputedStyle(c).getPropertyValue('--cursor-color').trim()}));
-  const freeHandStaysBlue=!!fistPointer && mixedColors.find(c=>c.id===String(fistPointer.id))?.color==='137,87,229' && mixedColors.find(c=>c.id!==String(fistPointer.id))?.color==='33,139,255';
+  const freeHandStaysBlue=!!fistPointer && mixedColors.find(c=>c.id===String(fistPointer.id))?.color===(twinProjection?'137,87,229':'110,38,99') && mixedColors.find(c=>c.id!==String(fistPointer.id))?.color===(twinProjection?'33,139,255':'0,173,178');
   const beforeFree=map.info(),freeMoved=mixedEngine.update([hand('fist','left',.35,.5),hand('point','right',.75,.5)],1820);await renderGesture(freeMoved,2);
   const freeHandMovementIgnored=freeMoved.navigationKind==='pan' && freeMoved.events.length===0 && sameMapView(beforeFree,map.info());
   const fistMoved=mixedEngine.update([hand('fist','left',.39,.5),hand('point','right',.75,.5)],1860);await renderGesture(fistMoved,2);
@@ -853,7 +952,7 @@ function verifyPreviewFeedback(data) {
   active=true;updateStatus();const previewVisibleActive=visible() && $('camera-preview-state').hidden;
   paused=true;updateStatus();const previewVisiblePaused=visible();
   const panel=$('diagnostics').getBoundingClientRect(),workspace=$('workspace').getBoundingClientRect();
-  const compactPlacement=panel.width<=200 && panel.left-workspace.left===12 && panel.top-workspace.top===12;
+  const compactPlacement=panel.width<=200 && (twinProjection ? panel.left-workspace.left===12 && panel.top-workspace.top===12 : Math.abs(panel.left-workspace.left-18)<1 && Math.abs(workspace.bottom-panel.bottom-(innerHeight<780?14:18))<1);
   drawSkeleton(data.landmarks,smokeFixtureDimensions.width,smokeFixtureDimensions.height);
   const canvas=$('skeleton'),ctx=canvas.getContext('2d');
   const hasTracking=()=>ctx.getImageData(0,0,canvas.width,canvas.height).data.some((value,index)=>index%4===3 && value>0);
@@ -891,6 +990,9 @@ $('settings').addEventListener('close',async()=>{
 $('zoom-in').onclick=()=>currentSurface().zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('zoom-out').onclick=()=>currentSurface().zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('home').onclick=()=>currentSurface().home();
+$('mode-map').onclick=()=>{if(analysisView || analysisLoading)leaveAnalysis();else if(trafficExperience || experienceLoading)leaveExperience();};
+$('mode-experiences').onclick=()=>enterExperience();
+$('mode-analysis').onclick=()=>enterAnalysis();
 $('reset-sequence').onclick=()=>{contentViewer?.close();cancelGesture();map.resetSequence();notify('Recorrido reiniciado en el punto 1.');};
 const cameraRangeIds={contrast:'camera-contrast',brightness:'camera-brightness',exposureCompensation:'camera-exposure'};
 function populateCameraControls() {
@@ -910,12 +1012,16 @@ function readCameraControls() {return Object.fromEntries(Object.entries(cameraRa
 function percentile(values,q) {if(!values.length)return null;return [...values].sort((a,b)=>a-b)[Math.min(values.length-1,Math.floor(q*values.length))];}
 $('mark-false-click').onclick=()=>{counters.markedFalseClicks++;$('false-click-count').textContent=`${counters.markedFalseClicks} marcados`;};
 $('export-metrics').onclick=()=>{
-  const report={version:'0.2.0',startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
+  const report={version:appVersion,startedAt,exportedAt:new Date().toISOString(),...counters,selectionDiagnostics:{lastActiveState:lastActiveSelectionState,reasonCounts:selectionReasonCounts},configuration:{confidence:config.confidence,cameraResolution:[$('video').videoWidth,$('video').videoHeight],mapping:'full-frame',rotation:config.rotation,mirror:config.mirror,cameraControls:config.cameraControls,qualityProtection:true},qualityMs:{p50:percentile(qualityTimes,.5),p95:percentile(qualityTimes,.95)},inferenceMs:{p50:percentile(inferenceTimes,.5),p95:percentile(inferenceTimes,.95)},captureToResultMs:{p50:percentile(timings,.5),p95:percentile(timings,.95)},notes:'Captura a resultado excluye buffer de cámara y presentación de pantalla; no es latencia extremo a extremo. Falsos positivos requieren etiquetado humano. Máximo 10000 muestras recientes.'};
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{
   if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
-  if(event.code==='Space' && !$('settings').open && !$('help').open) {event.preventDefault();if(active){paused=!paused;cancelGesture();updateStatus();}}
+  if(event.code==='Space' && !$('settings').open && !$('help').open) {
+    event.preventDefault();
+    if(trafficExperience?.isOpen)trafficExperience.setPaused(!trafficExperience.info().paused);
+    else if(active){paused=!paused;cancelGesture();updateStatus();}
+  }
   if(event.key==='Escape')cancelGesture();
 });
 window.addEventListener('blur',()=>{if(!twinProjection && active){paused=true;cancelGesture();updateStatus();}});
@@ -939,3 +1045,337 @@ if(twinProjection) {
   window.addEventListener('pagehide',stopCamera);
 }
 if(smoke)initializeWorker();
+if(trafficCheck)verifyTrafficExperience().catch(error=>window.desktop.reportSmoke({version:appVersion,ok:false,error:error.stack || error.message}));
+if(analysisCheck)verifyAnalysis().catch(error=>window.desktop.reportSmoke({version:appVersion,ok:false,error:error.stack || error.message}));
+
+async function verifyAnalysis() {
+  const checks={},snapshots={},holds=[],fixture=await(await fetch('/fixtures/selection-poses.json')).json();
+  const [{parseSecurityCSV},{parseCameraCSV}]=await Promise.all([import('./analysis-data.js'),import('./camera-analysis-data.js')]);
+  const [securityCSV,cameraCSV]=await Promise.all([fetch('/analysis/seguridad-simulada.csv').then(r=>r.text()),fetch('/analysis/camaras-seguridad.csv').then(r=>r.text())]);
+  const sourceIncidents=parseSecurityCSV(securityCSV),sourceCameras=parseCameraCSV(cameraCSV);
+  const expectedCameraAt=date=>sourceCameras.filter(record=>record.fecha_instalacion<=date).length;
+  const expectedCameras2024=expectedCameraAt('2024-12-31'),expectedCamerasJuly2024=expectedCameraAt('2024-07-31');
+  const expectedDomo=sourceCameras.filter(record=>record.tipo_camara==='Domo').length;
+  const expectedFija=sourceCameras.filter(record=>record.tipo_camara==='Fija').length;
+  const expectedIntimidacion=sourceIncidents.filter(record=>record.tipo_incidente==='Robo con intimidación').length;
+  const expectedSorpresa=sourceIncidents.filter(record=>record.tipo_incidente==='Robo por sorpresa').length;
+  const originalMapNode=$('map').querySelector('.leaflet-map-pane');
+  let trustedClicks=0;
+  const observe=event=>{if(event.isTrusted)trustedClicks++;};
+  $('workspace').addEventListener('click',observe,true);
+  const capture=async name=>{cancelGesture();await sleep(300);window.desktop.reportSmoke({phase:`analysis-${name}`});await sleep(100);};
+  const hold=async id=>{
+    const target=selectionTargets($('map').getBoundingClientRect()).find(item=>item.element.id===id);
+    if(!target)throw new Error(`Análisis: control no visible ${id}`);
+    await waitFor(()=>document.hasFocus(),12000,'ventana del mapa en primer plano');
+    const result=await verifyHoldAt(target,fixture,()=>trustedClicks);holds.push({id,...result});
+    if(!result.clickAccepted || result.clicks!==1 || !result.noEarlyClick || result.elapsedMs<1500)throw new Error(`Selección de Análisis no completada: ${id}`);
+  };
+  const waitLayer=()=>waitFor(()=>map.info().analysisLayerLoaded,5000,'raster de calor visible');
+  try {
+    config.mirror=false;
+    await hold('mode-analysis');
+    await waitFor(()=>analysisView?.info().ready,18000,'CSV y análisis listos');await analysisView.ready;await waitLayer();
+    const initial=analysisView.info();snapshots.general=initial;
+    checks.datasetComplete=initial.datasetCount===60000 && initial.filteredCount===60000;
+    checks.originalMap=originalMapNode===$('map').querySelector('.leaflet-map-pane') && map.provider==='OpenStreetMap';
+    checks.boundary=map.info().boundaryLoaded && map.info().analysisMode && map.info().analysisLayerVisible;
+    checks.pinsInactive=map.targets().length===0 && !contentViewer.isOpen;
+    checks.interfaceClear=!/simulad|fictici|publicad|demostraci/i.test(document.querySelector('.analysis-experience').textContent);
+    checks.resolutionTotals=initial.resolvedCount===22920 && initial.unresolvedCount===37080;
+    checks.progressiveDateControls=initial.temporalMode==='all' && !analysisView.targets().some(target=>/^analysis-year-20|analysis-month-\d/.test(target.id));
+    const heat=$('map').querySelector('img[alt="Concentración de incidentes de seguridad"]');
+    await heat.decode();
+    const canvas=document.createElement('canvas');canvas.width=heat.naturalWidth;canvas.height=heat.naturalHeight;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(heat,0,0);
+    const rgba=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    let colored=0,green=0,red=0;const colors=new Set();
+    for(let i=0;i<rgba.length;i+=4)if(rgba[i+3]>240){colored++;green+=rgba[i+1]>rgba[i]*1.2;red+=rgba[i]>rgba[i+1]*1.15;colors.add(`${rgba[i]},${rgba[i+1]},${rgba[i+2]}`);}
+    checks.clippedToCommune=colored/(canvas.width*canvas.height)>.4 && colored/(canvas.width*canvas.height)<.9 && rgba[3]===0;
+    checks.fullColorRamp=green>0 && red>0 && colors.size>200;
+    checks.timeLabelsFit=[...document.querySelectorAll('.analysis-security-panel .analysis-filter-period .analysis-options button')].every(button=>{
+      const node=[...button.childNodes].find(child=>child.nodeType===Node.TEXT_NODE && child.textContent.trim());
+      if(!node)return false;
+      const range=document.createRange();range.selectNodeContents(node);
+      const text=range.getBoundingClientRect(),box=button.getBoundingClientRect();
+      return text.width>0 && text.left>=box.left+5 && text.right<=box.right-5 && button.scrollWidth<=button.clientWidth;
+    });
+    await capture('general');
+    await hold('analysis-robbery-picker');
+    checks.robberyPicker=analysisView.info().picker==='robbery';
+    await hold('analysis-robbery-intimidacion');await waitLayer();
+    checks.robberySingleType=analysisView.info().filteredCount===expectedIntimidacion
+      && analysisView.info().picker==='robbery';
+    await hold('analysis-robbery-sorpresa');await waitLayer();
+    const robberyUnion=analysisView.info();
+    checks.robberyTypesUnion=robberyUnion.filteredCount===expectedIntimidacion+expectedSorpresa
+      && Array.isArray(robberyUnion.filters.robbery) && robberyUnion.filters.robbery.length===2
+      && robberyUnion.filters.robbery.includes('intimidacion') && robberyUnion.filters.robbery.includes('sorpresa');
+    await hold('analysis-robbery-intimidacion');await waitLayer();
+    checks.robberyTypeDeselect=analysisView.info().filteredCount===expectedSorpresa
+      && analysisView.info().filters.robbery.length===1 && analysisView.info().filters.robbery[0]==='sorpresa';
+    await capture('tiposrobo');
+    await hold('analysis-robbery-all');await waitLayer();
+    checks.robberyAllRestored=analysisView.info().filteredCount===60000 && analysisView.info().filters.robbery==='all';
+    await hold('analysis-date-close');
+    await hold('analysis-mode-year');
+    checks.yearPicker=analysisView.info().picker==='year';
+    await hold('analysis-year-2024');await waitLayer();
+    checks.yearFilter=analysisView.info().filteredCount===20066;
+    await hold('analysis-mode-month');
+    checks.monthPicker=analysisView.info().picker==='month';
+    await hold('analysis-month-07');await waitLayer();
+    const monthly=analysisView.info();snapshots.mensual=monthly;
+    checks.monthFilter=monthly.filteredCount===1697 && monthly.dateRange.start==='2024-07-01' && monthly.dateRange.end==='2024-07-31';
+    await capture('mes');
+    await hold('analysis-resolution-no');await waitLayer();
+    const unresolved=analysisView.info();checks.resolutionFilter=unresolved.resolvedCount===0 && unresolved.filteredCount>0 && unresolved.filteredCount<1697;
+    await hold('analysis-period-noche');await waitLayer();
+    const filtered=analysisView.info();snapshots.filtrado=filtered;
+    checks.timeFilter=filtered.filteredCount>0 && filtered.filteredCount<unresolved.filteredCount;
+    checks.rasterChanges=heat!==$('map').querySelector('img[alt="Concentración de incidentes de seguridad"]');
+    await capture('filtrado');
+    const local={lat:-33.448,lng:-70.548},screen=map.locationToScreen(local),roundtrip=map.screenToLocation(screen.x,screen.y);
+    snapshots.proyeccion={local,screen,roundtrip};
+    checks.mapProjection=Math.abs(roundtrip.lat-local.lat)<.00003 && Math.abs(roundtrip.lng-local.lng)<.00003
+      && map.screenToLocation(NaN,10)===null && map.locationToScreen({lat:Infinity,lng:0})===null;
+    const viewport=$('map').getBoundingClientRect();
+    await window.desktop.click({x:viewport.left+screen.x,y:viewport.top+screen.y});await sleep(240);
+    checks.mouseDetails=analysisView.info().hover?.source==='mouse';
+    const handPointer={id:'analysis-hand',x:screen.x/viewport.width,y:screen.y/viewport.height};
+    await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
+    await sleep(500);
+    const detail=analysisView.info().hover;snapshots.detalle=detail;
+    checks.handDetails=detail?.source==='hand' && detail.radiusMetres===250 && detail.resolved+detail.unresolved===detail.total;
+    checks.weekUsesSelectedPeriod=detail?.referenceDate==='2024-07-31' && detail.last7DaysRange.start==='2024-07-25' && detail.last7Days<=detail.total;
+    window.desktop.reportSmoke({phase:'analysis-detalle'});await sleep(150);
+    const before=map.info();analysisView.pan(90,35);
+    checks.panWorks=!sameMapView(before,map.info());checks.detailsClearOnPan=analysisView.info().hover===null;
+    const zoom=map.info().zoom;analysisView.zoom(.35,600,300);
+    checks.zoomWorks=map.info().zoom>zoom && map.info().analysisLayerVisible;
+    await hold('analysis-reset');await waitLayer();
+    checks.resetFilters=analysisView.info().filteredCount===60000 && analysisView.info().temporalMode==='all' && analysisView.info().filters.month==='all';
+    analysisView.home();
+    const targets=analysisView.targets(),rect=$('map').getBoundingClientRect();
+    checks.controlsReachable=targets.length>=14 && targets.every(target=>target.width>=30 && target.height>=32 && target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y)));
+    const waitCameras=()=>waitFor(()=>map.info().cameraAnalysisLoaded&&map.info().cameraAnalysisVisible,5000,'capa de cámaras visible');
+    await hold('analysis-category-cameras');await waitCameras();
+    const cameras=analysisView.info();snapshots.camaras=cameras;
+    checks.cameraDatasetComplete=cameras.activeCategory==='cameras' && !cameras.crossed && cameras.datasetCount===320 && cameras.filteredCount===320
+      && cameras.summary.published===11 && cameras.summary.simulated===309;
+    checks.cameraPointsSeparate=map.info().cameraAnalysisMode==='points' && map.info().cameraAnalysisPointCount===320 && !map.info().analysisLayerVisible;
+    await capture('camaras');
+    await hold('camera-analysis-type-picker');
+    checks.cameraTypePicker=analysisView.info().picker==='type';
+    await hold('camera-analysis-type-1');await waitCameras();
+    checks.cameraTypeSingle=analysisView.info().filteredCount===expectedDomo && analysisView.info().picker==='type';
+    await hold('camera-analysis-type-2');await waitCameras();
+    const combinedTypes=analysisView.info();
+    checks.cameraTypesUnion=combinedTypes.filteredCount===expectedDomo+expectedFija
+      && Array.isArray(combinedTypes.filters.type) && combinedTypes.filters.type.length===2
+      && combinedTypes.filters.type.includes('Domo') && combinedTypes.filters.type.includes('Fija');
+    await hold('camera-analysis-type-1');await waitCameras();
+    checks.cameraTypeDeselect=analysisView.info().filteredCount===expectedFija
+      && analysisView.info().filters.type.length===1 && analysisView.info().filters.type[0]==='Fija';
+    await hold('camera-analysis-type-1');await waitCameras();
+    checks.cameraTypeReselect=analysisView.info().filteredCount===expectedDomo+expectedFija;
+    await capture('tiposcamara');
+    await hold('camera-analysis-type-3');await waitCameras();
+    checks.cameraAllTypesCollapse=analysisView.info().filteredCount===320 && analysisView.info().filters.type==='all';
+    await hold('camera-analysis-date-close');
+    await hold('camera-analysis-state-picker');await hold('camera-analysis-state-1');await waitCameras();
+    checks.cameraStateFilter=analysisView.info().filteredCount===240 && analysisView.info().summary.operational===240;
+    await hold('camera-analysis-reset');await waitCameras();
+    checks.cameraResetFilters=analysisView.info().filteredCount===320 && analysisView.info().filters.state==='all';
+    await hold('camera-analysis-display-heatmap');await waitCameras();
+    const cameraHeat=$('map').querySelector('img[alt="Concentración de ubicaciones de cámaras de seguridad"]');
+    if(cameraHeat)await cameraHeat.decode();
+    checks.cameraHeatmap=!!cameraHeat && map.info().cameraAnalysisMode==='heatmap' && !map.info().analysisLayerVisible;
+    if(cameraHeat){
+      const imageCanvas=document.createElement('canvas');imageCanvas.width=cameraHeat.naturalWidth;imageCanvas.height=cameraHeat.naturalHeight;
+      const imageContext=imageCanvas.getContext('2d',{willReadFrequently:true});imageContext.drawImage(cameraHeat,0,0);
+      const imageData=imageContext.getImageData(0,0,imageCanvas.width,imageCanvas.height).data;let blue=0,transparent=0;
+      for(let i=0;i<imageData.length;i+=4){if(imageData[i+3]>100 && imageData[i+2]>imageData[i])blue++;if(imageData[i+3]===0)transparent++;}
+      checks.cameraBlueRamp=blue>100 && transparent>0;
+    }else checks.cameraBlueRamp=false;
+    await capture('camarascalor');
+    await hold('camera-analysis-display-points');await waitCameras();
+    await hold('camera-analysis-mode-year');await hold('camera-analysis-year-2024');await waitCameras();
+    checks.cameraYearInventory=analysisView.info().filteredCount===expectedCameras2024;
+    await hold('camera-analysis-mode-month');await hold('camera-analysis-month-07');await waitCameras();
+    checks.cameraMonthlyInventory=analysisView.info().filteredCount===expectedCamerasJuly2024 && analysisView.info().dateRange.end==='2024-07-31';
+    await hold('camera-analysis-cross');
+    checks.crossPickerExcludesSame=!!analysisView.targets().find(t=>t.id==='analysis-cross-security')
+      && !analysisView.targets().find(t=>t.id==='analysis-cross-cameras');
+    await hold('analysis-cross-security');await waitLayer();await waitCameras();
+    const cameraPanel=document.querySelector('.analysis-camera-panel'),securityPanel=document.querySelector('.analysis-security-panel');
+    checks.crossPanelsSeparate=analysisView.info().crossed && !cameraPanel.hidden && !securityPanel.hidden
+      && cameraPanel.dataset.side==='left' && securityPanel.dataset.side==='right'
+      && cameraPanel.getBoundingClientRect().right<securityPanel.getBoundingClientRect().left;
+    checks.crossLayersVisible=map.info().analysisLayerVisible && map.info().cameraAnalysisVisible && map.info().cameraAnalysisPointCount===expectedCamerasJuly2024;
+    checks.crossRejectsSameCategory=analysisView.setCrossDataset('cameras')===false && analysisView.info().crossed;
+    analysisView.setFilters({year:'2023'});await waitLayer();await waitCameras();
+    const securityAtCross=analysisView.info().datasets.security;
+    snapshots.paneles=[cameraPanel,securityPanel].map(panel=>{
+      const body=panel.querySelector('.analysis-body');
+      return {category:panel.dataset.kind,visibleHeight:body.clientHeight,contentHeight:body.scrollHeight};
+    });
+    checks.controlsReachable=checks.controlsReachable && snapshots.paneles.every(panel=>panel.contentHeight<=panel.visibleHeight+1);
+    checks.crossSecurityIndependent=securityAtCross.filteredCount===20009 && analysisView.info().datasets.cameras.filteredCount===expectedCamerasJuly2024;
+    analysisView.setCameraFilters({state:'Operativa',type:'Domo'});await waitCameras();
+    const filteredCameras=analysisView.info().datasets.cameras;
+    checks.crossCamerasIndependent=analysisView.info().datasets.security.filteredCount===20009
+      && filteredCameras.filteredCount<expectedCamerasJuly2024 && filteredCameras.summary.operational===filteredCameras.filteredCount
+      && filteredCameras.filters.year==='2024' && filteredCameras.filters.month==='07'
+      && map.info().cameraAnalysisPointCount===filteredCameras.filteredCount;
+    analysisView.setCameraFilters({state:'all',type:'all'});await waitCameras();
+    await hold('camera-analysis-opacity-less');
+    checks.cameraOpacityIndependent=Math.abs(map.info().cameraAnalysisOpacity-.8)<.001 && Math.abs(map.info().analysisOpacity-.45)<.001;
+    analysisView.setOpacity('security',.35);
+    checks.securityOpacityIndependent=Math.abs(map.info().analysisOpacity-.35)<.001 && Math.abs(map.info().cameraAnalysisOpacity-.8)<.001;
+    analysisView.setCameraDisplay('heatmap');await waitCameras();await waitLayer();
+    checks.crossHeatmaps=map.info().cameraAnalysisMode==='heatmap' && map.info().cameraAnalysisVisible && map.info().analysisLayerVisible;
+    analysisView.setCameraDisplay('points');await waitCameras();await waitLayer();
+    const crossViewport=$('map').getBoundingClientRect(),crossPoint=map.locationToScreen(local);
+    await window.desktop.click({x:crossViewport.left+crossPoint.x,y:crossViewport.top+crossPoint.y});await sleep(240);
+    checks.crossMouseDetails=analysisView.info().hover?.source==='mouse' && !!analysisView.info().hover?.security && !!analysisView.info().hover?.cameras;
+    const crossHand={id:'analysis-cross-hand',x:crossPoint.x/crossViewport.width,y:crossPoint.y/crossViewport.height};
+    await renderGesture({mode:'point',cursor:crossHand,pointers:[crossHand],selectionHandId:null,events:[],progress:0},1);await sleep(500);
+    const crossDetail=analysisView.info().hover;snapshots.cruce={...analysisView.info(),map:map.info()};
+    checks.crossHandDetails=crossDetail?.source==='hand' && crossDetail.security?.referenceDate==='2023-12-31'
+      && crossDetail.cameras?.radiusMetres===250 && crossDetail.cameras.total<=expectedCamerasJuly2024;
+    window.desktop.reportSmoke({phase:'analysis-cruce'});await sleep(150);
+    await hold('analysis-cross-close');await waitCameras();
+    checks.returnToSeparate=!analysisView.info().crossed && analysisView.info().activeCategory==='cameras'
+      && !map.info().analysisLayerVisible && map.info().cameraAnalysisVisible && map.info().cameraAnalysisPointCount===expectedCamerasJuly2024;
+    await hold('camera-analysis-category-security');await waitLayer();
+    checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
+    await hold('analysis-exit');
+    checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible && map.targets().length===3;
+    checks.originalGraphics=contentViewer.manifest.slides.length===5;
+    await enterAnalysis();await analysisView.ready;await waitLayer();
+    checks.reopen=analysisView.info().datasetCount===60000 && document.querySelectorAll('.analysis-experience').length===1;
+    await enterExperience({animate:false});
+    checks.experienceCompatibility=!analysisView && trafficExperience.info().ready && !map.info().analysisMode;
+    leaveExperience();checks.cleanup=!document.querySelector('.analysis-experience') && !document.querySelector('.traffic-experience');
+    window.desktop.reportSmoke({version:appVersion,ok:Object.values(checks).every(Boolean),checks,snapshots,holds,trustedClicks,gestureSelections:holds.length,cameraOpened:false});
+  } finally {$('workspace').removeEventListener('click',observe,true);}
+}
+
+async function verifyTrafficExperience() {
+  const checks={}, snapshots={}, holds=[], fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  let trustedClicks=0;
+  const observe=event=>{if(event.isTrusted)trustedClicks++;};
+  $('workspace').addEventListener('click',observe,true);
+  const capture=async name=>{cancelGesture();await sleep(450);window.desktop.reportSmoke({phase:`traffic-${name}`});await sleep(100);};
+  const hold=async target=>{
+    if(!target)throw new Error('La experiencia no expone el control gestual esperado.');
+    await waitFor(()=>document.hasFocus(),12000,'ventana del mapa en primer plano para comprobar la entrada nativa');
+    const beforeView=trafficExperience?.info();
+    const result=await verifyHoldAt(target,fixture,()=>trustedClicks);
+    holds.push({target:target.id,...result,visibleTilesLoaded:beforeView?.visibleTilesLoaded,cameraMoving:beforeView?.cameraMoving,
+      rendering:trafficExperience?.info().rendering});
+    if(!result.clickAccepted || result.elapsedMs<1500 || !result.noEarlyClick || result.clicks!==1)throw new Error(`El control ${target.id} no completó la selección gestual de 1,5 segundos: ${JSON.stringify(holds.at(-1))}`);
+    return result;
+  };
+  try {
+    config.mirror=false;
+    checks.originalPins=map.targets().length===3;
+    checks.originalGraphics=contentViewer.manifest.slides.length===5;
+    await hold(selectionTargets($('map').getBoundingClientRect()).find(target=>target.element.id==='mode-experiences'));
+    await waitFor(()=>trafficExperience?.info().ready,14000,'escena 3D lista');
+    await trafficExperience.ready;
+    await waitFor(()=>trafficExperience.info().rasterTilesLoaded && trafficExperience.info().pitch>45,10000,'cartografía del barrio visible');
+    const initial=trafficExperience.info();
+    checks.modelsLoaded=initial.buildingCount>=5 && initial.vehicleMeshCount===5 && initial.carModelCount>=2;
+    checks.fiveVehicles=initial.vehicles.length===5 && initial.renderedVehicleCount===5;
+    checks.fiveRoutes=initial.guideRoutes===5;
+    checks.metricScale=initial.vehicleModels.every(model=>model.length>=3.5 && model.length<=4.6);
+    checks.originalCartography=initial.originalCartography===true && initial.baseMap==='OpenStreetMap' && initial.projection==='mercator';
+    checks.baseMapLoaded=initial.rasterTilesLoaded && initial.rasterTileLoadCount>0 && initial.tileErrors===0;
+    checks.residentialDensity=initial.buildingCount>=40 && initial.buildings.every(item=>item.height>=4 && item.height<=7)
+      && initial.buildings.reduce((sum,item)=>sum+item.width*item.depth,0)/initial.buildingCount>60;
+    checks.landscapingLoaded=initial.propCount>=20 && initial.gardenCount>=40;
+    checks.renderingHealthy=!initial.renderError && initial.rendering.staticInstancedMeshes>0;
+    const before=initial.vehicles.map(vehicle=>[vehicle.x,vehicle.z]);
+    await sleep(900);
+    checks.vehiclesAdvance=trafficExperience.info().vehicles.some((vehicle,i)=>Math.hypot(vehicle.x-before[i][0],vehicle.z-before[i][1])>.2);
+    snapshots.normal=trafficExperience.info();await capture('normal');
+    const modeView=map.info();
+    const saved=engine;engine=new GestureEngine();
+    const hands=(pose,positions)=>positions.map(([x,y],i)=>({id:`transito-${i}`,landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+x-fixture.poses[pose][8].x,y:p.y+y-fixture.poses[pose][8].y}))}));
+    const gesture=async(pose,positions,t)=>{const frame=hands(pose,positions);await renderGesture(engine.update(frame,t,selectionContext(engine)),frame.length);};
+    try {
+      for(const t of [0,90,180])await gesture('fist',[[.58,.75]],t);
+      const start=trafficExperience.info().camera.target;
+      for(const [t,x] of [[220,.61],[260,.65],[300,.7]])await gesture('fist',[[x,.75]],t);
+      const moved=trafficExperience.info().camera.target;
+      checks.gesturePan=Math.hypot(moved[0]-start[0],moved[2]-start[2])>1;
+      engine=new GestureEngine();
+      for(const t of [400,490,580])await gesture('ok',[[.4,.72],[.6,.72]],t);
+      const scale=trafficExperience.info().scale;
+      for(const [t,d] of [[620,.14],[660,.18],[700,.23]])await gesture('ok',[[.5-d,.72],[.5+d,.72]],t);
+      checks.gestureZoom=trafficExperience.info().scale>scale;
+      checks.mapUnderneathUnchanged=sameMapView(modeView,map.info());
+    } finally {engine=saved;cancelGesture();trafficExperience.home();}
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-scenario-punta'));
+    checks.peakSelected=trafficExperience.info().scenario==='punta' && !trafficExperience.info().night;
+    snapshots.punta=trafficExperience.info();await capture('punta');
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-toggle'));
+    const pausedState=trafficExperience.info();await sleep(350);
+    checks.pauseFreezes=pausedState.paused && trafficExperience.info().elapsed===pausedState.elapsed;
+    trafficExperience.reset();checks.restartAtZero=trafficExperience.info().elapsed===0;
+    trafficExperience.setPaused(false);
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-scenario-madrugada'));
+    snapshots.madrugada=trafficExperience.info();
+    checks.nightSelected=snapshots.madrugada.night && snapshots.madrugada.scenario==='madrugada';
+    await capture('madrugada');
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-view'));
+    await waitFor(()=>trafficExperience.info().viewMode==='2d' && trafficExperience.info().pitch<1,3000,'vista de planta');
+    checks.planView=trafficExperience.info().originalCartography && trafficExperience.info().pitch<1;
+    snapshots.planta=trafficExperience.info();await capture('planta');
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-view'));
+    await waitFor(()=>trafficExperience.info().viewMode==='3d' && trafficExperience.info().pitch>45,3000,'vista tridimensional');
+    checks.restore3d=trafficExperience.info().pitch>45 && trafficExperience.info().buildingCount===initial.buildingCount;
+    const allTargets=trafficExperience.targets();
+    checks.controlsReachable=allTargets.every(target=>target.width>=32 && target.height>=30 && document.elementFromPoint($('map').getBoundingClientRect().left+target.x,$('map').getBoundingClientRect().top+target.y)?.closest('button,input')===target.element);
+    $('traffic-guides').click();checks.guidesHide=!trafficExperience.info().guidesVisible;
+    $('traffic-guides').click();checks.guidesRestore=trafficExperience.info().guidesVisible;
+    trafficExperience.setScenario('normal');trafficExperience.home();
+    const countBefore=trafficExperience.info();
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-count-50'));
+    checks.gestureSlider=trafficExperience.info().vehicleCount===50;
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-count-increase'));
+    checks.increaseOne=trafficExperience.info().vehicleCount===51;
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-count-decrease'));
+    checks.decreaseOne=trafficExperience.info().vehicleCount===50;
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-count-100'));
+    await sleep(500);
+    const maximum=trafficExperience.info();snapshots.cantidad=maximum;await capture('cantidad');
+    checks.oneHundred=maximum.vehicleCount===100 && maximum.activeCount+maximum.queuedCount===100
+      && maximum.renderedVehicleCount===maximum.activeCount && maximum.vehiclePoolCapacity===100 && !maximum.renderError;
+    checks.countKeepsClock=maximum.elapsed>countBefore.elapsed;
+    trafficExperience.setPaused(true);const pausedCount=trafficExperience.info();
+    trafficExperience.setVehicleCount(25);await sleep(250);
+    checks.countKeepsPause=trafficExperience.info().paused && trafficExperience.info().elapsed===pausedCount.elapsed;
+    trafficExperience.setScenario('punta');
+    checks.countKeepsScenario=trafficExperience.info().vehicleCount===25 && trafficExperience.info().scenario==='punta';
+    trafficExperience.reset();checks.countKeepsReset=trafficExperience.info().vehicleCount===25;
+    await hold(trafficExperience.targets().find(target=>target.id==='traffic-count-0'));
+    const empty=trafficExperience.info();
+    checks.zeroVehicles=empty.vehicleCount===0 && empty.vehicles.length===0 && empty.renderedVehicleCount===0 && empty.queuedCount===0;
+    checks.rangeLimits=$('traffic-count-decrease').disabled && $('traffic-vehicle-count').min==='0' && $('traffic-vehicle-count').max==='100' && $('traffic-vehicle-count').step==='1';
+    trafficExperience.setVehicleCount(5);trafficExperience.setScenario('normal');trafficExperience.setPaused(false);
+    await hold(allTargets.find(target=>target.id==='traffic-exit'));
+    checks.returnToMap=!trafficExperience && !document.querySelector('.traffic-canvas') && map.targets().length===3;
+    await capture('mapa');
+    await enterExperience({animate:false});
+    checks.reopen=trafficExperience.info().ready && trafficExperience.info().vehicleMeshCount===5 && document.querySelectorAll('.traffic-canvas').length===1;
+    leaveExperience();
+    checks.cleanup=!document.querySelector('.traffic-experience');
+    await openSettings();await waitFor(()=>$('settings').open,3000,'diálogo de ajustes');
+    checks.settingsOpen=$('settings').open && !document.querySelector('.traffic-canvas');
+    await capture('ajustes');$('settings').close();
+    window.desktop.reportSmoke({version:appVersion,ok:Object.values(checks).every(Boolean),checks,snapshots,holds,trustedClicks,cameraOpened:false});
+  } finally {$('workspace').removeEventListener('click',observe,true);}
+}

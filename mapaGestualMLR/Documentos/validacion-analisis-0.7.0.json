@@ -1,0 +1,199 @@
+{
+  "version": "0.7.0",
+  "fecha": "2026-11-06",
+  "pruebasUnitarias": {
+    "total": 253,
+    "aprobadas": 253
+  },
+  "verificacionNativaAnalisis": {
+    "ok": true,
+    "comprobaciones": {
+      "datasetComplete": true,
+      "originalMap": true,
+      "boundary": true,
+      "pinsInactive": true,
+      "interfaceClear": true,
+      "resolutionTotals": true,
+      "progressiveDateControls": true,
+      "clippedToCommune": true,
+      "fullColorRamp": true,
+      "timeLabelsFit": true,
+      "robberyPicker": true,
+      "robberySingleType": true,
+      "robberyTypesUnion": true,
+      "robberyTypeDeselect": true,
+      "robberyAllRestored": true,
+      "yearPicker": true,
+      "yearFilter": true,
+      "monthPicker": true,
+      "monthFilter": true,
+      "resolutionFilter": true,
+      "timeFilter": true,
+      "rasterChanges": true,
+      "mapProjection": true,
+      "mouseDetails": true,
+      "handDetails": true,
+      "weekUsesSelectedPeriod": true,
+      "panWorks": true,
+      "detailsClearOnPan": true,
+      "zoomWorks": true,
+      "resetFilters": true,
+      "controlsReachable": true,
+      "cameraDatasetComplete": true,
+      "cameraPointsSeparate": true,
+      "cameraTypePicker": true,
+      "cameraTypeSingle": true,
+      "cameraTypesUnion": true,
+      "cameraTypeDeselect": true,
+      "cameraTypeReselect": true,
+      "cameraAllTypesCollapse": true,
+      "cameraStateFilter": true,
+      "cameraResetFilters": true,
+      "cameraHeatmap": true,
+      "cameraBlueRamp": true,
+      "cameraYearInventory": true,
+      "cameraMonthlyInventory": true,
+      "crossPickerExcludesSame": true,
+      "crossPanelsSeparate": true,
+      "crossLayersVisible": true,
+      "crossRejectsSameCategory": true,
+      "crossSecurityIndependent": true,
+      "crossCamerasIndependent": true,
+      "cameraOpacityIndependent": true,
+      "securityOpacityIndependent": true,
+      "crossHeatmaps": true,
+      "crossMouseDetails": true,
+      "crossHandDetails": true,
+      "returnToSeparate": true,
+      "restoreSecurityFilters": true,
+      "returnToMap": true,
+      "originalGraphics": true,
+      "reopen": true,
+      "experienceCompatibility": true,
+      "cleanup": true
+    },
+    "clicsNativos": 39,
+    "seleccionesGestuales": 37,
+    "camaraFisicaProbada": false
+  },
+  "verificacionNativaMapaGraficos": {
+    "ok": true,
+    "clicsNativos": 9,
+    "paginas": [
+      2,
+      3,
+      4,
+      5,
+      6
+    ],
+    "seleccionFunciona": true,
+    "modeloWASM": true
+  },
+  "compatibilidadExperiencias": {
+    "entradaYSalida": true,
+    "ultimaRevisionCompletaSinCambios": "0.6.0: 38 comprobaciones y doce clics nativos"
+  },
+  "verificacionVisual": {
+    "paneles340y280pixeles": true,
+    "horariosConMargen": true,
+    "ventana900x650SinControlesRecortados": true,
+    "multiseleccionCamaras": true,
+    "multiseleccionRobos": true,
+    "sinOrigenNiEtiquetasDeSimulacionEnInterfaz": true,
+    "panelesCruzadosSinRecortes": [
+      {
+        "category": "cameras",
+        "visibleHeight": 342,
+        "contentHeight": 342
+      },
+      {
+        "category": "security",
+        "visibleHeight": 462,
+        "contentHeight": 462
+      }
+    ]
+  },
+  "csvCamaras": {
+    "ok": true,
+    "registros": 320,
+    "columnas": 14,
+    "camposModificados": [
+      "fecha_instalacion"
+    ],
+    "filasModificadas": 49,
+    "camposRestantesConservados": true,
+    "sha256CamposConservados": "3ad1c01eefb1fea9a836a4c40743ba1966ce907d901650562811643ac01dd23e",
+    "csvSha256": "4b168b15b6f44ac4073ac4ec948c4f29376027f8972890ad0d2cca4c1d8d9b83",
+    "csvBytes": 85891,
+    "seguridadSinCambios": "703f6f2bcace85d85b86593d55f1ab5ebeb40ceffd5d98c882020807e74146cf",
+    "generacionReproducida": true,
+    "publicadas": 11,
+    "simuladas": 309,
+    "inventarioAlCorte": {
+      "2023-12-31": 101,
+      "2024-07-31": 143,
+      "2024-12-31": 172,
+      "2025-12-31": 320
+    },
+    "zonas": [
+      {
+        "referencia": "Violeta Parra 5523 (numeración simulada)",
+        "latitud": -33.457278,
+        "longitud": -70.563696,
+        "radio_metros": 650,
+        "incidentes_2024": 7844,
+        "camaras_2024_antes": 21,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 30,
+        "ids_camaras_conservadas_2024": [
+          "1",
+          "184"
+        ]
+      },
+      {
+        "referencia": "El Olmo / El Olmo 2",
+        "latitud": -33.452566,
+        "longitud": -70.549195,
+        "radio_metros": 650,
+        "incidentes_2024": 1960,
+        "camaras_2024_antes": 13,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 21,
+        "ids_camaras_conservadas_2024": [
+          "31",
+          "228"
+        ]
+      },
+      {
+        "referencia": "Avenida Echeñique 6431 (numeración simulada)",
+        "latitud": -33.444723,
+        "longitud": -70.565859,
+        "radio_metros": 650,
+        "incidentes_2024": 1407,
+        "camaras_2024_antes": 21,
+        "camaras_2024_despues": 2,
+        "camaras_2025": 31,
+        "ids_camaras_conservadas_2024": [
+          "11",
+          "72"
+        ]
+      }
+    ],
+    "tests": {
+      "total": 10,
+      "aprobadas": 10
+    }
+  },
+  "seguridadSinCambios": {
+    "registros": 60000,
+    "sha256": "703f6f2bcace85d85b86593d55f1ab5ebeb40ceffd5d98c882020807e74146cf"
+  },
+  "gruposDeRobo": [
+    "Violencia o intimidación",
+    "Por sorpresa",
+    "De vehículos",
+    "En inmuebles"
+  ],
+  "fuenteCategorias": "https://www.bcn.cl/siit/reportescomunales/glosario.html",
+  "alcance": "Cuatro grupos de navegación de los cinco tipos existentes en el CSV. En inmuebles agrupa lugar habitado y no habitado; no se presenta como nueva clasificación penal. El escenario de 2024 se construyó retrasando 49 fechas de cámaras a 2025; su procedencia y simulación permanecen documentadas en archivos."
+}

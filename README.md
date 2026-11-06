@@ -4,15 +4,15 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena<br>
 **Estado actual:** Etapa 2 · prototipo, propuestas espacial y gráfica, y gemelo digital<br>
-**Última actualización:** 16 de octubre de 2026
+**Última actualización:** 6 de noviembre de 2026
 
 ## Prototipo: Mapa Gestual MLR
 
-Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina con las manos frente a una cámara frontal. Permite desplazarse, hacer zoom y seleccionar puntos de interés. Por ahora trabajamos con tres puntos demostrativos, antes de incorporar información municipal real.
+Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina con las manos frente a una cámara frontal. Permite desplazarse, hacer zoom, seleccionar puntos y consultar gráficos. La sección **Análisis** suma mapas de calor de seguridad y cámaras, filtros combinables y cruce de información con paneles independientes.
 
 **[Bitácora del Mapa Gestual MLR: proceso, decisiones e imágenes](./mapaGestualMLR/)**
 
-La bitácora reúne el recorrido del prototipo y explica las decisiones de gestos e interacción.
+La bitácora reúne las decisiones de interacción y los avances de análisis territorial, con capturas de la aplicación. Las bases de demostración conservan su procedencia en los archivos.
 
 ### Demostración
 
@@ -29,12 +29,13 @@ La bitácora reúne el recorrido del prototipo y explica las decisiones de gesto
   </tr>
 </table>
 
-### Referentes y arquitectura
+### Material del prototipo
 
 | Documento | Qué aporta |
 |:---|:---|
 | [Referentes de gestos y UX](./mapaGestualMLR/Documentos/02-gestos-y-ux.md) | Investigación para definir la interacción. |
-| [Arquitectura del sistema](./mapaGestualMLR/Documentos/09-arquitectura-del-sistema.md) | Resumen por módulos y diagrama completo. |
+| [Análisis territorial](./mapaGestualMLR/Documentos/11-analisis-seguridad.md) | Consulta de seguridad, cámaras y cruce de información. |
+| [Esquemas originales del equipo](./propuestaEspacialMLR/#dos-experiencias-coordinadas) | Diagramas breves de la propuesta espacial. |
 
 ## Propuesta espacial del proyecto
 

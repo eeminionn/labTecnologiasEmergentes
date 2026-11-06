@@ -20,6 +20,10 @@ if (twinMode) {
   app.commandLine.appendSwitch('force-device-scale-factor', '1');
 }
 const smoke = process.argv.includes('--smoke');
+const trafficCheck = process.argv.includes('--traffic-check');
+const analysisCheck = process.argv.includes('--analysis-check');
+const analysisCaptures = process.argv.find(v => v.startsWith('--analysis-captures='))?.slice(20);
+const trafficCaptures = process.argv.find(v => v.startsWith('--traffic-captures='))?.slice(19);
 const smokeReport = process.argv.find(v => v.startsWith('--smoke-report='))?.slice(15);
 const screenshot = process.argv.find(v => v.startsWith('--screenshot='))?.slice(13);
 const progressScreenshot = process.argv.find(v=>v.startsWith('--progress-screenshot='))?.slice(22);
@@ -89,7 +93,7 @@ const trusted = sender => sender === win?.webContents && sender.getURL().startsW
 function openMapLink(url) {
   try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com'].includes(parsed.hostname))shell.openExternal(url); }catch{}
 }
-const csp = "default-src 'self'; script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; worker-src 'self' blob:; connect-src 'self' https://*.googleapis.com https://*.gstatic.com https://*.google.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://*.google.com; object-src 'none'; base-uri 'self'";
+const csp = "default-src 'self'; script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; worker-src 'self' blob:; connect-src 'self' https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://*.google.com; object-src 'none'; base-uri 'self'";
 const visionCsp = "default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'none'";
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -97,7 +101,7 @@ else {
   app.on('second-instance', () => { if (!twinMode) { win?.show(); win?.focus(); } });
   app.whenReady().then(async () => {
     const root = path.resolve(__dirname, '../dist');
-    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.wasm': 'application/wasm', '.task': 'application/octet-stream', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json' };
+    const types = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.wasm': 'application/wasm', '.task': 'application/octet-stream', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.json': 'application/json', '.csv': 'text/csv; charset=utf-8', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.bin': 'application/octet-stream', '.jpg': 'image/jpeg', '.ttf': 'font/ttf', '.woff2': 'font/woff2' };
     server = http.createServer(async (req, res) => {
       if (req.headers.host !== `127.0.0.1:${port}`) { res.writeHead(403); return res.end(); }
       let pathname;
@@ -188,7 +192,7 @@ else {
     ipcMain.handle('map-click', async (event, point, epoch) => {
       // Tests restore focus immediately before native input. Production keeps
       // rejecting background input and never activates the window itself.
-      if(smoke && trusted(event.sender) && !win.isFocused()){
+      if((smoke || trafficCheck || analysisCheck) && trusted(event.sender) && !win.isFocused()){
         app.focus({steal:true});win.focus();await new Promise(resolve=>setTimeout(resolve,80));
       }
       if (!trusted(event.sender) || (bridge ? !bridge.isActive(epoch) : !win.isFocused()) || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
@@ -202,7 +206,15 @@ else {
       return true;
     });
     ipcMain.on('smoke-result', async (event, report) => {
-      if (!smoke || !trusted(event.sender)) return;
+      if (!(smoke || trafficCheck || analysisCheck) || !trusted(event.sender)) return;
+      if(analysisCheck && typeof report.phase==='string' && /^analysis-[a-z]+$/.test(report.phase)){
+        if(analysisCaptures){fs.mkdirSync(analysisCaptures,{recursive:true});fs.writeFileSync(path.join(analysisCaptures,`${report.phase}.png`),(await win.webContents.capturePage()).toPNG());}
+        return;
+      }
+      if(trafficCheck && typeof report.phase==='string' && /^traffic-[a-z]+$/.test(report.phase)){
+        if(trafficCaptures){fs.mkdirSync(trafficCaptures,{recursive:true});fs.writeFileSync(path.join(trafficCaptures,`${report.phase}.png`),(await win.webContents.capturePage()).toPNG());}
+        return;
+      }
       if(report.phase==='navigation'){
         if(navigationScreenshot){const picture=await win.webContents.capturePage();fs.writeFileSync(navigationScreenshot,picture.toPNG());}
         return;
@@ -220,12 +232,12 @@ else {
       console.log(JSON.stringify(report));
       app.exit(report.ok ? 0 : 1);
     });
-    if (smoke) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, 40000);
-    await win.loadURL(`${origin}/${smoke ? '?smoke=1' : ''}`);
+    if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?140000:trafficCheck?90000:40000);
+    await win.loadURL(`${origin}/${smoke ? '?smoke=1' : trafficCheck ? '?traffic-check=1' : analysisCheck ? '?analysis-check=1' : ''}`);
     if (bridge && !bridge.isActive()) win.webContents.stopPainting();
     // Smoke exercises the same focus-gated native click path as camera input.
     // A hidden window would only test DOM dispatch and miss real input bugs.
-    if(smoke){win.show();app.focus({steal:true});win.focus();}
+    if(smoke || trafficCheck || analysisCheck){win.show();app.focus({steal:true});win.focus();}
   }).catch(error => { if (!smoke && !twinMode) dialog.showErrorBox('No se pudo iniciar', error.code === 'EADDRINUSE' ? 'El puerto local 47831 está ocupado. Cierra la otra instancia o reinicia el equipo.' : error.message); console.error(error); app.exit(1); });
   app.on('window-all-closed', () => app.quit());
   app.on('before-quit', () => { clearInterval(leaseSweep); bridge?.deactivate(); server?.close(); });

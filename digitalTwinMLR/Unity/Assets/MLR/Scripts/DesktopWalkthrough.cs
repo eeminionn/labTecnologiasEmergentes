@@ -124,7 +124,7 @@ namespace LaReina.DigitalTwin
                     if (GUI.Button(new Rect(44,200,150,32), lighting && lighting.ambientMode ? "Ver proyecciones" : "Luz de revisión")) lighting?.Toggle();
                     if (GUI.Button(new Rect(205,200,150,32), projections && projections.Paused ? "Reproducir MP4" : "Pausar MP4")) projections?.TogglePause();
                     if (GUI.Button(new Rect(44,245,311,32), "Recargar archivos de proyección")) projections?.LoadConfiguration();
-                    if (GUI.Button(new Rect(44,290,311,32), "Reiniciar intervención · 15 minutos")) ceilingDisplay?.RestartCountdown();
+                    if (GUI.Button(new Rect(44,290,311,32), "Reiniciar tiempo · 00:00")) ceilingDisplay?.RestartElapsed();
                     if (gestureBridge && gestureBridge.Authorized && GUI.Button(new Rect(44,335,311,32), "Ajustes de cámara")) gestureBridge.OpenCameraSettings();
                 }
                 else GUI.Label(new Rect(44,185,320,25), "Tab · ajustes    L · luz    Espacio · video", style);

@@ -3,100 +3,150 @@ using UnityEngine;
 
 namespace LaReina.DigitalTwin
 {
-    /// <summary>A shared live panel, repeated around the ceiling fascia. Raster glyphs retain the agreed typography without bundling font software.</summary>
+    /// <summary>Preserves the supplied ceiling artwork while both copies share one elapsed timer.</summary>
     public sealed class CeilingEventDisplay : MonoBehaviour
     {
+        [Serializable] public sealed class PanelLayout { public int width, height; }
+        [Serializable] public sealed class GlyphLayout
+        {
+            public string character;
+            public int x, y, width, height;
+            public float advance;
+        }
+        [Serializable] public sealed class AtlasLayout { public GlyphLayout[] glyphs; }
+        [Serializable] public sealed class TimerLayout { public float x, y; }
+        [Serializable] public sealed class DisplayLayout
+        {
+            public PanelLayout panel;
+            public AtlasLayout atlas;
+            public TimerLayout[] timers;
+        }
+
         public Renderer targetRenderer;
         public Texture2D basePanel;
         public Texture2D digitAtlas;
-        public int cellWidth = 64, cellHeight = 96, digitAdvance = 54;
-        public Vector2Int clockPosition = new Vector2Int(1550, 90);
-        public Vector2Int countdownPosition = new Vector2Int(780, 135);
-        public RectInt progressBar = new RectInt(710, 238, 650, 10);
-        [Min(1)] public int durationSeconds = 15 * 60;
+        public TextAsset layoutAsset;
         [Range(1, 4)] public int repetitions = 2;
-        public int RemainingSeconds => CalculateRemaining(Time.unscaledTimeAsDouble - sessionStart, durationSeconds);
-        public float RemainingFraction => Mathf.Clamp01((float)((durationSeconds - (Time.unscaledTimeAsDouble - sessionStart)) / durationSeconds));
-        public string DisplayedCountdown { get; private set; }
-        public string DisplayedClock { get; private set; }
+        public int ElapsedSeconds => CalculateElapsed(Time.unscaledTimeAsDouble - sessionStart);
+        public string DisplayedElapsed { get; private set; }
         public int RenderCount { get; private set; }
+        public int TimerInstances => layout?.timers?.Length ?? 0;
+        public bool LayoutValid { get; private set; }
         public Texture2D OutputTexture => output;
 
         Texture2D output;
         Material material;
-        Color32[] background, pixels, glyphs;
+        Color32[] background, pixels, glyphPixels;
+        DisplayLayout layout;
+        readonly GlyphLayout[] digitGlyphs = new GlyphLayout[11];
         double sessionStart;
         int lastSecond = -1;
-        string lastClock;
 
         void Start()
         {
-            if (!targetRenderer || !basePanel || !digitAtlas) { enabled = false; return; }
-            background = basePanel.GetPixels32();
-            pixels = new Color32[background.Length];
-            glyphs = digitAtlas.GetPixels32();
-            output = new Texture2D(basePanel.width, basePanel.height, TextureFormat.RGBA32, true, false)
-            { name = "Sesión municipal — reloj y cuenta regresiva", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
-            material = targetRenderer.material;
-            material.SetTexture("_BaseMap", output);
-            material.SetFloat("_Repeats", repetitions);
-            RestartCountdown();
+            if (!targetRenderer || !basePanel || !digitAtlas || !layoutAsset)
+            {
+                Debug.LogError("Faltan los recursos de la pantalla de seguridad y riesgos.", this);
+                enabled = false;
+                return;
+            }
+            try
+            {
+                layout = JsonUtility.FromJson<DisplayLayout>(layoutAsset.text);
+                ValidateLayout();
+                LayoutValid = true;
+                background = basePanel.GetPixels32();
+                pixels = new Color32[background.Length];
+                glyphPixels = digitAtlas.GetPixels32();
+                output = new Texture2D(basePanel.width, basePanel.height, TextureFormat.RGBA32, true, false)
+                { name = "Seguridad y riesgos — tiempo transcurrido", wrapMode = TextureWrapMode.Clamp, filterMode = FilterMode.Trilinear, anisoLevel = 4 };
+                material = targetRenderer.material;
+                material.SetTexture("_BaseMap", output);
+                material.SetFloat("_Repeats", repetitions);
+                RestartElapsed();
+            }
+            catch (Exception error)
+            {
+                Debug.LogError("No se pudo preparar la pantalla de seguridad y riesgos: " + error.Message, this);
+                enabled = false;
+            }
         }
+
+        void ValidateLayout()
+        {
+            if (layout?.panel == null || layout.panel.width != basePanel.width || layout.panel.height != basePanel.height ||
+                layout.atlas?.glyphs == null || layout.timers == null || layout.timers.Length == 0 ||
+                !basePanel.isReadable || !digitAtlas.isReadable)
+                throw new InvalidOperationException("La plantilla y las dimensiones de sus recursos no coinciden.");
+            foreach (var glyph in layout.atlas.glyphs)
+            {
+                int index = GlyphIndex(glyph?.character);
+                if (index < 0 || digitGlyphs[index] != null || glyph.width <= 0 || glyph.height <= 0 ||
+                    glyph.x < 0 || glyph.y < 0 || glyph.x + glyph.width > digitAtlas.width ||
+                    glyph.y + glyph.height > digitAtlas.height || !Finite(glyph.advance) || glyph.advance <= 0)
+                    throw new InvalidOperationException("El atlas contiene un glifo o un avance inválido.");
+                digitGlyphs[index] = glyph;
+            }
+            if (Array.Exists(digitGlyphs, glyph => glyph == null))
+                throw new InvalidOperationException("El atlas debe incluir los diez dígitos y los dos puntos.");
+            foreach (var timer in layout.timers)
+                if (timer == null || !Finite(timer.x) || !Finite(timer.y) || timer.x < 0 || timer.y < 0 ||
+                    timer.x >= basePanel.width || timer.y >= basePanel.height)
+                    throw new InvalidOperationException("La posición del tiempo queda fuera de la plantilla.");
+        }
+
+        static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+        static int GlyphIndex(string value) => value?.Length == 1 ? value[0] == ':' ? 10 : value[0] >= '0' && value[0] <= '9' ? value[0] - '0' : -1 : -1;
 
         void Update()
         {
-            int seconds = RemainingSeconds;
-            string clock = DateTime.Now.ToString("HH:mm");
-            if (seconds != lastSecond || clock != lastClock) RenderPanel(seconds, clock);
+            int seconds = ElapsedSeconds;
+            if (output && seconds != lastSecond) RenderPanel(seconds);
         }
 
-        public void RestartCountdown()
+        public void RestartElapsed()
         {
             sessionStart = Time.unscaledTimeAsDouble;
-            if (output) RenderPanel(durationSeconds, DateTime.Now.ToString("HH:mm"));
+            if (output) RenderPanel(0);
         }
 
-        public static int CalculateRemaining(double elapsed, int duration = 900) =>
-            Math.Max(0, Math.Min(duration, (int)Math.Ceiling(duration - elapsed)));
+        // Retain existing references to the old reset action when loading an earlier scene.
+        public void RestartCountdown() => RestartElapsed();
 
-        public static string FormatCountdown(int seconds) => $"{seconds / 60:00}:{seconds % 60:00}";
+        public static int CalculateElapsed(double elapsed) =>
+            double.IsNaN(elapsed) || elapsed <= 0 ? 0 : elapsed >= int.MaxValue ? int.MaxValue : (int)Math.Floor(elapsed);
 
-        void RenderPanel(int seconds, string clock)
+        public static string FormatElapsed(int seconds)
+        {
+            seconds = Math.Max(0, seconds);
+            return $"{seconds / 60:00}:{seconds % 60:00}";
+        }
+
+        void RenderPanel(int seconds)
         {
             Array.Copy(background, pixels, background.Length);
-            DisplayedCountdown = FormatCountdown(seconds);
-            DisplayedClock = clock;
-            StampText(clock, clockPosition);
-            StampText(DisplayedCountdown, countdownPosition);
-            int fill = Mathf.RoundToInt(progressBar.width * Mathf.Clamp01(seconds / (float)durationSeconds));
-            Color32 track = ProjectPalette.Petrol * .55f;
-            Color32 active = seconds > 60 ? ProjectPalette.Teal : ProjectPalette.Pink;
-            Color32 tip = ProjectPalette.Lime;
-            for (int y = 0; y < progressBar.height; y++)
-                for (int x = 0; x < progressBar.width; x++)
-                    PutPixel(progressBar.x + x, progressBar.y + y, x < fill ? x >= fill - 8 ? tip : active : track);
+            DisplayedElapsed = FormatElapsed(seconds);
+            foreach (var timer in layout.timers) StampText(DisplayedElapsed, timer);
             output.SetPixels32(pixels);
             output.Apply(true, false);
             lastSecond = seconds;
-            lastClock = clock;
             RenderCount++;
         }
 
-        void StampText(string value, Vector2Int position)
+        void StampText(string value, TimerLayout position)
         {
-            for (int n = 0; n < value.Length; n++)
+            float cursor = position.x;
+            foreach (char character in value)
             {
-                int glyph = value[n] == ':' ? 10 : value[n] - '0';
-                if (glyph < 0 || glyph > 10) continue;
-                for (int y = 0; y < cellHeight; y++)
-                    for (int x = 0; x < cellWidth; x++)
+                var glyph = digitGlyphs[character == ':' ? 10 : character - '0'];
+                int left = Mathf.RoundToInt(cursor), top = Mathf.RoundToInt(position.y);
+                for (int y = 0; y < glyph.height; y++)
+                    for (int x = 0; x < glyph.width; x++)
                     {
-                        int sx = glyph * cellWidth + x;
-                        int sy = digitAtlas.height - 1 - y;
-                        Color32 ink = glyphs[sy * digitAtlas.width + sx];
+                        int sx = glyph.x + x, sy = digitAtlas.height - 1 - (glyph.y + y);
+                        Color32 ink = glyphPixels[sy * digitAtlas.width + sx];
                         if (ink.a == 0) continue;
-                        int dx = position.x + n * digitAdvance + x;
-                        int dy = basePanel.height - 1 - (position.y + y);
+                        int dx = left + x, dy = basePanel.height - 1 - (top + y);
                         if (dx < 0 || dx >= basePanel.width || dy < 0 || dy >= basePanel.height) continue;
                         int index = dy * basePanel.width + dx;
                         Color32 paper = pixels[index];
@@ -104,13 +154,23 @@ namespace LaReina.DigitalTwin
                         pixels[index] = new Color32((byte)((ink.r * a + paper.r * b) / 255),
                             (byte)((ink.g * a + paper.g * b) / 255), (byte)((ink.b * a + paper.b * b) / 255), 255);
                     }
+                cursor += glyph.advance;
             }
         }
 
-        void PutPixel(int x, int topY, Color32 color)
+        public RectInt TimerBounds(int timerIndex, string value)
         {
-            if (x >= 0 && x < basePanel.width && topY >= 0 && topY < basePanel.height)
-                pixels[(basePanel.height - 1 - topY) * basePanel.width + x] = color;
+            var timer = layout.timers[timerIndex];
+            float cursor = timer.x;
+            int left = Mathf.RoundToInt(cursor), top = Mathf.RoundToInt(timer.y), right = left, bottom = top;
+            foreach (char character in value)
+            {
+                var glyph = digitGlyphs[character == ':' ? 10 : character - '0'];
+                right = Math.Max(right, Mathf.RoundToInt(cursor) + glyph.width);
+                bottom = Math.Max(bottom, top + glyph.height);
+                cursor += glyph.advance;
+            }
+            return new RectInt(left, top, right - left, bottom - top);
         }
 
         void OnDestroy()

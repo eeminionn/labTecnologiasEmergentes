@@ -1,5 +1,11 @@
 # Revisión y alcance
 
+## Revisión de la versión 0.9.3 · 23 de octubre de 2026
+
+La pantalla superior usa la página 5 de **pantallas techo.pdf**. En ejecución se comprobó que los dos tiempos avanzan juntos de **00:00 a 00:01**, que el reinicio vuelve a cero y que los píxeles fuera de ambos contadores permanecen idénticos. Se revisaron la lectura frontal y lateral, las once sillas, las guías, las colisiones y los videos. Resultado: [validacion-pantalla-seguridad-0.9.3.json](./validacion-pantalla-seguridad-0.9.3.json).
+
+La aplicación gestual no se modificó y la inferencia de la cámara física no se repitió en esta revisión; su última prueba corresponde a la versión 0.9.2. La entrega independiente de Quest 2 permanece sin cambios.
+
 ## Revisión de la versión 0.8.1
 
 La vista elevada quedó **aprobada en las once sillas de Mac**: cámara a **1,53 m al sentarse** y **1,65 m al levantarse**, sin mover los anclajes ni perder la posición al mirar alrededor. Pasaron la autorización del puesto principal, las colisiones, el descenso del mapa y las guías del piso y del techo. Los resultados están en [validacion-runtime-mac.json](./validacion-runtime-mac.json).
@@ -32,7 +38,7 @@ La versión 0.6 está aprobada en ejecución en Mac con cámara física: inicio 
 | Gráfica y videos | Paleta extraída del PDF. Los dos MP4 se reproducen y avanzan: panorama de 4096 × 456 px y mesa de 720 × 950 px. Duración y BT.709 registrados en sus metadatos. |
 | Sentarse y levantarse | Prueba aprobada en las once sillas: ojos a 1,18 m, posición fija al mirar alrededor y regreso a un espacio libre. No se registró desplazamiento de la cámara durante el giro. |
 | Huellas y recorrido | Escala y colisiones comprobadas en Mac. Se verificó el avance del recorrido de 46 huellas. Se comprobó la secuencia 1 → 2 → 3 → 4, con cambio de pie y una sola luz encendida en cada pulso. Las capturas muestran dos pasos consecutivos. Una cápsula de 51 cm de diámetro y 1,78 m de alto recorre los puntos de la guía sin encontrar obstáculos. |
-| Pantalla circular | Geometría exterior del techo conservada; panel repetido dos veces. Reloj local y contador comprobados: 900 → 899 segundos. El tiempo llega a cero sin hacerse negativo y puede reiniciarse desde ajustes. Lectura revisada desde el frente y un costado. |
+| Pantalla circular | Geometría exterior conservada; lámina de Seguridad y Riesgos repetida dos veces. Dos contadores sincronizados de tiempo transcurrido, comprobados de 00:00 a 00:01 y reiniciables desde ajustes. Lectura frontal y lateral revisada en 0.9.3. |
 | Control gestual | Puente local implementado para Mac: solo Chair_10 sentada autoriza la cámara y la imagen en vivo. Levantarse, usar otra silla o perder la autorización desactiva cámara y gestos; la última imagen del mapa queda visible en la mesa. Prueba integrada aprobada: cámara física, inferencia, imagen en la mesa, recarga, salida, bloqueo en otra silla y reingreso sin reiniciar. |
 | Cámara y vista flotante | Inicio en espejo en cada apertura. Vista con cámara y tracking que aparece al entrar a Chair_10 y se cierra al salir. Apertura, entrega de imagen y cierre al abandonar el puesto comprobados en Mac. |
 | APK para Meta Quest | La versión 0.6.0 fue compilada en ARM64 y su firma verificada. El mapa gestual no está conectado en Quest y la prueba del recorrido en un visor real sigue pendiente. |

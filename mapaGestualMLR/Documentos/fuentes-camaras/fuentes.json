@@ -1,0 +1,29 @@
+{
+  "consulta": "2026-11-06",
+  "fuentes": [
+    {
+      "nombre": "Municipalidad de La Reina. Cuenta Pública 2018",
+      "url": "https://www.lareina.cl/wp-content/uploads/2020/06/Cuenta_Publica_2018_-_Consolidado.pdf#page=113",
+      "pagina_pdf": 113,
+      "apartado": "Iluminación y cámaras de seguridad Torres Unidas",
+      "estado_en_documento": "en proceso de instalación",
+      "sha256_documento_descargado": "0b15b29a44bb9a6fa3715a9f18279eb5c0a43bf290295c350a63bc389127775a",
+      "imagen_verificada": "cuenta-publica-2018-p113.png",
+      "texto_extraido": "extracto-cuenta-publica-2018.txt",
+      "cruces_incluidos": 10,
+      "coordenadas_publicadas": false,
+      "operacion_actual_confirmada": false
+    },
+    {
+      "nombre": "Municipalidad de La Reina. La nueva cara del Barrio Comercial La Cañada",
+      "url": "https://lareina.cl/barrio-comercial-la-canada/",
+      "sha256_html_descargado": "777ae286be31942f3a9577a76a97cac2c3aa8f8e68781a7f1c5d8361d3e9c4f8",
+      "hecho_publicado": "La nota sitúa el barrio en La Cañada con Monseñor Edwards e informa siete cámaras de seguridad entre los avances implementados.",
+      "emplazamientos_representativos_incluidos": 1,
+      "coordenadas_individuales_publicadas": false,
+      "fecha_exacta_publicacion_identificada": false
+    }
+  ],
+  "geocodificacion": "Cruce representativo aproximado usando las muestras viales de OpenStreetMap ya incluidas en el proyecto. No posición de un poste.",
+  "exclusiones": "Centrales de monitoreo, lugares ambiguos y calles sin referencia suficiente; no se infieren siete posiciones individuales para La Cañada."
+}

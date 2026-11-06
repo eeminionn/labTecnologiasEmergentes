@@ -1,11 +1,15 @@
 # Recorrido virtual de la sala
 
-**Avance:** 23 de octubre de 2026 · versión 0.9.2<br>
+**Avance:** 23 de octubre de 2026 · versión 0.9.3<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al proyecto](https://github.com/eeminionn/labTecnologiasEmergentes)
 
 Pasamos la propuesta espacial a Unity para recorrer la sala y entender cómo se sienten la mesa, los puestos y las proyecciones desde adentro. Nos sirve para revisar decisiones antes de llevarlas al espacio real y comparar la experiencia de pie y sentados.
+
+## Seguridad y riesgos en la pantalla superior
+
+La pantalla circular usa la **página 5 de pantallas techo.pdf**, con la marca municipal y el tema **Seguridad y Riesgos** sobre fondo rosado. Conservamos su composición y sustituimos únicamente los dos tiempos por un contador sincronizado: parte en **00:00** y avanza segundo a segundo. **Tab → Reiniciar tiempo · 00:00** permite comenzar de nuevo. La lámina se repite alrededor del techo para leerla desde distintos puestos.
 
 ## Gráficos sobre la mesa
 
@@ -73,7 +77,7 @@ En esta versión dejamos las paredes lisas y quitamos las divisiones, marcos y a
 
 También cambiamos la línea azul del piso por huellas de zapatos. El recorrido rodea la mesa de izquierda a derecha desde la entrada, y las huellas se iluminan y apagan según avanzamos. Así la guía se relaciona con el movimiento de la persona.
 
-Al revisar el recorrido, vimos que las luces parecían avanzar de a pares. Las ajustamos para marcar una huella derecha y luego una izquierda, como al caminar. También usamos la franja circular del techo como pantalla de la sesión: muestra la hora, quién está hablando y una cuenta regresiva de 15 minutos. Repetimos la información dos veces para verla desde distintos puestos y dejamos las paredes para las fotografías del contexto.
+Al revisar el recorrido, vimos que las luces parecían avanzar de a pares. Las ajustamos para marcar una huella derecha y luego una izquierda, como al caminar. La franja circular del techo funciona como pantalla de la sesión; desde la versión 0.9.3 muestra Seguridad y Riesgos y el tiempo transcurrido. Repetimos la lámina para verla desde distintos puestos y dejamos las paredes para las fotografías del contexto.
 
 En la versión 0.4 tomamos **solo la mesa del archivo sala 002.fbx** y reacomodamos las once sillas a su alrededor. Ajustamos su apoyo en el piso sin cambiar el tamaño del mueble. También hicimos que la proyección siga la forma ovalada de la mesa, porque una imagen rectangular se salía del tablero. El contenido ahora se organiza dentro de ese contorno.
 
@@ -108,11 +112,11 @@ La nueva referencia gráfica del equipo nos llevó a usar los seis colores de La
   </tr>
   <tr>
     <td><img src="./Imagenes/pantalla-circular.png" alt="Pantalla circular en la franja del techo" width="380" /></td>
-    <td><img src="./Imagenes/panel-sesion.png" alt="Marca municipal, alcalde, hora y tiempo restante de la sesión" width="380" /></td>
+    <td><img src="./Imagenes/panel-sesion.png" alt="Marca municipal, Seguridad y Riesgos y tiempo transcurrido" width="380" /></td>
   </tr>
   <tr>
     <td>La información de la sesión rodea la mesa.</td>
-    <td>Marca municipal y tiempo restante con la gráfica del proyecto.</td>
+    <td>Gráfica de la página 5 con ambos tiempos sincronizados.</td>
   </tr>
   <tr>
     <td><img src="./Imagenes/sillas-u.png" alt="Once sillas más juntas en U y espacio libre hacia la puerta" width="380" /></td>
