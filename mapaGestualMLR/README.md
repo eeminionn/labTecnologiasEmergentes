@@ -79,7 +79,7 @@ Dejamos una sombra por mano y colores distintos para desplazamiento y zoom, para
   </tr>
 </table>
 
-## Del mapa a los gráficos
+## Datos duros e información trazable 
 
 
 Incorporamos la gráfica actualizada del equipo para probar cómo pasamos del territorio a la información. El **pin 1, magenta de Seguridad y riesgos**, abre los cinco gráficos de las páginas 2 a 6 del PDF, en el mismo orden. Son materiales de trabajo del equipo, no datos municipales validados.
