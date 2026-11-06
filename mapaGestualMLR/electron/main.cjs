@@ -232,7 +232,7 @@ else {
       console.log(JSON.stringify(report));
       app.exit(report.ok ? 0 : 1);
     });
-    if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?140000:trafficCheck?90000:40000);
+    if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?180000:trafficCheck?90000:40000);
     await win.loadURL(`${origin}/${smoke ? '?smoke=1' : trafficCheck ? '?traffic-check=1' : analysisCheck ? '?analysis-check=1' : ''}`);
     if (bridge && !bridge.isActive()) win.webContents.stopPainting();
     // Smoke exercises the same focus-gated native click path as camera input.

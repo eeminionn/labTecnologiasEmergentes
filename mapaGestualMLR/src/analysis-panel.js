@@ -87,6 +87,32 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   less.setAttribute('aria-label','Disminuir visibilidad');
   const exit=button(actions,`${prefix}-exit`,'Mapa',()=>callbacks.exit(),'analysis-exit');exit.setAttribute('aria-label','Volver al mapa');
   footer.prepend(legend,actions,note,opacityRow);panel.append(header,body,footer);
+  let timeline=null,playbackButton=null,timelineSlider=null,timelineOutput=null,playIcon=null,pauseIcon=null;
+  if(!camera) {
+    timeline=el('section','analysis-timeline-bar');timeline.hidden=true;timeline.setAttribute('aria-label','Línea de tiempo de robos');
+    playbackButton=button(timeline,'analysis-playback','',()=>callbacks.playback(),'analysis-playback');
+    playbackButton.setAttribute('aria-label','Reproducir timelapse de robos');playbackButton.setAttribute('aria-pressed','false');
+    const icon=path=>{
+      const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.setAttribute('viewBox','0 0 24 24');svg.setAttribute('aria-hidden','true');svg.setAttribute('focusable','false');
+      const shape=document.createElementNS('http://www.w3.org/2000/svg','path');shape.setAttribute('d',path);svg.append(shape);return svg;
+    };
+    playIcon=icon('M8 5 19 12 8 19Z');pauseIcon=icon('M7 5H10V19H7ZM14 5H17V19H14Z');pauseIcon.setAttribute('hidden','');
+    playbackButton.append(playIcon,pauseIcon);
+    const timelineHeading=el('div','analysis-timeline-heading');timelineOutput=el('output',null,'00:00 / 24:00');timelineOutput.setAttribute('aria-live','off');
+    timelineHeading.append(el('strong',null,'Recorrido del día'),timelineOutput);
+    timelineSlider=el('input','analysis-timeline-slider');timelineSlider.type='range';timelineSlider.id='analysis-timeline';timelineSlider.min='0';timelineSlider.max='1000';timelineSlider.step='1';timelineSlider.value='0';
+    timelineSlider.setAttribute('aria-label','Posición en el recorrido del día');timelineSlider.setAttribute('aria-valuetext','00:00 de 24:00');
+    timelineSlider.title='Arrastra para volver o ir a un momento del día.';
+    const seek=()=>callbacks.seek(Number(timelineSlider.value)/1000);
+    timelineSlider.addEventListener('pointerdown',seek);timelineSlider.addEventListener('input',seek);
+    const ticks=el('div','analysis-timeline-ticks');
+    for(const hour of [0,6,12,18,24]) {
+      const tick=button(ticks,`analysis-time-${hour}`,`${String(hour).padStart(2,'0')} h`,()=>callbacks.seek(hour/24));
+      tick.setAttribute('aria-label',hour===24?'Ir al final del día':`Ir a las ${String(hour).padStart(2,'0')}:00`);
+    }
+    timeline.append(timelineHeading,timelineSlider,ticks);overlay.append(timeline);
+    for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])timeline.addEventListener(type,event=>event.stopPropagation());
+  }
   const popover=el('section','analysis-date-popover');popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-label',camera?'Elegir filtros de cámaras':'Elegir período');
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar selección de período');
@@ -126,6 +152,7 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
     title.textContent=next.crossed?(camera?'Cámaras':'Seguridad'):'Análisis';category.hidden=next.crossed;
     categoryButtons.forEach(e=>e.setAttribute('aria-pressed',String(e.dataset.category===kind)));
     controls.forEach(e=>{e.disabled=!next.loaded;});exit.disabled=false;
+    if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
     filterButtons.forEach(e=>e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value)));
     modeButtons.forEach((e,i)=>e.setAttribute('aria-pressed',String(['all','year','month'][i]===next.temporalMode)));
@@ -152,11 +179,21 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
   }
+  function updatePlayback(playback={}) {
+    if(!timeline)return;
+    const playing=playback?.playing===true,position=Math.max(0,Math.min(1,Number(playback?.position)||0)),minutes=Math.round(position*24*60);
+    const clock=`${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
+    playIcon.toggleAttribute('hidden',playing);pauseIcon.toggleAttribute('hidden',!playing);playbackButton.setAttribute('aria-pressed',String(playing));
+    playbackButton.setAttribute('aria-label',playing?'Pausar timelapse de robos':'Reproducir timelapse de robos');
+    playbackButton.title=playing?'Pausar el recorrido':'Reproducir el recorrido del día';
+    timelineSlider.value=String(Math.round(position*1000));timelineSlider.style.setProperty('--timeline-progress',`${position*100}%`);
+    timelineSlider.setAttribute('aria-valuetext',`${clock} de 24:00`);timelineOutput.textContent=`${clock} / 24:00`;
+  }
   function targets(){
     if(panel.hidden)return[];
     const outer=container.getBoundingClientRect(),p=panel.getBoundingClientRect(),b=body.getBoundingClientRect();
-    return controls.filter(e=>{if(e.disabled||!e.getClientRects().length)return false;const r=e.getBoundingClientRect(),c=popover.contains(e)?popover.getBoundingClientRect():body.contains(e)?b:p;return r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;})
+    return controls.filter(e=>{if(e.disabled||!e.getClientRects().length)return false;const r=e.getBoundingClientRect(),c=timeline?.contains(e)?timeline.getBoundingClientRect():popover.contains(e)?popover.getBoundingClientRect():body.contains(e)?b:p;return r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;})
       .map(e=>{const r=e.getBoundingClientRect();return{id:e.id,x:r.left+r.width/2-outer.left,y:r.top+r.height/2-outer.top,width:r.width,height:r.height,element:e,priority:25};});
   }
-  return {element:panel,body,popover,controls,update,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};
+  return {element:panel,body,popover,timeline,controls,update,updatePlayback,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};
 }

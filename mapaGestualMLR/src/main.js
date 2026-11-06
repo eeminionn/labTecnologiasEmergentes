@@ -162,7 +162,7 @@ async function enterAnalysis() {
   try {
     const module=await import('./analysis-view.js');
     if(generation!==analysisGeneration)return;
-    instance=await module.createAnalysisView($('map'),{map,notify,onChange:()=>cancelGesture(),onExit:leaveAnalysis});
+    instance=await module.createAnalysisView($('map'),{map,notify,onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();},onExit:leaveAnalysis});
     if(generation!==analysisGeneration){instance.destroy();return;}
     analysisView=instance; await instance.ready;
     if(generation!==analysisGeneration){instance.destroy();return;}
@@ -1067,9 +1067,10 @@ async function verifyAnalysis() {
   const hold=async id=>{
     const target=selectionTargets($('map').getBoundingClientRect()).find(item=>item.element.id===id);
     if(!target)throw new Error(`Análisis: control no visible ${id}`);
+    if(!document.hasFocus())await window.desktop.click({x:-1,y:-1});
     await waitFor(()=>document.hasFocus(),12000,'ventana del mapa en primer plano');
     const result=await verifyHoldAt(target,fixture,()=>trustedClicks);holds.push({id,...result});
-    if(!result.clickAccepted || result.clicks!==1 || !result.noEarlyClick || result.elapsedMs<1500)throw new Error(`Selección de Análisis no completada: ${id}`);
+    if(!result.clickAccepted || result.clicks!==1 || !result.noEarlyClick || result.elapsedMs<1500)throw new Error(`Selección de Análisis no completada: ${id} ${JSON.stringify(result)}`);
   };
   const waitLayer=()=>waitFor(()=>map.info().analysisLayerLoaded,5000,'raster de calor visible');
   try {
@@ -1101,6 +1102,46 @@ async function verifyAnalysis() {
       return text.width>0 && text.left>=box.left+5 && text.right<=box.right-5 && button.scrollWidth<=button.clientWidth;
     });
     await capture('general');
+    analysisView.setFilters({year:'2024',month:'07',resolution:'no',robbery:['sorpresa']});await waitLayer();
+    await hold('analysis-playback');await waitLayer();
+    const playing=analysisView.info();
+    checks.playbackStarts=playing.playback.playing && playing.playback.position>0
+      && $('analysis-playback').getAttribute('aria-pressed')==='true';
+    await sleep(650);
+    const fading=[...$('map').querySelectorAll('img[alt="Concentración de incidentes de seguridad"]')].map(image=>Number(getComputedStyle(image).opacity));
+    checks.playbackGradualTransition=map.info().analysisTransitioning && fading.length===2
+      && fading.every(opacity=>opacity>0&&opacity<.62) && Math.abs(fading[0]+fading[1]-fading[0]*fading[1]-.62)<.005;
+    checks.playbackProgress=analysisView.info().playback.position>playing.playback.position
+      && Number($('analysis-timeline').value)>0;
+    await capture('timelapse');
+    await hold('analysis-playback');
+    const pausedPosition=analysisView.info().playback.position;await sleep(350);
+    checks.playbackPauses=!analysisView.info().playback.playing && analysisView.info().playback.position===pausedPosition
+      && $('analysis-playback').getAttribute('aria-pressed')==='false';
+    await hold('analysis-time-18');await waitLayer();
+    checks.playbackGestureSeek=analysisView.info().playback.position===.75 && analysisView.info().filters.period==='noche';
+    const timeline=$('analysis-timeline').getBoundingClientRect();
+    await window.desktop.click({x:timeline.left+timeline.width*.375,y:timeline.top+timeline.height/2});await waitLayer();
+    const nativeSeek=analysisView.info().playback;
+    checks.playbackNativeSeek=!nativeSeek.playing && nativeSeek.position>.25 && nativeSeek.position<.5
+      && Math.abs(Number($('analysis-timeline').value)/1000-nativeSeek.position)<.002;
+    analysisView.seekPlayback(.375);await waitLayer();
+    const morning=analysisView.info();snapshots.timelapse=morning;
+    const expectedMorning=sourceIncidents.filter(record=>record.year==='2024'&&record.month==='07'&&!record.resolved&&record.robberyType==='sorpresa'&&record.hour>=6&&record.hour<12).length;
+    checks.playbackFilters=morning.filteredCount===expectedMorning && morning.filters.year==='2024'
+      && morning.filters.month==='07' && morning.filters.resolution==='no' && morning.filters.robbery[0]==='sorpresa';
+    checks.playbackExactSeek=morning.playback.mix===.5 && $('analysis-timeline').value==='375';
+    analysisView.setFilters({resolution:'all'});await waitLayer();
+    checks.playbackFilterKeepsPosition=analysisView.info().playback.position===.375 && $('analysis-timeline').value==='375'
+      && analysisView.info().playback.mix===.5 && map.info().analysisTransitioning && !analysisView.info().playback.playing;
+    analysisView.setFilters({resolution:'no'});await waitLayer();
+    analysisView.seekPlayback(.125);await waitLayer();
+    checks.playbackBackwards=analysisView.info().playback.position===.125 && analysisView.info().filters.period==='madrugada';
+    await capture('lineatiempo');
+    analysisView.togglePlayback();analysisView.setFilters({period:'tarde'});await waitLayer();
+    checks.playbackManualOverride=!analysisView.info().playback.playing && analysisView.info().filters.period==='tarde'
+      && analysisView.info().playback.position===.5;
+    await hold('analysis-reset');await waitLayer();
     await hold('analysis-robbery-picker');
     checks.robberyPicker=analysisView.info().picker==='robbery';
     await hold('analysis-robbery-intimidacion');await waitLayer();
@@ -1161,6 +1202,8 @@ async function verifyAnalysis() {
     const waitCameras=()=>waitFor(()=>map.info().cameraAnalysisLoaded&&map.info().cameraAnalysisVisible,5000,'capa de cámaras visible');
     await hold('analysis-category-cameras');await waitCameras();
     const cameras=analysisView.info();snapshots.camaras=cameras;
+    checks.playbackOnlySecurity=!analysisView.targets().some(target=>target.id==='analysis-playback')
+      && !document.querySelector('.analysis-camera-panel .analysis-playback') && !cameras.playback.playing;
     checks.cameraDatasetComplete=cameras.activeCategory==='cameras' && !cameras.crossed && cameras.datasetCount===320 && cameras.filteredCount===320
       && cameras.summary.published===11 && cameras.summary.simulated===309;
     checks.cameraPointsSeparate=map.info().cameraAnalysisMode==='points' && map.info().cameraAnalysisPointCount===320 && !map.info().analysisLayerVisible;
@@ -1245,17 +1288,28 @@ async function verifyAnalysis() {
     checks.crossHandDetails=crossDetail?.source==='hand' && crossDetail.security?.referenceDate==='2023-12-31'
       && crossDetail.cameras?.radiusMetres===250 && crossDetail.cameras.total<=expectedCamerasJuly2024;
     window.desktop.reportSmoke({phase:'analysis-cruce'});await sleep(150);
+    const fixedCameras=JSON.stringify(analysisView.info().datasets.cameras),fixedCameraLayer=$('map').querySelector('.leaflet-analysis-cameras-pane').firstChild;
+    await hold('analysis-playback');await waitLayer();
+    await sleep(450);await waitLayer();
+    checks.crossPlaybackKeepsCameras=analysisView.info().playback.playing && analysisView.info().crossed
+      && fixedCameras===JSON.stringify(analysisView.info().datasets.cameras)
+      && fixedCameraLayer===$('map').querySelector('.leaflet-analysis-cameras-pane').firstChild;
+    await capture('timelapsecruce');
     await hold('analysis-cross-close');await waitCameras();
+    checks.playbackStopsWhenSecurityHidden=!analysisView.info().playback.playing;
     checks.returnToSeparate=!analysisView.info().crossed && analysisView.info().activeCategory==='cameras'
       && !map.info().analysisLayerVisible && map.info().cameraAnalysisVisible && map.info().cameraAnalysisPointCount===expectedCamerasJuly2024;
     await hold('camera-analysis-category-security');await waitLayer();
+    analysisView.setFilters({period:'all'});await waitLayer();
     checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
     await hold('analysis-exit');
     checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible && map.targets().length===3;
     checks.originalGraphics=contentViewer.manifest.slides.length===5;
     await enterAnalysis();await analysisView.ready;await waitLayer();
     checks.reopen=analysisView.info().datasetCount===60000 && document.querySelectorAll('.analysis-experience').length===1;
+    const closingAnalysis=analysisView;closingAnalysis.togglePlayback();
     await enterExperience({animate:false});
+    checks.playbackCleanup=!closingAnalysis.info().playback.playing;
     checks.experienceCompatibility=!analysisView && trafficExperience.info().ready && !map.info().analysisMode;
     leaveExperience();checks.cleanup=!document.querySelector('.analysis-experience') && !document.querySelector('.traffic-experience');
     window.desktop.reportSmoke({version:appVersion,ok:Object.values(checks).every(Boolean),checks,snapshots,holds,trustedClicks,gestureSelections:holds.length,cameraOpened:false});

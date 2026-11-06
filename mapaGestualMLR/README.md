@@ -3,7 +3,7 @@
 ### Interacción y análisis de información territorial
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 6 de noviembre de 2026 · versión 0.7.0<br>
+**Última actualización:** 6 de noviembre de 2026 · versión 0.7.1<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
@@ -134,6 +134,8 @@ Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como p
 ### Ajustes de la interfaz
 
 Ampliamos los paneles y el espacio de los botones de horario. Los tipos de cámara y de robo permiten **combinar opciones** y quitarlas al volver a pulsar. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**. Retiramos los filtros y rótulos de procedencia de la vista para concentrar la lectura en el mapa.
+
+Sumamos una **barra de reproducción de 00 a 24 horas**, con play, pausa y un deslizador para avanzar o retroceder. El recorrido completo dura doce segundos y mezcla gradualmente los cuatro horarios de Seguridad, conservando los demás filtros elegidos. En el cruce de información, las cámaras permanecen fijas.
 
 Los incidentes son simulados y las cámaras combinan referencias publicadas con emplazamientos de demostración. La procedencia permanece en los CSV y sus metadatos; estas bases no representan estadísticas ni un catastro municipal vigente. Las agrupaciones de robo se apoyan en el [glosario de la Biblioteca del Congreso Nacional](https://www.bcn.cl/siit/reportescomunales/glosario.html).
 

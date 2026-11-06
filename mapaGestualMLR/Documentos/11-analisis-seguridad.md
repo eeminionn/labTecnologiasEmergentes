@@ -1,6 +1,6 @@
 # Análisis territorial
 
-**Actualización:** 6 de noviembre de 2026 · versión 0.7.0
+**Actualización:** 6 de noviembre de 2026 · versión 0.7.1
 
 [Volver a la bitácora](../README.md#actualización-análisis-territorial)
 
@@ -21,3 +21,5 @@ El ejemplo de 2024 se construyó con pocos equipos cerca de tres focos de incide
 ## Controles
 
 Los selectores de período aparecen después de elegir Año o Mes. Los botones de tipos permiten añadir y quitar opciones; seleccionar todos o quitar el último vuelve a Todos. **Restablecer** limpia los filtros y **CSV** descarga la base completa.
+
+La barra inferior recorre el día en un ciclo de doce segundos. **Play / Pausa** controla la reproducción y el deslizador permite retroceder o elegir una posición exacta entre 00:00 y 24:00. Los colores interpolan los cuatro tramos horarios; las marcas también se pueden seleccionar con la mano. Solo se anima la capa de robos con sus filtros activos. Cambiar un filtro de Seguridad, ocultar esta capa o salir de Análisis detiene la reproducción; las cámaras conservan su representación.
