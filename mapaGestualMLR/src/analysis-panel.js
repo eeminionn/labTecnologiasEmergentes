@@ -1,5 +1,5 @@
 import { SECURITY_ROBBERY_TYPES } from './analysis-data.js';
-import { ANALYSIS_YEARS } from './analysis-catalog.js';
+import { ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS } from './analysis-catalog.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const number = value => new Intl.NumberFormat('es-CL').format(value);
 export const CAMERA_CHOICES = {
@@ -20,7 +20,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   panel.setAttribute('aria-label',label);
   panel.dataset.kind=kind;
   function button(parent,id,label,callback,cls='') {
-    const e=el('button',cls,label);e.id=id;e.type='button';e.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();callback(event,e);});parent.append(e);controls.push(e);return e;
+    const e=el('button',cls,label);e.id=id;e.type='button';e.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(e.getAttribute('aria-disabled')!=='true')callback(event,e);});parent.append(e);controls.push(e);return e;
   }
   const header=el('header','analysis-heading');
   const titleRow=el('div','analysis-title-row'),title=el('h1',null,'Análisis del mapa');
@@ -35,14 +35,15 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const totalRow=el('div','analysis-total-row'),total=el('strong',null,'—');total.id=`${prefix}-total`;
   const totalLabel=el('span','analysis-total-label',layer.count);totalRow.append(total,totalLabel);
   const selectedPeriod=el('p','analysis-selected-period','Cargando datos…');
-  selectedPeriod.setAttribute('role','status');
+  (resource?stats:selectedPeriod).setAttribute('role','status');
   const empty=el('p','analysis-empty',resource?'No hay ubicaciones para mostrar.':`No hay ${layer.count} con estos filtros. Prueba con otro período o restablece los filtros.`);empty.hidden=true;
   stats.append(resultLabel,totalRow,selectedPeriod,empty);
+  const monitoring=kind==='fixed'?el('p','analysis-monitoring-count'):null;
+  if(monitoring)stats.append(monitoring);
   body.append(stats);
   if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
   const resourceList=kind==='fixed'?el('div','analysis-resource-list'):null;
   let currentRecords=null;
-  if(resourceList)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
   function group(key,label,options,callback) {
     const f=el('fieldset',`analysis-filter analysis-filter-${key}`),legend=el('legend',null,label),g=el('div','analysis-options');
     g.setAttribute('role','group');g.setAttribute('aria-label',label);
@@ -52,9 +53,26 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     }
     f.append(legend,g);body.append(f);return f;
   }
+  if(resource)group('year','Año',ANALYSIS_YEARS.map(year=>[year,year]),year=>callbacks.resourceFilters({year}));
+  if(resourceList)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
+  let ranking, rankRange, rankValue, rankLess, rankMore;
   if(kind==='alarms'){
-    group('year','Año',ANALYSIS_YEARS.map(year=>[year,year]),year=>callbacks.alarmFilters({year}));
-    group('usage','Uso de los botones',[['all','Todos'],['top','Más usados']],usage=>callbacks.alarmFilters({usage}));
+    group('usage','Uso de los botones',[['all','Todos'],['top','Más usados']],usage=>callbacks.resourceFilters({usage}));
+    ranking=el('div','analysis-ranking');ranking.hidden=true;
+    const rankHeading=el('div','analysis-ranking-heading');
+    const rankLabel=el('label',null,'Cantidad de botones');
+    rankRange=el('input');rankRange.type='range';rankRange.min='1';rankRange.max=String(ALARM_RANK_MAX);rankRange.value=String(ALARM_RANK_DEFAULT);
+    rankRange.id=`${prefix}-rank-limit`;rankLabel.htmlFor=rankRange.id;
+    rankValue=el('span','analysis-ranking-value');
+    rankHeading.append(rankLabel,rankValue);
+    const rankControls=el('div','analysis-ranking-controls');
+    rankLess=button(rankControls,`${prefix}-rank-less`,'−',()=>callbacks.resourceFilters({limit:rankRange.valueAsNumber-1}));
+    rankLess.setAttribute('aria-label','Mostrar un botón menos');
+    rankRange.addEventListener('input',()=>callbacks.resourceFilters({limit:rankRange.valueAsNumber}));
+    rankControls.append(rankRange);
+    rankMore=button(rankControls,`${prefix}-rank-more`,'+',()=>callbacks.resourceFilters({limit:rankRange.valueAsNumber+1}));
+    rankMore.setAttribute('aria-label','Mostrar un botón más');
+    ranking.append(rankHeading,rankControls);body.append(ranking);
   }
   const timeField=el('fieldset','analysis-filter analysis-filter-date'),timeLegend=el('legend',null,'Período'),timeModes=el('div','analysis-options');
   ['all','year','month'].forEach((mode,i)=>modeButtons.push(button(timeModes,`${prefix}-mode-${mode}`,['Todo','Año','Mes'][i],()=>callbacks.mode(mode))));
@@ -80,7 +98,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   }
   const footer=el('footer','analysis-footer');
   const actions=el('div','analysis-actions');
-  if(!resource)button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
+  button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
   const compare=button(actions,`${prefix}-cross`,'Añadir comparación',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
   compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
   const opacityRow=el('div','analysis-opacity'),opacityLabel=el('label',null,'Visibilidad'),opacityValue=el('output',null,'100%');
@@ -168,9 +186,18 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const f=next.filters;
     filterButtons.forEach(e=>{
       e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value));
-      if(e.dataset.filter==='year')e.disabled=!next.loaded||!next.usageByYear?.has(e.dataset.value);
-      if(e.dataset.filter==='usage'&&e.dataset.value==='top')e.disabled=!next.loaded||!next.mostUsed?.length;
+      if(e.dataset.filter==='year')e.disabled=!next.loaded||!next.historyByYear?.has(e.dataset.value);
+      if(e.dataset.filter==='usage'&&e.dataset.value==='top')e.disabled=!next.loaded||!next.rankCount;
     });
+    if(ranking){
+      ranking.hidden=f.usage!=='top';
+      const max=Math.max(1,next.rankCount||0);
+      rankRange.max=String(max);rankRange.value=String(f.limit);rankRange.disabled=!next.loaded;
+      const count=`${f.limit} ${f.limit===1?'botón':'botones'}`;
+      rankValue.textContent=count;rankRange.setAttribute('aria-valuetext',count);
+      rankLess.setAttribute('aria-disabled',String(f.limit<=1));
+      rankMore.setAttribute('aria-disabled',String(f.limit>=max));
+    }
     modeButtons.forEach((e,i)=>e.setAttribute('aria-pressed',String(['all','year','month'][i]===next.temporalMode)));
     dateSelection.hidden=next.temporalMode==='all';monthPicker.hidden=next.temporalMode!=='month';
     yearPicker.textContent=`${next.selectedYear} ▾`;monthPicker.textContent=`${MONTHS[Number(next.selectedMonth)-1]} ▾`;
@@ -178,36 +205,45 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       const value=e.dataset.option==='year'?next.selectedYear:e.dataset.option==='month'?next.selectedMonth:f[e.dataset.option];
       e.setAttribute('aria-pressed',String(Array.isArray(value)?value.includes(e.dataset.value):value===e.dataset.value));
     }
-    total.textContent=next.loaded?number(next.summary.total):'—';
+    const resultTotal=next.loaded?number(next.summary.total):'—';
+    if(total.textContent!==resultTotal)total.textContent=resultTotal;
     const hour=SECURITY_CHOICES.period.find(item=>item[0]===f.period);
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
       :kind==='alarms'?(f.year?`Pulsaciones de referencia · ${f.year}`:'Sin datos de pulsaciones')
-        :resource?'Referencias territoriales para análisis'
+        :resource?(f.year?`Estado de referencia al cierre de ${f.year}`:'Sin historial de estado')
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
+    if(monitoring){
+      monitoring.hidden=!next.loaded||!f.year;
+      const active=next.summary.monitoring;
+      const status=`${number(active||0)} monitoreando · ${number(next.summary.total-(active||0))} fuera de servicio`;
+      if(monitoring.textContent!==status)monitoring.textContent=status;
+    }
     for(const [key,trigger] of Object.entries(cameraTriggers)){
       const label={robbery:'Tipo de robo',period:'Horario',type:'Tipo de cámara',state:'Estado'}[key];
       const selected=f[key],options=key==='robbery'?SECURITY_ROBBERY_TYPES.map(t=>[t.value,t.label]):key==='period'?SECURITY_CHOICES.period:CAMERA_CHOICES[key];
       const detail=selected==='all'?'Todos':Array.isArray(selected)?selected.length===1?options.find(c=>c[0]===selected[0])?.[1]:`${selected.length} seleccionados`:options.find(c=>c[0]===selected)?.[1];
       trigger.textContent=`${label}: ${key==='period'?hour?.[1]||'Todo el día':detail||'Todos'} ▾`;
     }
-    if(resourceList&&currentRecords!==next.records){
-      currentRecords=next.records;
+    if(resourceList&&currentRecords!==next.filtered){
+      currentRecords=next.filtered;
       for(const e of resourceList.querySelectorAll('button'))controls.splice(controls.indexOf(e),1);
       resourceList.replaceChildren();
       for(const record of currentRecords||[]){
         const item=button(resourceList,`${prefix}-loc-${record.id}`,record.title,(_,anchor)=>callbacks.locate(record,anchor),'analysis-resource-location');
+        if(record.monitoringStatus)item.append(el('span','analysis-monitoring-status',MONITORING_STATUS_LABELS[record.monitoringStatus]));
         item.append(el('small',null,record.address));
       }
     }
-    if(resource)totalLabel.textContent=next.summary.total===1?(kind==='alarms'?'botón':'ubicación'):layer.count;
+    if(resource){
+      const unit=next.summary.total===1?(kind==='alarms'?'botón':'ubicación'):layer.count;
+      if(totalLabel.textContent!==unit)totalLabel.textContent=unit;
+    }
     opacityRow.hidden=!next.crossed;compare.hidden=!primary;
     compare.textContent=next.crossed?'Cambiar comparación':'Añadir comparación';
-    actions.hidden=!primary&&!!resource;
-    footer.hidden=actions.hidden&&opacityRow.hidden;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
   }
@@ -224,7 +260,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   function targets(){
     if(panel.hidden)return[];
     const outer=container.getBoundingClientRect(),p=panel.getBoundingClientRect(),b=body.getBoundingClientRect();
-    return controls.filter(e=>{if(e.disabled||!e.getClientRects().length)return false;const r=e.getBoundingClientRect(),c=timeline?.contains(e)?timeline.getBoundingClientRect():popover.contains(e)?popover.getBoundingClientRect():body.contains(e)?b:p;return r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;})
+    return controls.filter(e=>{if(e.disabled||e.getAttribute('aria-disabled')==='true'||!e.getClientRects().length)return false;const r=e.getBoundingClientRect(),c=timeline?.contains(e)?timeline.getBoundingClientRect():popover.contains(e)?popover.getBoundingClientRect():body.contains(e)?b:p;return r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;})
       .map(e=>{const r=e.getBoundingClientRect();return{id:e.id,x:r.left+r.width/2-outer.left,y:r.top+r.height/2-outer.top,width:r.width,height:r.height,element:e,priority:25};});
   }
   return {element:panel,body,popover,timeline,controls,update,updatePlayback,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};

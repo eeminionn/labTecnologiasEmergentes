@@ -16,6 +16,12 @@ export const ANALYSIS_GROUPS = Object.freeze([
 export const ANALYSIS_LAYERS = Object.freeze(ANALYSIS_GROUPS.flatMap(({ layers }) => layers));
 export const getAnalysisLayer = id => ANALYSIS_LAYERS.find(layer => layer.id === id);
 export const ANALYSIS_YEARS = Object.freeze(['2023', '2024', '2025']);
+export const ALARM_RANK_DEFAULT = 10;
+export const ALARM_RANK_MAX = 15;
+export const MONITORING_STATUS_LABELS = Object.freeze({
+  monitoreando: 'Monitoreando',
+  fuera_de_servicio: 'Fuera de servicio'
+});
 
 export function chooseAnalysisLayer(selection, id, role) {
   if (!getAnalysisLayer(id) || !['primary', 'compare'].includes(role)) return null;
@@ -43,29 +49,38 @@ export function parseSimulatedSecurityResources(text) {
   });
 }
 
-export function parseAlarmUsage(text) {
+function parseResourceHistory(text, column, parseValue) {
   const [header, ...rows] = csvRows(text);
-  if (header?.join(',') !== 'id,anio,pulsaciones') {
-    throw new Error('El archivo de pulsaciones no tiene las columnas requeridas.');
+  if (header?.join(',') !== `id,anio,${column}`) {
+    throw new Error('El historial de recursos no tiene las columnas requeridas.');
   }
-  const usageByYear = new Map();
+  const historyByYear = new Map();
   for (const [index, row] of rows.entries()) {
-    const [id, year, count] = row;
-    const usage = usageByYear.get(year) ?? new Map();
+    const [id, year, raw] = row;
+    const history = historyByYear.get(year) ?? new Map();
+    const value = parseValue(raw);
     if (row.length !== header.length || !/^[a-z0-9-]+$/.test(id) || !/^[1-9]\d{3}$/.test(year)
-      || !/^\d+$/.test(count) || !Number.isSafeInteger(Number(count)) || usage.has(id)) {
-      throw new Error(`La fila ${index + 2} del archivo de pulsaciones no es válida.`);
+      || value === null || history.has(id)) {
+      throw new Error(`La fila ${index + 2} del historial de recursos no es válida.`);
     }
-    usage.set(id, Number(count));
-    usageByYear.set(year, usage);
+    history.set(id, value);
+    historyByYear.set(year, history);
   }
-  return usageByYear;
+  return historyByYear;
 }
 
-export function mostUsedAlarmButtons(records) {
+export function parseAlarmUsage(text) {
+  return parseResourceHistory(text, 'pulsaciones', value => /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : null);
+}
+
+export function parseFixedPointHistory(text) {
+  return parseResourceHistory(text, 'estado', value => Object.hasOwn(MONITORING_STATUS_LABELS, value) ? value : null);
+}
+
+export function mostUsedAlarmButtons(records, limit = ALARM_RANK_DEFAULT) {
   return records.filter(record => record.activations > 0)
     .sort((a, b) => b.activations - a.activations || a.id.localeCompare(b.id))
-    .slice(0, 10);
+    .slice(0, limit);
 }
 
 /** Documented and demonstration locations are validated together. */

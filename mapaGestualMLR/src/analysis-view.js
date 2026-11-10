@@ -4,12 +4,13 @@ import { parseSecurityCSV, filterSecurityRecords, buildDensitySurface, boundaryP
 import { parseCameraCSV, filterCameraRecords, summarizeCameraRecords, cameraHeatColor, createCameraSpatialIndex, normalizeCameraTypes, toggleCameraType } from './camera-analysis-data.js';
 import { createAnalysisPanel, SECURITY_CHOICES, CAMERA_CHOICES } from './analysis-panel.js';
 import { createAnalysisPlayback } from './analysis-playback.js';
-import { ANALYSIS_LAYERS, ANALYSIS_YEARS, getAnalysisLayer, chooseAnalysisLayer, parseSimulatedSecurityResources, parseAlarmUsage, mostUsedAlarmButtons, readSecurityResources, nearbySecurityResources } from './analysis-catalog.js';
+import { ANALYSIS_LAYERS, ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS, getAnalysisLayer, chooseAnalysisLayer, parseSimulatedSecurityResources, parseAlarmUsage, parseFixedPointHistory, mostUsedAlarmButtons, readSecurityResources, nearbySecurityResources } from './analysis-catalog.js';
 import { createLayerPicker } from './analysis-layer-picker.js';
 import { createResourceMarkers } from './analysis-resource-markers.js';
 
 const boundary=JSON.parse(boundaryText),number=value=>new Intl.NumberFormat('es-CL').format(value);
 const defaults={security:{year:'all',month:'all',period:'all',robbery:'all'},cameras:{year:'all',month:'all',state:'all',type:'all'}};
+const resourceDefaults={fixed:{year:null},alarms:{year:null,usage:'all',limit:ALARM_RANK_DEFAULT}};
 const inside=(lng,lat)=>pointInsideBoundary(lng,lat,boundary);
 const radiusMetres=250;
 function densityImage(surface,camera=false) {
@@ -37,13 +38,15 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const defaultOpacity=(kind, compare=false)=>kind==='security'?(compare ? .45 : .62):kind==='cameras'&&datasets.cameras?.display==='heatmap'?(compare ? .55 : .62):.9;
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
-    datasets[kind]={records:[],filtered:[],metadata:null,filters:kind==='alarms'?{year:null,usage:'all'}:{...defaults[kind]},summary:{total:0},surface:null,image:null,index:null,dateRange:null,temporalMode:'all',selectedYear:'2025',selectedMonth:'12',display:kind==='security'?'heatmap':'points',opacity:defaultOpacity(kind)};
+    datasets[kind]={records:[],filtered:[],metadata:null,filters:{...(resourceDefaults[kind]??defaults[kind])},summary:{total:0},surface:null,image:null,index:null,dateRange:null,temporalMode:'all',selectedYear:'2025',selectedMonth:'12',display:kind==='security'?'heatmap':'points',opacity:defaultOpacity(kind)};
   }
   const overlay=document.createElement('section');overlay.className='analysis-experience';overlay.dataset.state='loading';overlay.setAttribute('aria-label','Análisis territorial');container.append(overlay);
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
-      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),reset:()=>setDatasetFilters(kind,defaults[kind]),cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,alarmFilters:setAlarmFilters,catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
+      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),
+      reset:()=>layer.resource?setResourceFilters(kind,{...resourceDefaults[kind],year:latestResourceYear(datasets[kind])}):setDatasetFilters(kind,defaults[kind]),
+      cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
   }
   const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
@@ -73,7 +76,22 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   for(const event of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])tooltip.addEventListener(event,e=>e.stopPropagation());
   const hoverRing=el('div','analysis-hover-ring');hoverRing.hidden=true;overlay.append(hoverRing,tooltip);
   const resourceMarkers=createResourceMarkers(container,{map,onSelect:(record,event)=>showResource(record,{pin:true,anchor:event.currentTarget}),
-    onHover:(record,event)=>{if(!pinned&&!catalog.isOpen)showResource(record,{anchor:event.currentTarget});}});
+    onHover:(record,event)=>{
+      if(catalog.isOpen)return;
+      const anchor=event.currentTarget;
+      if(event.type==='focus'&&anchor.matches(':focus-visible')){
+        const rect=anchor.getBoundingClientRect(),x=rect.left+rect.width/2,y=rect.top+rect.height/2;
+        if(!anchor.contains(document.elementFromPoint(x,y))){
+          const outer=container.getBoundingClientRect(),{min,max}=cardBounds();
+          map.pan(outer.left+(min+max)/2-x,outer.top+outer.height/2-y);
+          requestAnimationFrame(()=>{
+            if(!destroyed&&document.activeElement===anchor)showResource(record,{anchor});
+          });
+          return;
+        }
+      }
+      if(!pinned)showResource(record,{anchor});
+    }});
   const playback=createAnalysisPlayback({
     onFrame:renderTimelineFrame,
     onStateChange:()=>{if(!destroyed&&!suppressTimelineFrame){updatePanels();onChange({reason:'playback',...info()});}}
@@ -116,8 +134,9 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const unsubscribeView=map.onViewChange?.(()=>{clearHover();closeAllPickers();catalog.close();});map.setAnalysisMode(true);updatePanels();map.home();
   const ready=(async()=>{
     const resource=async(url,format)=>{const r=await fetch(url,{signal:abort.signal});if(!r.ok)throw new Error('No se pudo cargar la base de análisis.');return format==='json'?r.json():r.text();};
-    const [securityCSV,securityMeta,cameraCSV,cameraMeta,usageByYear,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
+    const [securityCSV,securityMeta,cameraCSV,cameraMeta,usageByYear,fixedHistory,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
       resource('/analysis/pulsaciones-botones.csv').then(parseAlarmUsage).catch(()=>new Map()),
+      resource('/analysis/estado-puntos-fijos.csv').then(parseFixedPointHistory).catch(()=>new Map()),
       Promise.all([
         resource('/analysis/recursos-seguridad.json','json').then(value=>readSecurityResources(value,inside)),
         resource('/analysis/recursos-simulados.csv').then(parseSimulatedSecurityResources).catch(()=>[])
@@ -130,14 +149,10 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     for(const layer of ANALYSIS_LAYERS.filter(layer=>layer.resource)){
       const d=datasets[layer.id];
       d.records=resources.filter(record=>record.kind===layer.id);
-      d.filtered=d.records;
-      if(layer.id==='alarms'){
-        d.usageByYear=usageByYear;
-        d.filters.year=ANALYSIS_YEARS.findLast(year=>usageByYear.has(year))??null;
-        if(d.filters.year)d.temporalMode='year';
-        filterAlarms(d);
-      }
-      summarizeResources(d);
+      d.historyByYear=layer.id==='alarms'?usageByYear:fixedHistory;
+      d.filters.year=latestResourceYear(d);
+      if(d.filters.year)d.temporalMode='year';
+      filterResources(layer.id,d);
     }
     resourcesReady=!resourceError;
     loaded=true;setDatasetFilters('security',defaults.security);setDatasetFilters('cameras',defaults.cameras);onChange({reason:'ready',...info()});
@@ -178,30 +193,44 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     });
     resourceMarkers.render(points);
   }
-  function summarizeResources(dataset){
+  function latestResourceYear(dataset){
+    return ANALYSIS_YEARS.findLast(year=>dataset.historyByYear.has(year))??null;
+  }
+  function filterResources(kind,dataset){
+    const history=dataset.historyByYear.get(dataset.filters.year);
+    const locations=history?dataset.records.filter(record=>history.has(record.id)):dataset.records;
+    if(kind==='fixed'){
+      dataset.filtered=locations.map(record=>({...record,monitoringStatus:history?.get(record.id)}));
+    }else{
+      const points=locations.map(record=>({...record,activations:history?.get(record.id)??null}));
+      const ranked=mostUsedAlarmButtons(points,ALARM_RANK_MAX);
+      dataset.rankCount=ranked.length;
+      if(!ranked.length)dataset.filters.usage='all';
+      if(dataset.filters.usage==='top'){
+        dataset.filters.limit=Math.min(dataset.filters.limit,ranked.length);
+        dataset.filtered=ranked.slice(0,dataset.filters.limit).map((record,index)=>({...record,rank:index+1}));
+      }else dataset.filtered=points;
+    }
     const simulated=dataset.filtered.filter(record=>record.simulated).length;
     dataset.summary={total:dataset.filtered.length,documented:dataset.filtered.length-simulated,simulated};
+    if(kind==='fixed')dataset.summary.monitoring=dataset.filtered.filter(record=>record.monitoringStatus==='monitoreando').length;
   }
-  function filterAlarms(dataset){
-    const counts=dataset.usageByYear.get(dataset.filters.year);
-    const points=dataset.records.map(record=>({...record,activations:counts?.get(record.id)??null}));
-    dataset.mostUsed=mostUsedAlarmButtons(points);
-    if(!dataset.mostUsed.length)dataset.filters.usage='all';
-    dataset.filtered=dataset.filters.usage==='top'?dataset.mostUsed:points;
-  }
-  function setAlarmFilters(values){
-    const dataset=datasets.alarms;
+  function setResourceFilters(kind,values){
+    const dataset=datasets[kind];
     if(destroyed||!resourcesReady)return;
-    const {year,usage}={...dataset.filters,...values};
-    if((year!==null&&!dataset.usageByYear.has(year))||!['all','top'].includes(usage)
-      ||year===dataset.filters.year&&usage===dataset.filters.usage)return;
+    const next={...dataset.filters,...values};
+    if(next.year!==null&&!dataset.historyByYear.has(next.year))return;
+    if(kind==='alarms'){
+      if(!['all','top'].includes(next.usage)||!Number.isInteger(next.limit))return;
+      next.limit=Math.max(1,Math.min(ALARM_RANK_MAX,next.limit));
+    }
+    if(Object.keys(next).every(key=>next[key]===dataset.filters[key]))return;
     clearHover();
-    dataset.filters={year,usage};
-    filterAlarms(dataset);
-    summarizeResources(dataset);
+    dataset.filters=next;
+    filterResources(kind,dataset);
     renderResources();
     updatePanels();
-    onChange({reason:'filters',dataset:'alarms',...info()});
+    onChange({reason:'filters',dataset:kind,...info()});
   }
   function togglePlayback(){if(!loaded||destroyed||!visible('security'))return false;closeAllPickers();clearHover();prepareTimelineFrames();return playback.toggle();}
   function seekPlayback(position){if(!loaded||destroyed||!visible('security'))return false;clearHover();prepareTimelineFrames();return playback.seek(position);}
@@ -358,7 +387,12 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
           if(Number.isInteger(count)){
             const caption=count===1?'Pulsación de referencia':'Pulsaciones de referencia';
             section.append(el('div','analysis-tooltip-total',number(count)),el('p','analysis-alarm-usage-label',`${caption} · ${datasets.alarms.filters.year}`));
+            if(point.rank)section.append(el('small',null,`Puesto ${point.rank} por pulsaciones`));
           }else section.append(el('p',null,'Sin datos de pulsaciones.'));
+        }
+        if(kind==='fixed'&&point.monitoringStatus){
+          section.append(el('p','analysis-monitoring-status',MONITORING_STATUS_LABELS[point.monitoringStatus]),
+            el('small',null,`Estado de referencia al cierre de ${datasets.fixed.filters.year}`));
         }
         if(point!==anchor.record)section.append(el('small',null,`${Math.round(point.distanceMetres)} m desde el punto consultado`));
       }else section.append(el('p',null,'Sin ubicaciones visibles en este radio.'));
@@ -378,6 +412,12 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     if(anchor.x>left-4&&anchor.x<left+tip.width+4){
       if(anchor.y+14+tip.height<=bottom)top=anchor.y+14;
       else if(anchor.y-14-tip.height>=68)top=anchor.y-14-tip.height;
+    }
+    if(!pinned&&anchor.trigger?.matches('.analysis-resource-marker:focus-visible')){
+      const marker=anchor.trigger.getBoundingClientRect();
+      const coversFocus=left+outer.left<marker.right+4&&left+outer.left+tip.width>marker.left-4
+        &&top+outer.top<marker.bottom+4&&top+outer.top+tip.height>marker.top-4;
+      if(coversFocus){clearHover();return;}
     }
     tooltip.style.left=`${left}px`;tooltip.style.top=`${top}px`;
     const east=map.locationToScreen({lat:anchor.lat,lng:anchor.lng+radiusMetres/(111320*Math.cos(anchor.lat*Math.PI/180))});

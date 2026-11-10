@@ -1,3 +1,5 @@
+import { MONITORING_STATUS_LABELS } from './analysis-catalog.js';
+
 const icons = {
   fixed: {
     path: 'M3 21h18M5 21V10l7-5 7 5v11M10 21v-6h4v6M12 5V2m0 1h5'
@@ -82,10 +84,12 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     element.type = 'button';
     element.className = 'analysis-resource-marker';
     element.dataset.kind = record.kind;
-    element.append(markerIcon(record.kind));
+    const badge=document.createElement('span');
+    badge.className='analysis-resource-badge';badge.hidden=true;badge.setAttribute('aria-hidden','true');
+    element.append(markerIcon(record.kind),badge);
     const stem=document.createElement('span');
     stem.className='analysis-resource-stem';stem.hidden=true;stem.setAttribute('aria-hidden','true');
-    const entry = { element, stem, record };
+    const entry = { element, stem, badge, record };
     for (const type of ['pointerdown', 'mousedown', 'touchstart', 'dblclick']) {
       element.addEventListener(type, event => event.stopPropagation());
     }
@@ -113,7 +117,11 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       entry.record = record;
       const count = record.activations;
       const usage = Number.isInteger(count) ? ` · ${count} ${count === 1 ? 'pulsación' : 'pulsaciones'} de referencia` : '';
-      entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}`);
+      const monitoring = MONITORING_STATUS_LABELS[record.monitoringStatus];
+      const detail = record.rank ? ` · Puesto ${record.rank}` : monitoring ? ` · ${monitoring}` : '';
+      entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}${detail}`);
+      entry.badge.textContent = record.rank ?? (monitoring ? record.monitoringStatus === 'monitoreando' ? '✓' : '–' : '');
+      entry.badge.hidden = !entry.badge.textContent;
       const opacity = Number.isFinite(record.opacity) ? Math.max(0, Math.min(1, record.opacity)) : 1;
       entry.element.style.opacity = String(opacity);
       entry.stem.style.opacity = String(opacity);
@@ -134,9 +142,10 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     for (const [id, { element }] of markers) {
       if (element.hidden || !element.getClientRects().length) continue;
       const rect = element.getBoundingClientRect();
+      const x = rect.left + rect.width / 2, y = rect.top + rect.height / 2;
+      if (!element.contains(document.elementFromPoint(x,y))) continue;
       result.push({
-        id, element, x: rect.left + rect.width / 2 - outer.left,
-        y: rect.top + rect.height / 2 - outer.top,
+        id, element, x: x - outer.left, y: y - outer.top,
         width: rect.width, height: rect.height, priority: 18
       });
     }

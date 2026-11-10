@@ -10,6 +10,11 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   overlay.className = 'content-viewer'; overlay.hidden = true;
   overlay.setAttribute('aria-label', 'Gráficos del tema seleccionado');
   const stage = document.createElement('div'); stage.className = 'content-stage';
+  if (standalone) {
+    stage.setAttribute('role', 'group');
+    stage.setAttribute('aria-label', 'Desplazar el gráfico ampliado con las flechas');
+    stage.setAttribute('aria-keyshortcuts', 'ArrowUp ArrowDown ArrowLeft ArrowRight');
+  }
   const image = document.createElement('img'); image.className = 'content-image'; image.alt = ''; image.draggable = false;
   const status = document.createElement('span'); status.className = 'content-page-status'; status.setAttribute('aria-live', 'polite');
   const heading = document.createElement('div');
@@ -45,6 +50,9 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   const closeButton = button('content-close', 'Volver al mapa', '×', close, 'Volver al mapa');
   const previous = button('content-previous', 'Gráfico anterior', '←', () => goTo(slideIndex - 1), 'Anterior');
   const next = button('content-next', 'Gráfico siguiente', '→', () => goTo(slideIndex + 1), 'Siguiente');
+  closeButton.setAttribute('aria-keyshortcuts', 'Escape');
+  previous.setAttribute('aria-keyshortcuts', 'ArrowLeft');
+  next.setAttribute('aria-keyshortcuts', 'ArrowRight');
   const zoomButtons = [];
   if (standalone) {
     const zoomControls = document.createElement('div');
@@ -59,7 +67,9 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
     controls.append(zoomControls);
     overlay.setAttribute('aria-labelledby', title.id);
   }
-  overlay.append(stage, controls, standalone ? heading : status); container.append(overlay);
+  if (standalone) overlay.append(heading, controls, stage);
+  else overlay.append(stage, controls, status);
+  container.append(overlay);
 
   const ready = fetch(manifestUrl).then(response => {
     if (!response.ok) throw new Error('No se pudo cargar el contenido gráfico.');
@@ -85,9 +95,13 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
     image.style.transform = `translate(-50%, -50%) translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
     stage.dataset.zoomed = String(viewport.scale > 1.001);
     if (standalone) {
-      const [reduce, fit] = zoomButtons;
-      reduce.disabled = viewport.scale <= 1;
-      fit.disabled = viewport.scale <= 1;
+      const [reduce, fit, enlarge] = zoomButtons;
+      const zoomed = viewport.scale > 1;
+      const focused = document.activeElement;
+      reduce.disabled = !zoomed;
+      fit.disabled = !zoomed;
+      stage.tabIndex = zoomed ? 0 : -1;
+      if (!zoomed && [reduce, fit, stage].includes(focused)) enlarge.focus({ preventScroll: true });
     }
   }
   function resize(reset = false) {
@@ -193,7 +207,13 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   }
   function onKeyDown(event) {
     if (!opened || document.querySelector('dialog[open]') || ['INPUT', 'SELECT', 'TEXTAREA'].includes(event.target.tagName)) return;
+    if (event.altKey || event.ctrlKey || event.metaKey) return;
     if (event.key === 'Escape') { event.preventDefault(); close(); }
+    if (standalone && event.target === stage && viewport.scale > 1) {
+      const step = 48;
+      const offset = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }[event.key];
+      if (offset) { event.preventDefault(); pan(...offset); return; }
+    }
     if (event.key === 'ArrowLeft') { event.preventDefault(); goTo(slideIndex - 1); }
     if (event.key === 'ArrowRight') { event.preventDefault(); goTo(slideIndex + 1); }
   }

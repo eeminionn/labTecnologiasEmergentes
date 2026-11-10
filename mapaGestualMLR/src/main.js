@@ -61,14 +61,16 @@ let twinPreviewCanvas,twinPreviewContext,lastTwinPreview=0;
 function notify(message,kind='general') { if(twinProjection && kind==='camera')return;noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
 function save() { localStorage.setItem('mlr-config',JSON.stringify(config)); }
 function updateStatus() {
-  const status=$('status'),toggle=$('camera-toggle');
-  const text=cameraStarting?'Conectando cámara…':active?(paused?'Gestos en pausa':'Gestos activos'):'Gestos desactivados';
+  const status=$('status'),toggle=$('camera-toggle'),pause=$('pause-gestures');
+  const text=cameraStarting?'Conectando cámara…':active?(paused?'Gestos en pausa · cámara encendida':workerReady?'Gestos activos':'Preparando gestos…'):'Gestos desactivados';
   status.className=active ? (paused?'paused':'active') : '';
   if(status.textContent!==text)status.replaceChildren(document.createElement('i'),text);
   toggle.textContent=cameraStarting?'Conectando…':active?'Desactivar gestos':'Activar gestos';
   toggle.disabled=cameraStarting;
   toggle.classList.toggle('primary',!active);
-  $('resume-gestures').hidden=!active||!paused||twinProjection;
+  pause.hidden=!active||twinProjection;
+  pause.textContent=paused?'Reanudar gestos':'Pausar gestos';
+  pause.classList.toggle('primary',paused);
   $('diagnostics').hidden=!active&&!twinProjection;
   $('camera-preview-state').hidden=active;
   if(!active)clearTrackingPreview();
@@ -90,6 +92,7 @@ async function loadMap() {
   contentViewer?.destroy();
   map?.destroy(); $('map').replaceChildren();
   map=await createMap($('map'),{...config,offline:smoke},notify,undefined,openPointContent);
+  $('mode-analysis').disabled=false;
   contentViewer=createContentViewer($('map'),{onChange:state=>{
     if(!['open','close','slide'].includes(state.reason))return;
     // A page change consumes this dwell. Keeping the same index on an arrow
@@ -114,7 +117,6 @@ function showSurfaceMode(mode) {
   document.body.classList.toggle('experience-open', mode==='experience');
   document.body.classList.toggle('analysis-open', mode==='analysis');
   $('mode-map').setAttribute('aria-pressed', String(mode==='map'));
-  $('mode-map').textContent=mode==='analysis'?'Volver al mapa':'Mapa';
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
 }
@@ -161,8 +163,8 @@ function leaveAnalysis() {
   analysisView?.destroy(); analysisView=null; map?.setAnalysisLayer(null); map?.setAnalysisMode(false);
   $('mode-analysis').disabled=false; showSurfaceMode('map'); cancelGesture(); map?.home();
 }
-async function enterAnalysis() {
-  if(twinProjection || analysisLoading || analysisView?.isOpen)return;
+async function enterAnalysis({ focusFilters = false } = {}) {
+  if(!map || twinProjection || analysisLoading || analysisView?.isOpen)return;
   if(trafficExperience || experienceLoading)leaveExperience();
   const generation=++analysisGeneration;
   analysisLoading=true; contentViewer?.close(); cancelGesture(); showSurfaceMode('analysis');
@@ -176,12 +178,18 @@ async function enterAnalysis() {
     analysisView=instance; await instance.ready;
     if(generation!==analysisGeneration){instance.destroy();return;}
     cancelGesture();
+    if(focusFilters&&[document.body,$('mode-analysis')].includes(document.activeElement)){
+      $('analysis-layers')?.focus({preventScroll:true});
+    }
   } catch(error) {
     instance?.destroy();
     if(generation===analysisGeneration){leaveAnalysis();notify(error.message || 'No se pudo abrir Análisis.');}
     if(analysisCheck)throw error;
   } finally {
     if(generation===analysisGeneration){analysisLoading=false;$('mode-analysis').disabled=false;}
+    else if(focusFilters&&document.activeElement===document.body&&$('mode-map').getAttribute('aria-pressed')==='true'){
+      $('mode-analysis').focus({preventScroll:true});
+    }
   }
 }
 function initializeWorker() {
@@ -191,7 +199,7 @@ function initializeWorker() {
   worker.onmessage=event=>{
     if(!smoke && workerGeneration!==cameraGeneration)return;
     const data=event.data;
-    if(data.type==='ready') { workerReady=true; telemetryBlocked=data.telemetryBlocked; if(smoke) smokeFrame(); }
+    if(data.type==='ready') { workerReady=true; telemetryBlocked=data.telemetryBlocked; if(smoke) smokeFrame();else updateStatus(); }
     else if(data.type==='error') { busy=false; if(twinProjection)twinError=`Detector: ${data.message}`;notify(`Detector: ${data.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:data.message}); else stopCamera(); }
     else if(data.type==='result') {
       busy=false;
@@ -212,7 +220,7 @@ function initializeWorker() {
       latestHands=data.landmarks.map((landmarks,index)=>({landmarks,worldLandmarks:data.worldLandmarks?.[index]}));
       drawSkeleton(data.landmarks);
       const handCount=data.landmarks.length;
-      const handStatus=handCount===0&&!twinProjection?'Muestra una mano a la cámara':`${handCount} ${handCount===1?'mano':'manos'}`;
+      const handStatus=paused&&!twinProjection?'Gestos en pausa':handCount===0&&!twinProjection?'Muestra una mano a la cámara':`${handCount} ${handCount===1?'mano':'manos'}`;
       if($('hands-metric').textContent!==handStatus)$('hands-metric').textContent=handStatus;
       $('latency-metric').textContent=`${Math.round(data.inferenceMs)} ms inferencia`;
       resultTimes.push(performance.now());while(resultTimes.length && resultTimes[0]<performance.now()-2000)resultTimes.shift();
@@ -540,7 +548,7 @@ async function verifyQualityFeedback() {
   populateCameraControls();$('settings-advanced').open=false;$('settings').close();
   return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap,conditionalCameraControls:unavailableHidden&&availableVisible};
 }
-async function startCamera() {
+async function startCamera({ startPaused = false } = {}) {
   if(active || cameraStarting || (twinProjection && !twinLeaseActive)) return;
   const generation=++cameraGeneration;
   cameraStarting=true;updateStatus();
@@ -573,7 +581,7 @@ async function startCamera() {
     $('video').parentElement.style.aspectRatio=String(aspect);
     engine=new GestureEngine({aspectRatio:aspect});
     qualityGate=new FrameQualityGate();qualityState={allowActions:true,state:'good',reasons:[]};qualityWarningShown=false;
-    active=true;paused=false;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
+    active=true;paused=startPaused;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
     cameraStarting=false;
     stream.getVideoTracks()[0].addEventListener('ended',()=>{if(generation!==cameraGeneration)return;if(twinProjection)twinError='La cámara se desconectó.';stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Activar gestos.');});
     updateStatus(); enumerateCameras(); frameLoop(generation);
@@ -1025,29 +1033,38 @@ function openSettings() {
   $('camera-auto').checked=config.cameraAuto;populateCameraControls();settings.showModal();enumerateCameras();
 }
 function updateProviderOptions(){ $('google-options').hidden=$('provider').value!=='google'; }
+function setGesturePause(next) {
+  if(!active||paused===next)return;
+  paused=next;cancelGesture();updateStatus();
+}
 $('camera-toggle').onclick=()=>active?stopCamera():startCamera();
-$('resume-gestures').onclick=()=>{if(active&&paused){paused=false;cancelGesture();updateStatus();}};
+$('pause-gestures').onclick=()=>setGesturePause(!paused);
 $('settings-open').onclick=openSettings;
 $('provider').onchange=updateProviderOptions;
 $('help-open').onclick=()=>{cancelGesture();$('help').querySelectorAll('details').forEach(detail=>{detail.open=false;});$('help').showModal();};$('help-close').onclick=()=>$('help').close();
 $('settings').addEventListener('close',async()=>{
   if($('settings').returnValue!=='save')return;
-  const wasActive=active;stopCamera();
+  const wasActive=active,wasPaused=paused;stopCamera();
   const oldKey=config.googleKey,oldProvider=config.provider,oldCamera=config.cameraId;
   Object.assign(config,{cameraId:$('camera-select').value,mirror:$('mirror').checked,rotation:+$('rotation').value,provider:$('provider').value,googleKey:$('google-key').value.trim(),confidence:+$('confidence').value,cameraAuto:$('camera-auto').checked,cameraControls:readCameraControls()});
   if(oldCamera!==config.cameraId)config.cameraControls={};
   save();
   // Reload clears Google SDK and credentials when switching/changing key.
   if(oldKey!==config.googleKey || oldProvider!==config.provider) { location.reload();return; }
-  if(wasActive)startCamera();
+  if(wasActive)startCamera({startPaused:wasPaused});
   else notify('Ajustes guardados.');
 });
 $('zoom-in').onclick=()=>currentSurface().zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('zoom-out').onclick=()=>currentSurface().zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('home').onclick=()=>currentSurface().home();
-$('mode-map').onclick=()=>{if(analysisView || analysisLoading)leaveAnalysis();else if(trafficExperience || experienceLoading)leaveExperience();};
+$('mode-map').onclick=event=>{
+  if(analysisView || analysisLoading)leaveAnalysis();
+  else if(trafficExperience || experienceLoading)leaveExperience();
+  else return;
+  if(event.detail===0)$('map-graphics-shortcut').focus({preventScroll:true});
+};
 $('mode-experiences').onclick=()=>enterExperience();
-$('mode-analysis').onclick=()=>enterAnalysis();
+$('mode-analysis').onclick=event=>enterAnalysis({focusFilters:event.detail===0});
 $('map-graphics-shortcut').onclick=()=>{
   const marker=$('map').querySelector('.sequence-marker[data-marker-id="point-0"]');
   if(marker)marker.click();
@@ -1082,11 +1099,11 @@ document.addEventListener('keydown',event=>{
   if(event.code==='Space' && !$('settings').open && !$('help').open) {
     event.preventDefault();
     if(trafficExperience?.isOpen)trafficExperience.setPaused(!trafficExperience.info().paused);
-    else if(active){paused=!paused;cancelGesture();updateStatus();}
+    else setGesturePause(!paused);
   }
 });
-window.addEventListener('blur',()=>{if(!twinProjection && active){paused=true;cancelGesture();updateStatus();}});
-document.addEventListener('visibilitychange',()=>{if(!twinProjection && document.hidden && active){paused=true;cancelGesture();updateStatus();}});
+window.addEventListener('blur',()=>{if(!twinProjection)setGesturePause(true);});
+document.addEventListener('visibilitychange',()=>{if(!twinProjection && document.hidden)setGesturePause(true);});
 await loadMap();
 updateStatus();
 if(twinProjection) {
@@ -1146,7 +1163,7 @@ async function verifyAnalysis() {
     checks.creditsRemain=!!attribution?.getClientRects().length;
     checks.experiencesHidden=$('mode-experiences').hidden && !$('mode-experiences').getClientRects().length
       && !selectionTargets($('map').getBoundingClientRect()).some(target=>target.element.id==='mode-experiences');
-    checks.mapNavigation=$('mode-map').textContent==='Volver al mapa';
+    checks.mapNavigation=$('mode-map').textContent==='Mapa' && $('mode-analysis').getAttribute('aria-pressed')==='true';
     checks.playbackDuration=initial.playback.durationMs===8000;
     checks.boundary=map.info().boundaryLoaded && map.info().analysisMode && map.info().analysisLayerVisible;
     checks.pinsInactive=map.targets().length===0 && !contentViewer.isOpen;

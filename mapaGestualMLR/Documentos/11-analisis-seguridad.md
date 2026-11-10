@@ -1,6 +1,6 @@
 # Análisis territorial
 
-**Actualización:** 10 de noviembre de 2026 · versión 0.9.4
+**Actualización:** 10 de noviembre de 2026 · versión 0.9.5
 
 [Volver a la bitácora](../README.md#actualización-análisis-territorial)
 
@@ -20,7 +20,7 @@ El ejemplo de 2024 se construyó con pocos equipos cerca de tres focos de incide
 
 ## Controles
 
-El catálogo separa **Incidentes y vigilancia** de **Recursos de seguridad**. La ficha de cada botón de emergencia muestra las pulsaciones de referencia del año seleccionado. **Más usados** limita el mapa a los diez botones con más pulsaciones de ese año. El cruce de ejemplo se ve seleccionando 2024 en ambas capas, **Botones de emergencia** y **Robos**. Los puntos fijos también se consultan desde su lista. Un clic en el mapa fija la ficha del sector. Escape la cierra. [Fuentes de los recursos de seguridad](./15-fuentes-recursos-seguridad.md)
+El catálogo separa **Incidentes y vigilancia** de **Recursos de seguridad**. En botones y puntos fijos, el año define qué ubicaciones se muestran. **Más usados** permite elegir entre uno y quince botones según sus pulsaciones de referencia. Para ver el cruce de ejemplo, selecciona 2024 en **Botones de emergencia** y **Robos**. En puntos fijos, el listado y la ficha muestran el estado de referencia al cierre del año. Un clic en el mapa fija la ficha del sector. Escape la cierra. [Fuentes de los recursos de seguridad](./15-fuentes-recursos-seguridad.md)
 
 Los selectores de fecha aparecen después de elegir Año o Mes. El menú Horario muestra las franjas del día con sus horas. Los botones de tipos permiten añadir y quitar opciones; seleccionar todos o quitar el último vuelve a Todos. **Restablecer filtros** recupera la consulta inicial.
 

@@ -128,7 +128,7 @@ body:not(.twin-projection) .municipal-name {
   letter-spacing: -.45px;
   color: var(--municipal-petroleo);
 }
-body:not(.twin-projection) #status { font-size: 11px; color: var(--ink-secondary); }
+body:not(.twin-projection) #status { display: flex; font-size: 11px; color: var(--ink-secondary); white-space: nowrap; }
 body:not(.twin-projection) #status i { background: #8da4a9; }
 body:not(.twin-projection) #status.active i { background: var(--municipal-verde); }
 body:not(.twin-projection) #status.paused i { background: var(--municipal-morado); }
@@ -364,6 +364,10 @@ body:not(.twin-projection) .content-page-status {
   font-variant-numeric: tabular-nums;
 }
 body:not(.twin-projection) .content-stage { inset: 116px 120px 70px; }
+body:not(.twin-projection) .content-stage:focus-visible {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: 3px;
+}
 body:not(.twin-projection) .content-unavailable { text-align: center; margin-top: 36px; color: var(--ink-secondary); }
 body:not(.twin-projection) .content-controls { z-index: 1; }
 body:not(.twin-projection) .content-control {

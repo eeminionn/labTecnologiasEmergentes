@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ANALYSIS_LAYERS, ANALYSIS_YEARS, chooseAnalysisLayer, mostUsedAlarmButtons, nearbySecurityResources, parseAlarmUsage, parseSimulatedSecurityResources, readSecurityResources } from '../src/analysis-catalog.js';
+import { ANALYSIS_LAYERS, ANALYSIS_YEARS, ALARM_RANK_MAX, chooseAnalysisLayer, mostUsedAlarmButtons, nearbySecurityResources, parseAlarmUsage, parseFixedPointHistory, parseSimulatedSecurityResources, readSecurityResources } from '../src/analysis-catalog.js';
 import { createSecuritySpatialIndex, filterSecurityRecords, parseSecurityCSV, pointInsideBoundary } from '../src/analysis-data.js';
 
 const json = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
@@ -46,16 +46,20 @@ test('la consulta devuelve solo ubicaciones del radio y distingue capas', () => 
 test('las pulsaciones cubren los botones de cada año y los más usados en 2024 coinciden con sectores de más robos', () => {
   const read = file => readFileSync(new URL(`../public/analysis/${file}`,import.meta.url),'utf8');
   const usageByYear = parseAlarmUsage(read('pulsaciones-botones.csv'));
-  const buttons = [...source, ...simulated].filter(record=>record.kind==='alarms');
+  const buttons = readSecurityResources([...source, ...simulated],inside).filter(record=>record.kind==='alarms');
   const rankings = new Map();
   assert.deepEqual([...usageByYear.keys()].sort(),ANALYSIS_YEARS);
-  for(const [year,usage] of usageByYear){
-    assert.equal(usage.size,buttons.length);
-    const records = buttons.map(record=>({...record,activations:usage.get(record.id)}));
-    assert.ok(records.every(record=>Number.isInteger(record.activations)));
+  assert.deepEqual(ANALYSIS_YEARS.map(year=>usageByYear.get(year).size),[40,42,44]);
+  for(const [index,year] of ANALYSIS_YEARS.entries()){
+    const usage = usageByYear.get(year);
+    const records = buttons.filter(record=>usage.has(record.id)).map(record=>({...record,activations:usage.get(record.id)}));
+    assert.equal(records.length,usage.size);
+    if(index>0)assert.ok([...usageByYear.get(ANALYSIS_YEARS[index-1]).keys()].every(id=>usage.has(id)));
     const top = mostUsedAlarmButtons(records);
     assert.equal(top.length,10);
     assert.deepEqual(top.map(record=>record.activations),[...usage.values()].sort((a,b)=>b-a).slice(0,10));
+    assert.deepEqual(mostUsedAlarmButtons(records,1),top.slice(0,1));
+    assert.equal(mostUsedAlarmButtons(records,ALARM_RANK_MAX).length,15);
     rankings.set(year,top);
   }
   const highlighted = rankings.get('2024');
@@ -63,8 +67,21 @@ test('las pulsaciones cubren los botones de cada año y los más usados en 2024 
   assert.ok(rankings.get('2025').some(record=>!highlightedIds.has(record.id)));
   const robberies = createSecuritySpatialIndex(filterSecurityRecords(parseSecurityCSV(read('seguridad-simulada.csv')),{year:'2024'}));
   const averageRobberies = locations => locations.reduce((total,location)=>total+robberies.query({...location,radiusMetres:250,referenceDate:'2024-12-31'}).total,0)/locations.length;
-  assert.ok(averageRobberies(highlighted)>2*averageRobberies(buttons.filter(record=>!highlightedIds.has(record.id))));
+  assert.ok(averageRobberies(highlighted)>2*averageRobberies(buttons.filter(record=>usageByYear.get('2024').has(record.id)&&!highlightedIds.has(record.id))));
   assert.equal(mostUsedAlarmButtons([{id:'sin-uso',activations:0},{id:'sin-datos',activations:null}]).length,0);
   assert.throws(()=>parseAlarmUsage('id,anio,pulsaciones\nboton,2024,1\nboton,2024,2'));
   assert.throws(()=>parseAlarmUsage('id,anio,pulsaciones\nboton,2024,-1'));
+});
+
+test('el historial de puntos fijos conserva incorporaciones y registra el estado por año', () => {
+  const history = parseFixedPointHistory(readFileSync(new URL('../public/analysis/estado-puntos-fijos.csv',import.meta.url),'utf8'));
+  const locations = new Set([...source,...simulated].filter(record=>record.kind==='fixed').map(record=>record.id));
+  assert.deepEqual(ANALYSIS_YEARS.map(year=>history.get(year).size),[12,14,16]);
+  for(const [index,year] of ANALYSIS_YEARS.entries()){
+    const statuses = history.get(year);
+    assert.ok([...statuses.keys()].every(id=>locations.has(id)));
+    if(index>0)assert.ok([...history.get(ANALYSIS_YEARS[index-1]).keys()].every(id=>statuses.has(id)));
+    assert.deepEqual(new Set(statuses.values()),new Set(['monitoreando','fuera_de_servicio']));
+  }
+  assert.throws(()=>parseFixedPointHistory('id,anio,estado\ncaseta,2024,en_linea'));
 });
