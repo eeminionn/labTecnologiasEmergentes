@@ -1281,6 +1281,7 @@ async function verifyAnalysis() {
     const pinned=analysisView.info().hover;
     checks.pinKeepsDisplayedSector=!!shown && pinned?.pinned && pinned.lat===shown.lat && pinned.lng===shown.lng;
     analysisView.dismissDetails();
+    checks.pinReturnsFocus=document.activeElement===$('analysis-layers') && tooltip.hidden;
     await window.desktop.click({x:viewport.left+screen.x,y:viewport.top+screen.y});await sleep(240);
     checks.mouseDetails=analysisView.info().hover?.source==='mouse' && analysisView.info().hover?.pinned;
     moveOver(160,200);
@@ -1303,7 +1304,7 @@ async function verifyAnalysis() {
     checks.resetFilters=analysisView.info().filteredCount===60000 && analysisView.info().temporalMode==='all' && analysisView.info().filters.month==='all';
     analysisView.home();
     const targets=analysisView.targets(),rect=$('map').getBoundingClientRect();
-    const basicControls=['analysis-layers','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross','analysis-consult'];
+    const basicControls=['analysis-layers','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross'];
     const missingControls=basicControls.filter(id=>!targets.some(target=>target.id===id));
     const obstructedControls=targets.filter(target=>target.width<30 || target.height<32 || !target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y))).map(target=>target.id);
     snapshots.controles={missingControls,obstructedControls};
@@ -1416,13 +1417,6 @@ async function verifyAnalysis() {
     await hold('camera-analysis-layers');await hold('analysis-layer-security');await waitLayer();
     analysisView.setFilters({period:'all'});await waitLayer();
     checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
-    const consult=$('analysis-consult');
-    analysisView.togglePlayback();consult.focus();consult.click();
-    checks.centerConsultation=analysisView.info().hover?.source==='keyboard' && analysisView.info().hover?.pinned
-      && document.activeElement===$('analysis-sector-title');
-    checks.pinningPausesPlayback=!analysisView.info().playback.playing;
-    document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-    checks.centerReturnsFocus=document.activeElement===consult && tooltip.hidden;
     analysisView.setFilters({period:'all'});await waitLayer();
     await hold('analysis-cross');await hold('analysis-layer-fixed');await waitLayer();
     const fixedInfo=analysisView.info().datasets.fixed;
@@ -1432,17 +1426,20 @@ async function verifyAnalysis() {
     await hold('fixed-analysis-loc-centro-fidias');
     await waitFor(()=>analysisView.info().hover?.record?.id==='centro-fidias',2500,'ficha de ubicación documentada');
     checks.resourceDetail=analysisView.info().hover?.pinned && analysisView.info().hover.resources.fixed.total>=1
-      && tooltip.querySelector('a[href^="https://"]') && tooltip.textContent.includes('Fidias');
+      && tooltip.textContent.includes('Fidias con Leonardo da Vinci');
     await capture('puntosfijos');
     await hold('analysis-sector-close');
     await hold('analysis-cross');await hold('analysis-layer-alarms');await waitLayer();
     checks.switchComparison=analysisView.info().compareCategory==='alarms' && !$('map').querySelector('.analysis-resource-marker[data-kind="fixed"]')
       && $('map').querySelectorAll('.analysis-resource-marker[data-kind="alarms"]').length>=1
       && analysisView.info().filteredCount===20009;
-    const alarmList=document.querySelector('.analysis-alarms-panel .analysis-resource-location');
-    if(alarmList)await hold(alarmList.id);
+    checks.alarmsMapOnly=!document.querySelector('.analysis-alarms-panel .analysis-resource-list');
+    analysisView.home();
+    const alarmMarker='analysis-resource-alarms-boton-paradero-pd308';
+    await waitFor(()=>analysisView.targets().some(target=>target.id===alarmMarker),2500,'marcador de emergencia');
+    await hold(alarmMarker);
     checks.alarmsDetail=analysisView.info().hover?.record?.kind==='alarms'
-      && analysisView.info().hover?.pinned && Boolean(tooltip.querySelector('a[href^="https://"]'));
+      && analysisView.info().hover?.pinned && tooltip.textContent.includes('Paradero PD308');
     await capture('botones');
     await hold('mode-map');
     checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible

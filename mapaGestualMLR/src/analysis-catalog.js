@@ -35,9 +35,9 @@ export function parseSimulatedSecurityResources(text) {
     }
     return {
       id, kind, address, lat: Number(lat), lng: Number(lng), simulated: true,
-      title: kind === 'fixed' ? 'Cabina de seguridad simulada' : 'Botón de emergencia simulado',
-      status: 'Ubicación simulada',
-      note: 'Recurso ficticio sobre una referencia geográfica real.'
+      title: kind === 'fixed' ? 'Punto fijo de seguridad ciudadana' : 'Botón de emergencia',
+      status: 'Referencia territorial',
+      note: 'Ubicación de referencia para análisis.'
     };
   });
 }

@@ -1,15 +1,14 @@
 const icons = {
   fixed: {
-    label: 'Punto fijo de seguridad ciudadana',
     path: 'M3 21h18M5 21V10l7-5 7 5v11M10 21v-6h4v6M12 5V2m0 1h5'
   },
   alarms: {
-    label: 'Botón de emergencia',
     path: 'M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4'
   }
 };
 const svgNamespace = 'http://www.w3.org/2000/svg';
 const markerOffsets = [[0,0],[42,0],[-42,0],[0,42],[0,-42],[38,38],[-38,38],[38,-38],[-38,-38]];
+const markerRadius = 16;
 
 function markerIcon(kind) {
   const svg = document.createElementNS(svgNamespace, 'svg');
@@ -52,14 +51,13 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       element.hidden = !visible;
       stem.hidden = true;
       if (!visible) continue;
-      const radius=record.simulated?15:19;
       const offset = markerOffsets.find(([dx,dy],index) => {
         const x=point.x+dx,y=point.y+dy;
-        return (index===0||x>=radius&&x<=width-radius&&y>=radius&&y<=height-radius)
-          && placed.every(other=>Math.max(Math.abs(other.x-x),Math.abs(other.y-y))>radius+other.radius);
+        return (index===0||x>=markerRadius&&x<=width-markerRadius&&y>=markerRadius&&y<=height-markerRadius)
+          && placed.every(other=>Math.max(Math.abs(other.x-x),Math.abs(other.y-y))>markerRadius*2);
       }) ?? markerOffsets[0];
       const [dx,dy]=offset,x=point.x+dx,y=point.y+dy;
-      placed.push({x,y,radius});
+      placed.push({x,y});
       element.style.left = `${x}px`;
       element.style.top = `${y}px`;
       if(dx||dy){
@@ -113,8 +111,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       present.add(id);
       const entry = markers.get(id) || addMarker(id, record);
       entry.record = record;
-      entry.element.dataset.simulated = String(record.simulated);
-      entry.element.setAttribute('aria-label', `${icons[record.kind].label} · ${record.title}`);
+      entry.element.setAttribute('aria-label', `${record.title} · ${record.address}`);
       const opacity = Number.isFinite(record.opacity) ? Math.max(0, Math.min(1, record.opacity)) : 1;
       entry.element.style.opacity = String(opacity);
       entry.stem.style.opacity = String(opacity);

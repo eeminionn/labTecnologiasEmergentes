@@ -86,8 +86,8 @@
   {
     "id": "boton-paradero-pd308",
     "kind": "alarms",
-    "title": "Botón de emergencia · Paradero PD308",
-    "address": "Av. Príncipe de Gales con Mateo de Toro y Zambrano",
+    "title": "Botón de emergencia",
+    "address": "Paradero PD308 · Av. Príncipe de Gales con Mateo de Toro y Zambrano",
     "lat": -33.4391851,
     "lng": -70.5557278,
     "status": "Instalación documentada en 2024",

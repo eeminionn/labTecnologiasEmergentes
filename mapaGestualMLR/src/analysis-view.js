@@ -31,7 +31,6 @@ function densityImage(surface,camera=false) {
 export async function createAnalysisView(container,{map,notify=()=>{},onChange=()=>{}}={}) {
   let destroyed=false,loaded=false,failure='',activeCategory='security',compareCategory=null,hoverTimer=null,hoverAnchor=null,hoverDetails=null;
   let pinned=false,displayedAnchor=null,restoreFocus=null,dismissedAnchor=null,resourceError='',resourcesReady=false;
-  let simulationUnavailable=false;
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
   const abort=new AbortController(),datasets={},panels={};
   const crossed=()=>compareCategory!==null, selection=()=>({primary:activeCategory,compare:compareCategory});
@@ -44,7 +43,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
-      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),reset:()=>setDatasetFilters(kind,defaults[kind]),cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,catalog:openCatalog,consult:consultCenter,locate:locateResource,simulation:()=>toggleResourceSimulation(kind),opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
+      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),reset:()=>setDatasetFilters(kind,defaults[kind]),cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
   }
   const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
@@ -67,7 +66,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const pinTip=el('button','analysis-pin-tip','Fijar ficha');pinTip.type='button';pinTip.id='analysis-sector-pin';
   pinTip.onclick=()=>{
     if(!displayedAnchor)return;
-    const trigger=document.activeElement===pinTip?document.getElementById(`${getAnalysisLayer(activeCategory).prefix}-consult`):null;
+    const trigger=displayedAnchor.trigger || panels[activeCategory].element.querySelector('.analysis-layer-trigger');
     pinSector(displayedAnchor,trigger);
   };
   tooltip.append(tipHeader,securityTip,cameraTip,resourcesTip,pinTip);
@@ -87,7 +86,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     for(const [kind,panel] of Object.entries(panels)){
       const resource=getAnalysisLayer(kind).resource;
       const dataset=datasets[kind];
-      panel.update({...dataset,records:resource?dataset.filtered:dataset.records,simulationUnavailable,loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
+      panel.update({...dataset,loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
     }
   }
   function closeAllPickers(){Object.values(panels).forEach(p=>p.closePicker());}
@@ -120,18 +119,18 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const [securityCSV,securityMeta,cameraCSV,cameraMeta,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
       Promise.all([
         resource('/analysis/recursos-seguridad.json','json').then(value=>readSecurityResources(value,inside)),
-        resource('/analysis/recursos-simulados.csv').then(parseSimulatedSecurityResources).catch(()=>{simulationUnavailable=true;return [];})
+        resource('/analysis/recursos-simulados.csv').then(parseSimulatedSecurityResources).catch(()=>[])
       ]).then(([documented, simulated])=>{
         try { return readSecurityResources([...documented,...simulated],inside); }
-        catch { simulationUnavailable=true;return documented; }
+        catch { return documented; }
       }).catch(error=>{resourceError=error.message;return [];})]);
     if(destroyed)return;datasets.security.records=parseSecurityCSV(securityCSV);datasets.security.metadata=securityMeta;datasets.cameras.records=parseCameraCSV(cameraCSV);datasets.cameras.metadata=cameraMeta;
     for(const kind of ['security','cameras'])if(datasets[kind].records.length!==datasets[kind].metadata.cantidad)throw new Error('La base está incompleta.');
     for(const layer of ANALYSIS_LAYERS.filter(layer=>layer.resource)){
       const d=datasets[layer.id];
-      d.records=resources.filter(r=>r.kind===layer.id);
-      d.filters.includeSimulated=true;
-      applyResourceFilter(d);
+      d.records=d.filtered=resources.filter(r=>r.kind===layer.id);
+      const simulated=d.records.filter(record=>record.simulated).length;
+      d.summary={total:d.records.length,documented:d.records.length-simulated,simulated};
     }
     resourcesReady=!resourceError;
     loaded=true;setDatasetFilters('security',defaults.security);setDatasetFilters('cameras',defaults.cameras);onChange({reason:'ready',...info()});
@@ -170,20 +169,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const points=ANALYSIS_LAYERS.filter(layer=>layer.resource&&visible(layer.id)).flatMap(({id})=>{
       const {filtered,opacity}=datasets[id];return filtered.map(record=>({...record,opacity}));
     });
-    resourceMarkers.render(points.sort((a,b)=>Number(a.simulated)-Number(b.simulated)));
-  }
-  function applyResourceFilter(dataset){
-    dataset.filtered=dataset.filters.includeSimulated?dataset.records:dataset.records.filter(record=>!record.simulated);
-    const simulated=dataset.filtered.filter(record=>record.simulated).length;
-    dataset.summary={total:dataset.filtered.length,documented:dataset.filtered.length-simulated,simulated};
-  }
-  function toggleResourceSimulation(kind){
-    const dataset=datasets[kind];
-    dataset.filters.includeSimulated=!dataset.filters.includeSimulated;
-    applyResourceFilter(dataset);
-    clearHover();
-    updatePanels();
-    renderResources();
+    resourceMarkers.render(points);
   }
   function togglePlayback(){if(!loaded||destroyed||!visible('security'))return false;closeAllPickers();clearHover();prepareTimelineFrames();return playback.toggle();}
   function seekPlayback(position){if(!loaded||destroyed||!visible('security'))return false;clearHover();prepareTimelineFrames();return playback.seek(position);}
@@ -279,13 +265,6 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     showHover(anchor);
     if(trigger)tipTitle.focus({preventScroll:true});
   }
-  function consultCenter(trigger){
-    const {min,max}=cardBounds(),x=(min+max)/2,y=container.clientHeight/2,location=map.screenToLocation(x,y);
-    if(!location||!inside(location.lng,location.lat)){
-      notify('El centro visible está fuera de La Reina. Usa «Volver a La Reina» y consulta de nuevo.');return;
-    }
-    pinSector({x,y,source:'keyboard',...location},trigger);
-  }
   async function locateResource(record,trigger){
     clearHover();await map.focus(record,16,{animate:false});if(!destroyed&&visible(record.kind))showResource(record,{pin:true,anchor:trigger});
   }
@@ -293,7 +272,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     if(!visible(record.kind)||(!pin&&document.activeElement===anchor&&dismissedAnchor?.record?.id===record.id))return;
     const point=map.locationToScreen(record);
     if(!point)return;
-    const next={...point,lat:record.lat,lng:record.lng,source:'point',record};
+    const next={...point,lat:record.lat,lng:record.lng,source:'point',record,trigger:anchor};
     if(pin)pinSector(next,anchor);
     else {clearTimeout(hoverTimer);hoverTimer=null;hoverAnchor=next;showHover(next);}
   }
@@ -338,16 +317,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       const point=anchor.record?.kind===kind?anchor.record:detail.nearest;
       if(!anchor.record||anchor.record.kind!==kind){
         section.append(el('div','analysis-tooltip-total',`${number(detail.total)} ${detail.total===1?'ubicación':'ubicaciones'}`));
-        if(detail.simulated) section.append(el('p',null,`${number(detail.documented)} con fuente · ${number(detail.simulated)} ${detail.simulated===1?'simulada':'simuladas'}`));
       }
       if(point){
         if(point!==anchor.record)section.append(el('strong','analysis-resource-title',point.title));
-        section.append(el('p',null,point.address),el('p','analysis-resource-status',point.status));
-        if(point===anchor.record)section.append(el('p',null,point.note));
-        else section.append(el('small',null,`${Math.round(point.distanceMetres)} m desde el punto consultado`));
-        if(pinned&&point.source){
-          const link=el('a','analysis-resource-source','Ver fuente');link.href=point.source.url;link.target='_blank';link.rel='noopener noreferrer';link.title=point.source.label;section.append(link);
-        }
+        section.append(el('p',null,point.address));
+        if(point!==anchor.record)section.append(el('small',null,`${Math.round(point.distanceMetres)} m desde el punto consultado`));
       }else section.append(el('p',null,'Sin ubicaciones visibles en este radio.'));
       resourcesTip.append(section);
     }

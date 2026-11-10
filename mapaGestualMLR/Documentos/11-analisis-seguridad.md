@@ -1,6 +1,6 @@
 # Análisis territorial
 
-**Actualización:** 10 de noviembre de 2026 · versión 0.9.0
+**Actualización:** 10 de noviembre de 2026 · versión 0.9.2
 
 [Volver a la bitácora](../README.md#actualización-análisis-territorial)
 
@@ -20,7 +20,7 @@ El ejemplo de 2024 se construyó con pocos equipos cerca de tres focos de incide
 
 ## Controles
 
-El catálogo separa **Incidentes y vigilancia** de **Recursos de seguridad**. Los [puntos fijos y botones de emergencia](./15-fuentes-recursos-seguridad.md) se pueden abrir desde el mapa o desde la lista. Un clic en el mapa fija la ficha del sector; Escape la cierra. **Consultar centro del mapa** ofrece el mismo detalle con el teclado.
+El catálogo separa **Incidentes y vigilancia** de **Recursos de seguridad**. Los botones de emergencia se consultan desde el mapa y los puntos fijos también desde su lista. Un clic en el mapa fija la ficha del sector. Escape la cierra. [Fuentes de los recursos de seguridad](./15-fuentes-recursos-seguridad.md)
 
 Los selectores de fecha aparecen después de elegir Año o Mes. El menú Horario muestra las franjas del día con sus horas. Los botones de tipos permiten añadir y quitar opciones; seleccionar todos o quitar el último vuelve a Todos. **Restablecer filtros** recupera la consulta inicial.
 

@@ -39,10 +39,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   stats.append(resultLabel,totalRow,selectedPeriod,empty);
   body.append(stats);
   if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
-  const resourceList=el('div','analysis-resource-list');
+  const resourceList=kind==='fixed'?el('div','analysis-resource-list'):null;
   let currentRecords=null;
-  const simulation=resource?button(body,`${prefix}-simulation`,'Mostrar puntos simulados',()=>callbacks.simulation(),'analysis-resource-toggle'):null;
-  if(resource)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
+  if(resourceList)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
   function group(key,label,options,callback) {
     const f=el('fieldset',`analysis-filter analysis-filter-${key}`),legend=el('legend',null,label),g=el('div','analysis-options');
     g.setAttribute('role','group');g.setAttribute('aria-label',label);
@@ -78,9 +77,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   legend.setAttribute('aria-label','Cómo leer el mapa');
   const legendTitle=el('strong',null,camera?'Cámaras en el mapa':'Concentración de robos');
   const ramp=el('div','analysis-color-ramp'),labels=el('div','analysis-legend-labels');labels.append(el('span',null,'Menor concentración'),el('span',null,'Mayor concentración'));
-  const pointLegend=el('p','analysis-point-legend',resource?`Cada símbolo representa un ${layer.singular}`:'Cada punto representa una cámara');
-  const readingHint=el('p','analysis-reading-hint',resource?'Selecciona un símbolo para ver su ubicación y fuente.':'Apunta a un sector para ver sus cifras. Haz clic para mantener la ficha abierta.');
-  const consult=button(legend,`${prefix}-consult`,'Consultar centro del mapa',(_,anchor)=>callbacks.consult(anchor),'analysis-consult');
+  const pointLegend=el('p','analysis-point-legend',resource?'Cada símbolo marca una ubicación de referencia.':'Cada punto representa una cámara');
+  const readingHint=el('p','analysis-reading-hint',resource?'Selecciona un marcador en el mapa para ver su ubicación.':'Apunta a un sector para ver sus cifras. Haz clic para mantener la ficha abierta.');
   legend.prepend(legendTitle,ramp,labels,pointLegend,readingHint);
   const actions=el('div','analysis-actions');
   if(!resource)button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
@@ -185,7 +183,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
-      :resource?`${number(next.summary.documented)} con fuente · ${number(next.summary.simulated)} ${next.summary.simulated===1?'simulada':'simuladas'}`
+      :resource?'Referencias territoriales para análisis'
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
@@ -195,26 +193,22 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       const detail=selected==='all'?'Todos':Array.isArray(selected)?selected.length===1?options.find(c=>c[0]===selected[0])?.[1]:`${selected.length} seleccionados`:options.find(c=>c[0]===selected)?.[1];
       trigger.textContent=`${label}: ${key==='period'?hour?.[1]||'Todo el día':detail||'Todos'} ▾`;
     }
-    if(resource&&currentRecords!==next.records){
+    if(resourceList&&currentRecords!==next.records){
       currentRecords=next.records;
       for(const e of resourceList.querySelectorAll('button'))controls.splice(controls.indexOf(e),1);
       resourceList.replaceChildren();
       for(const record of currentRecords||[]){
         const item=button(resourceList,`${prefix}-loc-${record.id}`,record.title,(_,anchor)=>callbacks.locate(record,anchor),'analysis-resource-location');
-        item.dataset.simulated=String(record.simulated);
         item.append(el('small',null,record.address));
       }
     }
     if(resource){
-      simulation.setAttribute('aria-pressed',String(!!f.includeSimulated&&!next.simulationUnavailable));
-      simulation.hidden=next.simulationUnavailable;
       pointLegend.dataset.tone=tone;
-      readingHint.textContent=next.simulationUnavailable?'Los puntos simulados no están disponibles.':next.summary.simulated?'Borde punteado: ubicación simulada. Selecciona un símbolo para ver su ficha.':'Selecciona un símbolo para ver su ubicación y fuente.';
       totalLabel.textContent=next.summary.total===1?'ubicación':'ubicaciones';
     }
     const points=resource||camera&&next.display==='points';pointLegend.hidden=!points;ramp.hidden=points;labels.hidden=points;
     legendTitle.textContent=resource?'Cómo leer los símbolos':camera?(points?'Cámaras en el mapa':'Concentración relativa de cámaras'):'Concentración relativa de robos';
-    consult.hidden=!primary;opacityRow.hidden=!next.crossed;compare.hidden=!primary;
+    opacityRow.hidden=!next.crossed;compare.hidden=!primary;
     compare.textContent=next.crossed?'Cambiar comparación':'Añadir comparación';
     actions.hidden=!primary&&!!resource;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;

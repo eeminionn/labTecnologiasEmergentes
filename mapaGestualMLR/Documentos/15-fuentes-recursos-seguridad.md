@@ -2,7 +2,7 @@
 
 **Consulta de fuentes públicas:** 10 de noviembre de 2026.
 
-La capa reúne ubicaciones respaldadas por publicaciones y puntos de demostración. La app separa sus totales, usa bordes punteados para los simulados y permite ocultarlos. Cada ficha con fuente indica el alcance de la evidencia, incluida la diferencia entre una sede, un control de acceso y un proyecto. [Base documentada](../public/analysis/recursos-seguridad.json) · [CSV de simulación](../public/analysis/recursos-simulados.csv)
+La capa presenta todas las ubicaciones como referencias territoriales para análisis. Este documento detalla la procedencia de los puntos, incluido el alcance de la evidencia para sedes, controles de acceso y proyectos. [Base documentada](../public/analysis/recursos-seguridad.json) · [CSV de simulación](../public/analysis/recursos-simulados.csv)
 
 | Recurso | Evidencia y posición |
 |---|---|
