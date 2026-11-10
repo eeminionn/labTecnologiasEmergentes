@@ -55,18 +55,32 @@ const resultTimes=[];
 let lastFreshResult=0;
 let smokeStage='empty',emptyFrameResult,smokeFixtureDimensions;
 let cameraGeneration=0;
+let cameraStarting=false;
 let hasFreshCameraResult=false;
 let twinPreviewCanvas,twinPreviewContext,lastTwinPreview=0;
 function notify(message,kind='general') { if(twinProjection && kind==='camera')return;noticeKind=kind;$('notice').textContent=message; $('notice').hidden=false; clearTimeout(noticeTimer); noticeTimer=setTimeout(()=>$('notice').hidden=true,7500); }
 function save() { localStorage.setItem('mlr-config',JSON.stringify(config)); }
 function updateStatus() {
-  $('status').className=active ? (paused?'paused':'active') : '';
-  $('status').innerHTML=`<i></i>${active ? (paused?'Control pausado':'Cámara activa') : 'Cámara detenida'}`;
-  $('camera-toggle').textContent=active?'Detener cámara':'Iniciar cámara';
-  $('diagnostics').hidden=false;
+  const status=$('status'),toggle=$('camera-toggle');
+  const text=cameraStarting?'Conectando cámara…':active?(paused?'Gestos en pausa':'Gestos activos'):'Gestos desactivados';
+  status.className=active ? (paused?'paused':'active') : '';
+  if(status.textContent!==text)status.replaceChildren(document.createElement('i'),text);
+  toggle.textContent=cameraStarting?'Conectando…':active?'Desactivar gestos':'Activar gestos';
+  toggle.disabled=cameraStarting;
+  toggle.classList.toggle('primary',!active);
+  $('resume-gestures').hidden=!active||!paused||twinProjection;
+  $('diagnostics').hidden=!active&&!twinProjection;
   $('camera-preview-state').hidden=active;
   if(!active)clearTrackingPreview();
+  updateGestureHint();
   reportTwinState();
+}
+function updateGestureHint(){
+  const hint=$('gesture-hint'),shortcuts=$('gesture-shortcuts');
+  shortcuts.hidden=!active;
+  hint.textContent=!active?'Puedes explorar con el mouse o el teclado. La cámara es opcional.'
+    :paused?'Los gestos están en pausa. Pulsa Reanudar gestos para continuar.'
+    :'Índice 1,5 s para seleccionar · Puño para mover · Dos manos en OK para acercar o alejar';
 }
 function reportTwinState() {
   if(twinProjection)window.desktop.reportTwinState({cameraActive:active && twinLeaseActive,hands:latestHands.length,error:twinError,detectorReady:workerReady,inferenceFrames:counters.frames,cameraLabel:stream?.getVideoTracks()[0]?.label || ''});
@@ -91,7 +105,10 @@ async function loadMap() {
     engine.cancelClick(true);selection.reset();highlightTarget(null);
     $('click-ripple').classList.remove('play');
   }});
-  try {await contentViewer.ready;} catch(error) {notify(error.message);}
+  try {
+    await contentViewer.ready;
+    $('map-graphics-shortcut').disabled=false;
+  } catch(error) {notify(error.message);}
 }
 function openPointContent(item) {
   if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
@@ -108,7 +125,7 @@ function showSurfaceMode(mode) {
   $('mode-map').textContent=mode==='analysis'?'Volver al mapa':'Mapa';
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
-  $('gesture-hint').innerHTML=mode!=='map' ? 'Índice sostenido: seleccionar · <span class="hint-pan">Un puño: mover la vista</span> · <span class="hint-zoom">Dos OK: acercar y alejar</span>' : 'Índice sobre el punto 1,5 s: clic · <span class="hint-pan">Un puño: mover</span> · <span class="hint-zoom">Dos OK: zoom</span>';
+  updateGestureHint();
 }
 function showExperienceMode(enabled) { showSurfaceMode(enabled?'experience':'map'); }
 function leaveExperience() {
@@ -203,7 +220,9 @@ function initializeWorker() {
       if(timings.length>10000) { timings.shift(); inferenceTimes.shift();qualityTimes.shift(); }
       latestHands=data.landmarks.map((landmarks,index)=>({landmarks,worldLandmarks:data.worldLandmarks?.[index]}));
       drawSkeleton(data.landmarks);
-      $('hands-metric').textContent=`${data.landmarks.length} ${data.landmarks.length===1?'mano':'manos'}`;
+      const handCount=data.landmarks.length;
+      const handStatus=handCount===0&&!twinProjection?'Muestra una mano a la cámara':`${handCount} ${handCount===1?'mano':'manos'}`;
+      if($('hands-metric').textContent!==handStatus)$('hands-metric').textContent=handStatus;
       $('latency-metric').textContent=`${Math.round(data.inferenceMs)} ms inferencia`;
       resultTimes.push(performance.now());while(resultTimes.length && resultTimes[0]<performance.now()-2000)resultTimes.shift();
       $('fps-metric').textContent=`${resultTimes.length>1?Math.round(1000*(resultTimes.length-1)/(resultTimes.at(-1)-resultTimes[0])):'—'} FPS`;
@@ -384,8 +403,15 @@ async function verifyNativeSelection() {
     cancelGesture();await hold(map.targets().find(target=>target.id==='point-0'));
     const reopenWorks=contentViewer.isOpen && contentViewer.info().sourcePage===2;
     cancelGesture();await hold(control('content-close'));
-    return {contentOpened,selectionWorks:contentOpened&&sequenceCompleted&&previousWorks&&closeWorks&&reopenWorks,
+    const shortcut=$('map-graphics-shortcut');
+    shortcut.focus();shortcut.click();
+    const shortcutOpened=contentViewer.isOpen && $('content-title')?.textContent===contentViewer.info().title
+      && document.activeElement===$('content-close');
+    contentViewer.close();
+    const shortcutRestoresFocus=document.activeElement===shortcut;
+    return {contentOpened,selectionWorks:contentOpened&&sequenceCompleted&&previousWorks&&closeWorks&&reopenWorks&&shortcutOpened&&shortcutRestoresFocus,
       firstBoundary,lastBoundary,previousWorks,closeWorks,reopenWorks,pages,sequenceCompleted,contentGestures,
+      shortcutOpened,shortcutRestoresFocus,
       gestureClickAccepted:pointHold.clickAccepted,buttonClickAccepted:buttonHold.clickAccepted,
       trustedClicks,expectedNativeClicks:holds.length,holds,pointHold,buttonHold,
       holdElapsedMs:Math.min(...holds.map(result=>result.elapsedMs)),
@@ -515,18 +541,18 @@ async function verifyQualityFeedback() {
   const warningAfterGap=warning.showWarning && !warning.changed && !$('notice').hidden && noticeKind==='quality';
   showQuality(normal,initial);cancelGesture();
   // Check actual CSS visibility inside an open dialog, not only the hidden flag.
-  populateCameraControls();$('settings').showModal();
+  populateCameraControls();$('settings').showModal();$('settings-advanced').open=true;
   const rows=Object.values(cameraRangeIds).map(id=>$(id+'-label'));
-  const unavailableHidden=rows.every(row=>getComputedStyle(row).display==='none');
+  const unavailableHidden=rows.every(row=>!row.getClientRects().length);
   rows[0].hidden=false;
-  const availableVisible=getComputedStyle(rows[0]).display!=='none';
-  populateCameraControls();$('settings').close();
+  const availableVisible=!!rows[0].getClientRects().length;
+  populateCameraControls();$('settings-advanced').open=false;$('settings').close();
   return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap,conditionalCameraControls:unavailableHidden&&availableVisible};
 }
 async function startCamera() {
-  if(active || (twinProjection && !twinLeaseActive)) return;
+  if(active || cameraStarting || (twinProjection && !twinLeaseActive)) return;
   const generation=++cameraGeneration;
-  $('camera-toggle').disabled=true;
+  cameraStarting=true;updateStatus();
   try {
     // Device IDs are salted per web origin, which changes with Unity's random
     // loopback port. A saved device label resolves the current ID each launch.
@@ -557,19 +583,33 @@ async function startCamera() {
     engine=new GestureEngine({aspectRatio:aspect});
     qualityGate=new FrameQualityGate();qualityState={allowActions:true,state:'good',reasons:[]};qualityWarningShown=false;
     active=true;paused=false;lastFrame=-1;hasFreshCameraResult=false;lastFreshResult=performance.now();resultTimes.length=0;initializeWorker();
-    stream.getVideoTracks()[0].addEventListener('ended',()=>{if(generation!==cameraGeneration)return;if(twinProjection)twinError='La cámara se desconectó.';stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Iniciar cámara.');});
+    cameraStarting=false;
+    stream.getVideoTracks()[0].addEventListener('ended',()=>{if(generation!==cameraGeneration)return;if(twinProjection)twinError='La cámara se desconectó.';stopCamera();notify('La cámara se desconectó. Vuelve a conectarla y pulsa Activar gestos.');});
     updateStatus(); enumerateCameras(); frameLoop(generation);
   } catch(error) {
     if(generation!==cameraGeneration)return;
-    const message=error.name==='NotAllowedError'?'Autoriza la cámara en Ajustes del Sistema → Privacidad y seguridad → Cámara.':`No se pudo abrir la cámara USB: ${error.message}`;
+    const message=cameraErrorMessage(error);
     if(twinProjection)twinError=message;
     stopCamera();notify(message);
   }
-  finally { $('camera-toggle').disabled=false; }
+  finally { if(generation===cameraGeneration){cameraStarting=false;updateStatus();} }
+}
+function cameraErrorMessage(error) {
+  switch(error.name){
+    case 'NotAllowedError':
+      return 'Autoriza el acceso a la cámara en los ajustes de privacidad del equipo y vuelve a pulsar Activar gestos.';
+    case 'NotFoundError':
+    case 'OverconstrainedError':
+      return 'No se encontró la cámara seleccionada. Elige otra en Ajustes y vuelve a pulsar Activar gestos.';
+    case 'NotReadableError':
+      return 'No se pudo iniciar la cámara. Cierra otras apps que la estén usando o elige otra cámara en Ajustes.';
+    default:
+      return 'No se pudo iniciar la cámara. Revisa la conexión o elige otra cámara en Ajustes.';
+  }
 }
 function stopCamera() {
   cameraGeneration++;
-  active=false;hasFreshCameraResult=false;stream?.getTracks().forEach(track=>track.stop());stream=null;
+  cameraStarting=false;active=false;hasFreshCameraResult=false;stream?.getTracks().forEach(track=>track.stop());stream=null;
   $('video').srcObject=null; worker?.terminate();worker=null;workerReady=false;busy=false;latestHands=[];
   cancelGesture();updateStatus();
 }
@@ -590,7 +630,7 @@ async function frameLoop(generation) {
 }
 function clearTrackingPreview() {
   const canvas=$('skeleton');canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);
-  $('hands-metric').textContent='0 manos';$('fps-metric').textContent='— FPS';
+  $('hands-metric').textContent=active&&!twinProjection?'Muestra una mano a la cámara':'0 manos';$('fps-metric').textContent='— FPS';
 }
 function drawSkeleton(hands,width=$('video').videoWidth||640,height=$('video').videoHeight||480) {
   const canvas=$('skeleton');canvas.width=width;canvas.height=height;
@@ -724,7 +764,7 @@ function selectionTargets(rect) {
   // Only the visible layer is actionable. Hidden map pins cannot steal a
   // selection or open a popup while the person is reading a graph.
   const targets=currentSurface().targets();
-  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button').forEach(element=>{
+  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button,#map-graphics-shortcut').forEach(element=>{
     if(element.hidden || element.disabled || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
     const box=element.getBoundingClientRect();
@@ -949,7 +989,7 @@ async function verifyNavigationFeedback() {
 function verifyPreviewFeedback(data) {
   const saved={active,paused};active=false;paused=false;updateStatus();
   const visible=()=>!$('diagnostics').hidden && getComputedStyle($('diagnostics')).display!=='none';
-  const previewVisibleStopped=visible() && !$('camera-preview-state').hidden;
+  const previewHiddenStopped=!visible();
   active=true;updateStatus();const previewVisibleActive=visible() && $('camera-preview-state').hidden;
   paused=true;updateStatus();const previewVisiblePaused=visible();
   const panel=$('diagnostics').getBoundingClientRect(),workspace=$('workspace').getBoundingClientRect();
@@ -960,23 +1000,45 @@ function verifyPreviewFeedback(data) {
   const trackingDrawn=hasTracking();clearTrackingPreview();const staleTrackingCleared=!hasTracking();
   const noPreviewToggle=!$('show-preview') && !$('preview-close');
   active=saved.active;paused=saved.paused;updateStatus();
-  return {previewVisibleStopped,previewVisibleActive,previewVisiblePaused,compactPlacement,trackingDrawn,staleTrackingCleared,noPreviewToggle};
+  return {previewHiddenStopped,previewVisibleActive,previewVisiblePaused,compactPlacement,trackingDrawn,staleTrackingCleared,noPreviewToggle};
 }
 async function enumerateCameras() {
-  const devices=await navigator.mediaDevices.enumerateDevices();
-  if(twinProjection)window.desktop.reportTwinCameras(devices.filter(d=>d.kind==='videoinput').map(d=>({deviceId:d.deviceId,label:d.label})));
-  $('camera-select').replaceChildren(new Option('Cámara predeterminada',''));
-  devices.filter(d=>d.kind==='videoinput').forEach((d,i)=>$('camera-select').add(new Option(d.label||`Cámara ${i+1}`,d.deviceId)));
-  $('camera-select').value=config.cameraId;
+  const select=$('camera-select'),note=$('camera-device-note');
+  try{
+    const devices=await navigator.mediaDevices.enumerateDevices();
+    const cameras=devices.filter(device=>device.kind==='videoinput');
+    if(twinProjection)window.desktop.reportTwinCameras(cameras.map(({deviceId,label})=>({deviceId,label})));
+    const selected=$('settings').open?select.value:config.cameraId;
+    const available=cameras.filter(camera=>camera.deviceId);
+    select.replaceChildren(new Option('Cámara predeterminada',''));
+    available.forEach(({label,deviceId},index)=>select.add(new Option(label||`Cámara ${index+1}`,deviceId)));
+    const unavailable=selected&&!available.some(camera=>camera.deviceId===selected);
+    if(unavailable)select.add(new Option('Cámara guardada · no disponible',selected));
+    select.value=selected;
+    note.textContent=unavailable?'Elige otra cámara para usar gestos.':cameras.length?'':'Conecta una cámara o revisa el permiso de cámara del equipo.';
+  }catch{
+    note.textContent='No se pudo leer la lista de cámaras. Revisa el permiso de cámara del equipo.';
+  }
 }
 function openSettings() {
-  cancelGesture();enumerateCameras();
+  cancelGesture();
+  const settings=$('settings');
+  settings.returnValue='';
+  $('settings-framing').open=false;$('settings-advanced').open=false;
+  settings.querySelector('.tracking-details').open=false;
+  const select=$('camera-select');
+  if(config.cameraId&&![...select.options].some(option=>option.value===config.cameraId))select.add(new Option('Cámara guardada',config.cameraId));
+  select.value=config.cameraId;
   $('mirror').checked=config.mirror;$('rotation').value=config.rotation;$('provider').value=config.provider;$('google-key').value=config.googleKey;$('confidence').value=config.confidence;
-  $('camera-auto').checked=config.cameraAuto;populateCameraControls();$('settings').showModal();
+  updateProviderOptions();
+  $('camera-auto').checked=config.cameraAuto;populateCameraControls();settings.showModal();enumerateCameras();
 }
+function updateProviderOptions(){ $('google-options').hidden=$('provider').value!=='google'; }
 $('camera-toggle').onclick=()=>active?stopCamera():startCamera();
+$('resume-gestures').onclick=()=>{if(active&&paused){paused=false;cancelGesture();updateStatus();}};
 $('settings-open').onclick=openSettings;
-$('help-open').onclick=()=>{cancelGesture();$('help').showModal();};$('help-close').onclick=()=>$('help').close();
+$('provider').onchange=updateProviderOptions;
+$('help-open').onclick=()=>{cancelGesture();$('help').querySelectorAll('details').forEach(detail=>{detail.open=false;});$('help').showModal();};$('help-close').onclick=()=>$('help').close();
 $('settings').addEventListener('close',async()=>{
   if($('settings').returnValue!=='save')return;
   const wasActive=active;stopCamera();
@@ -987,6 +1049,7 @@ $('settings').addEventListener('close',async()=>{
   // Reload clears Google SDK and credentials when switching/changing key.
   if(oldKey!==config.googleKey || oldProvider!==config.provider) { location.reload();return; }
   if(wasActive)startCamera();
+  else notify('Ajustes guardados.');
 });
 $('zoom-in').onclick=()=>currentSurface().zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('zoom-out').onclick=()=>currentSurface().zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);
@@ -994,6 +1057,11 @@ $('home').onclick=()=>currentSurface().home();
 $('mode-map').onclick=()=>{if(analysisView || analysisLoading)leaveAnalysis();else if(trafficExperience || experienceLoading)leaveExperience();};
 $('mode-experiences').onclick=()=>enterExperience();
 $('mode-analysis').onclick=()=>enterAnalysis();
+$('map-graphics-shortcut').onclick=()=>{
+  const marker=$('map').querySelector('.sequence-marker[data-marker-id="point-0"]');
+  if(marker)marker.click();
+  else openPointContent({id:'point-0'});
+};
 $('reset-sequence').onclick=()=>{contentViewer?.close();cancelGesture();map.resetSequence();notify('Recorrido reiniciado en el punto 1.');};
 const cameraRangeIds={contrast:'camera-contrast',brightness:'camera-brightness',exposureCompensation:'camera-exposure'};
 function populateCameraControls() {
@@ -1017,13 +1085,14 @@ $('export-metrics').onclick=()=>{
   const url=URL.createObjectURL(new Blob([JSON.stringify(report,null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download=`sesion-gestual-${Date.now()}.json`;link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 document.addEventListener('keydown',event=>{
-  if(['INPUT','SELECT','TEXTAREA'].includes(document.activeElement?.tagName))return;
+  if(event.defaultPrevented)return;
+  if(event.key==='Escape')cancelGesture();
+  if(event.target.closest?.('button,[role="button"],a[href],summary,input,select,textarea,[contenteditable="true"]'))return;
   if(event.code==='Space' && !$('settings').open && !$('help').open) {
     event.preventDefault();
     if(trafficExperience?.isOpen)trafficExperience.setPaused(!trafficExperience.info().paused);
     else if(active){paused=!paused;cancelGesture();updateStatus();}
   }
-  if(event.key==='Escape')cancelGesture();
 });
 window.addEventListener('blur',()=>{if(!twinProjection && active){paused=true;cancelGesture();updateStatus();}});
 document.addEventListener('visibilitychange',()=>{if(!twinProjection && document.hidden && active){paused=true;cancelGesture();updateStatus();}});
@@ -1194,14 +1263,35 @@ async function verifyAnalysis() {
     checks.mapProjection=Math.abs(roundtrip.lat-local.lat)<.00003 && Math.abs(roundtrip.lng-local.lng)<.00003
       && map.screenToLocation(NaN,10)===null && map.locationToScreen({lat:Infinity,lng:0})===null;
     const viewport=$('map').getBoundingClientRect();
+    const moveOver=(x,y)=>{
+      const bounds=$('map').getBoundingClientRect(),clientX=bounds.left+x,clientY=bounds.top+y;
+      document.elementFromPoint(clientX,clientY)?.dispatchEvent(new PointerEvent('pointermove',{bubbles:true,pointerType:'mouse',clientX,clientY}));
+    };
+    moveOver(screen.x,screen.y);await sleep(210);
+    checks.hoverPreview=analysisView.info().hover?.source==='mouse' && !analysisView.info().hover?.pinned;
+    const tooltip=document.querySelector('.analysis-map-tooltip');
+    const box=tooltip.getBoundingClientRect();
+    moveOver(box.left-viewport.left+12,box.top-viewport.top+14);await sleep(210);
+    checks.hoverReadable=!tooltip.hidden && analysisView.info().hover?.source==='mouse';
+    const shown=analysisView.info().hover;
+    moveOver(screen.x-46,screen.y);
+    moveOver(box.left-viewport.left+12,box.top-viewport.top+14);
+    $('analysis-sector-pin').click();
+    const pinned=analysisView.info().hover;
+    checks.pinKeepsDisplayedSector=!!shown && pinned?.pinned && pinned.lat===shown.lat && pinned.lng===shown.lng;
+    analysisView.dismissDetails();
     await window.desktop.click({x:viewport.left+screen.x,y:viewport.top+screen.y});await sleep(240);
-    checks.mouseDetails=analysisView.info().hover?.source==='mouse';
+    checks.mouseDetails=analysisView.info().hover?.source==='mouse' && analysisView.info().hover?.pinned;
+    moveOver(160,200);
+    checks.pinnedDetailsPersist=analysisView.info().hover?.pinned && analysisView.info().hover?.source==='mouse';
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    checks.escapeDismissesDetail=tooltip.hidden && analysisView.info().hover===null;
     const handPointer={id:'analysis-hand',x:screen.x/viewport.width,y:screen.y/viewport.height};
     await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
     await sleep(500);
     const detail=analysisView.info().hover;snapshots.detalle=detail;
     checks.handDetails=detail?.source==='hand' && detail.radiusMetres===250 && Number.isInteger(detail.total)
-      && document.querySelector('.analysis-tooltip-total').textContent.includes('Noche');
+      && document.querySelector('.analysis-tooltip-hours').textContent.includes('Noche');
     checks.weekUsesSelectedPeriod=detail?.referenceDate==='2024-07-31' && detail.last7DaysRange.start==='2024-07-25' && detail.last7Days<=detail.total;
     window.desktop.reportSmoke({phase:'analysis-detalle'});await sleep(150);
     const before=map.info();analysisView.pan(90,35);
@@ -1212,11 +1302,17 @@ async function verifyAnalysis() {
     checks.resetFilters=analysisView.info().filteredCount===60000 && analysisView.info().temporalMode==='all' && analysisView.info().filters.month==='all';
     analysisView.home();
     const targets=analysisView.targets(),rect=$('map').getBoundingClientRect();
-    const basicControls=['analysis-category-cameras','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross'];
-    checks.controlsReachable=basicControls.every(id=>targets.some(target=>target.id===id))
-      && targets.every(target=>target.width>=30 && target.height>=32 && target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y)));
+    const basicControls=['analysis-layers','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross','analysis-consult'];
+    const missingControls=basicControls.filter(id=>!targets.some(target=>target.id===id));
+    const obstructedControls=targets.filter(target=>target.width<30 || target.height<32 || !target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y))).map(target=>target.id);
+    snapshots.controles={missingControls,obstructedControls};
+    checks.controlsReachable=!missingControls.length && !obstructedControls.length;
     const waitCameras=()=>waitFor(()=>map.info().cameraAnalysisLoaded&&map.info().cameraAnalysisVisible,5000,'capa de cámaras visible');
-    await hold('analysis-category-cameras');await waitCameras();
+    await hold('analysis-layers');
+    checks.groupedCatalog=document.querySelectorAll('.analysis-layer-group').length===2
+      && ['security','cameras','fixed','alarms'].every(layer=>analysisView.targets().some(target=>target.id===`analysis-layer-${layer}`));
+    await capture('catalogo');
+    await hold('analysis-layer-cameras');await waitCameras();
     const cameras=analysisView.info();snapshots.camaras=cameras;
     checks.playbackOnlySecurity=!analysisView.targets().some(target=>target.id==='analysis-playback')
       && !document.querySelector('.analysis-camera-panel .analysis-playback') && !cameras.playback.playing;
@@ -1263,8 +1359,10 @@ async function verifyAnalysis() {
     checks.cameraYearInventory=analysisView.info().filteredCount===expectedCameras2024;
     await hold('camera-analysis-mode-month');await hold('camera-analysis-month-07');await waitCameras();
     checks.cameraMonthlyInventory=analysisView.info().filteredCount===expectedCamerasJuly2024 && analysisView.info().dateRange.end==='2024-07-31';
-    await hold('camera-analysis-cross');await waitLayer();await waitCameras();
-    checks.crossDirect=analysisView.info().crossed && $('analysis-cross-close').textContent==='Ver solo cámaras';
+    await hold('camera-analysis-cross');
+    checks.duplicateHiddenFromCompare=$('analysis-layer-cameras').disabled && !analysisView.targets().some(t=>t.id==='analysis-layer-cameras');
+    await hold('analysis-layer-security');await waitLayer();await waitCameras();
+    checks.crossSelection=analysisView.info().compareCategory==='security' && $('analysis-cross-close').textContent==='Quitar comparación';
     const cameraPanel=document.querySelector('.analysis-camera-panel'),securityPanel=document.querySelector('.analysis-security-panel');
     checks.crossPanelsSeparate=analysisView.info().crossed && !cameraPanel.hidden && !securityPanel.hidden
       && cameraPanel.dataset.side==='left' && securityPanel.dataset.side==='right'
@@ -1296,6 +1394,7 @@ async function verifyAnalysis() {
     const crossViewport=$('map').getBoundingClientRect(),crossPoint=map.locationToScreen(local);
     await window.desktop.click({x:crossViewport.left+crossPoint.x,y:crossViewport.top+crossPoint.y});await sleep(240);
     checks.crossMouseDetails=analysisView.info().hover?.source==='mouse' && !!analysisView.info().hover?.security && !!analysisView.info().hover?.cameras;
+    analysisView.dismissDetails();
     const crossHand={id:'analysis-cross-hand',x:crossPoint.x/crossViewport.width,y:crossPoint.y/crossViewport.height};
     await renderGesture({mode:'point',cursor:crossHand,pointers:[crossHand],selectionHandId:null,events:[],progress:0},1);await sleep(500);
     const crossDetail=analysisView.info().hover;snapshots.cruce={...analysisView.info(),map:map.info()};
@@ -1313,9 +1412,36 @@ async function verifyAnalysis() {
     checks.playbackStopsWhenSecurityHidden=!analysisView.info().playback.playing;
     checks.returnToSeparate=!analysisView.info().crossed && analysisView.info().activeCategory==='cameras'
       && !map.info().analysisLayerVisible && map.info().cameraAnalysisVisible && map.info().cameraAnalysisPointCount===expectedCamerasJuly2024;
-    await hold('camera-analysis-category-security');await waitLayer();
+    await hold('camera-analysis-layers');await hold('analysis-layer-security');await waitLayer();
     analysisView.setFilters({period:'all'});await waitLayer();
     checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
+    const consult=$('analysis-consult');
+    analysisView.togglePlayback();consult.focus();consult.click();
+    checks.centerConsultation=analysisView.info().hover?.source==='keyboard' && analysisView.info().hover?.pinned
+      && document.activeElement===$('analysis-sector-title');
+    checks.pinningPausesPlayback=!analysisView.info().playback.playing;
+    document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
+    checks.centerReturnsFocus=document.activeElement===consult && tooltip.hidden;
+    analysisView.setFilters({period:'all'});await waitLayer();
+    await hold('analysis-cross');await hold('analysis-layer-fixed');await waitLayer();
+    checks.fixedInComparison=analysisView.info().compareCategory==='fixed' && analysisView.info().datasets.fixed.filteredCount===3
+      && $('map').querySelectorAll('.analysis-resource-marker[data-kind="fixed"]').length===3
+      && !map.info().cameraAnalysisVisible;
+    await hold('fixed-analysis-loc-centro-fidias');
+    await waitFor(()=>analysisView.info().hover?.record?.id==='centro-fidias',2500,'ficha de ubicación documentada');
+    checks.resourceDetail=analysisView.info().hover?.pinned && analysisView.info().hover.resources.fixed.total>=1
+      && tooltip.querySelector('a[href^="https://"]') && tooltip.textContent.includes('Fidias');
+    await capture('puntosfijos');
+    await hold('analysis-sector-close');
+    await hold('analysis-cross');await hold('analysis-layer-alarms');await waitLayer();
+    checks.switchComparison=analysisView.info().compareCategory==='alarms' && !$('map').querySelector('.analysis-resource-marker[data-kind="fixed"]')
+      && $('map').querySelectorAll('.analysis-resource-marker[data-kind="alarms"]').length>=1
+      && analysisView.info().filteredCount===20009;
+    const alarmList=document.querySelector('.analysis-alarms-panel .analysis-resource-location');
+    if(alarmList)await hold(alarmList.id);
+    checks.alarmsDetail=analysisView.info().hover?.record?.kind==='alarms'
+      && analysisView.info().hover?.pinned && Boolean(tooltip.querySelector('a[href^="https://"]'));
+    await capture('botones');
     await hold('mode-map');
     checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible
       && map.targets().length===3 && $('mode-map').textContent==='Mapa';

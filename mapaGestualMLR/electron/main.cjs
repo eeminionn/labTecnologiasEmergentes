@@ -91,7 +91,7 @@ const bridge = twinMode ? createTwinBridge({ token: twinToken, onState: state =>
     previewVisible:!!previewWindow && !previewWindow.isDestroyed() && previewWindow.isVisible(),previewFrames}) }) : null;
 const trusted = sender => sender === win?.webContents && sender.getURL().startsWith(`${origin}/`);
 function openMapLink(url) {
-  try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com'].includes(parsed.hostname))shell.openExternal(url); }catch{}
+  try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com','lareina.cl','www.lareina.cl','www.24horas.cl'].includes(parsed.hostname))shell.openExternal(url); }catch{}
 }
 const csp = "default-src 'self'; script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; worker-src 'self' blob:; connect-src 'self' https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://*.google.com; object-src 'none'; base-uri 'self'";
 const visionCsp = "default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'none'";

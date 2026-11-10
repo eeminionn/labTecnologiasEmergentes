@@ -6,61 +6,105 @@
       <div class="location"><span class="municipal-name">La Reina</span></div>
       <nav aria-label="Controles">
         <span id="status" role="status"><i></i> Cámara detenida</span>
-        <button id="camera-toggle" class="primary">Iniciar cámara</button>
+        <button id="resume-gestures" class="primary" type="button" hidden>Reanudar gestos</button>
+        <button id="camera-toggle" class="primary" type="button">Activar gestos</button>
         <button id="settings-open">Ajustes</button>
-        <button id="help-open" aria-label="Ayuda de gestos">?</button>
+        <button id="help-open" type="button">Ayuda</button>
       </nav>
     </header>
     <main id="workspace">
-      <div id="map" aria-label="Mapa interactivo de La Reina"></div>
       <aside id="experience-mode-switcher" aria-label="Modo de visualización">
         <button id="mode-map" type="button" aria-pressed="true">Mapa</button>
         <button id="mode-experiences" type="button" aria-pressed="false" hidden>Experiencias</button>
         <button id="mode-analysis" type="button" aria-pressed="false">Análisis</button>
       </aside>
+      <section class="map-intro" aria-labelledby="map-intro-title">
+        <p class="map-intro-label">Concejo en perspectiva</p>
+        <h1 id="map-intro-title">Temas del concejo</h1>
+        <p>Selecciona un punto para consultar su tema. Abre Análisis para comparar datos en el mapa.</p>
+        <button id="map-graphics-shortcut" class="primary" type="button" disabled>Ver gráficos de inundación <span aria-hidden="true">→</span></button>
+      </section>
+      <div id="map" aria-label="Mapa interactivo de La Reina"></div>
       <div id="cursor" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>
       <div id="cursor-secondary" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>
       <div id="click-ripple" aria-hidden="true"></div>
       <div id="notice" role="status" hidden></div>
-      <section id="diagnostics" class="panel" aria-label="Cámara con tracking de manos">
-        <div class="panel-heading">Vista frontal</div>
+      <section id="diagnostics" class="panel" aria-label="Vista de cámara para gestos" hidden>
+        <div class="panel-heading">Vista de cámara</div>
         <div class="video-frame"><video id="video" autoplay playsinline muted></video><canvas id="skeleton"></canvas><span id="camera-preview-state" class="preview-state">Cámara detenida</span></div>
         <div class="preview-footer"><span id="hands-metric">0 manos</span></div>
       </section>
-      <div class="map-tools"><button id="zoom-in" aria-label="Acercar">+</button><button id="zoom-out" aria-label="Alejar">−</button><button id="home" aria-label="Volver a La Reina">⌂</button></div>
+      <div class="map-tools" role="group" aria-label="Navegación del mapa"><button id="zoom-in" aria-label="Acercar el mapa" title="Acercar el mapa">+</button><button id="zoom-out" aria-label="Alejar el mapa" title="Alejar el mapa">−</button><button id="home" aria-label="Centrar en La Reina" title="Centrar en La Reina">⌂</button></div>
     </main>
-    <footer><span id="gesture-hint">Índice sobre el punto 1,5 s: clic · <span class="hint-pan">Un puño: mover</span> · <span class="hint-zoom">Dos OK: zoom</span></span><span>Espacio: pausar · Esc: cancelar</span></footer>
-    <dialog id="settings">
+    <footer class="app-footer"><span id="gesture-hint">Puedes explorar con el mouse o el teclado. La cámara es opcional.</span><span id="gesture-shortcuts" hidden>Espacio para pausar o reanudar · Esc para cancelar</span></footer>
+    <dialog id="settings" aria-labelledby="settings-title">
       <form method="dialog" id="settings-form">
-        <div class="dialog-heading"><h1>Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
-        <label>Cámara frontal<select id="camera-select"><option value="">Cámara predeterminada</option></select></label>
-        <div class="row"><label><input id="mirror" type="checkbox" /> Reflejar horizontalmente</label><label>Orientación<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label></div>
-        <label><input id="camera-auto" type="checkbox" /> Preferir exposición y enfoque continuos</label>
-        <div id="camera-controls">
-          <label id="camera-contrast-label" hidden>Contraste <output id="camera-contrast-value"></output><input id="camera-contrast" type="range" /></label>
-          <label id="camera-brightness-label" hidden>Brillo <output id="camera-brightness-value"></output><input id="camera-brightness" type="range" /></label>
-          <label id="camera-exposure-label" hidden>Compensación de exposición <output id="camera-exposure-value"></output><input id="camera-exposure" type="range" /></label>
-        </div>
-        <p id="camera-controls-note" class="field-note"></p>
-        <label>Mapa<select id="provider"><option value="osm">OpenStreetMap</option><option value="google">Google Maps</option></select></label>
-        <label id="key-label">API key de Google Maps<input id="google-key" type="password" autocomplete="off" placeholder="Configúrala cuando habilites Google Maps Platform" /></label>
-        <p class="field-note">Google Maps requiere Maps JavaScript API y facturación. La clave se guarda solo en este equipo. Referrer: http://127.0.0.1:47831/*</p>
-        <label>Sensibilidad del detector<select id="confidence"><option value="0.7">Equilibrada · 0,70</option><option value="0.8">Conservadora · 0,80</option><option value="0.6">Más sensible · 0,60</option></select></label>
-        <details class="tracking-details"><summary>Diagnóstico de seguimiento</summary>
-          <div class="metrics"><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
-          <div class="metrics"><span id="quality-metric">Iluminación: —</span></div>
-          <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics" type="button">Exportar sesión</button></div>
-          <div class="metrics"><button id="mark-false-click" type="button">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+        <div class="dialog-heading"><h1 id="settings-title">Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
+        <p class="dialog-intro">Configura la cámara si quieres usar gestos.</p>
+        <label>Cámara para gestos<select id="camera-select" aria-describedby="camera-device-note" autofocus><option value="">Cámara predeterminada</option></select></label>
+        <p id="camera-device-note" class="field-note" role="status"></p>
+        <details class="settings-details" id="settings-framing">
+          <summary>Ajustar encuadre</summary>
+          <div class="settings-details-body">
+            <p class="field-note">Si el puntero se mueve al revés, cambia el reflejo. Si la imagen se ve de lado, gírala.</p>
+            <div class="row"><label><input id="mirror" type="checkbox" /> Reflejar imagen</label><label>Giro de la imagen<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label></div>
+          </div>
         </details>
-        <button id="reset-sequence" type="button">Reiniciar recorrido 1 → 3</button>
-        <p class="field-note">Toda la imagen de cámara corresponde a todo el mapa. El procesamiento de manos es local. Las ubicaciones de los pines son de demostración. Los gráficos corresponden al material del equipo.</p>
-        <div class="dialog-actions"><button value="cancel">Cancelar</button><button value="save" class="primary">Guardar</button></div>
+        <details class="settings-details" id="settings-advanced">
+          <summary>Opciones avanzadas</summary>
+          <div class="settings-details-body">
+            <label><input id="camera-auto" type="checkbox" /> Preferir exposición y enfoque continuos</label>
+            <div id="camera-controls">
+              <label id="camera-contrast-label" hidden>Contraste <output id="camera-contrast-value"></output><input id="camera-contrast" type="range" /></label>
+              <label id="camera-brightness-label" hidden>Brillo <output id="camera-brightness-value"></output><input id="camera-brightness" type="range" /></label>
+              <label id="camera-exposure-label" hidden>Compensación de exposición <output id="camera-exposure-value"></output><input id="camera-exposure" type="range" /></label>
+            </div>
+            <p id="camera-controls-note" class="field-note"></p>
+            <label>Sensibilidad de los gestos<select id="confidence"><option value="0.7">Equilibrada</option><option value="0.8">Menos sensible</option><option value="0.6">Más sensible</option></select></label>
+            <label>Proveedor del mapa<select id="provider"><option value="osm">OpenStreetMap</option><option value="google">Google Maps</option></select></label>
+            <p class="field-note">Cambiar de proveedor recarga la aplicación.</p>
+            <div id="google-options" hidden>
+              <label id="key-label">Clave de Google Maps<input id="google-key" type="password" autocomplete="off" /></label>
+              <p class="field-note">Google Maps requiere Maps JavaScript API y facturación. La clave se guarda en este equipo. El origen permitido es http://127.0.0.1:47831/*.</p>
+            </div>
+            <details class="tracking-details"><summary>Diagnóstico de gestos</summary>
+              <div class="metrics"><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
+              <div class="metrics"><span id="quality-metric">Iluminación: —</span></div>
+              <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics" type="button">Exportar sesión</button></div>
+              <div class="metrics"><button id="mark-false-click" type="button">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+            </details>
+            <button id="reset-sequence" type="button">Reiniciar recorrido por los puntos</button>
+          </div>
+        </details>
+        <div class="dialog-actions"><button value="cancel">Cancelar</button><button value="save" class="primary">Guardar ajustes</button></div>
       </form>
     </dialog>
-    <dialog id="help"><div class="dialog-heading"><h1>Gestos</h1><button id="help-close" aria-label="Cerrar ayuda">×</button></div>
-      <ol class="gesture-guide"><li><strong>Apuntar</strong><p>Mueve el índice sobre el mapa. Las sombras siguen la punta del índice de cada mano; con los puños cerrados siguen los nudillos. El pin 1 con pulso abre los gráficos. Usa las flechas para recorrerlos y la X para volver al mapa.</p></li><li><strong>Clic</strong><p>Coloca la punta del índice sobre un pin o botón. La posición de los otros dedos no importa. El aro conserva el objetivo mientras tu índice se mueve dentro de una zona amplia alrededor de él; no necesitas mantenerlo inmóvil. Tras 1,5 segundos selecciona automáticamente. Salir de la zona reinicia la carga. Después del clic, sal de la zona para seleccionar otra vez. La entrada o salida de la otra mano no interrumpe la selección.</p></li><li><strong>Mover</strong><p>Cierra una mano completamente en puño, espera un instante y muévela. También puedes usar dos puños y moverlos juntos. Las sombras se vuelven violetas. La otra mano puede permanecer abierta: sólo los puños mueven el mapa o el gráfico ampliado. Si el índice de una mano libre está sobre un objetivo, pasa a selección. Abre el último puño para detenerte.</p></li><li><strong>Zoom</strong><p>Con ambas manos en OK, sepáralas para acercar y júntalas para alejar. Para seleccionar, mantén la punta del índice sobre un objetivo; el zoom con dos OK tiene prioridad. Las sombras cambian de color durante el zoom. Suelta cualquiera de las pinzas para terminar.</p></li></ol>
-      <p class="field-note">Cámara frontal fija mirando hacia la persona, manos completas y separadas dentro del encuadre, iluminación uniforme y fondo mate. Usa Ajustes para elegir la cámara y revisar orientación y exposición. Los extremos de cámara corresponden a los extremos del mapa. Espacio pausa; Esc cancela cualquier acción.</p>
-      <p class="field-note">Servicios de mapa: <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank">Términos Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank">Privacidad Google</a>. Los mapas usan Internet; este prototipo no envía frames de cámara al proveedor del mapa.</p>
+    <dialog id="help" aria-labelledby="help-title">
+      <div class="dialog-heading"><h1 id="help-title">Cómo usar el mapa</h1><button id="help-close" type="button" aria-label="Cerrar ayuda">×</button></div>
+      <dl class="help-overview">
+        <div><dt>Explorar los temas</dt><dd>El punto 1 abre los gráficos de inundación. Usa Siguiente y Anterior para recorrerlos. Los puntos numerados indican temas del concejo.</dd></div>
+        <div><dt>Consultar datos</dt><dd>Entra en Análisis, elige una capa y ajusta los filtros. Apunta a un sector para ver sus cifras y haz clic para fijar la ficha.</dd></div>
+        <div><dt>Usar el teclado</dt><dd>Tab recorre los controles. Intro o Espacio activa el control seleccionado. En el visor, usa las flechas para cambiar de gráfico.</dd></div>
+      </dl>
+      <details class="settings-details">
+        <summary>Control con las manos</summary>
+        <div class="settings-details-body">
+          <p class="field-note">Pulsa Activar gestos y muestra la mano completa a la cámara, con buena luz.</p>
+          <ol class="gesture-guide">
+            <li><strong>Seleccionar</strong><p>Mantén el índice sobre el punto o botón durante 1,5 segundos. Retíralo antes de volver a seleccionar.</p></li>
+            <li><strong>Mover</strong><p>Cierra la mano en puño y muévela. Abre la mano para detenerte.</p></li>
+            <li><strong>Acercar o alejar</strong><p>Forma un círculo con el índice y el pulgar de cada mano. Separa las manos para acercar o júntalas para alejar.</p></li>
+          </ol>
+          <p class="field-note">Con el foco libre, Espacio pausa o reanuda los gestos. Esc cancela el gesto en curso.</p>
+        </div>
+      </details>
+      <details class="settings-details">
+        <summary>Fuentes y privacidad</summary>
+        <div class="settings-details-body">
+          <p class="field-note">Los puntos del concejo son de referencia y los gráficos pertenecen al material del equipo. La cámara se procesa en este equipo. El mapa base necesita Internet.</p>
+          <p class="field-note"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noreferrer">Términos de Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Privacidad de Google</a></p>
+        </div>
+      </details>
     </dialog>
     <script type="module" src="/src/main.js"></script>
   </body>

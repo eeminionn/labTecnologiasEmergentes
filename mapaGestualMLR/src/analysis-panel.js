@@ -10,37 +10,38 @@ export const SECURITY_CHOICES = {
 };
 
 /** Shared progressive controls; each dataset owns its filters and popover. */
-export function createAnalysisPanel(overlay, container, kind, callbacks) {
-  const camera = kind === 'cameras', prefix = camera ? 'camera-analysis' : 'analysis';
-  const controls = [], filterButtons = [], modeButtons = [], categoryButtons = [];
+export function createAnalysisPanel(overlay, container, layer, callbacks) {
+  const { id: kind, prefix, resource, label, tone } = layer, camera = kind === 'cameras';
+  const controls = [], filterButtons = [], modeButtons = [];
   let state = null, picker = null;
   const el = (tag, cls, text) => { const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e; };
-  const panel=el('section',`analysis-panel ${camera?'analysis-camera-panel':'analysis-security-panel'}`);
-  panel.setAttribute('aria-label',camera?'Análisis de cámaras':'Análisis de robos');
+  const panel=el('section',`analysis-panel analysis-${tone}-panel`);
+  panel.setAttribute('aria-label',label);
   panel.dataset.kind=kind;
   function button(parent,id,label,callback,cls='') {
-    const e=el('button',cls,label);e.id=id;e.type='button';e.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();callback();});parent.append(e);controls.push(e);return e;
+    const e=el('button',cls,label);e.id=id;e.type='button';e.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();callback(event,e);});parent.append(e);controls.push(e);return e;
   }
   const header=el('header','analysis-heading');
   const titleRow=el('div','analysis-title-row'),title=el('h1',null,'Análisis del mapa');
   titleRow.append(title);
-  const categoryLabel=el('p','analysis-category-label','Elige qué ver');
-  const category=el('div','analysis-category analysis-category-tabs');
-  category.setAttribute('role','group');category.setAttribute('aria-label','Elige qué ver');
-  for(const [key,label] of [['security','Robos'],['cameras','Cámaras']]) {
-    const e=button(category,`${prefix}-category-${key==='security'?'security':'cameras'}`,label,()=>callbacks.category(key));
-    e.dataset.category=key;categoryButtons.push(e);
-  }
+  const categoryLabel=el('p','analysis-category-label','Qué ver en el mapa');
+  const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog('primary',anchor),'analysis-layer-trigger');
+  category.dataset.tone=tone;category.setAttribute('aria-haspopup','dialog');category.setAttribute('aria-expanded','false');
+  category.setAttribute('aria-label',`Cambiar capa. Capa actual: ${label}`);
   header.append(titleRow,categoryLabel,category);
   const body=el('div','analysis-body'),stats=el('section','analysis-stats');stats.setAttribute('aria-label','Resultados de la consulta');
   const resultLabel=el('p','analysis-result-label','Resultados de la consulta');
   const totalRow=el('div','analysis-total-row'),total=el('strong',null,'—');total.id=`${prefix}-total`;
-  const totalLabel=el('span','analysis-total-label',camera?'cámaras':'robos');totalRow.append(total,totalLabel);
+  const totalLabel=el('span','analysis-total-label',layer.count);totalRow.append(total,totalLabel);
   const selectedPeriod=el('p','analysis-selected-period','Cargando datos…');
   selectedPeriod.setAttribute('role','status');
-  const empty=el('p','analysis-empty',camera?'No hay cámaras con estos filtros. Prueba con otro período o restablece los filtros.':'No hay robos con estos filtros. Prueba con otro período o restablece los filtros.');empty.hidden=true;
+  const empty=el('p','analysis-empty',resource?'No hay ubicaciones documentadas para mostrar.':`No hay ${layer.count} con estos filtros. Prueba con otro período o restablece los filtros.`);empty.hidden=true;
   stats.append(resultLabel,totalRow,selectedPeriod,empty);
-  body.append(stats,el('h2','analysis-filter-title','Ajusta los filtros'));
+  body.append(stats);
+  if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
+  const resourceList=el('div','analysis-resource-list');
+  let currentRecords=null;
+  if(resource)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
   function group(key,label,options,callback) {
     const f=el('fieldset',`analysis-filter analysis-filter-${key}`),legend=el('legend',null,label),g=el('div','analysis-options');
     g.setAttribute('role','group');g.setAttribute('aria-label',label);
@@ -57,7 +58,7 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   const monthPicker=button(dateSelection,`${prefix}-month-picker`,'Diciembre',()=>openPicker('month'));
   yearPicker.setAttribute('aria-label',camera?'Elegir año de cámaras':'Elegir año');monthPicker.setAttribute('aria-label',camera?'Elegir mes de cámaras':'Elegir mes');
   for(const e of [yearPicker,monthPicker]){e.setAttribute('aria-haspopup','dialog');e.setAttribute('aria-expanded','false');}
-  timeField.append(timeLegend,timeModes,dateSelection);body.append(timeField);
+  timeField.append(timeLegend,timeModes,dateSelection);if(!resource)body.append(timeField);
   if(camera)group('display','Cómo ver las cámaras',[['points','Puntos'],['heatmap','Concentración']],value=>callbacks.display(value));
   const cameraFilters=el('div','analysis-camera-filters'),cameraTriggers={};
   if(camera) {
@@ -65,7 +66,7 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
       const e=button(cameraFilters,`${prefix}-${key}-picker`,label,()=>openPicker(key));e.setAttribute('aria-haspopup','dialog');cameraTriggers[key]=e;
     }
     body.append(cameraFilters);
-  } else {
+  } else if(!resource) {
     const robberyFilters=el('div','analysis-robbery-filter');
     const trigger=button(robberyFilters,`${prefix}-robbery-picker`,'Tipo de robo: Todos ▾',()=>openPicker('robbery'));
     const periodTrigger=button(robberyFilters,`${prefix}-period-picker`,'Horario: Todo el día ▾',()=>openPicker('period'));
@@ -76,14 +77,16 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   legend.setAttribute('aria-label','Cómo leer el mapa');
   const legendTitle=el('strong',null,camera?'Cámaras en el mapa':'Concentración de robos');
   const ramp=el('div','analysis-color-ramp'),labels=el('div','analysis-legend-labels');labels.append(el('span',null,'Menor concentración'),el('span',null,'Mayor concentración'));
-  const pointLegend=el('p','analysis-point-legend','Cada punto representa una cámara');
-  const readingHint=el('p','analysis-reading-hint','Apunta a un sector para ver sus cifras.');
-  legend.append(legendTitle,ramp,labels,pointLegend,readingHint);
+  const pointLegend=el('p','analysis-point-legend',resource?`Cada símbolo representa un ${layer.singular}`:'Cada punto representa una cámara');
+  const readingHint=el('p','analysis-reading-hint',resource?'Selecciona un símbolo para ver su ubicación y fuente.':'Apunta a un sector para ver sus cifras. Haz clic para mantener la ficha abierta.');
+  const consult=button(legend,`${prefix}-consult`,'Consultar centro del mapa',(_,anchor)=>callbacks.consult(anchor),'analysis-consult');
+  legend.prepend(legendTitle,ramp,labels,pointLegend,readingHint);
   const actions=el('div','analysis-actions');
-  button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
-  const compare=button(actions,`${prefix}-cross`,camera?'Comparar con robos':'Comparar con cámaras',()=>callbacks.cross(kind),'analysis-compare');
+  if(!resource)button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
+  const compare=button(actions,`${prefix}-cross`,'Añadir comparación',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
+  compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
   const opacityRow=el('div','analysis-opacity'),opacityLabel=el('label',null,'Visibilidad'),opacityValue=el('output',null,'100%');
-  const slider=document.createElement('input');slider.type='range';slider.min='10';slider.max='100';slider.step='5';slider.id=`${prefix}-opacity`;slider.setAttribute('aria-label',camera?'Visibilidad de la capa de cámaras':'Visibilidad de la capa de robos');opacityLabel.htmlFor=slider.id;
+  const slider=document.createElement('input');slider.type='range';slider.min='10';slider.max='100';slider.step='5';slider.id=`${prefix}-opacity`;slider.setAttribute('aria-label',`Visibilidad: ${label}`);opacityLabel.htmlFor=slider.id;
   slider.addEventListener('input',()=>callbacks.opacity(Number(slider.value)/100));
   const less=button(opacityRow,`${prefix}-opacity-less`,'−',()=>callbacks.opacity(Math.max(.1,(state?.opacity||1)-.1)));
   opacityRow.prepend(opacityLabel);opacityRow.append(slider,opacityValue);
@@ -91,7 +94,7 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   less.setAttribute('aria-label','Disminuir visibilidad');
   footer.append(legend,opacityRow,actions);panel.append(header,body,footer);
   let timeline=null,playbackButton=null,timelineSlider=null,timelineOutput=null,playIcon=null,pauseIcon=null;
-  if(!camera) {
+  if(kind==='security') {
     timeline=el('section','analysis-timeline-bar');timeline.hidden=true;timeline.setAttribute('aria-label','Línea de tiempo de robos');
     playbackButton=button(timeline,'analysis-playback','',()=>callbacks.playback(),'analysis-playback');
     playbackButton.setAttribute('aria-label','Reproducir recorrido del día');playbackButton.setAttribute('aria-pressed','false');
@@ -123,7 +126,7 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   const multiHint=el('p','analysis-picker-hint','Selecciona uno o varios tipos.');multiHint.hidden=true;
   const grids={};
   const years=['2023','2024','2025'];
-  for(const [key,items] of [['year',years.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
+  for(const [key,items] of resource?[]:[['year',years.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
     const grid=el('div','analysis-date-grid');grid.dataset.grid=key;grids[key]=grid;
     for(const [value,label,detail] of items) {
       const idValue=['year','month','robbery','period'].includes(key)?value:items.findIndex(item=>item[0]===value);
@@ -138,7 +141,13 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
   }
   popover.prepend(popoverHeading,multiHint);overlay.append(panel,popover);
   for(const area of [panel,popover])for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])area.addEventListener(type,event=>event.stopPropagation());
-  function closePicker(){picker=null;popover.hidden=true;for(const e of [yearPicker,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');}
+  function pickerAnchor(key){return key==='year'?yearPicker:key==='month'?monthPicker:cameraTriggers[key];}
+  function closePicker(){
+    const anchor=pickerAnchor(picker);
+    if(popover.contains(document.activeElement)&&anchor?.getClientRects().length)anchor.focus({preventScroll:true});
+    picker=null;popover.hidden=true;
+    for(const e of [yearPicker,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
+  }
   function openPicker(key) {
     if(!state?.loaded || !grids[key] || key==='year'&&state.temporalMode==='all' || key==='month'&&state.temporalMode!=='month')return;
     if(picker===key){closePicker();return;}
@@ -146,17 +155,20 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
     for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
     popoverTitle.textContent={year:'Elige el año',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
     multiHint.hidden=!['type','robbery'].includes(key);
-    const anchor=key==='year'?yearPicker:key==='month'?monthPicker:cameraTriggers[key];anchor.setAttribute('aria-expanded','true');
+    const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
     const outer=container.getBoundingClientRect(),a=anchor.getBoundingClientRect(),p=popover.getBoundingClientRect(),r=panel.getBoundingClientRect();
     const left=panel.dataset.side==='right'?r.left-outer.left-p.width-10:r.right-outer.left+10;
     popover.style.left=`${Math.max(12,Math.min(outer.width-p.width-12,left))}px`;
     popover.style.top=`${Math.max(68,Math.min(outer.height-p.height-12,a.top-outer.top))}px`;
+    (grids[key].querySelector('[aria-pressed="true"]')||grids[key].querySelector('button'))?.focus({preventScroll:true});
   }
   function update(next) {
     state=next;panel.hidden=!next.visible;panel.dataset.side=next.side;
-    title.textContent=next.crossed?(camera?'Cámaras':'Robos'):'Análisis del mapa';category.hidden=categoryLabel.hidden=next.crossed;
-    categoryButtons.forEach(e=>e.setAttribute('aria-pressed',String(e.dataset.category===kind)));
+    const primary=next.side==='left';
+    title.textContent=primary?'Análisis del mapa':label;
+    category.hidden=categoryLabel.hidden=!primary;
     controls.forEach(e=>{e.disabled=!next.loaded;});
+    category.disabled=compare.disabled=!next.canChoose;
     if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
     filterButtons.forEach(e=>e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value)));
@@ -171,8 +183,9 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
     const hour=SECURITY_CHOICES.period.find(item=>item[0]===f.period);
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
-    const context=next.error?'No se pudieron cargar los datos. Vuelve al mapa e intenta de nuevo.':!next.loaded?'Cargando datos…'
-      :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
+    const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
+      :resource?(kind==='alarms'?'Instalaciones documentadas · operación actual por confirmar':'Ubicaciones documentadas')
+        :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
     for(const [key,trigger] of Object.entries(cameraTriggers)){
@@ -181,9 +194,22 @@ export function createAnalysisPanel(overlay, container, kind, callbacks) {
       const detail=selected==='all'?'Todos':Array.isArray(selected)?selected.length===1?options.find(c=>c[0]===selected[0])?.[1]:`${selected.length} seleccionados`:options.find(c=>c[0]===selected)?.[1];
       trigger.textContent=`${label}: ${key==='period'?hour?.[1]||'Todo el día':detail||'Todos'} ▾`;
     }
-    const points=camera&&next.display==='points';pointLegend.hidden=!points;ramp.hidden=points;labels.hidden=points;
-    legendTitle.textContent=camera?(points?'Cámaras en el mapa':'Concentración relativa de cámaras'):'Concentración relativa de robos';
-    opacityRow.hidden=!next.crossed;compare.hidden=next.crossed;
+    if(resource&&currentRecords!==next.records){
+      currentRecords=next.records;
+      for(const e of resourceList.querySelectorAll('button'))controls.splice(controls.indexOf(e),1);
+      resourceList.replaceChildren();
+      if(kind==='alarms')resourceList.append(el('p','analysis-resource-scope','La comuna informó 40 botones en paraderos. El mapa muestra los que tienen una ubicación identificada.'));
+      for(const record of currentRecords||[]){
+        const item=button(resourceList,`${prefix}-loc-${record.id}`,record.title,(_,anchor)=>callbacks.locate(record,anchor),'analysis-resource-location');
+        item.append(el('small',null,record.address));
+      }
+    }
+    if(resource){pointLegend.dataset.tone=tone;totalLabel.textContent=next.summary.total===1?'ubicación':'ubicaciones';}
+    const points=resource||camera&&next.display==='points';pointLegend.hidden=!points;ramp.hidden=points;labels.hidden=points;
+    legendTitle.textContent=resource?'Cómo leer los símbolos':camera?(points?'Cámaras en el mapa':'Concentración relativa de cámaras'):'Concentración relativa de robos';
+    consult.hidden=!primary;opacityRow.hidden=!next.crossed;compare.hidden=!primary;
+    compare.textContent=next.crossed?'Cambiar comparación':'Añadir comparación';
+    actions.hidden=!primary&&!!resource;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
   }

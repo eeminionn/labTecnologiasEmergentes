@@ -160,12 +160,18 @@ export async function createMap(container, config, notify, providerChanged = () 
   const sequence = new PointSequence(samples.map(item => item.id));
   if (config.provider === 'google' && config.googleKey) {
     let current, savedAnalysisLayer = null, savedAnalysisFrame = null, savedCameraLayer = null, savedAnalysisMode = false;
-    const viewSubscriptions = new Set();
-    const detachViewSubscriptions = () => {
-      for (const subscription of viewSubscriptions) { subscription.unsubscribe?.(); subscription.unsubscribe = null; }
+    const mapSubscriptions = new Set();
+    const detachMapSubscriptions = () => {
+      for (const subscription of mapSubscriptions) { subscription.unsubscribe?.(); subscription.unsubscribe = null; }
     };
-    const bindViewSubscriptions = () => {
-      for (const subscription of viewSubscriptions) subscription.unsubscribe = current.onViewChange(subscription.callback);
+    const bindMapSubscriptions = () => {
+      for (const subscription of mapSubscriptions) subscription.unsubscribe = current[subscription.method](subscription.callback);
+    };
+    const subscribeTo = (method, callback) => {
+      if (typeof callback !== 'function') return () => {};
+      const subscription = { method, callback, unsubscribe: current[method](callback) };
+      mapSubscriptions.add(subscription);
+      return () => { if (mapSubscriptions.delete(subscription)) subscription.unsubscribe?.(); };
     };
     let initializationFailed = false;
     const failureMessage = 'Google Maps no está disponible. Revisa la API key, Maps JavaScript API y facturación. Se muestra OpenStreetMap.';
@@ -178,9 +184,10 @@ export async function createMap(container, config, notify, providerChanged = () 
         const content = container.querySelector('.content-viewer');
         const experience = container.querySelector('.traffic-experience');
         const analysis = container.querySelector('.analysis-experience');
-        detachViewSubscriptions(); current.destroy(); container.replaceChildren();
+        const analysisResources = container.querySelector(':scope > .analysis-resource-markers');
+        detachMapSubscriptions(); current.destroy(); container.replaceChildren();
         current = osmMap(container, notify, config.offline, sequence, onPointSelected);
-        bindViewSubscriptions();
+        bindMapSubscriptions();
         current.setAnalysisMode(savedAnalysisMode);
         if (savedAnalysisFrame) current.setAnalysisFrame(savedAnalysisFrame);
         else current.setAnalysisLayer(savedAnalysisLayer);
@@ -188,8 +195,9 @@ export async function createMap(container, config, notify, providerChanged = () 
         if (content) container.append(content);
         if (experience) container.append(experience);
         if (analysis) container.append(analysis);
+        if (analysisResources) container.append(analysisResources);
         if (savedAnalysisMode) current.home();
-        for (const subscription of viewSubscriptions) subscription.callback();
+        for (const subscription of mapSubscriptions) subscription.callback();
         notify(failureMessage); providerChanged(current.provider);
       }, notify, sequence, onPointSelected);
       if (initializationFailed) { current.destroy(); throw new Error('Google authentication'); }
@@ -198,11 +206,8 @@ export async function createMap(container, config, notify, providerChanged = () 
         pan: (...args) => current.pan(...args), zoom: (...args) => current.zoom(...args),
         screenToLocation: (...args) => current.screenToLocation(...args),
         locationToScreen: (...args) => current.locationToScreen(...args),
-        onViewChange(callback) {
-          if (typeof callback !== 'function') return () => {};
-          const subscription = { callback, unsubscribe: current.onViewChange(callback) }; viewSubscriptions.add(subscription);
-          return () => { if (viewSubscriptions.delete(subscription)) subscription.unsubscribe?.(); };
-        },
+        onViewChange: callback => subscribeTo('onViewChange', callback),
+        onPositionChange: callback => subscribeTo('onPositionChange', callback),
         focus: (...args) => current.focus(...args),
         setAnalysisMode(value) { savedAnalysisMode = value === true; return current.setAnalysisMode(savedAnalysisMode); },
         setAnalysisLayer(value) { savedAnalysisFrame = null; savedAnalysisLayer = analysisLayerSpec(value); return current.setAnalysisLayer(savedAnalysisLayer); },
@@ -222,7 +227,7 @@ export async function createMap(container, config, notify, providerChanged = () 
           return current.setCameraAnalysisOpacity(savedCameraLayer.opacity);
         },
         home: () => current.home(), resetSequence: () => current.resetSequence(),
-        destroy() { detachViewSubscriptions(); viewSubscriptions.clear(); current.destroy(); },
+        destroy() { detachMapSubscriptions(); mapSubscriptions.clear(); current.destroy(); },
         info: () => current.info(), targets: () => current.targets()
       };
     } catch { container.replaceChildren(); notify(failureMessage); }
@@ -369,6 +374,12 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
       const handler = () => callback(); map.on('movestart zoomstart resize', handler);
       return () => map.off('movestart zoomstart resize', handler);
     },
+    onPositionChange(callback) {
+      if (typeof callback !== 'function') return () => {};
+      const events = 'move zoom resize viewreset';
+      map.on(events, callback);
+      return () => map.off(events, callback);
+    },
     pan(dx, dy) { map.panBy([-dx, -dy], { animate: false }); },
     zoom(delta, x, y) { map.setZoomAround(L.point(x, y), Math.min(19, Math.max(3, map.getZoom() + delta)), { animate: false }); },
     focus(point, zoom = 19, { animate = true } = {}) {
@@ -419,7 +430,19 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
   });
   const { Map, InfoWindow, RenderingType, OverlayView, GroundOverlay } = await google.maps.importLibrary('maps');
   const map = new Map(container, { center, zoom: 14, disableDefaultUI: true, clickableIcons: true, renderingType: RenderingType.VECTOR, isFractionalZoomEnabled: true, gestureHandling: 'greedy', tilt: 0, heading: 0 });
-  const viewChangeCleanup = new Set();
+  const mapChangeCleanup = new Set();
+  function subscribe(events, callback) {
+    if (typeof callback !== 'function') return () => {};
+    const listeners = events.map(event => map.addListener(event, callback));
+    const observer = new ResizeObserver(() => callback()); observer.observe(container);
+    const cleanup = () => {
+      if (!mapChangeCleanup.delete(cleanup)) return;
+      listeners.forEach(listener => listener.remove());
+      observer.disconnect();
+    };
+    mapChangeCleanup.add(cleanup);
+    return cleanup;
+  }
   let analysisMode = false;
   const analysisRaster = createAnalysisRasterTransition({
     createLayer(spec, onLoad, onError) {
@@ -589,13 +612,8 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       const point = projection.fromLatLngToContainerPixel(new google.maps.LatLng(location.lat, location.lng));
       return point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null;
     },
-    onViewChange(callback) {
-      if (typeof callback !== 'function') return () => {};
-      const handler = () => callback(), listener = map.addListener('bounds_changed', handler);
-      const observer = new ResizeObserver(handler); observer.observe(container);
-      const cleanup = () => { if (!viewChangeCleanup.delete(cleanup)) return; listener.remove(); observer.disconnect(); };
-      viewChangeCleanup.add(cleanup); return cleanup;
-    },
+    onViewChange: callback => subscribe(['bounds_changed'], callback),
+    onPositionChange: callback => subscribe(['bounds_changed', 'projection_changed', 'idle'], callback),
     pan(dx, dy) {
       const projection = map.getProjection(); if (!projection) return;
       const p = projection.fromLatLngToPoint(map.getCenter()), scale = 2 ** map.getZoom();
@@ -615,7 +633,7 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     resetSequence() { info.close(); const state = sequence.reset(); refreshMarkers(); return state; },
     focus(point, zoom = 19) { map.panTo(point); map.setZoom(zoom); return Promise.resolve(); },
     destroy() {
-      for (const cleanup of [...viewChangeCleanup]) cleanup();
+      for (const cleanup of [...mapChangeCleanup]) cleanup();
       analysisRaster.destroy(); clearCameraAnalysisLayer();
       info.close(); markers.forEach(marker => marker.setMap(null));
       features.forEach(feature => map.data.remove(feature));

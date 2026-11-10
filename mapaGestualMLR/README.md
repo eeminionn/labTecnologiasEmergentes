@@ -3,7 +3,7 @@
 ### Interacción y análisis de información territorial
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 10 de noviembre de 2026 · versión 0.8.0<br>
+**Última actualización:** 10 de noviembre de 2026 · versión 0.9.0<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
@@ -17,6 +17,8 @@
 | [Referentes de gestos y UX](./Documentos/02-gestos-y-ux.md) | Antecedentes para definir la interacción. |
 | [Análisis territorial](./Documentos/11-analisis-seguridad.md) | Consulta de seguridad, cámaras y cruce de información. |
 | [Fuentes de cámaras](./Documentos/12-camaras-fuentes.md) | Procedencia y alcance de la base. |
+| [Evaluación integral de usabilidad](./Documentos/14-evaluacion-usabilidad-integral.md) | Heurísticas de Nielsen, recorrido cognitivo y revisión de accesibilidad. |
+| [Fuentes de recursos de seguridad](./Documentos/15-fuentes-recursos-seguridad.md) | Puntos fijos y botón de emergencia con ubicación identificada. |
 
 ## Punto de partida
 
@@ -120,7 +122,7 @@ Primero elegimos **Todo, Año o Mes** y luego el período concreto. Al pasar el 
 
 ### Cámaras y cruce de información
 
-Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como puntos cian o mapa de calor azul. **Comparar con cámaras** superpone ambas bases y conserva filtros y visibilidad independientes, con un panel a cada lado. Preparamos un ejemplo de **2024** con concentraciones de incidentes y pocas cámaras cercanas para mostrar esta lectura conjunta.
+Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como puntos cian o mapa de calor azul. **Añadir comparación** superpone una segunda capa y conserva filtros y visibilidad independientes, con un panel a cada lado. Preparamos un ejemplo de **2024** con concentraciones de incidentes y pocas cámaras cercanas para mostrar esta lectura conjunta.
 
 <table>
   <tr>
@@ -133,11 +135,21 @@ Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como p
 
 ### Ajustes de la interfaz
 
-Ordenamos Análisis en **capa, resultados, filtros y leyenda**. Horario, tipos y fechas se despliegan solo cuando se necesitan. La comparación abre la otra capa en un paso. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**.
+Ordenamos Análisis en **capa, resultados, filtros y leyenda**. Horario, tipos y fechas se despliegan solo cuando se necesitan. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**.
 
 La **barra de 00 a 24 horas** reproduce el día en **ocho segundos**, con pausa y deslizador. Mezcla gradualmente los cuatro horarios de robos y conserva los demás filtros. En el cruce, las cámaras permanecen fijas. La [evaluación de la interfaz](./Documentos/13-evaluacion-analisis.md) reúne los cambios y las capas sugeridas.
 
 Los incidentes son simulados y las cámaras combinan referencias publicadas con emplazamientos de demostración. La procedencia permanece en los CSV y sus metadatos; estas bases no representan estadísticas ni un catastro municipal vigente. Las agrupaciones de robo se apoyan en el [glosario de la Biblioteca del Congreso Nacional](https://www.bcn.cl/siit/reportescomunales/glosario.html).
+
+## Actualización: usabilidad y recursos de seguridad
+
+**Fecha:** 10 de noviembre de 2026
+
+Facilitamos el inicio de una reunión: los gráficos de inundación se abren desde el mapa principal, el visor muestra el título y el avance, y los gestos se activan solo cuando se necesitan. La ayuda guía por tarea y los ajustes técnicos están plegados. [Evaluación integral](./Documentos/14-evaluacion-usabilidad-integral.md)
+
+El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se puede elegir una capa y comparar con otra. Incorporamos tres puntos fijos y un botón de emergencia documentado en el paradero PD308; su operación actual queda por confirmar. [Fuentes y ubicaciones](./Documentos/15-fuentes-recursos-seguridad.md)
+
+Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic, cerrar con Escape o consultar desde el botón **Consultar centro del mapa**. Las ubicaciones de seguridad muestran dirección y fuente.
 
 ## Próximos pasos
 
