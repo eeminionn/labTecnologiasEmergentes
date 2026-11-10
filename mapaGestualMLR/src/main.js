@@ -12,8 +12,10 @@ import { getCameraControls, applyCameraControls } from './camera-quality.js';
 import { createMap } from './map.js';
 import { createContentViewer } from './content-viewer.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
+import { createCouncilAgenda } from './council-agenda.js';
 
 const $ = id => document.getElementById(id);
+const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
 const smoke = new URLSearchParams(location.search).has('smoke');
 const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
 const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
@@ -107,6 +109,7 @@ async function loadMap() {
 }
 function openPointContent(item) {
   if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
+  councilAgenda.selectPoint(item.id);
   if(item.id!=='point-0')return;
   const slides=contentViewer?.manifest?.slides;
   if(!slides?.length){notify('No se pudieron cargar los gráficos.');return;}
@@ -763,8 +766,8 @@ function selectionTargets(rect) {
   // Only the visible layer is actionable. Hidden map pins cannot steal a
   // selection or open a popup while the person is reading a graph.
   const targets=currentSurface().targets();
-  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button,#map-graphics-shortcut').forEach(element=>{
-    if(element.hidden || element.disabled || !element.getClientRects().length)return;
+  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button,.map-intro button').forEach(element=>{
+    if(element.hidden || element.disabled || element.getAttribute('aria-disabled')==='true' || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
     const box=element.getBoundingClientRect();
     targets.push({id:controlIds.get(element),x:box.left+box.width/2-rect.left,y:box.top+box.height/2-rect.top,width:box.width,height:box.height,element,priority:1});
@@ -1061,7 +1064,7 @@ $('mode-map').onclick=event=>{
   if(analysisView || analysisLoading)leaveAnalysis();
   else if(trafficExperience || experienceLoading)leaveExperience();
   else return;
-  if(event.detail===0)$('map-graphics-shortcut').focus({preventScroll:true});
+  if(event.detail===0)councilAgenda.focus();
 };
 $('mode-experiences').onclick=()=>enterExperience();
 $('mode-analysis').onclick=event=>enterAnalysis({focusFilters:event.detail===0});

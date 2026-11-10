@@ -19,9 +19,27 @@
         <button id="mode-analysis" type="button" aria-pressed="false" disabled>Análisis</button>
       </aside>
       <section class="map-intro" aria-labelledby="map-intro-title">
-        <p class="map-intro-label">Concejo en perspectiva</p>
-        <h1 id="map-intro-title">Temas del concejo</h1>
-        <button id="map-graphics-shortcut" class="primary" type="button" disabled>Ver gráficos de inundación <span aria-hidden="true">→</span></button>
+        <div class="council-agenda-heading">
+          <p class="map-intro-label">Concejo en perspectiva</p>
+          <h1 id="map-intro-title">Temas del concejo</h1>
+          <span class="council-agenda-badge">Agenda ficticia</span>
+        </div>
+        <div class="council-agenda-current" aria-live="polite" aria-atomic="true">
+          <div class="council-agenda-meta">
+            <span>En curso</span>
+            <time id="council-current-time"></time>
+            <span id="council-current-priority" class="council-agenda-priority"></span>
+          </div>
+          <h2 id="council-current-topic" class="council-agenda-topic"></h2>
+          <p id="council-current-description" class="council-agenda-description"></p>
+          <button id="map-graphics-shortcut" class="primary" type="button" disabled>Ver gráficos de inundación <span aria-hidden="true">→</span></button>
+        </div>
+        <ol id="council-agenda-list" class="council-agenda-list" aria-label="Horario de la sesión"></ol>
+        <div class="council-agenda-nav" role="group" aria-label="Navegación de la agenda">
+          <button id="council-agenda-prev" type="button">Anterior</button>
+          <span id="council-agenda-progress"></span>
+          <button id="council-agenda-next" type="button">Siguiente</button>
+        </div>
       </section>
       <div id="map" aria-label="Mapa interactivo de La Reina"></div>
       <div id="cursor" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>

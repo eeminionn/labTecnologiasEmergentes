@@ -195,27 +195,154 @@ body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experienc
   z-index: 470;
   top: 18px;
   left: 18px;
-  display: block;
-  width: 265px;
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 308px;
+  max-height: calc(100% - 82px);
+  padding: 14px;
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 16px;
   background: #fff;
   box-shadow: var(--glass-shadow);
 }
-body:not(.twin-projection) .map-intro h1 { margin: 2px 0 7px; font-size: 21px; letter-spacing: -.5px; line-height: 1.25; }
-body:not(.twin-projection) .map-intro p { margin: 0; color: var(--ink-secondary); font-size: 12px; line-height: 1.5; }
+body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro {
+  max-height: calc(100% - var(--council-camera-clearance, 264px));
+}
+body:not(.twin-projection) .council-agenda-heading { padding-top: 2px; }
+body:not(.twin-projection) .map-intro h1 { margin: 4px 0 0; font-size: 21px; letter-spacing: -.5px; line-height: 1.25; }
+body:not(.twin-projection) .map-intro p { margin: 0; color: var(--ink-secondary); font-size: 12px; line-height: 1.45; }
 body:not(.twin-projection) .map-intro .map-intro-label { color: var(--municipal-petroleo); font-size: 10px; font-weight: 600; }
+body:not(.twin-projection) .council-agenda-badge {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  padding: 2px 6px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--ink-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+body:not(.twin-projection) .council-agenda-current {
+  flex: none;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f5f8f9;
+}
+body:not(.twin-projection) .council-agenda-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-meta time,
+body:not(.twin-projection) .council-agenda-choice time,
+body:not(.twin-projection) .council-agenda-nav span { font-variant-numeric: tabular-nums; }
+body:not(.twin-projection) .council-agenda-priority {
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 10px;
+}
+body:not(.twin-projection) .council-agenda-priority[data-priority="urgente"] { color: var(--municipal-morado); }
+body:not(.twin-projection) .council-agenda-priority[data-priority="programado"] { color: var(--ink-secondary); }
+body:not(.twin-projection) .council-agenda-topic {
+  margin: 5px 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+}
 body:not(.twin-projection) #map-graphics-shortcut {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 9px;
   width: 100%;
-  min-height: 44px;
-  margin-top: 12px;
+  min-height: 38px;
+  margin-top: 8px;
   font-weight: 600;
   text-align: left;
+  white-space: normal;
+}
+body:not(.twin-projection) .council-agenda-list {
+  display: grid;
+  gap: 3px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+}
+body:not(.twin-projection) .council-agenda-choice {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+  text-align: left;
+  white-space: normal;
+}
+body:not(.twin-projection) .council-agenda-choice:hover,
+body:not(.twin-projection) .council-agenda-choice[aria-current="true"] {
+  border-color: var(--border);
+  background: #edf6f6;
+  box-shadow: none;
+}
+body:not(.twin-projection) .council-agenda-choice time {
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-name { font-size: 12px; line-height: 1.35; }
+body:not(.twin-projection) .council-agenda-choice[aria-current="true"] .council-agenda-name { font-weight: 700; }
+body:not(.twin-projection) .council-agenda-choice-state {
+  color: var(--ink-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+body:not(.twin-projection) .council-agenda-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+body:not(.twin-projection) .council-agenda-nav button {
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  box-shadow: none;
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-nav button[aria-disabled="true"] {
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: default;
+  opacity: .55;
+}
+body:not(.twin-projection) .council-agenda-choice:focus-visible,
+body:not(.twin-projection) .council-agenda-choice.gesture-target {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: -2px;
 }
 
 /* The preview stays available without covering mode or scenario controls. */
@@ -412,6 +539,7 @@ body:not(.twin-projection) #content-fit .content-control-symbol { font-size: 11p
 body:not(.twin-projection) .content-control:hover { background: #f2f9f9; }
 body:not(.twin-projection) .content-control.gesture-target,
 body:not(.twin-projection) #map-graphics-shortcut.gesture-target,
+body:not(.twin-projection) .council-agenda-nav button.gesture-target,
 body:not(.twin-projection) .map-tools button.gesture-target,
 body:not(.twin-projection) #experience-mode-switcher button.gesture-target,
 body:not(.twin-projection) .traffic-experience button.gesture-target {
@@ -615,14 +743,30 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection) footer { font-size: 9px; padding: 0 12px; gap: 8px; }
   body:not(.twin-projection) #experience-mode-switcher { top: 14px; }
   body:not(.twin-projection) #experience-mode-switcher button { min-width: 86px; padding: 7px 12px; }
-  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro { width: 238px; padding: 13px; }
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro { width: 278px; }
   body:not(.twin-projection) .traffic-legend { max-width: calc(100% - 225px); }
 }
 @media (max-height: 780px) {
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+    --council-camera-clearance: 228px;
+    gap: 7px;
+    padding: 10px;
+  }
+  body:not(.twin-projection) .council-agenda-current { padding-block: 8px; }
+  body:not(.twin-projection) .council-agenda-badge { top: 9px; right: 10px; }
   body:not(.twin-projection) #diagnostics { width: 165px; bottom: 14px; }
   body:not(.twin-projection) .traffic-toolbar { max-height: calc(100% - 205px); }
   body:not(.twin-projection) .traffic-subtitle { margin-bottom: 10px; }
   body:not(.twin-projection) .traffic-note { margin-top: 10px; }
+}
+@media (max-width: 760px) {
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+    top: 76px;
+    max-height: calc(100% - 142px);
+  }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro {
+    max-height: calc(100% - var(--council-camera-clearance, 264px) - 58px);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   body:not(.twin-projection) button { transition: none; }
