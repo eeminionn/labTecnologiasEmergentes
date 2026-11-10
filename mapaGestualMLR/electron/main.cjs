@@ -198,8 +198,8 @@ else {
       if (!trusted(event.sender) || (bridge ? !bridge.isActive(epoch) : !win.isFocused()) || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
       const [width, height] = win.getContentSize();
       const x = Math.round(point.x), y = Math.round(point.y);
-      // Only the map viewport; top bar / footer never accept gesture input.
-      if (x < 0 || x >= width || y < (twinMode ? 0 : 56) || y >= height - (twinMode ? 0 : 28)) return false;
+      // Only the map viewport accepts gesture input.
+      if (x < 0 || x >= width || y < (twinMode ? 0 : 56) || y >= height) return false;
       win.webContents.sendInputEvent({ type: 'mouseMove', x, y });
       win.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
       win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });

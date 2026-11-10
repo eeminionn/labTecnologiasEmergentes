@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { ANALYSIS_LAYERS, chooseAnalysisLayer, nearbySecurityResources, parseSimulatedSecurityResources, readSecurityResources } from '../src/analysis-catalog.js';
+import { ANALYSIS_LAYERS, chooseAnalysisLayer, mostUsedAlarmButtons, nearbySecurityResources, parseAlarmUsage, parseSimulatedSecurityResources, readSecurityResources } from '../src/analysis-catalog.js';
 import { pointInsideBoundary } from '../src/analysis-data.js';
 
 const json = path => JSON.parse(readFileSync(new URL(path, import.meta.url), 'utf8'));
@@ -41,4 +41,18 @@ test('la consulta devuelve solo ubicaciones del radio y distingue capas', () => 
   assert.equal(result.nearest.id,alarm.id);
   assert.equal(result.nearest.distanceMetres,0);
   assert.equal(nearbySecurityResources(records.filter(record=>record.kind==='alarms'),{lat:-33.459,lng:-70.54}).total,0);
+});
+
+test('las pulsaciones cubren los botones y el filtro muestra los diez más usados', () => {
+  const usage = parseAlarmUsage(readFileSync(new URL('../public/analysis/pulsaciones-botones.csv',import.meta.url),'utf8'));
+  const buttons = [...source, ...simulated].filter(record=>record.kind==='alarms')
+    .map(record=>({...record,activations:usage.get(record.id)}));
+  assert.equal(usage.size,buttons.length);
+  assert.ok(buttons.every(record=>Number.isInteger(record.activations)));
+  const top = mostUsedAlarmButtons(buttons);
+  assert.equal(top.length,10);
+  assert.deepEqual(top.map(record=>record.activations),buttons.map(record=>record.activations).sort((a,b)=>b-a).slice(0,10));
+  assert.equal(mostUsedAlarmButtons([{id:'sin-uso',activations:0},{id:'sin-datos',activations:null}]).length,0);
+  assert.throws(()=>parseAlarmUsage('id,pulsaciones\nboton,1\nboton,2'));
+  assert.throws(()=>parseAlarmUsage('id,pulsaciones\nboton,-1'));
 });

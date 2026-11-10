@@ -4,7 +4,7 @@ import { parseSecurityCSV, filterSecurityRecords, buildDensitySurface, boundaryP
 import { parseCameraCSV, filterCameraRecords, summarizeCameraRecords, cameraHeatColor, createCameraSpatialIndex, normalizeCameraTypes, toggleCameraType } from './camera-analysis-data.js';
 import { createAnalysisPanel, SECURITY_CHOICES, CAMERA_CHOICES } from './analysis-panel.js';
 import { createAnalysisPlayback } from './analysis-playback.js';
-import { ANALYSIS_LAYERS, getAnalysisLayer, chooseAnalysisLayer, parseSimulatedSecurityResources, readSecurityResources, nearbySecurityResources } from './analysis-catalog.js';
+import { ANALYSIS_LAYERS, getAnalysisLayer, chooseAnalysisLayer, parseSimulatedSecurityResources, parseAlarmUsage, mostUsedAlarmButtons, readSecurityResources, nearbySecurityResources } from './analysis-catalog.js';
 import { createLayerPicker } from './analysis-layer-picker.js';
 import { createResourceMarkers } from './analysis-resource-markers.js';
 
@@ -37,13 +37,13 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const defaultOpacity=(kind, compare=false)=>kind==='security'?(compare ? .45 : .62):kind==='cameras'&&datasets.cameras?.display==='heatmap'?(compare ? .55 : .62):.9;
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
-    datasets[kind]={records:[],filtered:[],metadata:null,filters:{...defaults[kind]},summary:{total:0},surface:null,image:null,index:null,dateRange:null,temporalMode:'all',selectedYear:'2025',selectedMonth:'12',display:kind==='security'?'heatmap':'points',opacity:defaultOpacity(kind)};
+    datasets[kind]={records:[],filtered:[],metadata:null,filters:kind==='alarms'?{usage:'all'}:{...defaults[kind]},summary:{total:0},surface:null,image:null,index:null,dateRange:null,temporalMode:'all',selectedYear:'2025',selectedMonth:'12',display:kind==='security'?'heatmap':'points',opacity:defaultOpacity(kind)};
   }
   const overlay=document.createElement('section');overlay.className='analysis-experience';overlay.dataset.state='loading';overlay.setAttribute('aria-label','Análisis territorial');container.append(overlay);
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
-      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),reset:()=>setDatasetFilters(kind,defaults[kind]),cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
+      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),reset:()=>setDatasetFilters(kind,defaults[kind]),cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,alarmUsage:setAlarmUsage,catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
   }
   const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
@@ -116,7 +116,8 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const unsubscribeView=map.onViewChange?.(()=>{clearHover();closeAllPickers();catalog.close();});map.setAnalysisMode(true);updatePanels();map.home();
   const ready=(async()=>{
     const resource=async(url,format)=>{const r=await fetch(url,{signal:abort.signal});if(!r.ok)throw new Error('No se pudo cargar la base de análisis.');return format==='json'?r.json():r.text();};
-    const [securityCSV,securityMeta,cameraCSV,cameraMeta,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
+    const [securityCSV,securityMeta,cameraCSV,cameraMeta,alarmUsage,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
+      resource('/analysis/pulsaciones-botones.csv').then(parseAlarmUsage).catch(()=>new Map()),
       Promise.all([
         resource('/analysis/recursos-seguridad.json','json').then(value=>readSecurityResources(value,inside)),
         resource('/analysis/recursos-simulados.csv').then(parseSimulatedSecurityResources).catch(()=>[])
@@ -128,9 +129,13 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     for(const kind of ['security','cameras'])if(datasets[kind].records.length!==datasets[kind].metadata.cantidad)throw new Error('La base está incompleta.');
     for(const layer of ANALYSIS_LAYERS.filter(layer=>layer.resource)){
       const d=datasets[layer.id];
-      d.records=d.filtered=resources.filter(r=>r.kind===layer.id);
-      const simulated=d.records.filter(record=>record.simulated).length;
-      d.summary={total:d.records.length,documented:d.records.length-simulated,simulated};
+      d.records=resources.filter(record=>record.kind===layer.id);
+      if(layer.id==='alarms'){
+        d.records=d.records.map(record=>({...record,activations:alarmUsage.get(record.id)??null}));
+        d.mostUsed=mostUsedAlarmButtons(d.records);
+      }
+      d.filtered=d.records;
+      summarizeResources(d);
     }
     resourcesReady=!resourceError;
     loaded=true;setDatasetFilters('security',defaults.security);setDatasetFilters('cameras',defaults.cameras);onChange({reason:'ready',...info()});
@@ -170,6 +175,21 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       const {filtered,opacity}=datasets[id];return filtered.map(record=>({...record,opacity}));
     });
     resourceMarkers.render(points);
+  }
+  function summarizeResources(dataset){
+    const simulated=dataset.filtered.filter(record=>record.simulated).length;
+    dataset.summary={total:dataset.filtered.length,documented:dataset.filtered.length-simulated,simulated};
+  }
+  function setAlarmUsage(usage){
+    const dataset=datasets.alarms;
+    if(destroyed||!resourcesReady||!['all','top'].includes(usage)||usage===dataset.filters.usage) return;
+    clearHover();
+    dataset.filters.usage=usage;
+    dataset.filtered=usage==='top'?dataset.mostUsed:dataset.records;
+    summarizeResources(dataset);
+    renderResources();
+    updatePanels();
+    onChange({reason:'filters',dataset:'alarms',...info()});
   }
   function togglePlayback(){if(!loaded||destroyed||!visible('security'))return false;closeAllPickers();clearHover();prepareTimelineFrames();return playback.toggle();}
   function seekPlayback(position){if(!loaded||destroyed||!visible('security'))return false;clearHover();prepareTimelineFrames();return playback.seek(position);}
@@ -321,6 +341,12 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       if(point){
         if(point!==anchor.record)section.append(el('strong','analysis-resource-title',point.title));
         section.append(el('p',null,point.address));
+        if(kind==='alarms'){
+          const count=point.activations;
+          if(Number.isInteger(count)){
+            section.append(el('div','analysis-tooltip-total',number(count)),el('p','analysis-alarm-usage-label',count===1?'Pulsación de referencia':'Pulsaciones de referencia'));
+          }else section.append(el('p',null,'Sin datos de pulsaciones.'));
+        }
         if(point!==anchor.record)section.append(el('small',null,`${Math.round(point.distanceMetres)} m desde el punto consultado`));
       }else section.append(el('p',null,'Sin ubicaciones visibles en este radio.'));
       resourcesTip.append(section);

@@ -111,7 +111,9 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       present.add(id);
       const entry = markers.get(id) || addMarker(id, record);
       entry.record = record;
-      entry.element.setAttribute('aria-label', `${record.title} · ${record.address}`);
+      const count = record.activations;
+      const usage = Number.isInteger(count) ? ` · ${count} ${count === 1 ? 'pulsación' : 'pulsaciones'} de referencia` : '';
+      entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}`);
       const opacity = Number.isFinite(record.opacity) ? Math.max(0, Math.min(1, record.opacity)) : 1;
       entry.element.style.opacity = String(opacity);
       entry.stem.style.opacity = String(opacity);

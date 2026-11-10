@@ -72,15 +72,7 @@ function updateStatus() {
   $('diagnostics').hidden=!active&&!twinProjection;
   $('camera-preview-state').hidden=active;
   if(!active)clearTrackingPreview();
-  updateGestureHint();
   reportTwinState();
-}
-function updateGestureHint(){
-  const hint=$('gesture-hint'),shortcuts=$('gesture-shortcuts');
-  shortcuts.hidden=!active;
-  hint.textContent=!active?'Puedes explorar con el mouse o el teclado. La cámara es opcional.'
-    :paused?'Los gestos están en pausa. Pulsa Reanudar gestos para continuar.'
-    :'Índice 1,5 s para seleccionar · Puño para mover · Dos manos en OK para acercar o alejar';
 }
 function reportTwinState() {
   if(twinProjection)window.desktop.reportTwinState({cameraActive:active && twinLeaseActive,hands:latestHands.length,error:twinError,detectorReady:workerReady,inferenceFrames:counters.frames,cameraLabel:stream?.getVideoTracks()[0]?.label || ''});
@@ -125,7 +117,6 @@ function showSurfaceMode(mode) {
   $('mode-map').textContent=mode==='analysis'?'Volver al mapa':'Mapa';
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
-  updateGestureHint();
 }
 function showExperienceMode(enabled) { showSurfaceMode(enabled?'experience':'map'); }
 function leaveExperience() {

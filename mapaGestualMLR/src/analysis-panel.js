@@ -51,6 +51,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     }
     f.append(legend,g);body.append(f);return f;
   }
+  if(kind==='alarms')group('usage','Uso de los botones',[['all','Todos'],['top','Más usados']],value=>callbacks.alarmUsage(value));
   const timeField=el('fieldset','analysis-filter analysis-filter-date'),timeLegend=el('legend',null,'Período'),timeModes=el('div','analysis-options');
   ['all','year','month'].forEach((mode,i)=>modeButtons.push(button(timeModes,`${prefix}-mode-${mode}`,['Todo','Año','Mes'][i],()=>callbacks.mode(mode))));
   const dateSelection=el('div','analysis-date-selection');dateSelection.hidden=true;
@@ -73,13 +74,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     trigger.setAttribute('aria-haspopup','dialog');periodTrigger.setAttribute('aria-haspopup','dialog');
     cameraTriggers.robbery=trigger;cameraTriggers.period=periodTrigger;body.append(robberyFilters);
   }
-  const footer=el('footer','analysis-footer'),legend=el('section','analysis-legend');
-  legend.setAttribute('aria-label','Cómo leer el mapa');
-  const legendTitle=el('strong',null,camera?'Cámaras en el mapa':'Concentración de robos');
-  const ramp=el('div','analysis-color-ramp'),labels=el('div','analysis-legend-labels');labels.append(el('span',null,'Menor concentración'),el('span',null,'Mayor concentración'));
-  const pointLegend=el('p','analysis-point-legend',resource?'Cada símbolo marca una ubicación de referencia.':'Cada punto representa una cámara');
-  const readingHint=el('p','analysis-reading-hint',resource?'Selecciona un marcador en el mapa para ver su ubicación.':'Apunta a un sector para ver sus cifras. Haz clic para mantener la ficha abierta.');
-  legend.prepend(legendTitle,ramp,labels,pointLegend,readingHint);
+  const footer=el('footer','analysis-footer');
   const actions=el('div','analysis-actions');
   if(!resource)button(actions,`${prefix}-reset`,'Restablecer filtros',()=>callbacks.reset(),'analysis-reset');
   const compare=button(actions,`${prefix}-cross`,'Añadir comparación',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
@@ -91,7 +86,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   opacityRow.prepend(opacityLabel);opacityRow.append(slider,opacityValue);
   button(opacityRow,`${prefix}-opacity-more`,'+',()=>callbacks.opacity(Math.min(1,(state?.opacity||1)+.1))).setAttribute('aria-label','Aumentar visibilidad');
   less.setAttribute('aria-label','Disminuir visibilidad');
-  footer.append(legend,opacityRow,actions);panel.append(header,body,footer);
+  footer.append(opacityRow,actions);panel.append(header,body,footer);
   let timeline=null,playbackButton=null,timelineSlider=null,timelineOutput=null,playIcon=null,pauseIcon=null;
   if(kind==='security') {
     timeline=el('section','analysis-timeline-bar');timeline.hidden=true;timeline.setAttribute('aria-label','Línea de tiempo de robos');
@@ -115,14 +110,13 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       const tick=button(ticks,`analysis-time-${hour}`,`${String(hour).padStart(2,'0')} h`,()=>callbacks.seek(hour/24));
       tick.setAttribute('aria-label',hour===24?'Ir al final del día':`Ir a las ${String(hour).padStart(2,'0')}:00`);
     }
-    timeline.append(timelineHeading,timelineSlider,ticks,el('p','analysis-timeline-hint','Pulsa ▶ para ver el día o arrastra para elegir una hora.'));
+    timeline.append(timelineHeading,timelineSlider,ticks);
     overlay.append(timeline);
     for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])timeline.addEventListener(type,event=>event.stopPropagation());
   }
   const popover=el('section','analysis-date-popover');popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-labelledby',`${prefix}-picker-title`);
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverTitle.id=`${prefix}-picker-title`;popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar opciones');
-  const multiHint=el('p','analysis-picker-hint','Selecciona uno o varios tipos.');multiHint.hidden=true;
   const grids={};
   const years=['2023','2024','2025'];
   for(const [key,items] of resource?[]:[['year',years.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
@@ -138,7 +132,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     }
     popover.append(grid);
   }
-  popover.prepend(popoverHeading,multiHint);overlay.append(panel,popover);
+  popover.prepend(popoverHeading);overlay.append(panel,popover);
   for(const area of [panel,popover])for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])area.addEventListener(type,event=>event.stopPropagation());
   function pickerAnchor(key){return key==='year'?yearPicker:key==='month'?monthPicker:cameraTriggers[key];}
   function closePicker(){
@@ -153,7 +147,6 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     callbacks.clearHover();picker=key;popover.hidden=false;
     for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
     popoverTitle.textContent={year:'Elige el año',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
-    multiHint.hidden=!['type','robbery'].includes(key);
     const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
     const outer=container.getBoundingClientRect(),a=anchor.getBoundingClientRect(),p=popover.getBoundingClientRect(),r=panel.getBoundingClientRect();
     const left=panel.dataset.side==='right'?r.left-outer.left-p.width-10:r.right-outer.left+10;
@@ -170,7 +163,10 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     category.disabled=compare.disabled=!next.canChoose;
     if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
-    filterButtons.forEach(e=>e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value)));
+    filterButtons.forEach(e=>{
+      e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value));
+      if(e.dataset.filter==='usage'&&e.dataset.value==='top')e.disabled=!next.loaded||!next.mostUsed?.length;
+    });
     modeButtons.forEach((e,i)=>e.setAttribute('aria-pressed',String(['all','year','month'][i]===next.temporalMode)));
     dateSelection.hidden=next.temporalMode==='all';monthPicker.hidden=next.temporalMode!=='month';
     yearPicker.textContent=`${next.selectedYear} ▾`;monthPicker.textContent=`${MONTHS[Number(next.selectedMonth)-1]} ▾`;
@@ -183,7 +179,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
-      :resource?'Referencias territoriales para análisis'
+      :kind==='alarms'?(next.records.some(record=>Number.isInteger(record.activations))?'Pulsaciones de referencia · 2025':'Sin datos de pulsaciones')
+        :resource?'Referencias territoriales para análisis'
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
@@ -202,15 +199,11 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
         item.append(el('small',null,record.address));
       }
     }
-    if(resource){
-      pointLegend.dataset.tone=tone;
-      totalLabel.textContent=next.summary.total===1?'ubicación':'ubicaciones';
-    }
-    const points=resource||camera&&next.display==='points';pointLegend.hidden=!points;ramp.hidden=points;labels.hidden=points;
-    legendTitle.textContent=resource?'Cómo leer los símbolos':camera?(points?'Cámaras en el mapa':'Concentración relativa de cámaras'):'Concentración relativa de robos';
+    if(resource)totalLabel.textContent=next.summary.total===1?(kind==='alarms'?'botón':'ubicación'):layer.count;
     opacityRow.hidden=!next.crossed;compare.hidden=!primary;
     compare.textContent=next.crossed?'Cambiar comparación':'Añadir comparación';
     actions.hidden=!primary&&!!resource;
+    footer.hidden=actions.hidden&&opacityRow.hidden;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
   }

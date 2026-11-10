@@ -135,7 +135,7 @@ Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como p
 
 ### Ajustes de la interfaz
 
-Ordenamos Análisis en **capa, resultados, filtros y leyenda**. Horario, tipos y fechas se despliegan solo cuando se necesitan. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**.
+Ordenamos Análisis en **capa, resultados y filtros**. Horario, tipos y fechas se despliegan solo cuando se necesitan. Los paneles usan superficies blancas con cifras en azul petróleo y **Poppins** como alternativa a **Neulis Sans**.
 
 La **barra de 00 a 24 horas** reproduce el día en **ocho segundos**, con pausa y deslizador. Mezcla gradualmente los cuatro horarios de robos y conserva los demás filtros. En el cruce, las cámaras permanecen fijas. La [evaluación de la interfaz](./Documentos/13-evaluacion-analisis.md) reúne los cambios y las capas sugeridas.
 
@@ -145,11 +145,11 @@ Los incidentes son simulados y las cámaras combinan referencias publicadas con 
 
 **Fecha:** 10 de noviembre de 2026
 
-Facilitamos el inicio de una reunión: los gráficos de inundación se abren desde el mapa principal, el visor muestra el título y el avance, y los gestos se activan solo cuando se necesitan. La ayuda guía por tarea y los ajustes técnicos están plegados. [Evaluación integral](./Documentos/14-evaluacion-usabilidad-integral.md)
+Los gráficos de inundación se abren desde el mapa principal y el visor muestra el título y el avance. La ayuda de gestos y los ajustes técnicos se abren a demanda. [Evaluación integral](./Documentos/14-evaluacion-usabilidad-integral.md)
 
 El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se puede elegir una capa y comparar con otra. Los puntos fijos y los botones se muestran como referencias territoriales para análisis. [Fuentes y ubicaciones](./Documentos/15-fuentes-recursos-seguridad.md)
 
-Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cerrar con Escape. Los botones de emergencia se consultan directamente en el mapa. Los puntos fijos también tienen una lista de ubicaciones.
+Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cerrar con Escape. La ficha de cada botón muestra sus pulsaciones de referencia y **Más usados** filtra los diez con mayor conteo. Los puntos fijos también tienen una lista de ubicaciones.
 
 ## Próximos pasos
 

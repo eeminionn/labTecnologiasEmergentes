@@ -20,8 +20,7 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
   closeButton.setAttribute('aria-label', 'Cerrar selector de capas');
   closeButton.onclick = () => close();
   head.append(title, closeButton);
-  const hint = el('p', 'analysis-picker-hint');
-  picker.append(head, hint);
+  picker.append(head);
   let role, anchor;
   const choices = [];
   for (const group of ANALYSIS_GROUPS) {
@@ -63,7 +62,6 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
     role = nextRole; anchor = trigger;
     const state = selection();
     title.textContent = role === 'compare' ? '¿Con qué quieres comparar?' : 'Elige una capa';
-    hint.textContent = role === 'compare' ? 'La segunda capa conserva sus propios filtros.' : 'Puedes combinar dos capas con «Añadir comparación».';
     for (const {layer, choice} of choices) {
       const selected = state[role] === layer.id;
       choice.disabled = !chooseAnalysisLayer(state, layer.id, role);

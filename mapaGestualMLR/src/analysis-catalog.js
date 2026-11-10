@@ -9,7 +9,7 @@ export const ANALYSIS_GROUPS = Object.freeze([
   ]),
   group('Recursos de seguridad', [
     { id: 'fixed', label: 'Puntos fijos de seguridad ciudadana', count: 'ubicaciones', singular: 'punto fijo', prefix: 'fixed-analysis', tone: 'fixed', description: 'Centros y sedes de seguridad', resource: true },
-    { id: 'alarms', label: 'Botones de emergencia', count: 'ubicaciones', singular: 'botón', prefix: 'alarms-analysis', tone: 'alarms', description: 'Botones en paraderos y recintos', resource: true }
+    { id: 'alarms', label: 'Botones de emergencia', count: 'botones', singular: 'botón', prefix: 'alarms-analysis', tone: 'alarms', description: 'Botones en paraderos y recintos', resource: true }
   ])
 ]);
 
@@ -40,6 +40,29 @@ export function parseSimulatedSecurityResources(text) {
       note: 'Ubicación de referencia para análisis.'
     };
   });
+}
+
+export function parseAlarmUsage(text) {
+  const [header, ...rows] = csvRows(text);
+  if (header?.join(',') !== 'id,pulsaciones') {
+    throw new Error('El archivo de pulsaciones no tiene las columnas requeridas.');
+  }
+  const usage = new Map();
+  for (const [index, row] of rows.entries()) {
+    const [id, count] = row;
+    if (row.length !== header.length || !/^[a-z0-9-]+$/.test(id) || !/^\d+$/.test(count)
+      || !Number.isSafeInteger(Number(count)) || usage.has(id)) {
+      throw new Error(`La fila ${index + 2} del archivo de pulsaciones no es válida.`);
+    }
+    usage.set(id, Number(count));
+  }
+  return usage;
+}
+
+export function mostUsedAlarmButtons(records) {
+  return records.filter(record => record.activations > 0)
+    .sort((a, b) => b.activations - a.activations || a.id.localeCompare(b.id))
+    .slice(0, 10);
 }
 
 /** Documented and demonstration locations are validated together. */

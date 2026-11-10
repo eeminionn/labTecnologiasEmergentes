@@ -21,7 +21,6 @@
       <section class="map-intro" aria-labelledby="map-intro-title">
         <p class="map-intro-label">Concejo en perspectiva</p>
         <h1 id="map-intro-title">Temas del concejo</h1>
-        <p>Selecciona un punto para consultar su tema. Abre Análisis para comparar datos en el mapa.</p>
         <button id="map-graphics-shortcut" class="primary" type="button" disabled>Ver gráficos de inundación <span aria-hidden="true">→</span></button>
       </section>
       <div id="map" aria-label="Mapa interactivo de La Reina"></div>
@@ -36,7 +35,6 @@
       </section>
       <div class="map-tools" role="group" aria-label="Navegación del mapa"><button id="zoom-in" aria-label="Acercar el mapa" title="Acercar el mapa">+</button><button id="zoom-out" aria-label="Alejar el mapa" title="Alejar el mapa">−</button><button id="home" aria-label="Centrar en La Reina" title="Centrar en La Reina">⌂</button></div>
     </main>
-    <footer class="app-footer"><span id="gesture-hint">Puedes explorar con el mouse o el teclado. La cámara es opcional.</span><span id="gesture-shortcuts" hidden>Espacio para pausar o reanudar · Esc para cancelar</span></footer>
     <dialog id="settings" aria-labelledby="settings-title">
       <form method="dialog" id="settings-form">
         <div class="dialog-heading"><h1 id="settings-title">Ajustes</h1><button value="cancel" aria-label="Cerrar ajustes">×</button></div>
@@ -80,12 +78,7 @@
       </form>
     </dialog>
     <dialog id="help" aria-labelledby="help-title">
-      <div class="dialog-heading"><h1 id="help-title">Cómo usar el mapa</h1><button id="help-close" type="button" aria-label="Cerrar ayuda">×</button></div>
-      <dl class="help-overview">
-        <div><dt>Explorar los temas</dt><dd>El punto 1 abre los gráficos de inundación. Usa Siguiente y Anterior para recorrerlos. Los puntos numerados indican temas del concejo.</dd></div>
-        <div><dt>Consultar datos</dt><dd>Entra en Análisis, elige una capa y ajusta los filtros. Apunta a un sector para ver sus cifras y haz clic para fijar la ficha.</dd></div>
-        <div><dt>Usar el teclado</dt><dd>Tab recorre los controles. Intro o Espacio activa el control seleccionado. En el visor, usa las flechas para cambiar de gráfico.</dd></div>
-      </dl>
+      <div class="dialog-heading"><h1 id="help-title">Ayuda</h1><button id="help-close" type="button" aria-label="Cerrar ayuda">×</button></div>
       <details class="settings-details">
         <summary>Control con las manos</summary>
         <div class="settings-details-body">
