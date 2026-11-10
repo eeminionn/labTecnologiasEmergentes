@@ -42,6 +42,48 @@
     }
   },
   {
+    "id": "proyecto-seguridad-las-perdices",
+    "kind": "fixed",
+    "title": "Proyecto de caseta comunitaria Las Perdices",
+    "address": "Av. Las Perdices con Valenzuela Llanos, sector del triángulo detrás del supermercado",
+    "lat": -33.441203,
+    "lng": -70.534117,
+    "status": "Proyecto licitado · apertura por confirmar",
+    "note": "La ubicación señala el cruce de referencia del proyecto de seguridad comunitaria de la unidad vecinal 14. La licitación posterior 2699-24-LP24 se declaró desierta.",
+    "source": {
+      "label": "Municipalidad de La Reina · Proyecto de centro de atención",
+      "url": "https://lareina.cl/la-reina-tendra-su-segundo-centro-de-atencion-integral/"
+    }
+  },
+  {
+    "id": "caseta-acceso-mahuida",
+    "kind": "fixed",
+    "title": "Caseta de seguridad del acceso a Parque Mahuida",
+    "address": "Av. Alcalde Fernando Castillo Velasco 11095, acceso principal",
+    "lat": -33.454552,
+    "lng": -70.517771,
+    "status": "Control de acceso al parque · registro de 2017",
+    "note": "La Cuenta Pública identifica una caseta de seguridad en el acceso principal. El marcador señala el sector de ingreso. Su operación actual queda por confirmar.",
+    "source": {
+      "label": "Municipalidad de La Reina · Cuenta Pública 2017",
+      "url": "https://www.lareina.cl/wp-content/uploads/2020/06/Cuenta_P%C3%BAblica_2017_V__07_25042018_Final.pdf#page=143"
+    }
+  },
+  {
+    "id": "caseta-guardaparques-mawida",
+    "kind": "fixed",
+    "title": "Caseta de guardaparques de la reserva Mawida",
+    "address": "Portal interior de acceso a senderos, Parque Mahuida",
+    "lat": -33.458872,
+    "lng": -70.513248,
+    "status": "Puesto de guardaparques · seguridad de visitantes",
+    "note": "El informe de implementación registra la caseta en el acceso interior de la reserva. La ubicación corresponde al portal de los senderos.",
+    "source": {
+      "label": "Ministerio del Medio Ambiente · Informe de implementación de la reserva Mawida",
+      "url": "https://gefmontana.mma.gob.cl/wp-content/uploads/2022/07/Informe-implementacion-RENAMU-Mawida.pdf"
+    }
+  },
+  {
     "id": "boton-paradero-pd308",
     "kind": "alarms",
     "title": "Botón de emergencia · Paradero PD308",

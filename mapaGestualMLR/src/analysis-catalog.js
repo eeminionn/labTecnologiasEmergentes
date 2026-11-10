@@ -1,3 +1,5 @@
+import { csvRows } from './analysis-data.js';
+
 const group = (title, layers) => Object.freeze({ title, layers: Object.freeze(layers.map(layer => Object.freeze(layer))) });
 
 export const ANALYSIS_GROUPS = Object.freeze([
@@ -7,7 +9,7 @@ export const ANALYSIS_GROUPS = Object.freeze([
   ]),
   group('Recursos de seguridad', [
     { id: 'fixed', label: 'Puntos fijos de seguridad ciudadana', count: 'ubicaciones', singular: 'punto fijo', prefix: 'fixed-analysis', tone: 'fixed', description: 'Centros y sedes de seguridad', resource: true },
-    { id: 'alarms', label: 'Botones de emergencia', count: 'ubicaciones', singular: 'botón', prefix: 'alarms-analysis', tone: 'alarms', description: 'Instalaciones con ubicación documentada', resource: true }
+    { id: 'alarms', label: 'Botones de emergencia', count: 'ubicaciones', singular: 'botón', prefix: 'alarms-analysis', tone: 'alarms', description: 'Botones en paraderos y recintos', resource: true }
   ])
 ]);
 
@@ -21,21 +23,43 @@ export function chooseAnalysisLayer(selection, id, role) {
   return { ...selection, primary: id };
 }
 
-/** Catalogue includes only publicly documented locations, not a live inventory. */
+export function parseSimulatedSecurityResources(text) {
+  const [header, ...rows] = csvRows(text);
+  if (header?.join(',') !== 'id,kind,address,lat,lng') {
+    throw new Error('El CSV de recursos simulados no tiene las columnas requeridas.');
+  }
+  return rows.map((row, index) => {
+    const [id, kind, address, lat, lng] = row;
+    if (row.length !== header.length || !lat.trim() || !lng.trim()) {
+      throw new Error(`La fila ${index + 2} del CSV contiene una ubicación simulada no válida.`);
+    }
+    return {
+      id, kind, address, lat: Number(lat), lng: Number(lng), simulated: true,
+      title: kind === 'fixed' ? 'Cabina de seguridad simulada' : 'Botón de emergencia simulado',
+      status: 'Ubicación simulada',
+      note: 'Recurso ficticio sobre una referencia geográfica real.'
+    };
+  });
+}
+
+/** Documented and demonstration locations are validated together. */
 export function readSecurityResources(data, inside) {
   if (!Array.isArray(data)) throw new Error('No se pudo leer el catastro de seguridad.');
   const ids = new Set();
   return data.map(record => {
-    const { id, kind, title, address, lat, lng, status, note, source } = record ?? {};
+    const { id, kind, title, address, lat, lng, status, note, source, simulated = false } = record ?? {};
     if (typeof id !== 'string' || !/^[a-z0-9-]+$/.test(id) || ids.has(id) || !getAnalysisLayer(kind)?.resource
-      || ![title, address, status, note, source?.label].every(text => typeof text === 'string' && text.trim())
+      || typeof simulated !== 'boolean' || ![title, address, status, note].every(text => typeof text === 'string' && text.trim())
       || !Number.isFinite(lat) || !Number.isFinite(lng) || !inside(lng, lat)) {
       throw new Error('El catastro contiene una ubicación no válida.');
     }
-    const url = new URL(source.url);
-    if (url.protocol !== 'https:') throw new Error('El catastro contiene una fuente no válida.');
+    if (simulated ? source != null : typeof source?.label !== 'string' || !source.label.trim() || typeof source.url !== 'string') {
+      throw new Error('El catastro contiene una fuente no válida.');
+    }
+    const url = simulated ? null : new URL(source.url);
+    if (url && url.protocol !== 'https:') throw new Error('El catastro contiene una fuente no válida.');
     ids.add(id);
-    return { id, kind, title, address, lat, lng, status, note, source: { label: source.label, url: url.href } };
+    return { id, kind, title, address, lat, lng, status, note, simulated, source: url ? { label: source.label, url: url.href } : null };
   });
 }
 
@@ -49,5 +73,6 @@ export function nearbySecurityResources(records, { lat, lng }, radiusMetres = 25
     if (distanceMetres <= radiusMetres) nearby.push({ ...record, distanceMetres });
   }
   nearby.sort((a, b) => a.distanceMetres - b.distanceMetres);
-  return { total: nearby.length, nearest: nearby[0] ?? null, radiusMetres };
+  const simulated = nearby.filter(record => record.simulated).length;
+  return { total: nearby.length, documented: nearby.length - simulated, simulated, nearest: nearby[0] ?? null, radiusMetres };
 }

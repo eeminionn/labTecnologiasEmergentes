@@ -3,7 +3,7 @@
 ### Interacción y análisis de información territorial
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 10 de noviembre de 2026 · versión 0.9.0<br>
+**Última actualización:** 10 de noviembre de 2026 · versión 0.9.1<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
@@ -147,7 +147,7 @@ Los incidentes son simulados y las cámaras combinan referencias publicadas con 
 
 Facilitamos el inicio de una reunión: los gráficos de inundación se abren desde el mapa principal, el visor muestra el título y el avance, y los gestos se activan solo cuando se necesitan. La ayuda guía por tarea y los ajustes técnicos están plegados. [Evaluación integral](./Documentos/14-evaluacion-usabilidad-integral.md)
 
-El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se puede elegir una capa y comparar con otra. Incorporamos tres puntos fijos y un botón de emergencia documentado en el paradero PD308; su operación actual queda por confirmar. [Fuentes y ubicaciones](./Documentos/15-fuentes-recursos-seguridad.md)
+El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se puede elegir una capa y comparar con otra. Los puntos fijos y los botones incluyen ubicaciones con fuente y un escenario de demostración. Los simulados tienen borde punteado y se pueden ocultar. [Fuentes y ubicaciones](./Documentos/15-fuentes-recursos-seguridad.md)
 
 Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic, cerrar con Escape o consultar desde el botón **Consultar centro del mapa**. Las ubicaciones de seguridad muestran dirección y fuente.
 

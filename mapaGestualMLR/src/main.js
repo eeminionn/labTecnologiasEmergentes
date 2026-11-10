@@ -1159,7 +1159,8 @@ async function verifyAnalysis() {
     checks.playbackDuration=initial.playback.durationMs===8000;
     checks.boundary=map.info().boundaryLoaded && map.info().analysisMode && map.info().analysisLayerVisible;
     checks.pinsInactive=map.targets().length===0 && !contentViewer.isOpen;
-    checks.interfaceClear=!/simulad|fictici|publicad|demostraci/i.test(document.querySelector('.analysis-experience').textContent);
+    checks.interfaceClear=[...document.querySelectorAll('.analysis-security-panel,.analysis-camera-panel')]
+      .every(panel=>!/simulad|fictici|publicad|demostraci/i.test(panel.textContent));
     checks.robberyControlsSimplified=!document.querySelector('.analysis-filter-resolution,#analysis-export,#analysis-exit')
       && !/resuelt|exportar csv|ver mapa/i.test(document.querySelector('.analysis-experience').textContent);
     checks.progressiveDateControls=initial.temporalMode==='all' && !analysisView.targets().some(target=>/^analysis-year-20|analysis-month-\d/.test(target.id));
@@ -1424,8 +1425,9 @@ async function verifyAnalysis() {
     checks.centerReturnsFocus=document.activeElement===consult && tooltip.hidden;
     analysisView.setFilters({period:'all'});await waitLayer();
     await hold('analysis-cross');await hold('analysis-layer-fixed');await waitLayer();
-    checks.fixedInComparison=analysisView.info().compareCategory==='fixed' && analysisView.info().datasets.fixed.filteredCount===3
-      && $('map').querySelectorAll('.analysis-resource-marker[data-kind="fixed"]').length===3
+    const fixedInfo=analysisView.info().datasets.fixed;
+    checks.fixedInComparison=analysisView.info().compareCategory==='fixed' && fixedInfo.summary.documented>=3 && fixedInfo.summary.simulated>0
+      && $('map').querySelectorAll('.analysis-resource-marker[data-kind="fixed"]').length===fixedInfo.filteredCount
       && !map.info().cameraAnalysisVisible;
     await hold('fixed-analysis-loc-centro-fidias');
     await waitFor(()=>analysisView.info().hover?.record?.id==='centro-fidias',2500,'ficha de ubicación documentada');

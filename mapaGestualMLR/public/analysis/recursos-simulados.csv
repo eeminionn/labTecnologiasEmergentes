@@ -1,0 +1,50 @@
+id,kind,address,lat,lng
+cabina-simulada-01,fixed,Avenida Francisco Bilbao / Patricia Isidora,-33.4313420,-70.5767080
+cabina-simulada-02,fixed,Avenida Ossa / Emilia Téllez,-33.4414150,-70.5726690
+cabina-simulada-03,fixed,Doctor Genaro Benavides / Javiera Carrera Norte,-33.4488750,-70.5676220
+cabina-simulada-04,fixed,José Ortega y Gasset / Monseñor Edwards,-33.4361800,-70.5606500
+cabina-simulada-05,fixed,Teruel / Valladolid,-33.4502060,-70.5538310
+cabina-simulada-06,fixed,Monte Grande / Talinay,-33.4578210,-70.5507140
+cabina-simulada-07,fixed,Arquitecto Juan Martínez / Carlos Silva Vildósola,-33.4379030,-70.5458080
+cabina-simulada-08,fixed,Avenida Alcalde Fernando Castillo Velasco / Calle Diputada Laura Rodríguez Riccomini,-33.4515970,-70.5399870
+cabina-simulada-09,fixed,Avenida Las Perdices / Talinay,-33.4591470,-70.5295890
+cabina-simulada-10,fixed,Onofre Jarpa / Pintor Cosme San Martín,-33.4356130,-70.5235600
+boton-simulado-01,alarms,Paradero PD1377 · Eliecer Parada / esq. Mariano Sánchez F.,-33.4332880,-70.5819910
+boton-simulado-02,alarms,Paradero PD478 · Av. Francisco Bilbao / esq. Av. A. Vespucio,-33.4313376,-70.5751076
+boton-simulado-03,alarms,Paradero PD184 · Parada 3 / (M) Príncipe de Gales,-33.4371500,-70.5738950
+boton-simulado-04,alarms,Paradero PD263 · Av. José Arrieta / esq. Av. A. Vespucio,-33.4591357,-70.5716874
+boton-simulado-05,alarms,Paradero PD759 · Parada 4 / (M) Simón Bolívar,-33.4453386,-70.5711526
+boton-simulado-06,alarms,Paradero PD450 · Avenida Larrain / esq. J. Carrera Nte.,-33.4530780,-70.5668790
+boton-simulado-07,alarms,Paradero PD710 · Avenida Simón Bolívar / esq. Lynch Norte,-33.4474820,-70.5663490
+boton-simulado-08,alarms,Paradero PD1199 · Av.Príncipe de Gales / esq. John Jackson,-33.4383399,-70.5659122
+boton-simulado-09,alarms,Paradero PD261 · Av. José Arrieta / esq. J. Carrera-Sur,-33.4612360,-70.5658830
+boton-simulado-10,alarms,Paradero PD479 · Av. Francisco Bilbao / esq. Av. Manquehue-Sur,-33.4310740,-70.5653210
+boton-simulado-11,alarms,Paradero PD756 · Avenida Echeñique / esq. Monseñor Edwards,-33.4442533,-70.5612194
+boton-simulado-12,alarms,Paradero PD260 · Av. José Arrieta / esq. Julio Montebruno,-33.4624764,-70.5596192
+boton-simulado-13,alarms,Paradero PD1634 · Parada 5 / (M) Fernando Castillo Velasco,-33.4521953,-70.5580602
+boton-simulado-14,alarms,Paradero PD310 · Alc. M. de La Lastra / esq. Alc. Rutilio Rivas,-33.4349160,-70.5546994
+boton-simulado-15,alarms,Paradero PD257 · Av. José Arrieta / esq. Jacinto Chacón,-33.4625260,-70.5528080
+boton-simulado-16,alarms,Paradero PD1100 · Talinay / esq. Vicente Bourquet,-33.4577345,-70.5526766
+boton-simulado-17,alarms,Paradero PD1453 · Av. Francisco Bilbao / esq. V. Pérez Rosales,-33.4305238,-70.5523098
+boton-simulado-18,alarms,Paradero PD305 · V. Pérez Rosales / esq. Av. Simón Bolivar,-33.4447830,-70.5519860
+boton-simulado-19,alarms,Paradero PD1379 · Jorge Alessandri / esq. Av. José Arrieta,-33.4628405,-70.5475683
+boton-simulado-20,alarms,Paradero PD248 · Parada / Aeródromo Tobalaba,-33.4508978,-70.5467589
+boton-simulado-21,alarms,Paradero PD1286 · Parada / Príncipe de Gales Altura del 8200,-33.4402050,-70.5459750
+boton-simulado-22,alarms,Paradero PD1382 · Talinay / esq. Cabo 2do A. Villegas,-33.4583148,-70.5438496
+boton-simulado-23,alarms,Paradero PD719 · Carlos Ossandón / esq. Simón González,-33.4458510,-70.5436150
+boton-simulado-24,alarms,Paradero PD1255 · Parada / Príncipe de Gales Altura del 8700,-33.4406663,-70.5408454
+boton-simulado-25,alarms,Paradero PD445 · Parada 2 / Hospital Militar,-33.4514510,-70.5397200
+boton-simulado-26,alarms,Paradero PD1008 · Parada / Portal La Reina,-33.4291580,-70.5396630
+boton-simulado-27,alarms,Paradero PD1028 · Av. José Arrieta / esq. Av. Consistorial,-33.4632910,-70.5387250
+boton-simulado-28,alarms,Paradero PD782 · Valenzuela Llanos / esq. Av. Simón Bolivar,-33.4459780,-70.5371860
+boton-simulado-29,alarms,Paradero PD1011 · Av. Padre Hurtado / esq. 23 de Febrero,-33.4374760,-70.5367420
+boton-simulado-30,alarms,Paradero PD999 · Mamiña / esq. Salar del Carmen,-33.4566780,-70.5348570
+boton-simulado-31,alarms,Paradero PD1674 · Av. Las Perdices / esq. V. Llanos,-33.4434851,-70.5321128
+boton-simulado-32,alarms,Paradero PD727 · Av. Las Perdices / esq. Av. José Arrieta,-33.4651690,-70.5313020
+boton-simulado-33,alarms,Paradero PD1384 · Talinay / esq. Av. Las Perdices,-33.4591220,-70.5291566
+boton-simulado-34,alarms,Paradero PD1672 · Av. Nva. Príncipe de Gales / esq. Tala,-33.4506107,-70.5283759
+boton-simulado-35,alarms,Paradero PD1074 · Onofre Jarpa / esq. Pasaje Helsby,-33.4370028,-70.5266894
+boton-simulado-36,alarms,Paradero PD1677 · Carlos Silva Vildósola / esq. María Monvel,-33.4424101,-70.5256373
+boton-simulado-37,alarms,Paradero PD724 · Álvaro Casanova / esq. Talinay,-33.4593382,-70.5230979
+boton-simulado-38,alarms,Paradero PD742 · Álvaro Casanova / esq. Avenida Larraín,-33.4541890,-70.5210590
+boton-simulado-39,alarms,Paradero PD1071 · Álvaro Casanova / esq. Onofre Jarpa,-33.4337593,-70.5190231

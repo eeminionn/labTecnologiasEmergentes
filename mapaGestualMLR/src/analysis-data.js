@@ -61,7 +61,7 @@ export const HEAT_COLOR_STOPS = Object.freeze([
   Object.freeze({ value: 1, color: Object.freeze([215, 48, 39]) })
 ]);
 
-function csvRows(text) {
+export function csvRows(text) {
   if (typeof text !== 'string') throw new TypeError('El archivo CSV debe contener texto.');
   text = text.replace(/^\uFEFF/, '');
   const rows = []; let row = [], field = '', quoted = false, closedQuote = false;

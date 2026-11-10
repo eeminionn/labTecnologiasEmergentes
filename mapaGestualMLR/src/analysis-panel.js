@@ -35,12 +35,13 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const totalLabel=el('span','analysis-total-label',layer.count);totalRow.append(total,totalLabel);
   const selectedPeriod=el('p','analysis-selected-period','Cargando datos…');
   selectedPeriod.setAttribute('role','status');
-  const empty=el('p','analysis-empty',resource?'No hay ubicaciones documentadas para mostrar.':`No hay ${layer.count} con estos filtros. Prueba con otro período o restablece los filtros.`);empty.hidden=true;
+  const empty=el('p','analysis-empty',resource?'No hay ubicaciones para mostrar.':`No hay ${layer.count} con estos filtros. Prueba con otro período o restablece los filtros.`);empty.hidden=true;
   stats.append(resultLabel,totalRow,selectedPeriod,empty);
   body.append(stats);
   if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
   const resourceList=el('div','analysis-resource-list');
   let currentRecords=null;
+  const simulation=resource?button(body,`${prefix}-simulation`,'Mostrar puntos simulados',()=>callbacks.simulation(),'analysis-resource-toggle'):null;
   if(resource)body.append(el('h2','analysis-filter-title','Ubicaciones en el mapa'),resourceList);
   function group(key,label,options,callback) {
     const f=el('fieldset',`analysis-filter analysis-filter-${key}`),legend=el('legend',null,label),g=el('div','analysis-options');
@@ -184,7 +185,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
-      :resource?(kind==='alarms'?'Instalaciones documentadas · operación actual por confirmar':'Ubicaciones documentadas')
+      :resource?`${number(next.summary.documented)} con fuente · ${number(next.summary.simulated)} ${next.summary.simulated===1?'simulada':'simuladas'}`
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
@@ -198,13 +199,19 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       currentRecords=next.records;
       for(const e of resourceList.querySelectorAll('button'))controls.splice(controls.indexOf(e),1);
       resourceList.replaceChildren();
-      if(kind==='alarms')resourceList.append(el('p','analysis-resource-scope','La comuna informó 40 botones en paraderos. El mapa muestra los que tienen una ubicación identificada.'));
       for(const record of currentRecords||[]){
         const item=button(resourceList,`${prefix}-loc-${record.id}`,record.title,(_,anchor)=>callbacks.locate(record,anchor),'analysis-resource-location');
+        item.dataset.simulated=String(record.simulated);
         item.append(el('small',null,record.address));
       }
     }
-    if(resource){pointLegend.dataset.tone=tone;totalLabel.textContent=next.summary.total===1?'ubicación':'ubicaciones';}
+    if(resource){
+      simulation.setAttribute('aria-pressed',String(!!f.includeSimulated&&!next.simulationUnavailable));
+      simulation.hidden=next.simulationUnavailable;
+      pointLegend.dataset.tone=tone;
+      readingHint.textContent=next.simulationUnavailable?'Los puntos simulados no están disponibles.':next.summary.simulated?'Borde punteado: ubicación simulada. Selecciona un símbolo para ver su ficha.':'Selecciona un símbolo para ver su ubicación y fuente.';
+      totalLabel.textContent=next.summary.total===1?'ubicación':'ubicaciones';
+    }
     const points=resource||camera&&next.display==='points';pointLegend.hidden=!points;ramp.hidden=points;labels.hidden=points;
     legendTitle.textContent=resource?'Cómo leer los símbolos':camera?(points?'Cámaras en el mapa':'Concentración relativa de cámaras'):'Concentración relativa de robos';
     consult.hidden=!primary;opacityRow.hidden=!next.crossed;compare.hidden=!primary;

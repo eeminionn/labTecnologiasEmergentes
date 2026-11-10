@@ -9,6 +9,7 @@ const icons = {
   }
 };
 const svgNamespace = 'http://www.w3.org/2000/svg';
+const markerOffsets = [[0,0],[42,0],[-42,0],[0,42],[0,-42],[38,38],[-38,38],[38,-38],[-38,-38]];
 
 function markerIcon(kind) {
   const svg = document.createElementNS(svgNamespace, 'svg');
@@ -51,14 +52,14 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       element.hidden = !visible;
       stem.hidden = true;
       if (!visible) continue;
-      const offsets = [[0,0],[42,0],[-42,0],[0,42],[0,-42],[38,38],[-38,38],[38,-38],[-38,-38]];
-      const offset = offsets.find(([dx,dy],index) => {
+      const radius=record.simulated?15:19;
+      const offset = markerOffsets.find(([dx,dy],index) => {
         const x=point.x+dx,y=point.y+dy;
-        return (index===0||x>=20&&x<=width-20&&y>=20&&y<=height-20)
-          && placed.every(other=>Math.abs(other.x-x)>=39||Math.abs(other.y-y)>=39);
-      }) ?? offsets[0];
+        return (index===0||x>=radius&&x<=width-radius&&y>=radius&&y<=height-radius)
+          && placed.every(other=>Math.max(Math.abs(other.x-x),Math.abs(other.y-y))>radius+other.radius);
+      }) ?? markerOffsets[0];
       const [dx,dy]=offset,x=point.x+dx,y=point.y+dy;
-      placed.push({x,y});
+      placed.push({x,y,radius});
       element.style.left = `${x}px`;
       element.style.top = `${y}px`;
       if(dx||dy){
@@ -112,6 +113,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       present.add(id);
       const entry = markers.get(id) || addMarker(id, record);
       entry.record = record;
+      entry.element.dataset.simulated = String(record.simulated);
       entry.element.setAttribute('aria-label', `${icons[record.kind].label} · ${record.title}`);
       const opacity = Number.isFinite(record.opacity) ? Math.max(0, Math.min(1, record.opacity)) : 1;
       entry.element.style.opacity = String(opacity);
