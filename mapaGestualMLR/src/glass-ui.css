@@ -213,17 +213,6 @@ body:not(.twin-projection) .council-agenda-heading { padding-top: 2px; }
 body:not(.twin-projection) .map-intro h1 { margin: 4px 0 0; font-size: 21px; letter-spacing: -.5px; line-height: 1.25; }
 body:not(.twin-projection) .map-intro p { margin: 0; color: var(--ink-secondary); font-size: 12px; line-height: 1.45; }
 body:not(.twin-projection) .map-intro .map-intro-label { color: var(--municipal-petroleo); font-size: 10px; font-weight: 600; }
-body:not(.twin-projection) .council-agenda-badge {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  padding: 2px 6px;
-  border: 1px solid var(--border);
-  border-radius: 5px;
-  color: var(--ink-secondary);
-  font-size: 10px;
-  white-space: nowrap;
-}
 body:not(.twin-projection) .council-agenda-current {
   flex: none;
   padding: 10px 11px;
@@ -753,7 +742,6 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
     padding: 10px;
   }
   body:not(.twin-projection) .council-agenda-current { padding-block: 8px; }
-  body:not(.twin-projection) .council-agenda-badge { top: 9px; right: 10px; }
   body:not(.twin-projection) #diagnostics { width: 165px; bottom: 14px; }
   body:not(.twin-projection) .traffic-toolbar { max-height: calc(100% - 205px); }
   body:not(.twin-projection) .traffic-subtitle { margin-bottom: 10px; }
