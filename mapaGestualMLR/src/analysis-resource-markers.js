@@ -1,6 +1,9 @@
 import { MONITORING_STATUS_LABELS } from './analysis-catalog.js';
 
 const icons = {
+  camera: {
+    path: 'M3 6h13v10H3zM16 9l5-3v10l-5-3M8 16v4m-4 0h8'
+  },
   fixed: {
     path: 'M3 21h18M5 21V10l7-5 7 5v11M10 21v-6h4v6M12 5V2m0 1h5'
   },
@@ -84,6 +87,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     element.type = 'button';
     element.className = 'analysis-resource-marker';
     element.dataset.kind = record.kind;
+    if (record.scenario) element.dataset.scenario = '';
     const badge=document.createElement('span');
     badge.className='analysis-resource-badge';badge.hidden=true;badge.setAttribute('aria-hidden','true');
     element.append(markerIcon(record.kind),badge);

@@ -29,7 +29,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog('primary',anchor),'analysis-layer-trigger');
   category.dataset.tone=tone;category.setAttribute('aria-haspopup','dialog');category.setAttribute('aria-expanded','false');
   category.setAttribute('aria-label',`Cambiar capa. Capa actual: ${label}`);
-  header.append(titleRow,categoryLabel,category);
+  const forecast=button(header,`${prefix}-forecast`,'Simular futuro',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
+  header.append(titleRow,categoryLabel,category,forecast);
   const body=el('div','analysis-body'),stats=el('section','analysis-stats');stats.setAttribute('aria-label','Resultados de la consulta');
   const resultLabel=el('p','analysis-result-label','Resultados de la consulta');
   const totalRow=el('div','analysis-total-row'),total=el('strong',null,'—');total.id=`${prefix}-total`;
@@ -180,8 +181,10 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const primary=next.side==='left';
     title.textContent=primary?'Análisis del mapa':label;
     category.hidden=categoryLabel.hidden=!primary;
+    forecast.hidden=!primary;
     controls.forEach(e=>{e.disabled=!next.loaded;});
     category.disabled=compare.disabled=!next.canChoose;
+    forecast.disabled=!next.canChoose;
     if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
     filterButtons.forEach(e=>{

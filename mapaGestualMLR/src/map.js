@@ -31,11 +31,20 @@ const popup = item => {
 function addLegend(container) {
   const legend = document.createElement('aside');
   legend.className = 'map-category-legend';
-  legend.setAttribute('aria-label', 'Temáticas del mapa');
-  for (const category of categoryLegend) {
+  legend.setAttribute('aria-label', 'Temas del mapa');
+  const isProjection = document.body.classList.contains('twin-projection');
+  const categories = isProjection ? categoryLegend : samples.map(item => categoryLegend.find(category => category.id === item.category));
+  for (const [index, category] of categories.entries()) {
     const row = document.createElement('div'); row.className = 'map-category-legend-row';
     row.style.setProperty('--category-color', category.color);
-    row.textContent = category.label; legend.append(row);
+    if (!isProjection) {
+      const number = document.createElement('span');
+      number.className = 'map-category-legend-number';
+      number.textContent = String(samples[index].number);
+      row.append(number);
+    }
+    row.append(category.label);
+    legend.append(row);
   }
   container.append(legend);
   return legend;
@@ -124,8 +133,8 @@ function analysisPadding(container) {
   const padding = { top: 80, right: 70, bottom: 70, left: container.clientWidth <= 1000 ? 280 : 318 };
   const outer = container.getBoundingClientRect();
   for (const side of ['left', 'right']) {
-    const panel = container.querySelector(`.analysis-panel[data-side="${side}"]`);
-    if (!panel || panel.hidden) continue;
+    const panel = container.querySelector(`.analysis-panel[data-side="${side}"]:not([hidden])`);
+    if (!panel) continue;
     const box = panel.getBoundingClientRect();
     if (!box.width || !box.height || box.right <= outer.left || box.left >= outer.right) continue;
     padding[side] = Math.ceil(side === 'left' ? box.right - outer.left + 12 : outer.right - box.left + 12);

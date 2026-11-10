@@ -7,6 +7,7 @@ import { createAnalysisPlayback } from './analysis-playback.js';
 import { ANALYSIS_LAYERS, ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS, getAnalysisLayer, chooseAnalysisLayer, parseSimulatedSecurityResources, parseAlarmUsage, parseFixedPointHistory, mostUsedAlarmButtons, readSecurityResources, nearbySecurityResources } from './analysis-catalog.js';
 import { createLayerPicker } from './analysis-layer-picker.js';
 import { createResourceMarkers } from './analysis-resource-markers.js';
+import { createForecastView } from './analysis-forecast-view.js';
 
 const boundary=JSON.parse(boundaryText),number=value=>new Intl.NumberFormat('es-CL').format(value);
 const defaults={security:{year:'all',month:'all',period:'all',robbery:'all'},cameras:{year:'all',month:'all',state:'all',type:'all'}};
@@ -17,7 +18,7 @@ function densityImage(surface,camera=false) {
   const source=document.createElement('canvas');source.width=surface.width;source.height=surface.height;
   const small=source.getContext('2d'),pixels=small.createImageData(surface.width,surface.height);
   for(let i=0;i<surface.values.length;i++) {
-    const value=surface.max>0?Math.pow(Math.max(0,surface.values[i])/surface.max,.65):0;
+    const value=surface.max>0?Math.pow(Math.max(0,surface.values[i])/surface.max,surface.colorExponent??.65):0;
     const rgb=camera?cameraHeatColor(Math.min(1,value)):heatColor(Math.min(1,value));
     pixels.data.set([...rgb,camera?Math.round(255*Math.min(1,value*1.7)):255],i*4);
   }
@@ -33,6 +34,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   let destroyed=false,loaded=false,failure='',activeCategory='security',compareCategory=null,hoverTimer=null,hoverAnchor=null,hoverDetails=null;
   let pinned=false,displayedAnchor=null,restoreFocus=null,dismissedAnchor=null,resourceError='',resourcesReady=false;
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
+  let forecastTrigger=null, forecastPointerDown=null;
   const abort=new AbortController(),datasets={},panels={};
   const crossed=()=>compareCategory!==null, selection=()=>({primary:activeCategory,compare:compareCategory});
   const defaultOpacity=(kind, compare=false)=>kind==='security'?(compare ? .45 : .62):kind==='cameras'&&datasets.cameras?.display==='heatmap'?(compare ? .55 : .62):.9;
@@ -44,7 +46,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   for(const layer of ANALYSIS_LAYERS){
     const kind=layer.id;
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
-      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),
+      filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),forecast:openForecast,
       reset:()=>layer.resource?setResourceFilters(kind,{...resourceDefaults[kind],year:latestResourceYear(datasets[kind])}):setDatasetFilters(kind,defaults[kind]),
       cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
@@ -75,8 +77,15 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   tooltip.append(tipHeader,securityTip,cameraTip,resourcesTip,pinTip);
   for(const event of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])tooltip.addEventListener(event,e=>e.stopPropagation());
   const hoverRing=el('div','analysis-hover-ring');hoverRing.hidden=true;overlay.append(hoverRing,tooltip);
-  const resourceMarkers=createResourceMarkers(container,{map,onSelect:(record,event)=>showResource(record,{pin:true,anchor:event.currentTarget}),
+  const resourceMarkers=createResourceMarkers(container,{map,onSelect:(record,event)=>{
+      if(forecast.active){
+        if(forecast.isPlacing)return;
+        forecast.remove(record.id);
+        if(event.detail===0)forecast.panel.querySelector(`#forecast-add-${record.kind}`)?.focus({preventScroll:true});
+      }else showResource(record,{pin:true,anchor:event.currentTarget});
+    },
     onHover:(record,event)=>{
+      if(forecast.active){forecast.inspect(record);return;}
       if(catalog.isOpen)return;
       const anchor=event.currentTarget;
       if(event.type==='focus'&&anchor.matches(':focus-visible')){
@@ -92,20 +101,38 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       }
       if(!pinned)showResource(record,{anchor});
     }});
+  const forecast=createForecastView(overlay,container,{
+    map,signal:abort.signal,inside,onExit:closeForecast,
+    renderSurface:surface=>map.setAnalysisLayer({url:densityImage(surface),bounds:surface.bounds,opacity:.66,transitionMs:200}),
+    renderPlacements:points=>resourceMarkers.render(points)
+  });
   const playback=createAnalysisPlayback({
     onFrame:renderTimelineFrame,
     onStateChange:()=>{if(!destroyed&&!suppressTimelineFrame){updatePanels();onChange({reason:'playback',...info()});}}
   });
   function visible(kind){return activeCategory===kind||compareCategory===kind;}
   function updatePanels(){
-    overlay.dataset.crossed=String(crossed());
+    overlay.dataset.crossed=String(!forecast.active&&crossed());
     overlay.dataset.category=activeCategory;
-    crossBar.hidden=!crossed();
+    crossBar.hidden=forecast.active||!crossed();
     for(const [kind,panel] of Object.entries(panels)){
       const resource=getAnalysisLayer(kind).resource;
       const dataset=datasets[kind];
-      panel.update({...dataset,loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
+      panel.update({...dataset,loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
     }
+  }
+  function openForecast(trigger){
+    if(!loaded||destroyed||forecast.active)return;
+    forecastTrigger=trigger;
+    playback.pause();clearHover();closeAllPickers();catalog.close();
+    map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();resourceMarkers.render([]);
+    forecast.open();updatePanels();map.home();
+    forecast.panel.querySelector('h1').focus({preventScroll:true});
+  }
+  function closeForecast(){
+    forecast.close();forecastPointerDown=null;
+    updatePanels();renderLayers();map.home();
+    forecastTrigger?.focus({preventScroll:true});forecastTrigger=null;
   }
   function closeAllPickers(){Object.values(panels).forEach(p=>p.closePicker());}
   function openCatalog(role,anchor){closeAllPickers();clearHover();catalog.open(role,anchor);}
@@ -120,15 +147,29 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const target=event.target;
     if(!target.closest?.('.analysis-layer-picker,.analysis-layer-trigger,.analysis-compare'))catalog.close(false);
     if(!target.closest?.('.analysis-date-popover,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter'))closeAllPickers();
-  },keyDown=event=>{if(event.key==='Escape'){if(catalog.close())return;closeAllPickers();dismissDetails();}};
+  },keyDown=event=>{
+    if(event.key!=='Escape')return;
+    if(forecast.active){forecast.stopPlacing();return;}
+    if(catalog.close())return;
+    closeAllPickers();dismissDetails();
+  };
+  const mapPointerDown=event=>{
+    if(forecast.active&&!isMapControl(event.target))forecastPointerDown={x:event.clientX,y:event.clientY};
+  };
   const mapClick=event=>{
     if(!loaded||event.button!==0||event.defaultPrevented||!event.target.closest?.('#map')||isMapControl(event.target))return;
     const b=container.getBoundingClientRect(),x=event.clientX-b.left,y=event.clientY-b.top;
     const location=map.screenToLocation(x,y);
+    if(forecast.active){
+      const start=forecastPointerDown;
+      forecastPointerDown=null;
+      if(!start||Math.hypot(event.clientX-start.x,event.clientY-start.y)<8)forecast.click(location);
+      return;
+    }
     if(location&&inside(location.lng,location.lat))pinSector({x,y,source:'mouse',...location});
   };
   container.addEventListener('pointermove',pointerMove,true);container.addEventListener('pointerleave',pointerLeave);document.addEventListener('pointerdown',outsidePicker,true);document.addEventListener('keydown',keyDown);
-  container.addEventListener('click',mapClick);
+  container.addEventListener('pointerdown',mapPointerDown);container.addEventListener('click',mapClick);
   const visibilityChange=()=>{if(document.hidden)playback.pause();};
   document.addEventListener('visibilitychange',visibilityChange);
   const unsubscribeView=map.onViewChange?.(()=>{clearHover();closeAllPickers();catalog.close();});map.setAnalysisMode(true);updatePanels();map.home();
@@ -168,7 +209,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     }));
   }
   function renderTimelineFrame(state){
-    if(destroyed||!loaded||suppressTimelineFrame||!visible('security'))return;
+    if(destroyed||!loaded||forecast.active||suppressTimelineFrame||!visible('security'))return;
     prepareTimelineFrames();
     const d=datasets.security,frame=timelineFrames[state.period],changed=!timelineActive||d.filters.period!==state.period;
     timelineActive=true;d.filters={...d.filters,period:state.period};Object.assign(d,frame);
@@ -177,6 +218,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     else panels.security.updatePlayback(state);
   }
   function renderLayers(changedKind=null,transitionMs=0){
+    if(forecast.active)return;
     const s=datasets.security,c=datasets.cameras;
     if(changedKind!=='cameras'){
       if(visible('security')&&timelineActive&&timelineFrames){
@@ -215,7 +257,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     dataset.summary={total:dataset.filtered.length,documented:dataset.filtered.length-simulated,simulated};
     if(kind==='fixed')dataset.summary.monitoring=dataset.filtered.filter(record=>record.monitoringStatus==='monitoreando').length;
   }
-  function setResourceFilters(kind,values){
+  function setResourceFilters(kind,values,{redraw=true}={}){
     const dataset=datasets[kind];
     if(destroyed||!resourcesReady)return;
     const next={...dataset.filters,...values};
@@ -228,13 +270,15 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     clearHover();
     dataset.filters=next;
     filterResources(kind,dataset);
-    renderResources();
-    updatePanels();
-    onChange({reason:'filters',dataset:kind,...info()});
+    if(redraw){
+      renderResources();
+      updatePanels();
+      onChange({reason:'filters',dataset:kind,...info()});
+    }
   }
   function togglePlayback(){if(!loaded||destroyed||!visible('security'))return false;closeAllPickers();clearHover();prepareTimelineFrames();return playback.toggle();}
   function seekPlayback(position){if(!loaded||destroyed||!visible('security'))return false;clearHover();prepareTimelineFrames();return playback.seek(position);}
-  function setDatasetFilters(kind,values={}, {keepPicker=false}={}) {
+  function setDatasetFilters(kind,values={}, {keepPicker=false,redraw=true}={}) {
     if(!loaded||destroyed||!defaults[kind])return false;
     const d=datasets[kind],next={...d.filters},options=kind==='security'?SECURITY_CHOICES:CAMERA_CHOICES;
     try {
@@ -262,13 +306,23 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     d.summary=kind==='security'?{total:d.filtered.length}:summarizeCameraRecords(d.filtered);
     d.index=kind==='security'?createSecuritySpatialIndex(d.filtered):createCameraSpatialIndex(d.filtered);
     d.surface=buildDensitySurface(d.filtered,boundary,{width:256,height:128});d.image=densityImage(d.surface,kind==='cameras');
-    if(retainTimeline)renderTimelineFrame(playback.info());else renderLayers(kind,transitionMs);
-    updatePanels();overlay.dataset.state='ready';onChange({reason:'filters',dataset:kind,...info()});return true;
+    if(redraw){
+      if(retainTimeline)renderTimelineFrame(playback.info());else renderLayers(kind,transitionMs);
+      updatePanels();overlay.dataset.state='ready';onChange({reason:'filters',dataset:kind,...info()});
+    }
+    return true;
   }
   function setTemporalMode(mode,kind='security'){if(!loaded||!['all','year','month'].includes(mode)||!defaults[kind])return false;const d=datasets[kind];setDatasetFilters(kind,{year:mode==='all'?'all':d.selectedYear,month:mode==='month'?d.selectedMonth:'all'});if(mode!=='all')panels[kind].openPicker(mode);return true;}
   function changeSelection(next,reason){
     if(!loaded||destroyed||!next)return false;
     const layoutChanged=crossed()!==(next.compare!==null);
+    if(next.compare&&next.compare!==compareCategory){
+      const year=datasets[next.primary].filters.year;
+      if(ANALYSIS_YEARS.includes(year)&&datasets[next.compare].filters.year!==year){
+        if(getAnalysisLayer(next.compare).resource)setResourceFilters(next.compare,{year},{redraw:false});
+        else setDatasetFilters(next.compare,{year},{redraw:false});
+      }
+    }
     clearHover();closeAllPickers();catalog.close();
     activeCategory=next.primary;compareCategory=next.compare;
     if(!visible('security'))playback.pause();
@@ -300,18 +354,22 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     clearHover();
     if(focus?.getClientRects().length)focus.focus({preventScroll:true});
   }
-  function isMapControl(element){return Boolean(element.closest('.analysis-panel,.analysis-date-popover,.analysis-cross-bar,.analysis-timeline-bar,.analysis-map-tooltip,.map-tools,#diagnostics,button,a,input,select'));}
+  function isMapControl(element){return Boolean(element.closest('.analysis-panel,.analysis-date-popover,.analysis-cross-bar,.analysis-timeline-bar,.analysis-map-tooltip,.forecast-readout,.map-tools,#diagnostics,button,a,input,select'));}
   function setHoverPoint(point){
     if(!loaded||destroyed||pinned)return false;
     if(!point){if(hoverAnchor?.source==='hand')clearHover();return false;}
     if(catalog.isOpen||Object.values(panels).some(p=>p.picker))return false;
     const {x,y}=point,b=container.getBoundingClientRect(),source=point.source||'mouse';
     if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>b.width||y>b.height){clearHover();return false;}
+    const top=document.elementFromPoint(b.left+x,b.top+y);
+    if(forecast.active){
+      if(top&&container.contains(top)&&!isMapControl(top))forecast.inspect(map.screenToLocation(x,y));
+      return false;
+    }
     if(dismissedAnchor){
       if(dismissedAnchor.source===source&&Math.hypot(dismissedAnchor.x-x,dismissedAnchor.y-y)<26)return false;
       dismissedAnchor=null;
     }
-    const top=document.elementFromPoint(b.left+x,b.top+y);
     if(top?.closest('.analysis-map-tooltip'))return true;
     if(!top||!container.contains(top)||isMapControl(top)){if(!top?.closest('.analysis-resource-marker'))clearHover();return false;}
     const location=map.screenToLocation(x,y);
@@ -433,10 +491,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   }
   function targets(){
     if(destroyed)return[];
+    if(forecast.active)return[...forecast.targets(),...resourceMarkers.targets()];
     const b=container.getBoundingClientRect();
     const buttons=catalog.isOpen?catalog.targets():[crossClose,tipClose,pinTip].filter(button=>button.getClientRects().length);
     const extras=buttons.map(element=>{const r=element.getBoundingClientRect();return{id:element.id,x:r.left+r.width/2-b.left,y:r.top+r.height/2-b.top,width:r.width,height:r.height,element,priority:30};});
     return catalog.isOpen?extras:[...Object.values(panels).flatMap(p=>p.targets()),...resourceMarkers.targets(),...extras];
   }
-  return{ready,get isOpen(){return!destroyed;},info,togglePlayback,seekPlayback,setFilters:values=>setDatasetFilters('security',values),setCameraFilters:values=>setDatasetFilters('cameras',values),setTemporalMode,setCategory,setCameraDisplay,setCrossDataset,closeCross,setOpacity,setHoverPoint,clearHover:()=>clearHover({keepPinned:true}),dismissDetails,targets,pan(dx,dy){if(!destroyed)map.pan(dx,dy);},zoom(delta,x,y){if(!destroyed)map.zoom(delta,x,y);},home(){if(!destroyed)map.home();},destroy(){if(destroyed)return;destroyed=true;playback.destroy();timelineFrames=null;clearHover();abort.abort();unsubscribeView?.();resourceMarkers.destroy();container.removeEventListener('pointermove',pointerMove,true);container.removeEventListener('pointerleave',pointerLeave);container.removeEventListener('click',mapClick);document.removeEventListener('pointerdown',outsidePicker,true);document.removeEventListener('keydown',keyDown);document.removeEventListener('visibilitychange',visibilityChange);map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();map.setAnalysisMode(false);overlay.remove();for(const d of Object.values(datasets)){d.records=[];d.filtered=[];d.index=null;d.surface=null;d.image=null;}}};
+  return{ready,get isOpen(){return!destroyed;},info,togglePlayback,seekPlayback,setFilters:values=>setDatasetFilters('security',values),setCameraFilters:values=>setDatasetFilters('cameras',values),setTemporalMode,setCategory,setCameraDisplay,setCrossDataset,closeCross,setOpacity,setHoverPoint,clearHover:()=>clearHover({keepPinned:true}),dismissDetails,targets,pan(dx,dy){if(!destroyed)map.pan(dx,dy);},zoom(delta,x,y){if(!destroyed)map.zoom(delta,x,y);},home(){if(!destroyed)map.home();},destroy(){if(destroyed)return;destroyed=true;forecast.close();playback.destroy();timelineFrames=null;clearHover();abort.abort();unsubscribeView?.();resourceMarkers.destroy();container.removeEventListener('pointermove',pointerMove,true);container.removeEventListener('pointerleave',pointerLeave);container.removeEventListener('pointerdown',mapPointerDown);container.removeEventListener('click',mapClick);document.removeEventListener('pointerdown',outsidePicker,true);document.removeEventListener('keydown',keyDown);document.removeEventListener('visibilitychange',visibilityChange);map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();map.setAnalysisMode(false);overlay.remove();for(const d of Object.values(datasets)){d.records=[];d.filtered=[];d.index=null;d.surface=null;d.image=null;}}};
 }

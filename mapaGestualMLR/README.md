@@ -151,6 +151,10 @@ El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se 
 
 Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cerrar con Escape. Los botones de emergencia y los puntos fijos tienen un historial de ubicaciones por año. **Más usados** permite elegir entre uno y quince botones según sus pulsaciones. En 2024, los primeros se concentran cerca de los focos de robos del escenario de referencia. En los puntos fijos, la ficha y el listado indican el estado al cierre del año. [Evaluación final de usabilidad](./Documentos/16-evaluacion-usabilidad-final.md)
 
+## Simulación futura de robos
+
+En Análisis, **Simular futuro** compara la proyección de un año con un escenario al que se pueden agregar cámaras monitoreadas y casetas con personal. La escala de color es fija. El modelo base y el supuesto de efecto se pueden consultar en la aplicación. [Resultados y antecedentes](./Documentos/17-simulacion-futura-robos.md)
+
 ## Próximos pasos
 
 - Probar la consulta y el cruce con usuarios.

@@ -178,7 +178,6 @@ body:not(.twin-projection).content-open #experience-mode-switcher { visibility: 
 body:not(.twin-projection) .panel,
 body:not(.twin-projection) .map-tools,
 body:not(.twin-projection) #notice,
-body:not(.twin-projection) .map-category-legend,
 body:not(.twin-projection) .traffic-toolbar,
 body:not(.twin-projection) .traffic-legend {
   background-color: var(--glass-surface);
@@ -261,52 +260,48 @@ body:not(.twin-projection) .map-tools button + button { border-top: 0; }
 body:not(.twin-projection) .map-tools button:hover { background: rgba(0, 106, 133, .08); }
 body:not(.twin-projection) #notice { padding: 12px 18px; bottom: 20px; color: var(--ink); line-height: 1.5; }
 
-/* Preserve the three municipal categories while improving contrast on lime. */
+/* Keep the map key compact and separate from interactive controls. */
 body:not(.twin-projection) .map-category-legend {
-  width: min(340px, 42vw);
-  bottom: 18px;
-  padding: 10px 12px;
-  gap: 3px;
-  background-color: rgba(255, 255, 255, .94);
-  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  bottom: 26px;
+  gap: 6px;
 }
-body:not(.twin-projection) .map-category-legend::before {
-  content: "Temas en el mapa";
-  color: var(--ink);
-  font-size: 11px;
-  font-weight: 700;
+body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-category-legend {
+  left: calc(50% + 108px);
+  max-width: calc(100% - 252px);
 }
 body:not(.twin-projection) .map-category-legend-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  background: transparent;
+  gap: 6px;
+  padding: 4px 9px 4px 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--glass-surface);
+  box-shadow: 0 2px 8px rgba(20, 48, 50, .12);
+  backdrop-filter: var(--glass-blur);
   color: var(--ink);
   font-size: 11px;
   line-height: 1.4;
-  font-weight: 500;
-  padding: 1px 0;
+  font-weight: 600;
   clip-path: none;
 }
-body:not(.twin-projection) .map-category-legend-row::before {
+body:not(.twin-projection) .map-category-legend-number {
   display: grid;
-  flex: 0 0 19px;
+  flex: 0 0 17px;
   place-items: center;
-  width: 19px;
-  height: 19px;
-  border-radius: 50%;
-  background: var(--category-color);
-  color: #fff;
+  min-height: 17px;
+  border-left: 2px solid var(--category-color);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--category-color) 16%, white);
+  color: var(--ink);
+  font-size: 10px;
   font-weight: 700;
 }
-body:not(.twin-projection) .map-category-legend-row:nth-child(1)::before,
-body:not(.twin-projection) .map-category-legend-row:nth-child(2)::before { color: #182c32; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(3) { grid-row: 2; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(2) { grid-row: 3; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(1) { grid-row: 4; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(3)::before { content: "1"; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(2)::before { content: "2"; }
-body:not(.twin-projection) .map-category-legend-row:nth-child(1)::before { content: "3"; }
 body:not(.twin-projection) .sequence-marker:focus-visible {
   outline: 2px solid var(--municipal-petroleo);
   outline-offset: 2px;
@@ -613,7 +608,6 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection) .traffic-toolbar { width: 285px; padding: 16px; }
   body:not(.twin-projection) .traffic-title { font-size: 16px; }
   body:not(.twin-projection) .traffic-scenario { min-height: 38px; }
-  body:not(.twin-projection) .map-category-legend { width: 315px; }
 }
 @media (max-width: 1050px) {
   body:not(.twin-projection) .traffic-toolbar { width: 262px; }
