@@ -20,6 +20,9 @@ test('la evaluación reserva 2025 y activa el método con menor error por celda'
   assert.deepEqual(trainingYears, [2023, 2024]);
   assert.equal(heldOutYear, 2025);
   assert.equal(metrics[selectedMethod].mae, Math.min(...Object.values(metrics).map(result => result.mae)));
+  assert.equal(model.network.developmentCutoff, '2023-12');
+  assert.equal(model.network.trainedThrough, '2025-12');
+  assert.deepEqual(Object.keys(model.years), [year]);
   assert.throws(() => readForecastArtifact({ ...source, years: {} }));
 });
 
@@ -32,8 +35,8 @@ test('el escenario mantiene la escala cromática y admite un control sin efecto'
   assert.deepEqual(noEffect.values, baseline.values);
   assert.equal(noEffect.reduction, 0);
   assert.equal(forecastAt(noEffect, point).baseline, forecastAt(noEffect, point).scenario);
-  for (const year of FORECAST_YEARS) assert.equal(buildForecastSurface(model, { year }).max, baseline.max);
-  assert.notEqual(buildForecastSurface(model, { year: FORECAST_YEARS.at(-1) }).baselineTotal, baseline.baselineTotal);
+  assert.deepEqual(FORECAST_YEARS, [year]);
+  assert.equal(noEffect.max, baseline.max);
   assert.equal(forecastAt(baseline, { lat: 0, lng: 0 }), null);
 });
 

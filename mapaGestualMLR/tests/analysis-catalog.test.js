@@ -16,7 +16,8 @@ test('cada capa puede compararse con otra, sin superponer la misma dos veces', (
     if (primary===compare) assert.equal(result,null);
     else {
       assert.deepEqual(result,{primary,compare});
-      assert.equal(chooseAnalysisLayer(result,compare,'primary'),null);
+      assert.deepEqual(chooseAnalysisLayer(result,compare,'primary'),{primary:compare,compare:primary});
+      assert.deepEqual(chooseAnalysisLayer(result,primary,'compare'),{primary:compare,compare:primary});
     }
   }
 });

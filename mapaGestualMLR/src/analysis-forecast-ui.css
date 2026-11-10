@@ -9,27 +9,28 @@ body:not(.twin-projection) #forecast-back {
   background: transparent; border: 0; box-shadow: none;
 }
 body:not(.twin-projection) .forecast-caption,
-body:not(.twin-projection) .forecast-message,
-body:not(.twin-projection) .forecast-method {
+body:not(.twin-projection) .forecast-message {
   color: var(--ink-secondary); font-size: 11.5px; line-height: 1.45;
 }
 body:not(.twin-projection) .forecast-caption,
 body:not(.twin-projection) .forecast-message { margin: 5px 0 0; }
 body:not(.twin-projection) .forecast-message:empty { display: none; }
 body:not(.twin-projection) .forecast-controls { padding: 0 0 4px; }
-body:not(.twin-projection) .forecast-options { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-body:not(.twin-projection) .forecast-options:has(> :nth-child(2):last-child) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-body:not(.twin-projection) .forecast-options:has(> :nth-child(5):last-child) { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+body:not(.twin-projection) .forecast-view-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px;
+}
+body:not(.twin-projection) .forecast-view-status { color: var(--ink-secondary); font-size: 12px; font-weight: 600; }
+body:not(.twin-projection) #forecast-view-toggle {
+  min-height: 40px; padding: 5px 12px; color: white; background: var(--municipal-petroleo);
+  border-color: var(--municipal-petroleo); font-weight: 700;
+}
+body:not(.twin-projection) .forecast-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body:not(.twin-projection) .forecast-options button {
   min-height: 40px; padding: 5px 4px; white-space: normal; font-size: 11px;
 }
-body:not(.twin-projection) .forecast-options:has(> :nth-child(5):last-child) button[aria-pressed="true"]::before { content: none; }
 body:not(.twin-projection) .forecast-placement-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
-body:not(.twin-projection) .forecast-placement-tools button,
-body:not(.twin-projection) #forecast-method { min-height: 36px; padding: 5px 8px; font-size: 11px; box-shadow: none; }
+body:not(.twin-projection) .forecast-placement-tools button { min-height: 36px; padding: 5px 8px; font-size: 11px; box-shadow: none; }
 body:not(.twin-projection) #forecast-aim-add { flex-basis: 100%; color: var(--municipal-petroleo); font-weight: 700; }
-body:not(.twin-projection) #forecast-method { margin-top: 8px; color: var(--municipal-petroleo); }
-body:not(.twin-projection) .forecast-method { border-top: 1px solid var(--border); margin-top: 8px; }
 body:not(.twin-projection) .forecast-scale {
   display: flex; align-items: center; gap: 7px; margin: 7px 0 10px;
   color: var(--ink-secondary); font-size: 10.5px;

@@ -54,8 +54,8 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
   const catalog=createLayerPicker(overlay,container,{selection,onSelect:(kind,role)=>{
     if(role==='compare')setCrossDataset(kind);else setCategory(kind);
-    const prefix=getAnalysisLayer(activeCategory).prefix;
-    return document.getElementById(`${prefix}-${role==='compare'?'cross':'layers'}`);
+    const layer=role==='compare'?compareCategory:activeCategory;
+    return document.getElementById(`${getAnalysisLayer(layer).prefix}-layers`);
   }});
   const crossBar=el('div','analysis-cross-bar');crossBar.hidden=true;const crossClose=el('button');crossClose.type='button';crossClose.id='analysis-cross-close';crossClose.textContent='Quitar comparación';crossClose.onclick=()=>{
     closeCross();document.getElementById(`${getAnalysisLayer(activeCategory).prefix}-cross`)?.focus({preventScroll:true});
@@ -101,9 +101,13 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       }
       if(!pinned)showResource(record,{anchor});
     }});
+  const forecastImages=new WeakMap();
   const forecast=createForecastView(overlay,container,{
     map,signal:abort.signal,inside,onExit:closeForecast,
-    renderSurface:surface=>map.setAnalysisLayer({url:densityImage(surface),bounds:surface.bounds,opacity:.66,transitionMs:200}),
+    renderSurface:surface=>{
+      if(!forecastImages.has(surface))forecastImages.set(surface,densityImage(surface));
+      map.setAnalysisLayer({url:forecastImages.get(surface),bounds:surface.bounds,opacity:.66,transitionMs:200});
+    },
     renderPlacements:points=>resourceMarkers.render(points)
   });
   const playback=createAnalysisPlayback({
@@ -316,7 +320,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   function changeSelection(next,reason){
     if(!loaded||destroyed||!next)return false;
     const layoutChanged=crossed()!==(next.compare!==null);
-    if(next.compare&&next.compare!==compareCategory){
+    if(next.compare&&next.compare!==compareCategory&&next.compare!==activeCategory){
       const year=datasets[next.primary].filters.year;
       if(ANALYSIS_YEARS.includes(year)&&datasets[next.compare].filters.year!==year){
         if(getAnalysisLayer(next.compare).resource)setResourceFilters(next.compare,{year},{redraw:false});

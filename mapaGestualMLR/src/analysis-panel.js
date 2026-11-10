@@ -26,9 +26,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const titleRow=el('div','analysis-title-row'),title=el('h1',null,'Análisis del mapa');
   titleRow.append(title);
   const categoryLabel=el('p','analysis-category-label','Qué ver en el mapa');
-  const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog('primary',anchor),'analysis-layer-trigger');
+  const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog(state.side==='right'?'compare':'primary',anchor),'analysis-layer-trigger');
   category.dataset.tone=tone;category.setAttribute('aria-haspopup','dialog');category.setAttribute('aria-expanded','false');
-  category.setAttribute('aria-label',`Cambiar capa. Capa actual: ${label}`);
   const forecast=button(header,`${prefix}-forecast`,'Simular futuro',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
   header.append(titleRow,categoryLabel,category,forecast);
   const body=el('div','analysis-body'),stats=el('section','analysis-stats');stats.setAttribute('aria-label','Resultados de la consulta');
@@ -179,8 +178,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   function update(next) {
     state=next;panel.hidden=!next.visible;panel.dataset.side=next.side;
     const primary=next.side==='left';
-    title.textContent=primary?'Análisis del mapa':label;
-    category.hidden=categoryLabel.hidden=!primary;
+    title.textContent=primary?'Análisis del mapa':'Comparación';
+    categoryLabel.textContent=next.crossed?(primary?'Capa izquierda':'Capa derecha'):'Qué ver en el mapa';
+    category.setAttribute('aria-label',`${categoryLabel.textContent}. Cambiar ${label}`);
     forecast.hidden=!primary;
     controls.forEach(e=>{e.disabled=!next.loaded;});
     category.disabled=compare.disabled=!next.canChoose;
@@ -245,8 +245,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       const unit=next.summary.total===1?(kind==='alarms'?'botón':'ubicación'):layer.count;
       if(totalLabel.textContent!==unit)totalLabel.textContent=unit;
     }
-    opacityRow.hidden=!next.crossed;compare.hidden=!primary;
-    compare.textContent=next.crossed?'Cambiar comparación':'Añadir comparación';
+    opacityRow.hidden=!next.crossed;compare.hidden=!primary||next.crossed;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
   }

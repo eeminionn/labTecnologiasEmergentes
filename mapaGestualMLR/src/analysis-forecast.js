@@ -1,6 +1,6 @@
 import { projectSecurityPoint } from './analysis-data.js';
 
-export const FORECAST_YEARS = Object.freeze(['2026', '2027', '2028', '2029', '2030']);
+export const FORECAST_YEARS = Object.freeze(['2027']);
 export const FORECAST_ASSUMPTIONS = Object.freeze({
   none: Object.freeze({ label: 'Sin efecto', camera: 0, fixed: 0, cap: 0 }),
   conservative: Object.freeze({ label: 'Conservador', camera: .12, fixed: .10, cap: .25 }),
@@ -9,7 +9,8 @@ export const FORECAST_ASSUMPTIONS = Object.freeze({
 export const FORECAST_METHODS = Object.freeze({
   previous: 'Persistencia del último año',
   average: 'Promedio de los últimos dos años',
-  network: 'Red neuronal local'
+  network: 'Red neuronal espaciotemporal',
+  smoothed: 'Promedio histórico suavizado'
 });
 
 export const FORECAST_REACH_METRES = Object.freeze({ camera: 350, fixed: 550 });
@@ -33,7 +34,9 @@ export function readForecastArtifact(artifact) {
       throw new Error(`Falta la estimación territorial de ${year}.`);
     }
   }
-  for (const method of Object.keys(FORECAST_METHODS)) {
+  const methods = new Set(['previous', 'average', 'network', validation.selectedMethod]);
+  if (validation.metrics?.smoothed) methods.add('smoothed');
+  for (const method of methods) {
     const metrics = validation.metrics?.[method];
     if (![metrics?.mae, metrics?.wape, metrics?.hotspotRecall].every(isCount)) {
       throw new Error('Faltan resultados de validación del modelo territorial.');
@@ -76,25 +79,34 @@ export function buildForecastSurface(model, { year, placements = [], assumption 
   const [west, south, east, north] = projectedBounds;
   const stepX = (east - west) / width, stepY = (north - south) / height;
   const groundScale = Math.cos((bounds[0][0] + bounds[1][0]) * Math.PI / 360);
-  const sources = placements.flatMap(({ kind, ...point }) => {
-    const coordinate = projectedPoint(point);
-    if (!Object.hasOwn(FORECAST_REACH_METRES, kind) || !coordinate || !preset[kind]) return [];
+  const remaining = new Float64Array(baseline.length).fill(1);
+  const minimumRemaining = 1 - preset.cap;
+  // Visit only the cells within reach of each placement. This keeps repeated
+  // installations from multiplying a full-grid pass per placement.
+  for (const placement of placements) {
+    const { kind } = placement;
+    if (!Object.hasOwn(FORECAST_REACH_METRES, kind) || !preset[kind]) continue;
+    const coordinate = projectedPoint(placement);
+    if (!coordinate) continue;
     const [x, y] = coordinate;
-    if (x < west || x > east || y < south || y > north) return [];
-    return [{ x, y, radius: FORECAST_REACH_METRES[kind], strength: preset[kind] }];
-  });
-  const scenario = baseline.map((count, index) => {
-    if (!count || !sources.length) return count;
-    const x = west + (index % width + .5) * stepX;
-    const y = north - (Math.floor(index / width) + .5) * stepY;
-    let remaining = 1;
-    for (const source of sources) {
-      const distanceRatio = Math.hypot(x - source.x, y - source.y) * groundScale / source.radius;
-      const weight = Math.max(0, 1 - distanceRatio ** 2) ** 2;
-      remaining *= 1 - source.strength * weight;
+    if (x < west || x > east || y < south || y > north) continue;
+    const radius = FORECAST_REACH_METRES[kind] / groundScale;
+    const firstColumn = Math.max(0, Math.ceil((x - radius - west) / stepX - .5));
+    const lastColumn = Math.min(width - 1, Math.floor((x + radius - west) / stepX - .5));
+    const firstRow = Math.max(0, Math.ceil((north - y - radius) / stepY - .5));
+    const lastRow = Math.min(height - 1, Math.floor((north - y + radius) / stepY - .5));
+    for (let row = firstRow; row <= lastRow; row++) {
+      const dy = (north - (row + .5) * stepY - y) / radius;
+      for (let column = firstColumn; column <= lastColumn; column++) {
+        const index = row * width + column;
+        if (!baseline[index] || remaining[index] <= minimumRemaining) continue;
+        const dx = (west + (column + .5) * stepX - x) / radius;
+        const weight = Math.max(0, 1 - dx ** 2 - dy ** 2) ** 2;
+        remaining[index] = Math.max(minimumRemaining, remaining[index] * (1 - preset[kind] * weight));
+      }
     }
-    return count * Math.max(1 - preset.cap, remaining);
-  });
+  }
+  const scenario = baseline.map((count, index) => count * remaining[index]);
   const baselineTotal = baseline.reduce((sum, count) => sum + count, 0);
   const scenarioTotal = scenario.reduce((sum, count) => sum + count, 0);
   return {

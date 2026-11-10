@@ -32,7 +32,8 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
       choice.id = `analysis-layer-${layer.id}`;
       choice.dataset.tone = layer.tone;
       const text = el('span');
-      text.append(el('strong', null, layer.label), el('small', null, layer.description));
+      const description = el('small', null, layer.description);
+      text.append(el('strong', null, layer.label), description);
       choice.append(text);
       choice.onclick = () => {
         if (!chooseAnalysisLayer(selection(), layer.id, role)) return;
@@ -42,7 +43,7 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
         if (hadFocus) focusTarget?.focus({ preventScroll: true });
       };
       section.append(choice);
-      choices.push({ layer, choice });
+      choices.push({ layer, choice, description });
     }
     picker.append(section);
   }
@@ -61,18 +62,23 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
     close(false);
     role = nextRole; anchor = trigger;
     const state = selection();
-    title.textContent = role === 'compare' ? '¿Con qué quieres comparar?' : 'Elige una capa';
-    for (const {layer, choice} of choices) {
+    title.textContent = state.compare
+      ? (role === 'compare' ? 'Cambiar capa derecha' : 'Cambiar capa izquierda')
+      : (role === 'compare' ? '¿Con qué quieres comparar?' : 'Elige una capa');
+    const otherLayer = role === 'compare' ? state.primary : state.compare;
+    for (const {layer, choice, description} of choices) {
       const selected = state[role] === layer.id;
       choice.disabled = !chooseAnalysisLayer(state, layer.id, role);
       choice.setAttribute('aria-pressed', String(selected));
       choice.title = choice.disabled ? 'Esta capa ya está en el mapa' : '';
+      description.textContent = state.compare && layer.id === otherLayer ? 'Intercambiar capas' : layer.description;
     }
     picker.hidden = false;
     anchor.setAttribute('aria-expanded', 'true');
     const outer = container.getBoundingClientRect(), row = anchor.getBoundingClientRect();
-    const panel = anchor.closest('.analysis-panel').getBoundingClientRect(), box = picker.getBoundingClientRect();
-    picker.style.left = `${Math.max(12, Math.min(outer.width - box.width - 12, panel.right - outer.left + 12))}px`;
+    const panel = anchor.closest('.analysis-panel'), rect = panel.getBoundingClientRect(), box = picker.getBoundingClientRect();
+    const left = panel.dataset.side === 'right' ? rect.left - box.width - 12 : rect.right + 12;
+    picker.style.left = `${Math.max(12, Math.min(outer.width - box.width - 12, left - outer.left))}px`;
     picker.style.top = `${Math.max(66, Math.min(outer.height - box.height - 12, row.top - outer.top))}px`;
     (choices.find(({choice}) => choice.getAttribute('aria-pressed') === 'true')?.choice || choices.find(({choice}) => !choice.disabled)?.choice)?.focus({ preventScroll: true });
   }

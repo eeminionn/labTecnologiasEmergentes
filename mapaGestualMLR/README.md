@@ -153,7 +153,7 @@ Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cer
 
 ## Simulación futura de robos
 
-En Análisis, **Simular futuro** compara la proyección de un año con un escenario al que se pueden agregar cámaras monitoreadas y casetas con personal. La escala de color es fija. El modelo base y el supuesto de efecto se pueden consultar en la aplicación. [Resultados y antecedentes](./Documentos/17-simulacion-futura-robos.md)
+En Análisis, **Simular futuro** compara la proyección de 2027 con un escenario al que se pueden agregar cámaras monitoreadas y casetas con personal. **Ver antes** y **Ver después** alternan los mapas con la misma escala de color. [Red neuronal y validación](./Documentos/18-red-neuronal-robos.md) · [Antecedentes de las medidas](./Documentos/17-simulacion-futura-robos.md)
 
 ## Próximos pasos
 

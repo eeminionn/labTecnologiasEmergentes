@@ -1437,7 +1437,7 @@ async function verifyAnalysis() {
       && tooltip.textContent.includes('Fidias con Leonardo da Vinci');
     await capture('puntosfijos');
     await hold('analysis-sector-close');
-    await hold('analysis-cross');await hold('analysis-layer-alarms');await waitLayer();
+    await hold('fixed-analysis-layers');await hold('analysis-layer-alarms');await waitLayer();
     checks.switchComparison=analysisView.info().compareCategory==='alarms' && !$('map').querySelector('.analysis-resource-marker[data-kind="fixed"]')
       && $('map').querySelectorAll('.analysis-resource-marker[data-kind="alarms"]').length>=1
       && analysisView.info().filteredCount===20009;

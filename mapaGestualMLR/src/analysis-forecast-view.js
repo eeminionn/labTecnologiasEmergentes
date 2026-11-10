@@ -1,15 +1,14 @@
 import './analysis-forecast-ui.css';
-import { FORECAST_YEARS, FORECAST_ASSUMPTIONS, FORECAST_METHODS, FORECAST_REACH_METRES, readForecastArtifact, buildForecastSurface, forecastAt } from './analysis-forecast.js';
+import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt } from './analysis-forecast.js';
 
 const counts = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
 const percentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
 const measures = { camera: 'Cámara monitoreada', fixed: 'Caseta con personal' };
-const placementLimit = 24;
+const [year] = FORECAST_YEARS;
 
 export function createForecastView(overlay, container, { map, signal, inside, onExit, renderSurface, renderPlacements }) {
-  let model, loading, surface, selectedPoint, placing, serial = 0;
-  let year = FORECAST_YEARS.find(value => Number(value) === 2027) ?? FORECAST_YEARS[0];
-  let assumption = 'conservative', display = 'scenario', placements = [];
+  let model, loading, baselineSurface, surface, selectedPoint, placing, serial = 0;
+  let showAfter = true, placements = [];
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -24,20 +23,6 @@ export function createForecastView(overlay, container, { map, signal, inside, on
     node.addEventListener('click', onClick);
     return node;
   }
-  function options(label, key, values, action) {
-    const fieldset = element('fieldset', 'analysis-filter');
-    const row = element('div', 'analysis-options forecast-options');
-    const buttons = new Map(values.map(([value, label]) => [
-      value, button(`${key}-${value}`, label, () => action(value))
-    ]));
-    row.append(...buttons.values());
-    fieldset.append(element('legend', null, label), row);
-    return { fieldset, buttons };
-  }
-  function markSelected(group, value) {
-    for (const [key, choice] of group.buttons) choice.setAttribute('aria-pressed', String(key === value));
-  }
-
   const panel = element('section', 'analysis-panel forecast-panel');
   panel.dataset.side = 'left';
   panel.setAttribute('aria-labelledby', 'forecast-title');
@@ -49,49 +34,51 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   heading.append(title);
   const header = element('header', 'analysis-heading');
   const back = button('back', '← Histórico', onExit);
-  header.append(back, heading, element('p', 'forecast-caption', 'Robos · entrenamiento con datos simulados'));
+  header.append(back, heading, element('p', 'forecast-caption', `Robos · Proyección ${year} · Demostración`));
 
   const body = element('div', 'analysis-body');
   const loadStatus = element('p', 'forecast-caption', 'Cargando la proyección…');
   loadStatus.setAttribute('role', 'status');
   const controls = element('div', 'forecast-controls');
   controls.hidden = true;
-  const years = options('Año de proyección', 'year', FORECAST_YEARS.map(value => [value, String(value)]), value => {
-    year = value;
-    redraw();
+  const viewStatus = element('span', 'forecast-view-status');
+  viewStatus.setAttribute('role', 'status');
+  const viewToggle = button('view-toggle', 'Ver antes', () => {
+    showAfter = !showAfter;
+    renderMap();
   });
-  const displays = options('Ver en el mapa', 'display', [['baseline', 'Sin medidas'], ['scenario', 'Con medidas']], value => {
-    display = value;
-    redraw();
-  });
-  const devices = options('Agregar al escenario', 'add', Object.entries(measures), value => {
-    placing = placing === value ? null : value;
+  const viewRow = element('div', 'forecast-view-row');
+  viewRow.append(viewStatus, viewToggle);
+  const devices = element('fieldset', 'analysis-filter');
+  const deviceRow = element('div', 'analysis-options forecast-options');
+  const deviceButtons = new Map(Object.entries(measures).map(([kind, label]) => [kind, button(`add-${kind}`, label, () => {
+    placing = placing === kind ? null : kind;
     message.textContent = '';
     updatePlacementTools();
-  });
-  const assumptions = options('Supuesto de efecto', 'effect', [['none', 'Sin efecto'], ['conservative', 'Bajo'], ['illustrative', 'Alto']], value => {
-    assumption = value;
-    redraw();
-  });
-  const values = element('p', 'forecast-caption');
+  })]));
+  deviceRow.append(...deviceButtons.values());
+  devices.append(element('legend', null, 'Agregar al escenario'), deviceRow);
   const placementTools = element('div', 'forecast-placement-tools');
   const aimButton = button('aim-add', 'Colocar en la mira', () => {
     const point = map.screenToLocation(reticle.offsetLeft, reticle.offsetTop);
     if (point) addPlacement(point);
   });
   aimButton.hidden = true;
+  const finish = button('finish', 'Terminar', stopPlacing);
+  finish.hidden = true;
   const undo = button('undo', 'Deshacer última', () => {
     placements = placements.slice(0, -1);
+    message.textContent = 'Se retiró la última medida.';
     redraw();
-    if (undo.disabled) devices.buttons.get(placing ?? 'camera').focus({ preventScroll: true });
+    if (undo.disabled) deviceButtons.get(placing ?? 'camera').focus({ preventScroll: true });
   });
   const clear = button('clear', 'Quitar todas', () => {
     placements = [];
     message.textContent = 'Se quitaron las medidas del escenario.';
     redraw();
-    devices.buttons.get(placing ?? 'camera').focus({ preventScroll: true });
+    deviceButtons.get(placing ?? 'camera').focus({ preventScroll: true });
   });
-  placementTools.append(aimButton, undo, clear);
+  placementTools.append(aimButton, finish, undo, clear);
   const message = element('p', 'forecast-message');
   message.setAttribute('role', 'status');
   const legend = element('div', 'forecast-scale');
@@ -100,20 +87,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   gradient.setAttribute('aria-hidden', 'true');
   legend.append(element('span', null, 'Menor'), gradient, element('span', null, 'Mayor'));
 
-  const method = element('div', 'forecast-method');
-  method.id = 'forecast-method-content';
-  method.hidden = true;
-  const methodToggle = button('method', 'Método y validación', () => {
-    method.hidden = !method.hidden;
-    methodToggle.setAttribute('aria-expanded', String(!method.hidden));
-  });
-  methodToggle.setAttribute('aria-expanded', 'false');
-  methodToggle.setAttribute('aria-controls', method.id);
-  const validation = element('p');
-  method.append(validation, element('p', null,
-    `La influencia supuesta cae con la distancia hasta ${FORECAST_REACH_METRES.camera} m para cámaras y ${FORECAST_REACH_METRES.fixed} m para casetas. Los efectos requieren validación con registros reales de La Reina.`));
-  controls.append(years.fieldset, displays.fieldset, legend, devices.fieldset, placementTools, message,
-    assumptions.fieldset, values, methodToggle, method);
+  controls.append(viewRow, legend, devices, placementTools, message);
   body.append(loadStatus, controls);
   panel.append(header, body);
 
@@ -122,7 +96,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   readout.setAttribute('aria-label', 'Resultados de la simulación');
   const resultLabel = element('strong', 'forecast-result-label');
   const metrics = element('dl');
-  const metricValues = ['Sin medidas', 'Con medidas', 'Variación'].map(label => {
+  const metricValues = ['Antes', 'Después simulado', 'Variación'].map(label => {
     const item = element('div');
     const value = element('dd', null, '—');
     item.append(element('dt', null, label), value);
@@ -143,34 +117,37 @@ export function createForecastView(overlay, container, { map, signal, inside, on
 
   function updatePlacementTools() {
     const armed = Boolean(placing);
-    markSelected(devices, placing);
-    reticle.hidden = aimButton.hidden = !armed;
+    for (const [kind, choice] of deviceButtons) choice.setAttribute('aria-pressed', String(kind === placing));
+    reticle.hidden = aimButton.hidden = finish.hidden = !armed;
     container.classList.toggle('forecast-placing', !panel.hidden && armed);
     aimButton.setAttribute('aria-label', armed ? `Colocar en la mira: ${measures[placing]}` : 'Colocar en la mira');
     if (armed && !message.textContent) message.textContent = 'Marca un punto en el mapa o usa la mira.';
+  }
+  function stopPlacing() {
+    if (!placing) return false;
+    const returnTo = deviceButtons.get(placing);
+    const moveFocus = [aimButton, finish].includes(document.activeElement);
+    placing = null;
+    message.textContent = '';
+    updatePlacementTools();
+    if (moveFocus) returnTo.focus({ preventScroll: true });
+    return true;
   }
   function addPlacement(point) {
     if (!placing || !inside(point.lng, point.lat)) {
       message.textContent = 'Elige un punto dentro de La Reina.';
       return;
     }
-    if (placements.length >= placementLimit) {
-      message.textContent = `El escenario admite hasta ${placementLimit} medidas.`;
-      return;
-    }
     if (placements.some(item => Math.hypot(item.lat - point.lat, (item.lng - point.lng) * .83) < .00012)) {
       message.textContent = 'Ya hay una medida en ese punto.';
       return;
     }
-    const returnFocus = document.activeElement === aimButton;
     placements.push({ id: String(++serial), kind: placing, lat: point.lat, lng: point.lng });
     selectedPoint = point;
-    display = 'scenario';
-    const added = measures[placing];
-    placing = null;
-    message.textContent = `${added} incorporada.`;
+    showAfter = true;
+    const plural = placements.length === 1 ? 'medida agregada' : 'medidas agregadas';
+    message.textContent = `${counts.format(placements.length)} ${plural}. Puedes seguir colocando ${placing === 'camera' ? 'cámaras' : 'casetas'}.`;
     redraw();
-    if (returnFocus) devices.buttons.get(placements.at(-1).kind).focus({ preventScroll: true });
   }
   function updateReadout() {
     if (!surface) return;
@@ -187,24 +164,22 @@ export function createForecastView(overlay, container, { map, signal, inside, on
     const note = local ? 'Robos estimados en el sector por año' : 'Robos estimados en la comuna por año';
     if (resultNote.textContent !== note) resultNote.textContent = note;
   }
-  function redraw() {
-    if (!model || panel.hidden) return;
-    surface = buildForecastSurface(model, { year, placements, assumption });
-    const image = display === 'baseline' && placements.length
-      ? buildForecastSurface(model, { year, assumption: 'none' })
-      : surface;
-    renderSurface(image);
-    renderPlacements(placements.map(({ kind, ...point }) => ({
+  function renderMap() {
+    renderSurface(showAfter ? surface : baselineSurface);
+    const visiblePlacements = showAfter ? placements : [];
+    renderPlacements(visiblePlacements.map(({ kind, ...point }) => ({
       ...point, id: `escenario-${point.id}`, kind, scenario: true,
       title: `Quitar ${measures[kind].toLowerCase()}`,
       address: `Medida ${point.id} del escenario`
     })));
-    markSelected(years, year);
-    markSelected(displays, display);
-    markSelected(assumptions, assumption);
+    viewStatus.textContent = showAfter ? 'Después · simulado' : 'Antes · sin medidas';
+    viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver después';
+  }
+  function redraw() {
+    if (!model || panel.hidden) return;
+    surface = placements.length ? buildForecastSurface(model, { year, placements, assumption: 'illustrative' }) : baselineSurface;
+    renderMap();
     updatePlacementTools();
-    const effect = FORECAST_ASSUMPTIONS[assumption];
-    values.textContent = `Máximo por medida · Cámara ${percentage.format(effect.camera)} · Caseta ${percentage.format(effect.fixed)}. Tope local combinado ${percentage.format(effect.cap)}.`;
     undo.disabled = clear.disabled = placements.length === 0;
     readout.hidden = false;
     updateReadout();
@@ -232,9 +207,9 @@ export function createForecastView(overlay, container, { map, signal, inside, on
           return response.json();
         })
         .then(payload => {
-          model = readForecastArtifact(payload);
-          const { metrics, selectedMethod, heldOutYear } = model.validation;
-          validation.textContent = `Prueba con datos simulados de ${heldOutYear}. ${FORECAST_METHODS[selectedMethod]}: ${counts.format(metrics[selectedMethod].mae)} robos de error medio por celda. Red neuronal propia: ${counts.format(metrics.network.mae)}. La proyección usa el método con menor error en esta prueba.`;
+          const checkedModel = readForecastArtifact(payload);
+          baselineSurface = buildForecastSurface(checkedModel, { year, assumption: 'none' });
+          model = checkedModel;
           loadStatus.hidden = true;
           controls.hidden = false;
           redraw();
@@ -248,16 +223,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
       message.textContent = '';
       updatePlacementTools();
     },
-    stopPlacing() {
-      if (!placing) return false;
-      const returnTo = devices.buttons.get(placing);
-      const moveFocus = document.activeElement === aimButton;
-      placing = null;
-      message.textContent = '';
-      updatePlacementTools();
-      if (moveFocus) returnTo.focus({ preventScroll: true });
-      return true;
-    },
+    stopPlacing,
     inspect,
     click(point) {
       if (!surface || !point) return;

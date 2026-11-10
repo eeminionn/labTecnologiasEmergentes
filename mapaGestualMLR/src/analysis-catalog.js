@@ -25,9 +25,11 @@ export const MONITORING_STATUS_LABELS = Object.freeze({
 
 export function chooseAnalysisLayer(selection, id, role) {
   if (!getAnalysisLayer(id) || !['primary', 'compare'].includes(role)) return null;
-  if (role === 'compare') return id === selection.primary ? null : { ...selection, compare: id };
-  if (id === selection.compare) return null;
-  return { ...selection, primary: id };
+  const otherRole = role === 'primary' ? 'compare' : 'primary';
+  if (id === selection[otherRole]) {
+    return selection.compare ? { primary: selection.compare, compare: selection.primary } : null;
+  }
+  return { ...selection, [role]: id };
 }
 
 export function parseSimulatedSecurityResources(text) {

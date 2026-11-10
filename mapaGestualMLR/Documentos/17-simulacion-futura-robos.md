@@ -1,5 +1,7 @@
 # Simulación de robos y cobertura de seguridad
 
+Este documento registra la primera versión del simulador, 0.10.0. El funcionamiento y los resultados de la versión actual están en [Red neuronal de robos](./18-red-neuronal-robos.md).
+
 La herramienta compara una proyección base de robos con un escenario que incorpora cámaras y casetas con personal y capacidad de respuesta. La base usa los registros sintéticos de 2023 a 2025 para explorar años posteriores. La reducción del escenario depende de supuestos explícitos. La opción **Sin efecto** representa el 0 % y permite comprobar qué cambiaría al mantener la misma cantidad proyectada. La escala de color se conserva entre la base y el escenario para que un cambio de color corresponda a un cambio de intensidad. [Datos del prototipo](./11-analisis-seguridad.md) · [Procedencia de los recursos](./15-fuentes-recursos-seguridad.md)
 
 ## Evidencia y precedentes

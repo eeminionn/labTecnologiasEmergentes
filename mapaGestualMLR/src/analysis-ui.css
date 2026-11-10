@@ -72,8 +72,7 @@ body:not(.twin-projection) .analysis-camera-filters button { min-height: 39px; p
 body:not(.twin-projection) .analysis-experience[data-crossed="true"] .analysis-camera-filters { grid-template-columns: minmax(0,1.25fr) minmax(0,1fr); }
 body:not(.twin-projection) .analysis-footer { flex: 0 0 auto; display: grid; gap: 8px; margin-top: 12px; color: var(--ink-secondary); }
 body:not(.twin-projection) .analysis-actions { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.2fr); gap: 6px; }
-body:not(.twin-projection) .analysis-actions:has(> button:only-child),
-body:not(.twin-projection) .analysis-panel[data-side="right"] .analysis-actions { grid-template-columns: 1fr; }
+body:not(.twin-projection) .analysis-actions:not(:has(> .analysis-compare:not([hidden]))) { grid-template-columns: 1fr; }
 body:not(.twin-projection) .analysis-actions button { min-height: 40px; padding: 6px; font-size: 10.5px; line-height: 1.35; border-radius: 10px; white-space: normal; }
 body:not(.twin-projection) .analysis-actions .analysis-compare { background: var(--municipal-petroleo); border-color: var(--municipal-petroleo); color: white; font-weight: 600; }
 body:not(.twin-projection) .analysis-actions .analysis-compare:hover { background: #00546a; }
