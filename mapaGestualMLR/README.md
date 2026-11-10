@@ -3,7 +3,7 @@
 ### Interacción y análisis de información territorial
 
 **Inicio:** 5 de octubre de 2026<br>
-**Última actualización:** 6 de noviembre de 2026 · versión 0.7.1<br>
+**Última actualización:** 10 de noviembre de 2026 · versión 0.8.0<br>
 **Equipo:** Emilio Abarca · Emilia Armstrong · Victoria Aracena
 
 [Volver al README principal](../README.md) · [Revisar Etapa 2](../Etapa-2/Bitacora/README.md)
@@ -105,13 +105,13 @@ Separamos los tres puntos y usamos los pines originales del PDF, con sus colores
 
 ### Seguridad sobre el mapa
 
-Incorporamos **Análisis** sobre el mismo mapa de La Reina. Preparamos **60.000 incidentes de demostración entre 2023 y 2025** y un mapa de calor que pasa de verde a rojo según su concentración. La consulta combina período, horario, resolución y cuatro grupos de robo: **violencia o intimidación, por sorpresa, de vehículos y en inmuebles**.
+Incorporamos **Análisis** sobre el mismo mapa de La Reina. Preparamos **60.000 incidentes de demostración entre 2023 y 2025** y un mapa de calor que pasa de verde a rojo según su concentración. La consulta combina período, horario y cuatro grupos de robo: **violencia o intimidación, por sorpresa, de vehículos y en inmuebles**.
 
-Primero elegimos **Todo, Año o Mes** y luego el período concreto. Al pasar el mouse o el índice sobre el mapa aparece una ficha del sector: total, resolución, últimos siete días del período y registro más reciente. Ajustamos los focos por año y mes para comparar cambios en el territorio.
+Primero elegimos **Todo, Año o Mes** y luego el período concreto. Al pasar el mouse o el índice sobre el mapa aparece una ficha del sector: total, últimos siete días del período y registro más reciente. Ajustamos los focos por año y mes para comparar cambios en el territorio.
 
 <table>
   <tr>
-    <td align="center"><img src="./Imagenes/05-analisis-seguridad.jpg" alt="Mapa de calor de seguridad con filtros de período, resolución, horario y tipo de robo" width="640" /></td>
+    <td align="center"><img src="./Imagenes/05-analisis-seguridad.jpg" alt="Mapa de calor de seguridad con filtros" width="640" /></td>
   </tr>
   <tr>
     <td><strong>Figura 5.</strong> Consulta de seguridad sobre la cartografía de La Reina. <strong>Fuente:</strong> captura de la aplicación con datos de demostración.</td>
@@ -120,7 +120,7 @@ Primero elegimos **Todo, Año o Mes** y luego el período concreto. Al pasar el 
 
 ### Cámaras y cruce de información
 
-Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como puntos cian o mapa de calor azul. **Cruzar datos** superpone ambas bases y conserva filtros y transparencia independientes, con un panel a cada lado. Preparamos un ejemplo de **2024** con concentraciones de incidentes y pocas cámaras cercanas para mostrar esta lectura conjunta.
+Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como puntos cian o mapa de calor azul. **Comparar con cámaras** superpone ambas bases y conserva filtros y visibilidad independientes, con un panel a cada lado. Preparamos un ejemplo de **2024** con concentraciones de incidentes y pocas cámaras cercanas para mostrar esta lectura conjunta.
 
 <table>
   <tr>
@@ -133,9 +133,9 @@ Sumamos una segunda base con **320 emplazamientos de cámaras**, visibles como p
 
 ### Ajustes de la interfaz
 
-Ampliamos los paneles y el espacio de los botones de horario. Los tipos de cámara y de robo permiten **combinar opciones** y quitarlas al volver a pulsar. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**. Retiramos los filtros y rótulos de procedencia de la vista para concentrar la lectura en el mapa.
+Ordenamos Análisis en **capa, resultados, filtros y leyenda**. Horario, tipos y fechas se despliegan solo cuando se necesitan. La comparación abre la otra capa en un paso. Conservamos los paneles de vidrio, la paleta municipal y **Poppins** como alternativa a **Neulis Sans**.
 
-Sumamos una **barra de reproducción de 00 a 24 horas**, con play, pausa y un deslizador para avanzar o retroceder. El recorrido completo dura doce segundos y mezcla gradualmente los cuatro horarios de Seguridad, conservando los demás filtros elegidos. En el cruce de información, las cámaras permanecen fijas.
+La **barra de 00 a 24 horas** reproduce el día en **ocho segundos**, con pausa y deslizador. Mezcla gradualmente los cuatro horarios de robos y conserva los demás filtros. En el cruce, las cámaras permanecen fijas. La [evaluación de la interfaz](./Documentos/13-evaluacion-analisis.md) reúne los cambios y las capas sugeridas.
 
 Los incidentes son simulados y las cámaras combinan referencias publicadas con emplazamientos de demostración. La procedencia permanece en los CSV y sus metadatos; estas bases no representan estadísticas ni un catastro municipal vigente. Las agrupaciones de robo se apoyan en el [glosario de la Biblioteca del Congreso Nacional](https://www.bcn.cl/siit/reportescomunales/glosario.html).
 

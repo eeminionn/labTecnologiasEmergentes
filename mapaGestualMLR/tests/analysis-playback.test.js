@@ -27,35 +27,35 @@ const close = (actual, expected) => assert.ok(Math.abs(actual - expected) < 1e-1
 
 test('El día avanza continuamente con mezclas entre los cuatro horarios y vuelve a madrugada', () => {
   const { playback, time, frames, states } = fixture();
-  assert.deepEqual(playback.info(), { playing: false, position: 0, durationMs: 12000,
+  assert.deepEqual(playback.info(), { playing: false, position: 0, durationMs: 8000,
     period: 'madrugada', nextPeriod: 'manana', mix: 0, elapsedMs: 0 });
-  playback.start(); time.advance(1500);
+  playback.start(); time.advance(1000);
   close(playback.info().position, .125); close(playback.info().mix, .5);
   assert.equal(playback.info().period, 'madrugada'); assert.equal(playback.info().nextPeriod, 'manana');
-  time.advance(1500); assert.equal(playback.info().period, 'manana'); assert.equal(playback.info().mix, 0);
-  time.advance(4500); assert.equal(playback.info().period, 'tarde'); close(playback.info().mix, .5);
-  time.advance(1500); assert.equal(playback.info().period, 'noche'); assert.equal(playback.info().nextPeriod, 'madrugada');
-  time.advance(3000); close(playback.info().position, 0); assert.equal(playback.info().period, 'madrugada');
+  time.advance(1000); assert.equal(playback.info().period, 'manana'); assert.equal(playback.info().mix, 0);
+  time.advance(3000); assert.equal(playback.info().period, 'tarde'); close(playback.info().mix, .5);
+  time.advance(1000); assert.equal(playback.info().period, 'noche'); assert.equal(playback.info().nextPeriod, 'madrugada');
+  time.advance(2000); close(playback.info().position, 0); assert.equal(playback.info().period, 'madrugada');
   assert.equal(frames.length, 6); assert.equal(states.length, 1); assert.equal(time.size, 1);
 });
 
 test('El avance usa tiempo real entre cuadros, incluso si pasan varios ciclos sin renderizar', () => {
   const { playback, time, frames } = fixture();
-  playback.start('manana'); time.advance(27500);
-  close(playback.info().position, .25 + 3500 / 12000);
-  close(playback.info().elapsedMs, 6500); assert.equal(frames.length, 2);
-  assert.equal(playback.info().period, 'tarde'); close(playback.info().mix, 1 / 6);
+  playback.start('manana'); time.advance(18500);
+  close(playback.info().position, .25 + 2500 / 8000);
+  close(playback.info().elapsedMs, 4500); assert.equal(frames.length, 2);
+  assert.equal(playback.info().period, 'tarde'); close(playback.info().mix, .25);
 });
 
 test('Pausar captura la posición exacta entre cuadros y reanuda sin incluir la espera', () => {
   const { playback, time, frames, states } = fixture();
   playback.toggle(); time.advance(1700, false); playback.pause();
   const paused = playback.info().position;
-  close(paused, 1700 / 12000); assert.equal(time.size, 0); assert.equal(playback.info().playing, false);
+  close(paused, 1700 / 8000); assert.equal(time.size, 0); assert.equal(playback.info().playing, false);
   assert.equal(frames.at(-1).playing, false);
   time.advance(20000); close(playback.info().position, paused);
   playback.toggle(); time.advance(300);
-  close(playback.info().position, 2000 / 12000); assert.equal(states.length, 3);
+  close(playback.info().position, 2000 / 8000); assert.equal(states.length, 3);
 });
 
 test('Buscar un punto permite retroceder y mezclas arbitrarias, pausa y publica el cuadro inmediatamente', () => {
@@ -68,7 +68,7 @@ test('Buscar un punto permite retroceder y mezclas arbitrarias, pausa y publica 
   playback.seek(-10); assert.equal(playback.info().position, 0);
   playback.seek(10); assert.equal(playback.info().position, 1);
   assert.equal(playback.info().period, 'madrugada'); assert.equal(playback.info().mix, 0);
-  assert.equal(playback.info().elapsedMs, 12000);
+  assert.equal(playback.info().elapsedMs, 8000);
   playback.start(); assert.equal(playback.info().position, 0);
 });
 
@@ -91,7 +91,7 @@ test('Repetir inicio no duplica los cuadros ni cambia la posición de reproducci
   playback.start('manana'); playback.start('noche'); playback.start();
   assert.equal(playback.info().position, .25); assert.equal(time.size, 1);
   assert.equal(frames.length, 1); assert.equal(states.length, 1);
-  time.advance(3000); assert.equal(playback.info().position, .5); assert.equal(time.size, 1);
+  time.advance(2000); assert.equal(playback.info().position, .5); assert.equal(time.size, 1);
 });
 
 test('Un cuadro antiguo no mueve la nueva reproducción tras pausar o buscar otro punto', () => {
@@ -100,7 +100,7 @@ test('Un cuadro antiguo no mueve la nueva reproducción tras pausar o buscar otr
   playback.seek(.75); playback.start();
   const count = frames.length;
   stale(); assert.equal(frames.length, count); assert.equal(time.size, 1); assert.equal(playback.info().position, .75);
-  time.advance(1500); close(playback.info().position, .875);
+  time.advance(1000); close(playback.info().position, .875);
 });
 
 test('Destruir elimina el reloj, bloquea callbacks antiguos y no admite nuevas acciones', () => {
@@ -118,7 +118,7 @@ test('Los callbacks pueden pausar durante un cuadro o destruir durante el cambio
   const time = clock(); let playback;
   playback = createAnalysisPlayback({ ...time, onFrame(frame) { if (frame.playing && frame.position > 0) playback.pause(); } });
   playback.start(); time.advance(500);
-  assert.equal(playback.info().playing, false); assert.equal(time.size, 0); close(playback.info().position, 500 / 12000);
+  assert.equal(playback.info().playing, false); assert.equal(time.size, 0); close(playback.info().position, 500 / 8000);
   let destroyedOnState;
   destroyedOnState = createAnalysisPlayback({ ...time, onStateChange() { destroyedOnState.destroy(); } });
   assert.equal(destroyedOnState.start(), false); assert.equal(time.size, 0);

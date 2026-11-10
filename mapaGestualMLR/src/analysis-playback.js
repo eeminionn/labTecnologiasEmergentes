@@ -1,8 +1,8 @@
 export const ANALYSIS_PLAYBACK_PERIODS = Object.freeze(['madrugada', 'manana', 'tarde', 'noche']);
 
-/** A continuous, seekable day; one rendered cycle lasts twelve seconds. */
+/** A continuous, seekable day; one rendered cycle lasts eight seconds. */
 export function createAnalysisPlayback({
-  onFrame = () => {}, onStateChange = () => {}, durationMs = 12000,
+  onFrame = () => {}, onStateChange = () => {}, durationMs = 8000,
   requestFrame = requestAnimationFrame, cancelFrame = cancelAnimationFrame,
   now = () => performance.now()
 } = {}) {

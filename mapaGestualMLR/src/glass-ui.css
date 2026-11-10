@@ -43,10 +43,8 @@
   font-display: swap;
 }
 
-/* Existing projection styling is preserved. Only the standalone additions
-   (mode selector and traffic help) are hidden when using the projection. */
 .twin-projection #experience-mode-switcher,
-.twin-projection .experience-guide { display: none; }
+#experience-mode-switcher [hidden] { display: none !important; }
 
 body:not(.twin-projection) {
   --municipal-petroleo: #006a85;
@@ -130,8 +128,6 @@ body:not(.twin-projection) .municipal-name {
   letter-spacing: -.45px;
   color: var(--municipal-petroleo);
 }
-body:not(.twin-projection) .location .separator { padding: 0 13px; color: #9eb7bd; }
-body:not(.twin-projection) .location #provider-label { color: var(--ink-secondary); font-size: 12px; }
 body:not(.twin-projection) #status { font-size: 11px; color: var(--ink-secondary); }
 body:not(.twin-projection) #status i { background: #8da4a9; }
 body:not(.twin-projection) #status.active i { background: var(--municipal-verde); }

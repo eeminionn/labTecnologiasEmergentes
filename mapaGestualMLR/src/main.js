@@ -20,6 +20,7 @@ const analysisCheck = new URLSearchParams(location.search).has('analysis-check')
 const twinProjection = window.desktop?.twinBridge === true;
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
+if(trafficCheck && !twinProjection)$('mode-experiences').hidden=false;
 const defaults = { cameraId:'', cameraLabel:'', mirror:true, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
 let config;
 try { config = { ...defaults, ...JSON.parse(localStorage.getItem('mlr-config') || '{}') }; } catch { config={...defaults}; }
@@ -82,7 +83,7 @@ async function loadMap() {
   showSurfaceMode('map');
   contentViewer?.destroy();
   map?.destroy(); $('map').replaceChildren();
-  map=await createMap($('map'),{...config,offline:smoke},notify,provider=>$('provider-label').textContent=provider,openPointContent);
+  map=await createMap($('map'),{...config,offline:smoke},notify,undefined,openPointContent);
   contentViewer=createContentViewer($('map'),{onChange:state=>{
     if(!['open','close','slide'].includes(state.reason))return;
     // A page change consumes this dwell. Keeping the same index on an arrow
@@ -91,7 +92,6 @@ async function loadMap() {
     $('click-ripple').classList.remove('play');
   }});
   try {await contentViewer.ready;} catch(error) {notify(error.message);}
-  $('provider-label').textContent=map.provider;
 }
 function openPointContent(item) {
   if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
@@ -105,6 +105,7 @@ function showSurfaceMode(mode) {
   document.body.classList.toggle('experience-open', mode==='experience');
   document.body.classList.toggle('analysis-open', mode==='analysis');
   $('mode-map').setAttribute('aria-pressed', String(mode==='map'));
+  $('mode-map').textContent=mode==='analysis'?'Volver al mapa':'Mapa';
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
   $('gesture-hint').innerHTML=mode!=='map' ? 'Índice sostenido: seleccionar · <span class="hint-pan">Un puño: mover la vista</span> · <span class="hint-zoom">Dos OK: acercar y alejar</span>' : 'Índice sobre el punto 1,5 s: clic · <span class="hint-pan">Un puño: mover</span> · <span class="hint-zoom">Dos OK: zoom</span>';
@@ -117,7 +118,7 @@ function leaveExperience() {
   showExperienceMode(false); cancelGesture(); map?.home();
 }
 async function enterExperience({ animate = true } = {}) {
-  if(twinProjection || experienceLoading || trafficExperience?.isOpen)return;
+  if(!trafficCheck || twinProjection || experienceLoading || trafficExperience?.isOpen)return;
   if(analysisView || analysisLoading)leaveAnalysis();
   const generation=++experienceGeneration;
   experienceLoading=true; contentViewer?.close(); cancelGesture(); showExperienceMode(true);
@@ -162,7 +163,7 @@ async function enterAnalysis() {
   try {
     const module=await import('./analysis-view.js');
     if(generation!==analysisGeneration)return;
-    instance=await module.createAnalysisView($('map'),{map,notify,onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();},onExit:leaveAnalysis});
+    instance=await module.createAnalysisView($('map'),{map,notify,onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();}});
     if(generation!==analysisGeneration){instance.destroy();return;}
     analysisView=instance; await instance.ready;
     if(generation!==analysisGeneration){instance.destroy();return;}
@@ -724,7 +725,7 @@ function selectionTargets(rect) {
   // selection or open a popup while the person is reading a graph.
   const targets=currentSurface().targets();
   $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button').forEach(element=>{
-    if(element.disabled || !element.getClientRects().length)return;
+    if(element.hidden || element.disabled || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
     const box=element.getBoundingClientRect();
     targets.push({id:controlIds.get(element),x:box.left+box.width/2-rect.left,y:box.top+box.height/2-rect.top,width:box.width,height:box.height,element,priority:1});
@@ -1080,10 +1081,18 @@ async function verifyAnalysis() {
     const initial=analysisView.info();snapshots.general=initial;
     checks.datasetComplete=initial.datasetCount===60000 && initial.filteredCount===60000;
     checks.originalMap=originalMapNode===$('map').querySelector('.leaflet-map-pane') && map.provider==='OpenStreetMap';
+    checks.headerSimplified=!$('provider-label') && !document.querySelector('.topbar').textContent.includes('OpenStreetMap');
+    const attribution=$('map').querySelector('.leaflet-control-attribution a[href="https://www.openstreetmap.org/copyright"]');
+    checks.creditsRemain=!!attribution?.getClientRects().length;
+    checks.experiencesHidden=$('mode-experiences').hidden && !$('mode-experiences').getClientRects().length
+      && !selectionTargets($('map').getBoundingClientRect()).some(target=>target.element.id==='mode-experiences');
+    checks.mapNavigation=$('mode-map').textContent==='Volver al mapa';
+    checks.playbackDuration=initial.playback.durationMs===8000;
     checks.boundary=map.info().boundaryLoaded && map.info().analysisMode && map.info().analysisLayerVisible;
     checks.pinsInactive=map.targets().length===0 && !contentViewer.isOpen;
     checks.interfaceClear=!/simulad|fictici|publicad|demostraci/i.test(document.querySelector('.analysis-experience').textContent);
-    checks.resolutionTotals=initial.resolvedCount===22920 && initial.unresolvedCount===37080;
+    checks.robberyControlsSimplified=!document.querySelector('.analysis-filter-resolution,#analysis-export,#analysis-exit')
+      && !/resuelt|exportar csv|ver mapa/i.test(document.querySelector('.analysis-experience').textContent);
     checks.progressiveDateControls=initial.temporalMode==='all' && !analysisView.targets().some(target=>/^analysis-year-20|analysis-month-\d/.test(target.id));
     const heat=$('map').querySelector('img[alt="Concentración de incidentes de seguridad"]');
     await heat.decode();
@@ -1094,15 +1103,8 @@ async function verifyAnalysis() {
     for(let i=0;i<rgba.length;i+=4)if(rgba[i+3]>240){colored++;green+=rgba[i+1]>rgba[i]*1.2;red+=rgba[i]>rgba[i+1]*1.15;colors.add(`${rgba[i]},${rgba[i+1]},${rgba[i+2]}`);}
     checks.clippedToCommune=colored/(canvas.width*canvas.height)>.4 && colored/(canvas.width*canvas.height)<.9 && rgba[3]===0;
     checks.fullColorRamp=green>0 && red>0 && colors.size>200;
-    checks.timeLabelsFit=[...document.querySelectorAll('.analysis-security-panel .analysis-filter-period .analysis-options button')].every(button=>{
-      const node=[...button.childNodes].find(child=>child.nodeType===Node.TEXT_NODE && child.textContent.trim());
-      if(!node)return false;
-      const range=document.createRange();range.selectNodeContents(node);
-      const text=range.getBoundingClientRect(),box=button.getBoundingClientRect();
-      return text.width>0 && text.left>=box.left+5 && text.right<=box.right-5 && button.scrollWidth<=button.clientWidth;
-    });
     await capture('general');
-    analysisView.setFilters({year:'2024',month:'07',resolution:'no',robbery:['sorpresa']});await waitLayer();
+    analysisView.setFilters({year:'2024',month:'07',robbery:['sorpresa']});await waitLayer();
     await hold('analysis-playback');await waitLayer();
     const playing=analysisView.info();
     checks.playbackStarts=playing.playback.playing && playing.playback.position>0
@@ -1127,14 +1129,15 @@ async function verifyAnalysis() {
       && Math.abs(Number($('analysis-timeline').value)/1000-nativeSeek.position)<.002;
     analysisView.seekPlayback(.375);await waitLayer();
     const morning=analysisView.info();snapshots.timelapse=morning;
-    const expectedMorning=sourceIncidents.filter(record=>record.year==='2024'&&record.month==='07'&&!record.resolved&&record.robberyType==='sorpresa'&&record.hour>=6&&record.hour<12).length;
+    const expectedMorning=sourceIncidents.filter(record=>record.year==='2024'&&record.month==='07'&&record.robberyType==='sorpresa'&&record.hour>=6&&record.hour<12).length;
     checks.playbackFilters=morning.filteredCount===expectedMorning && morning.filters.year==='2024'
-      && morning.filters.month==='07' && morning.filters.resolution==='no' && morning.filters.robbery[0]==='sorpresa';
+      && morning.filters.month==='07' && morning.filters.robbery[0]==='sorpresa';
     checks.playbackExactSeek=morning.playback.mix===.5 && $('analysis-timeline').value==='375';
-    analysisView.setFilters({resolution:'all'});await waitLayer();
-    checks.playbackFilterKeepsPosition=analysisView.info().playback.position===.375 && $('analysis-timeline').value==='375'
-      && analysisView.info().playback.mix===.5 && map.info().analysisTransitioning && !analysisView.info().playback.playing;
-    analysisView.setFilters({resolution:'no'});await waitLayer();
+    analysisView.setFilters({robbery:['intimidacion']});await waitLayer();
+    const filteredTimeline=analysisView.info();
+    checks.playbackFilterKeepsPosition=filteredTimeline.playback.position===.375 && $('analysis-timeline').value==='375'
+      && filteredTimeline.filters.robbery[0]==='intimidacion' && filteredTimeline.playback.mix===.5
+      && map.info().analysisTransitioning && !filteredTimeline.playback.playing;
     analysisView.seekPlayback(.125);await waitLayer();
     checks.playbackBackwards=analysisView.info().playback.position===.125 && analysisView.info().filters.period==='madrugada';
     await capture('lineatiempo');
@@ -1169,11 +1172,21 @@ async function verifyAnalysis() {
     const monthly=analysisView.info();snapshots.mensual=monthly;
     checks.monthFilter=monthly.filteredCount===1697 && monthly.dateRange.start==='2024-07-01' && monthly.dateRange.end==='2024-07-31';
     await capture('mes');
-    await hold('analysis-resolution-no');await waitLayer();
-    const unresolved=analysisView.info();checks.resolutionFilter=unresolved.resolvedCount===0 && unresolved.filteredCount>0 && unresolved.filteredCount<1697;
+    await hold('analysis-period-picker');
+    const hourOptions=[...document.querySelectorAll('.analysis-date-grid[data-grid="period"] button')];
+    checks.timeLabelsFit=analysisView.info().picker==='period' && hourOptions.length===5 && hourOptions.every(button=>{
+      const label=[...button.childNodes].find(child=>child.nodeType===Node.TEXT_NODE && child.textContent.trim());
+      if(!label || button.scrollWidth>button.clientWidth)return false;
+      const range=document.createRange(),box=button.getBoundingClientRect(),hours=button.querySelector('small');
+      return [label,...(hours?[hours]:[])].every(node=>{
+        range.selectNodeContents(node);
+        const text=range.getBoundingClientRect();
+        return text.width>0 && text.left>=box.left+5 && text.right<=box.right-5;
+      });
+    });
     await hold('analysis-period-noche');await waitLayer();
     const filtered=analysisView.info();snapshots.filtrado=filtered;
-    checks.timeFilter=filtered.filteredCount>0 && filtered.filteredCount<unresolved.filteredCount;
+    checks.timeFilter=filtered.filteredCount>0 && filtered.filteredCount<monthly.filteredCount && filtered.picker===null;
     checks.rasterChanges=heat!==$('map').querySelector('img[alt="Concentración de incidentes de seguridad"]');
     await capture('filtrado');
     const local={lat:-33.448,lng:-70.548},screen=map.locationToScreen(local),roundtrip=map.screenToLocation(screen.x,screen.y);
@@ -1187,7 +1200,8 @@ async function verifyAnalysis() {
     await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
     await sleep(500);
     const detail=analysisView.info().hover;snapshots.detalle=detail;
-    checks.handDetails=detail?.source==='hand' && detail.radiusMetres===250 && detail.resolved+detail.unresolved===detail.total;
+    checks.handDetails=detail?.source==='hand' && detail.radiusMetres===250 && Number.isInteger(detail.total)
+      && document.querySelector('.analysis-tooltip-total').textContent.includes('Noche');
     checks.weekUsesSelectedPeriod=detail?.referenceDate==='2024-07-31' && detail.last7DaysRange.start==='2024-07-25' && detail.last7Days<=detail.total;
     window.desktop.reportSmoke({phase:'analysis-detalle'});await sleep(150);
     const before=map.info();analysisView.pan(90,35);
@@ -1198,7 +1212,9 @@ async function verifyAnalysis() {
     checks.resetFilters=analysisView.info().filteredCount===60000 && analysisView.info().temporalMode==='all' && analysisView.info().filters.month==='all';
     analysisView.home();
     const targets=analysisView.targets(),rect=$('map').getBoundingClientRect();
-    checks.controlsReachable=targets.length>=14 && targets.every(target=>target.width>=30 && target.height>=32 && target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y)));
+    const basicControls=['analysis-category-cameras','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross'];
+    checks.controlsReachable=basicControls.every(id=>targets.some(target=>target.id===id))
+      && targets.every(target=>target.width>=30 && target.height>=32 && target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y)));
     const waitCameras=()=>waitFor(()=>map.info().cameraAnalysisLoaded&&map.info().cameraAnalysisVisible,5000,'capa de cámaras visible');
     await hold('analysis-category-cameras');await waitCameras();
     const cameras=analysisView.info();snapshots.camaras=cameras;
@@ -1247,10 +1263,8 @@ async function verifyAnalysis() {
     checks.cameraYearInventory=analysisView.info().filteredCount===expectedCameras2024;
     await hold('camera-analysis-mode-month');await hold('camera-analysis-month-07');await waitCameras();
     checks.cameraMonthlyInventory=analysisView.info().filteredCount===expectedCamerasJuly2024 && analysisView.info().dateRange.end==='2024-07-31';
-    await hold('camera-analysis-cross');
-    checks.crossPickerExcludesSame=!!analysisView.targets().find(t=>t.id==='analysis-cross-security')
-      && !analysisView.targets().find(t=>t.id==='analysis-cross-cameras');
-    await hold('analysis-cross-security');await waitLayer();await waitCameras();
+    await hold('camera-analysis-cross');await waitLayer();await waitCameras();
+    checks.crossDirect=analysisView.info().crossed && $('analysis-cross-close').textContent==='Ver solo cámaras';
     const cameraPanel=document.querySelector('.analysis-camera-panel'),securityPanel=document.querySelector('.analysis-security-panel');
     checks.crossPanelsSeparate=analysisView.info().crossed && !cameraPanel.hidden && !securityPanel.hidden
       && cameraPanel.dataset.side==='left' && securityPanel.dataset.side==='right'
@@ -1302,16 +1316,16 @@ async function verifyAnalysis() {
     await hold('camera-analysis-category-security');await waitLayer();
     analysisView.setFilters({period:'all'});await waitLayer();
     checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
-    await hold('analysis-exit');
-    checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible && map.targets().length===3;
+    await hold('mode-map');
+    checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible
+      && map.targets().length===3 && $('mode-map').textContent==='Mapa';
     checks.originalGraphics=contentViewer.manifest.slides.length===5;
     await enterAnalysis();await analysisView.ready;await waitLayer();
     checks.reopen=analysisView.info().datasetCount===60000 && document.querySelectorAll('.analysis-experience').length===1;
     const closingAnalysis=analysisView;closingAnalysis.togglePlayback();
-    await enterExperience({animate:false});
+    await hold('mode-map');
     checks.playbackCleanup=!closingAnalysis.info().playback.playing;
-    checks.experienceCompatibility=!analysisView && trafficExperience.info().ready && !map.info().analysisMode;
-    leaveExperience();checks.cleanup=!document.querySelector('.analysis-experience') && !document.querySelector('.traffic-experience');
+    checks.cleanup=!document.querySelector('.analysis-experience') && !document.querySelector('.traffic-experience');
     window.desktop.reportSmoke({version:appVersion,ok:Object.values(checks).every(Boolean),checks,snapshots,holds,trustedClicks,gestureSelections:holds.length,cameraOpened:false});
   } finally {$('workspace').removeEventListener('click',observe,true);}
 }
