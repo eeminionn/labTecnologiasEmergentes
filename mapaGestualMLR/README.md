@@ -149,7 +149,7 @@ Los gráficos de inundación se abren desde el mapa principal y el visor muestra
 
 El catálogo agrupa **Incidentes y vigilancia** y **Recursos de seguridad**. Se puede elegir una capa y comparar con otra. Los puntos fijos y los botones se muestran como referencias territoriales para análisis. [Fuentes y ubicaciones](./Documentos/15-fuentes-recursos-seguridad.md)
 
-Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cerrar con Escape. La ficha de cada botón muestra sus pulsaciones de referencia y **Más usados** filtra los diez con mayor conteo. Los puntos fijos también tienen una lista de ubicaciones.
+Al apuntar al mapa aparece la ficha de 250 metros. Se puede fijar con clic y cerrar con Escape. Los botones de emergencia tienen pulsaciones de referencia por año. **Más usados** filtra los diez con mayor conteo del año elegido. Para el ejemplo de 2024, esos botones se concentran en los sectores con más robos de referencia. Los puntos fijos también tienen una lista de ubicaciones.
 
 ## Próximos pasos
 

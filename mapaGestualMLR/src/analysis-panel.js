@@ -1,4 +1,5 @@
 import { SECURITY_ROBBERY_TYPES } from './analysis-data.js';
+import { ANALYSIS_YEARS } from './analysis-catalog.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const number = value => new Intl.NumberFormat('es-CL').format(value);
 export const CAMERA_CHOICES = {
@@ -51,7 +52,10 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     }
     f.append(legend,g);body.append(f);return f;
   }
-  if(kind==='alarms')group('usage','Uso de los botones',[['all','Todos'],['top','Más usados']],value=>callbacks.alarmUsage(value));
+  if(kind==='alarms'){
+    group('year','Año',ANALYSIS_YEARS.map(year=>[year,year]),year=>callbacks.alarmFilters({year}));
+    group('usage','Uso de los botones',[['all','Todos'],['top','Más usados']],usage=>callbacks.alarmFilters({usage}));
+  }
   const timeField=el('fieldset','analysis-filter analysis-filter-date'),timeLegend=el('legend',null,'Período'),timeModes=el('div','analysis-options');
   ['all','year','month'].forEach((mode,i)=>modeButtons.push(button(timeModes,`${prefix}-mode-${mode}`,['Todo','Año','Mes'][i],()=>callbacks.mode(mode))));
   const dateSelection=el('div','analysis-date-selection');dateSelection.hidden=true;
@@ -118,8 +122,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverTitle.id=`${prefix}-picker-title`;popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar opciones');
   const grids={};
-  const years=['2023','2024','2025'];
-  for(const [key,items] of resource?[]:[['year',years.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
+  for(const [key,items] of resource?[]:[['year',ANALYSIS_YEARS.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
     const grid=el('div','analysis-date-grid');grid.dataset.grid=key;grids[key]=grid;
     for(const [value,label,detail] of items) {
       const idValue=['year','month','robbery','period'].includes(key)?value:items.findIndex(item=>item[0]===value);
@@ -165,6 +168,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const f=next.filters;
     filterButtons.forEach(e=>{
       e.setAttribute('aria-pressed',String((e.dataset.filter==='display'?next.display:f[e.dataset.filter])===e.dataset.value));
+      if(e.dataset.filter==='year')e.disabled=!next.loaded||!next.usageByYear?.has(e.dataset.value);
       if(e.dataset.filter==='usage'&&e.dataset.value==='top')e.disabled=!next.loaded||!next.mostUsed?.length;
     });
     modeButtons.forEach((e,i)=>e.setAttribute('aria-pressed',String(['all','year','month'][i]===next.temporalMode)));
@@ -179,7 +183,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos de esta capa.':!next.loaded?'Cargando datos…'
-      :kind==='alarms'?(next.records.some(record=>Number.isInteger(record.activations))?'Pulsaciones de referencia · 2025':'Sin datos de pulsaciones')
+      :kind==='alarms'?(f.year?`Pulsaciones de referencia · ${f.year}`:'Sin datos de pulsaciones')
         :resource?'Referencias territoriales para análisis'
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;

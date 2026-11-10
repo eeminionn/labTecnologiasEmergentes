@@ -15,6 +15,7 @@ export const ANALYSIS_GROUPS = Object.freeze([
 
 export const ANALYSIS_LAYERS = Object.freeze(ANALYSIS_GROUPS.flatMap(({ layers }) => layers));
 export const getAnalysisLayer = id => ANALYSIS_LAYERS.find(layer => layer.id === id);
+export const ANALYSIS_YEARS = Object.freeze(['2023', '2024', '2025']);
 
 export function chooseAnalysisLayer(selection, id, role) {
   if (!getAnalysisLayer(id) || !['primary', 'compare'].includes(role)) return null;
@@ -44,19 +45,21 @@ export function parseSimulatedSecurityResources(text) {
 
 export function parseAlarmUsage(text) {
   const [header, ...rows] = csvRows(text);
-  if (header?.join(',') !== 'id,pulsaciones') {
+  if (header?.join(',') !== 'id,anio,pulsaciones') {
     throw new Error('El archivo de pulsaciones no tiene las columnas requeridas.');
   }
-  const usage = new Map();
+  const usageByYear = new Map();
   for (const [index, row] of rows.entries()) {
-    const [id, count] = row;
-    if (row.length !== header.length || !/^[a-z0-9-]+$/.test(id) || !/^\d+$/.test(count)
-      || !Number.isSafeInteger(Number(count)) || usage.has(id)) {
+    const [id, year, count] = row;
+    const usage = usageByYear.get(year) ?? new Map();
+    if (row.length !== header.length || !/^[a-z0-9-]+$/.test(id) || !/^[1-9]\d{3}$/.test(year)
+      || !/^\d+$/.test(count) || !Number.isSafeInteger(Number(count)) || usage.has(id)) {
       throw new Error(`La fila ${index + 2} del archivo de pulsaciones no es válida.`);
     }
     usage.set(id, Number(count));
+    usageByYear.set(year, usage);
   }
-  return usage;
+  return usageByYear;
 }
 
 export function mostUsedAlarmButtons(records) {
