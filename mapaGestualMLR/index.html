@@ -49,9 +49,16 @@
             <button id="council-timer-toggle" type="button">Pausar</button>
             <button id="council-timer-reset" type="button" aria-label="Reiniciar tiempo del tema" title="Reiniciar tiempo del tema"><span aria-hidden="true">↺</span></button>
           </div>
-          <div class="council-timer-track" aria-hidden="true"><span id="council-timer-fill"></span></div>
+          <div class="council-timer-track">
+            <span id="council-timer-fill" aria-hidden="true"></span>
+            <input id="council-timer-seek" type="range" min="0" max="1200" step="1" value="1200" aria-label="Ajustar tiempo restante del tema" />
+          </div>
         </section>
       </section>
+      <aside id="council-timer-notice" class="council-timer-notice" role="status" aria-live="polite" aria-atomic="true" hidden>
+        <div><strong id="council-timer-notice-title"></strong><span id="council-timer-notice-topic"></span></div>
+        <button id="council-timer-notice-close" type="button" aria-label="Cerrar aviso de tiempo">×</button>
+      </aside>
       <div id="map" aria-label="Mapa interactivo de La Reina"></div>
       <div id="cursor" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>
       <div id="cursor-secondary" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>

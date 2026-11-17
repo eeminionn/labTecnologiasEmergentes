@@ -149,7 +149,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const b=container.getBoundingClientRect();
     setHoverPoint({x:event.clientX-b.left,y:event.clientY-b.top,source:'mouse'});
   };
-  const pointerLeave=()=>clearHover({keepPinned:true}),outsidePicker=event=>{
+  const pointerLeave=()=>clearHover({keepPinned:true,keepCompanion:true}),outsidePicker=event=>{
     const target=event.target;
     if(!target.closest?.('.analysis-layer-picker,.analysis-layer-trigger,.analysis-compare'))catalog.close(false);
     if(!target.closest?.('.analysis-date-popover,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter'))closeAllPickers();
@@ -373,11 +373,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     if(kind==='security')map.setAnalysisOpacity(d.opacity);else if(kind==='cameras')map.setCameraAnalysisOpacity(d.opacity);else renderResources();
     updatePanels();onChange({reason:'opacity',dataset:kind,...info()});return true;
   }
-  function clearHover({keepPinned=false}={}){
+  function clearHover({keepPinned=false,keepCompanion=false}={}){
     if(keepPinned&&pinned)return;
     const hadDetails=Boolean(hoverDetails);
     clearTimeout(hoverTimer);hoverTimer=null;hoverAnchor=null;displayedAnchor=null;hoverDetails=null;pinned=false;restoreFocus=null;tooltip.hidden=true;hoverRing.hidden=true;
-    if(hadDetails)publishCompanion();
+    if(hadDetails&&!keepCompanion)publishCompanion();
   }
   function dismissDetails(){
     if(displayedAnchor)dismissedAnchor={...displayedAnchor};
@@ -388,10 +388,10 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   function isMapControl(element){return Boolean(element.closest('.analysis-panel,.analysis-date-popover,.analysis-cross-bar,.analysis-timeline-bar,.analysis-map-tooltip,.forecast-readout,.map-tools,#diagnostics,button,a,input,select'));}
   function setHoverPoint(point){
     if(!loaded||destroyed||pinned)return false;
-    if(!point){if(hoverAnchor?.source==='hand')clearHover();return false;}
+    if(!point){if(hoverAnchor?.source==='hand')clearHover({keepCompanion:true});return false;}
     if(catalog.isOpen||Object.values(panels).some(p=>p.picker))return false;
     const {x,y}=point,b=container.getBoundingClientRect(),source=point.source||'mouse';
-    if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>b.width||y>b.height){clearHover();return false;}
+    if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>b.width||y>b.height){clearHover({keepCompanion:true});return false;}
     const top=document.elementFromPoint(b.left+x,b.top+y);
     if(forecast.active){
       if(top&&container.contains(top)&&!isMapControl(top))forecast.inspect(map.screenToLocation(x,y));
@@ -402,9 +402,9 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       dismissedAnchor=null;
     }
     if(top?.closest('.analysis-map-tooltip'))return true;
-    if(!top||!container.contains(top)||isMapControl(top)){if(!top?.closest('.analysis-resource-marker'))clearHover();return false;}
+    if(!top||!container.contains(top)||isMapControl(top)){if(!top?.closest('.analysis-resource-marker'))clearHover({keepCompanion:true});return false;}
     const location=map.screenToLocation(x,y);
-    if(!location||!inside(location.lng,location.lat)){clearHover();return false;}
+    if(!location||!inside(location.lng,location.lat)){clearHover({keepCompanion:true});return false;}
     if(hoverAnchor?.source===source&&Math.hypot(hoverAnchor.x-x,hoverAnchor.y-y)<(tooltip.hidden?18:32))return true;
     clearTimeout(hoverTimer);hoverAnchor={x,y,source,...location};
     hoverTimer=setTimeout(()=>{hoverTimer=null;showHover(hoverAnchor);},source==='hand'?420:170);return true;
@@ -537,5 +537,5 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const extras=buttons.map(element=>{const r=element.getBoundingClientRect();return{id:element.id,x:r.left+r.width/2-b.left,y:r.top+r.height/2-b.top,width:r.width,height:r.height,element,priority:30};});
     return catalog.isOpen?extras:[...Object.values(panels).flatMap(p=>p.targets()),...resourceMarkers.targets(),...extras];
   }
-  return{ready,get isOpen(){return!destroyed;},info,togglePlayback,seekPlayback,setFilters:values=>setDatasetFilters('security',values),setCameraFilters:values=>setDatasetFilters('cameras',values),setTemporalMode,setCategory,setCameraDisplay,setCrossDataset,closeCross,setOpacity,setHoverPoint,clearHover:()=>clearHover({keepPinned:true}),dismissDetails,targets,pan(dx,dy){if(!destroyed)map.pan(dx,dy);},zoom(delta,x,y){if(!destroyed)map.zoom(delta,x,y);},home(){if(!destroyed)map.home();},destroy(){if(destroyed)return;destroyed=true;forecast.close();playback.destroy();timelineFrames=null;clearHover();abort.abort();unsubscribeView?.();resourceMarkers.destroy();container.removeEventListener('pointermove',pointerMove,true);container.removeEventListener('pointerleave',pointerLeave);container.removeEventListener('pointerdown',mapPointerDown);container.removeEventListener('click',mapClick);document.removeEventListener('pointerdown',outsidePicker,true);document.removeEventListener('keydown',keyDown);document.removeEventListener('visibilitychange',visibilityChange);map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();map.setAnalysisMode(false);overlay.remove();for(const d of Object.values(datasets)){d.records=[];d.filtered=[];d.index=null;d.surface=null;d.image=null;}}};
+  return{ready,get isOpen(){return!destroyed;},info,togglePlayback,seekPlayback,setFilters:values=>setDatasetFilters('security',values),setCameraFilters:values=>setDatasetFilters('cameras',values),setTemporalMode,setCategory,setCameraDisplay,setCrossDataset,closeCross,setOpacity,setHoverPoint,clearHover:()=>clearHover({keepPinned:true,keepCompanion:true}),dismissDetails,targets,pan(dx,dy){if(!destroyed)map.pan(dx,dy);},zoom(delta,x,y){if(!destroyed)map.zoom(delta,x,y);},home(){if(!destroyed)map.home();},destroy(){if(destroyed)return;destroyed=true;forecast.close();playback.destroy();timelineFrames=null;clearHover();abort.abort();unsubscribeView?.();resourceMarkers.destroy();container.removeEventListener('pointermove',pointerMove,true);container.removeEventListener('pointerleave',pointerLeave);container.removeEventListener('pointerdown',mapPointerDown);container.removeEventListener('click',mapClick);document.removeEventListener('pointerdown',outsidePicker,true);document.removeEventListener('keydown',keyDown);document.removeEventListener('visibilitychange',visibilityChange);map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();map.setAnalysisMode(false);overlay.remove();for(const d of Object.values(datasets)){d.records=[];d.filtered=[];d.index=null;d.surface=null;d.image=null;}}};
 }

@@ -14,6 +14,7 @@ import { createContentViewer } from './content-viewer.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
 import { createCouncilAgenda } from './council-agenda.js';
 import { createCompanionPublisher } from './companion-channel.js';
+import { MAP_TOPICS } from './map-topics.js';
 
 const $ = id => document.getElementById(id);
 const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
@@ -22,6 +23,9 @@ const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
 const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
 const twinProjection = window.desktop?.twinBridge === true;
 const companion = createCompanionPublisher({ enabled: !twinProjection && !smoke && !trafficCheck && !analysisCheck });
+document.addEventListener('council-agenda-change', () => {
+  if(!document.body.classList.contains('analysis-open')&&!document.body.classList.contains('experience-open'))publishMapAgenda();
+});
 $('companion-open').hidden = twinProjection;
 $('companion-open').onclick = () => {
   Promise.resolve(companion.open()).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
@@ -122,13 +126,18 @@ function openPointContent(item) {
   contentViewer.open(slides,0);
 }
 function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
+function publishMapAgenda() {
+  const agenda=councilAgenda.getState();
+  companion.publish({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null});
+}
 function showSurfaceMode(mode) {
-  companion.publish({mode:'idle'});
   document.body.classList.toggle('experience-open', mode==='experience');
   document.body.classList.toggle('analysis-open', mode==='analysis');
   $('mode-map').setAttribute('aria-pressed', String(mode==='map'));
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
+  if(mode==='map')publishMapAgenda();
+  else companion.publish({mode:'idle'});
 }
 function showExperienceMode(enabled) { showSurfaceMode(enabled?'experience':'map'); }
 function leaveExperience() {
@@ -776,7 +785,7 @@ function selectionTargets(rect) {
   // Only the visible layer is actionable. Hidden map pins cannot steal a
   // selection or open a popup while the person is reading a graph.
   const targets=currentSurface().targets();
-  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button,.map-intro button').forEach(element=>{
+  $('workspace').querySelectorAll('.map-tools button,.demo-popup button,.leaflet-popup-close-button,#experience-mode-switcher button,.map-intro button,.council-timer-notice button').forEach(element=>{
     if(element.hidden || element.disabled || element.getAttribute('aria-disabled')==='true' || !element.getClientRects().length)return;
     if(!controlIds.has(element))controlIds.set(element,`control-${++nextControlId}`);
     const box=element.getBoundingClientRect();

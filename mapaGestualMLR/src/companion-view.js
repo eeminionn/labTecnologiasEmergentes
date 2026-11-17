@@ -5,6 +5,15 @@ import { buildInvestmentSummary, buildResourceSheet } from './investment-data.js
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 const date = value => value ? new Intl.DateTimeFormat('es-CL', { timeZone: 'UTC' }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`)) : 'Por definir';
+const agendaViews = new WeakMap();
+const categoryCountLabels = {
+  security: 'Robos registrados',
+  cameras: 'Cámaras en la comuna',
+  camera: 'Cámaras en la comuna',
+  fixed: 'Puntos fijos de seguridad ciudadana',
+  alarms: 'Botones de emergencia en la comuna',
+};
+const agendaStatusLabels = { current: 'En curso', reviewed: 'Revisado', pending: 'Pendiente' };
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -45,7 +54,8 @@ function shell(state) {
   top.append(element('strong', null, 'La Reina'), element('span', null, 'Concejo en perspectiva'));
   const content = element('div', 'companion-content');
   const heading = element('header', 'companion-heading');
-  heading.append(element('p', 'companion-eyebrow', state.mode === 'forecast' ? 'Plan de inversión' : 'Ficha territorial'));
+  const eyebrow = state.mode === 'forecast' ? 'Plan de inversión' : state.mode === 'agenda' ? 'Sesión del concejo' : 'Ficha territorial';
+  heading.append(element('p', 'companion-eyebrow', eyebrow));
   const title = element('h1');
   title.id = 'companion-title';
   heading.append(title);
@@ -93,6 +103,112 @@ function delivery(budget) {
 
 function budgetFooter() {
   return element('p', 'companion-footnote', 'Presupuesto referencial · pesos chilenos · IVA incluido');
+}
+
+function updateAgendaClock(view, agenda) {
+  const remaining = Number.isFinite(agenda.remainingSeconds) ? agenda.remainingSeconds : 0;
+  const seconds = Math.abs(Math.trunc(remaining));
+  const value = `${remaining < 0 ? '−' : ''}${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
+  const overtime = agenda.overtime || remaining < 0;
+  view.timerValue.textContent = value;
+  view.timerLabel.textContent = overtime ? 'Tiempo excedido' : 'Tiempo restante';
+  view.timerState.textContent = agenda.running ? 'En curso' : 'En pausa';
+  view.timer.dataset.overtime = String(Boolean(overtime));
+  const duration = Number(agenda.durationSeconds);
+  const proportion = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
+  view.timerFill.style.width = `${proportion * 100}%`;
+
+  const notice = agenda.notice;
+  const expiresAt = typeof notice?.expiresAt === 'string' ? Date.parse(notice.expiresAt) : notice?.expiresAt;
+  const visible = Boolean(notice && Number.isFinite(expiresAt) && expiresAt > Date.now());
+  view.notice.hidden = !visible;
+  if (view.noticeId !== notice?.id) {
+    clearTimeout(view.noticeTimeout);
+    view.noticeId = notice?.id;
+    if (visible) {
+      view.noticeTitle.textContent = `Quedan ${notice.minutes} minutos`;
+      view.noticeTopic.textContent = typeof notice.topic === 'string' ? notice.topic : notice.topic?.title || agenda.topic?.title || '';
+      view.noticeTimeout = setTimeout(() => { view.notice.hidden = true; }, expiresAt - Date.now());
+    }
+  }
+}
+
+function agendaView(root, state) {
+  const agenda = state.agenda || {};
+  const topics = agenda.topics || [];
+  const current = agenda.topic || topics[agenda.index] || {};
+  const points = state.points || [];
+  const key = JSON.stringify({ index: agenda.index, topic: current, topics, points, selectedPointId: state.selectedPointId });
+  const previous = agendaViews.get(root);
+  if (previous?.key === key && previous.main.isConnected) {
+    updateAgendaClock(previous, agenda);
+    return;
+  }
+  clearTimeout(previous?.noticeTimeout);
+
+  const view = shell(state);
+  view.main.classList.add('companion-agenda');
+  view.title.textContent = current.title || 'Temas del concejo';
+  view.subtitle.textContent = current.description || '';
+  const hero = element('section', 'companion-agenda-hero');
+  const currentTopic = element('div', 'companion-agenda-position');
+  currentTopic.append(element('span', null, 'Tema en curso'), element('strong', null, current.time || '—'));
+  const schedulePosition = Number.isInteger(agenda.index) && topics.length ? `${agenda.index + 1} de ${topics.length}` : '';
+  currentTopic.append(element('span', null, schedulePosition));
+  const timer = element('div', 'companion-agenda-timer');
+  const timerLabel = element('span', 'companion-timer-label');
+  const timerValue = element('output', 'companion-timer-value');
+  timerValue.setAttribute('aria-live', 'off');
+  timerValue.setAttribute('aria-label', 'Cuenta regresiva del tema actual');
+  const timerState = element('span', 'companion-timer-state');
+  timer.append(timerLabel, timerValue, timerState);
+  const timerTrack = element('div', 'companion-timer-track');
+  timerTrack.setAttribute('aria-hidden', 'true');
+  const timerFill = element('span');
+  timerTrack.append(timerFill);
+  hero.append(currentTopic, timer, timerTrack);
+
+  const grid = element('div', 'companion-grid companion-agenda-grid');
+  const schedule = card('Horario de la sesión');
+  const list = element('ol', 'companion-agenda-list');
+  topics.forEach((topic, index) => {
+    const row = element('li');
+    const status = topic.status || (index === agenda.index ? 'current' : index < agenda.index ? 'reviewed' : 'pending');
+    row.dataset.status = status;
+    if (index === agenda.index) row.setAttribute('aria-current', 'step');
+    const time = element('time', null, topic.time);
+    time.dateTime = topic.time || '';
+    row.append(time, element('span', 'companion-agenda-name', topic.title), element('small', 'companion-agenda-status', agendaStatusLabels[status] || status));
+    list.append(row);
+  });
+  schedule.append(list);
+
+  const themes = card('Temas en el mapa');
+  const pointList = element('ol', 'companion-map-themes');
+  points.forEach(point => {
+    const row = element('li', 'companion-map-theme');
+    row.dataset.category = point.category || '';
+    if (point.id === state.selectedPointId) row.dataset.selected = 'true';
+    const content = element('div');
+    content.append(element('h3', null, point.title), element('p', null, point.description || ''));
+    if (point.id === state.selectedPointId) content.append(element('small', 'companion-map-selected', 'Seleccionado en el mapa'));
+    row.append(element('span', 'companion-theme-number', point.number), content);
+    pointList.append(row);
+  });
+  themes.append(pointList);
+  grid.append(schedule, themes);
+  const notice = element('aside', 'companion-agenda-notice');
+  notice.setAttribute('role', 'status');
+  notice.hidden = true;
+  const noticeTitle = element('strong');
+  const noticeTopic = element('span');
+  notice.append(noticeTitle, noticeTopic);
+  view.content.append(hero, grid);
+  view.main.append(notice);
+  root.replaceChildren(view.main);
+  const refs = { ...view, key, timer, timerValue, timerLabel, timerState, timerFill, notice, noticeTitle, noticeTopic };
+  agendaViews.set(root, refs);
+  updateAgendaClock(refs, agenda);
 }
 
 function forecastView(root, state) {
@@ -178,6 +294,8 @@ function sectorView(root, state) {
   if (cameras) {
     metrics.append(metric('Cámaras en el sector', number.format(cameras.total ?? 0)));
     metrics.append(metric('Cámaras operativas', number.format(cameras.operational ?? 0)));
+    metrics.append(metric('Cámaras en mantención', number.format(cameras.maintenance ?? 0)));
+    metrics.append(metric('Cámaras inactivas', number.format(cameras.inactive ?? 0)));
   }
   for (const [kind, detail] of Object.entries(sector.resources || {})) {
     metrics.append(metric(kind === 'fixed' ? 'Puntos fijos en el sector' : 'Botones en el sector', number.format(detail.total ?? 0)));
@@ -212,10 +330,13 @@ function summaryView(root, state) {
   for (const layer of layers) {
     const summary = layer.summary || {};
     const metrics = element('dl', 'companion-sector-metrics');
-    metrics.append(metric(layer.kind === 'security' ? 'Robos registrados' : 'Elementos en el mapa', number.format(summary.total ?? 0)));
-    if (Number.isFinite(summary.operational)) metrics.append(metric('Operativas', number.format(summary.operational)));
+    metrics.append(metric(categoryCountLabels[layer.kind] || 'Registros de la selección', number.format(summary.total ?? 0)));
+    if (['cameras', 'camera'].includes(layer.kind)) {
+      metrics.append(metric('Operativas', number.format(summary.operational ?? 0)));
+      metrics.append(metric('En mantención', number.format(summary.maintenance ?? 0)));
+      metrics.append(metric('Inactivas', number.format(summary.inactive ?? 0)));
+    }
     if (Number.isFinite(summary.monitoring)) metrics.append(metric('Monitoreando', number.format(summary.monitoring)));
-    if (Number.isFinite(summary.maintenance) && summary.maintenance > 0) metrics.append(metric('En mantención', number.format(summary.maintenance)));
     if (Number.isFinite(summary.activations)) metrics.append(metric('Pulsaciones del período', number.format(summary.activations)));
     if (comparison) {
       const section = card(layer.title || 'Selección del mapa');
@@ -239,7 +360,13 @@ function idleView(root) {
 
 export function renderCompanion(root, state = {}) {
   if (!root) return;
-  if (state.mode === 'forecast') forecastView(root, state);
+  if (state.mode !== 'agenda') {
+    const agenda = agendaViews.get(root);
+    clearTimeout(agenda?.noticeTimeout);
+    agendaViews.delete(root);
+  }
+  if (state.mode === 'agenda') agendaView(root, state);
+  else if (state.mode === 'forecast') forecastView(root, state);
   else if (state.mode === 'resource') resourceView(root, state);
   else if (state.mode === 'sector') sectorView(root, state);
   else if (state.mode === 'summary') summaryView(root, state);

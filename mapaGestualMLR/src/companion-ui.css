@@ -60,6 +60,38 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-comparison-period { color: var(--ink-secondary); font-size: 12px !important; margin-bottom: 18px !important; }
 .companion-card .companion-sector-metrics { grid-template-columns: 1fr; gap: 18px; }
 .companion-card .companion-sector-metrics .companion-metric { padding: 0; border: 0; background: transparent; }
+.companion-agenda-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: 22px 26px 0; background: var(--municipal-petroleo); color: #fff; border-radius: 16px; overflow: hidden; }
+.companion-agenda-position { display: grid; align-content: start; gap: 4px; }
+.companion-agenda-position > span { font-size: 12px; color: #e2f1f4; }
+.companion-agenda-position > strong { font-size: 28px; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.companion-agenda-timer { display: grid; justify-items: end; gap: 2px; }
+.companion-timer-label, .companion-timer-state { font-size: 12px; color: #e2f1f4; }
+.companion-timer-value { font-size: clamp(38px, 5vw, 62px); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.2; }
+.companion-agenda-timer[data-overtime="true"] .companion-timer-value { color: #fff; }
+.companion-timer-track { height: 5px; background: rgba(255,255,255,.25); grid-column: 1 / -1; margin: 0 -26px; }
+.companion-timer-track > span { display: block; height: 100%; background: #fff; transition: width .25s linear; }
+.companion-agenda-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.companion-agenda-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.companion-agenda-list > li { display: grid; grid-template-columns: 48px minmax(0, 1fr) 72px; align-items: center; gap: 12px; min-height: 51px; padding: 10px; border: 1px solid transparent; border-radius: 8px; }
+.companion-agenda-list time { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--municipal-petroleo); }
+.companion-agenda-name { font-size: 13px; line-height: 1.4; }
+.companion-agenda-status { font-size: 10px; text-align: right; color: var(--ink-secondary); }
+.companion-agenda-list > li[data-status="current"] { background: #edf6f6; border-color: var(--border); }
+.companion-agenda-list > li[data-status="current"] .companion-agenda-name { font-weight: 600; }
+.companion-agenda-list > li[data-status="reviewed"] .companion-agenda-status { color: var(--municipal-verde); }
+.companion-map-themes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.companion-map-theme { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 8px; border: 1px solid transparent; border-radius: 8px; }
+.companion-map-theme[data-selected="true"] { background: #edf6f6; border-color: var(--border); }
+.companion-theme-number { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; font-weight: 600; color: var(--municipal-petroleo); background: #edf3f3; }
+.companion-map-theme[data-category="seguridad"] .companion-theme-number { color: #fff; background: var(--municipal-fucsia); }
+.companion-map-theme[data-category="gobernanza"] .companion-theme-number { color: var(--ink); background: var(--municipal-turquesa); }
+.companion-map-theme[data-category="territorio"] .companion-theme-number { color: var(--ink); background: var(--municipal-lima); }
+.companion-map-theme h3 { font-size: 14px; line-height: 1.4; margin-bottom: 5px; }
+.companion-map-theme p { font-size: 12px; line-height: 1.5; color: var(--ink-secondary); }
+.companion-map-selected { display: block; color: var(--municipal-petroleo); font-size: 10px; margin-top: 7px; }
+.companion-agenda-notice { position: fixed; z-index: 20; right: 28px; bottom: 26px; width: min(360px, calc(100% - 56px)); display: grid; gap: 5px; padding: 18px 20px; border: 1px solid var(--municipal-petroleo); border-radius: 12px; color: var(--ink); background: #fff; box-shadow: 0 8px 30px rgba(0,66,82,.15); }
+.companion-agenda-notice strong { font-size: 18px; color: var(--municipal-petroleo); }
+.companion-agenda-notice span { font-size: 12px; line-height: 1.5; }
 .companion-idle { min-height: 100vh; background: var(--municipal-petroleo); display: grid; place-items: center; position: relative; padding: 64px; }
 .companion-logo { display: block; width: min(65vw, 235px); max-height: 54vh; object-fit: contain; }
 .companion-idle-caption { position: absolute; bottom: 44px; left: 0; right: 0; text-align: center; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .3px; }
@@ -73,6 +105,10 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
   .companion-grid { gap: 18px; }
   .companion-facts { gap: 13px; }
   .companion-cost-row { column-gap: 8px; }
+  .companion-agenda-list > li { grid-template-columns: 42px minmax(0, 1fr); gap: 3px 9px; padding: 8px; }
+  .companion-agenda-status { grid-column: 2; text-align: left; }
+  .companion-agenda-name { font-size: 12px; }
+  .companion-map-theme { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding-inline: 4px; }
 }
 @media (max-width: 680px) {
   .companion-grid { grid-template-columns: 1fr; }

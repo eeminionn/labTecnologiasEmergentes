@@ -75,7 +75,7 @@ function createCompanionWindow(parent, origin) {
   }
 
   ipcMain.on('companion-publish', (event, value) => {
-    if (!fromMap(event.sender) || !value || !['idle', 'resource', 'sector', 'summary', 'forecast'].includes(value.mode)) return;
+    if (!fromMap(event.sender) || !value || !['idle', 'agenda', 'resource', 'sector', 'summary', 'forecast'].includes(value.mode)) return;
     state = value;
     sendState();
   });

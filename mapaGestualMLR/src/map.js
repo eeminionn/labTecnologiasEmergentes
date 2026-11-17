@@ -2,6 +2,7 @@ import L from 'leaflet';
 import boundaryText from '../assets/la-reina.geojson?raw';
 import { PointSequence } from './sequence.js';
 import { createAnalysisRasterTransition } from './analysis-transition.js';
+import { MAP_TOPICS } from './map-topics.js';
 
 const boundary = JSON.parse(boundaryText);
 const boundaryStyle = { color: '#0f766e', weight: 3, opacity: .9, fillColor: '#0f766e', fillOpacity: .05 };
@@ -15,16 +16,12 @@ const categoryLegend = [
   { id: 'gobernanza', label: 'Gobernanza y recursos municipales', color: '#00adb2' },
   { id: 'seguridad', label: 'Seguridad y riesgos', color: '#e82d81' }
 ];
-const samples = [
-  { id: 'point-0', number: 1, category: 'seguridad', lat: -33.4409, lng: -70.5550, title: 'Seguridad y riesgos' },
-  { id: 'point-1', number: 2, category: 'gobernanza', lat: -33.4519, lng: -70.5351, title: 'Gobernanza y recursos municipales' },
-  { id: 'point-2', number: 3, category: 'territorio', lat: -33.4375, lng: -70.5149, title: 'Territorio, movilidad y entorno' }
-];
+const samples = MAP_TOPICS;
 
 const popup = item => {
   const div = document.createElement('div'); div.className = 'demo-popup';
   const heading = document.createElement('strong'); heading.textContent = item.title;
-  const note = document.createElement('p'); note.textContent = 'Contenido en preparación.';
+  const note = document.createElement('p'); note.textContent = item.description;
   div.append(heading, note); return div;
 };
 
