@@ -28,7 +28,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const categoryLabel=el('p','analysis-category-label','Qué ver en el mapa');
   const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog(state.side==='right'?'compare':'primary',anchor),'analysis-layer-trigger');
   category.dataset.tone=tone;category.setAttribute('aria-haspopup','dialog');category.setAttribute('aria-expanded','false');
-  const forecast=button(header,`${prefix}-forecast`,'Simular futuro',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
+  const forecast=button(header,`${prefix}-forecast`,'Simular inversión',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
   header.append(titleRow,categoryLabel,category,forecast);
   const body=el('div','analysis-body'),stats=el('section','analysis-stats');stats.setAttribute('aria-label','Resultados de la consulta');
   const resultLabel=el('p','analysis-result-label','Resultados de la consulta');

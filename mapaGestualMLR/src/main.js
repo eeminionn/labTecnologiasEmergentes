@@ -15,6 +15,7 @@ import { SelectionFeedback, hoverTarget } from './selection.js';
 import { createCouncilAgenda } from './council-agenda.js';
 import { createCompanionPublisher } from './companion-channel.js';
 import { MAP_TOPICS } from './map-topics.js';
+import { PREVIOUS_COUNCIL_SESSION } from './previous-council-session.js';
 
 const $ = id => document.getElementById(id);
 const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
@@ -23,9 +24,19 @@ const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
 const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
 const twinProjection = window.desktop?.twinBridge === true;
 const companion = createCompanionPublisher({ enabled: !twinProjection && !smoke && !trafficCheck && !analysisCheck });
-document.addEventListener('council-agenda-change', () => {
+let previousSessionVisible=false;
+let lastAgendaIndex=councilAgenda.getState().index;
+document.addEventListener('council-agenda-change', event => {
+  if(event.detail.index!==lastAgendaIndex){
+    lastAgendaIndex=event.detail.index;
+    setPreviousSessionVisible(false);
+  }
   if(!document.body.classList.contains('analysis-open')&&!document.body.classList.contains('experience-open'))publishMapAgenda();
 });
+$('council-previous-session').onclick=()=>{
+  setPreviousSessionVisible(!previousSessionVisible);
+  publishMapAgenda();
+};
 $('companion-open').hidden = twinProjection;
 $('companion-open').onclick = () => {
   Promise.resolve(companion.open()).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
@@ -119,18 +130,31 @@ async function loadMap() {
 }
 function openPointContent(item) {
   if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
+  setPreviousSessionVisible(false);
   councilAgenda.selectPoint(item.id);
+  publishMapAgenda();
   if(item.id!=='point-0')return;
   const slides=contentViewer?.manifest?.slides;
   if(!slides?.length){notify('No se pudieron cargar los gráficos.');return;}
   contentViewer.open(slides,0);
 }
 function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
+function setPreviousSessionVisible(visible) {
+  previousSessionVisible=visible;
+  const button=$('council-previous-session');
+  button.setAttribute('aria-pressed',String(visible));
+  button.textContent=visible?'Sesión actual':'Sesión pasada';
+}
 function publishMapAgenda() {
+  if(previousSessionVisible){
+    companion.publish({mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION});
+    return;
+  }
   const agenda=councilAgenda.getState();
   companion.publish({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null});
 }
 function showSurfaceMode(mode) {
+  if(mode!=='map')setPreviousSessionVisible(false);
   document.body.classList.toggle('experience-open', mode==='experience');
   document.body.classList.toggle('analysis-open', mode==='analysis');
   $('mode-map').setAttribute('aria-pressed', String(mode==='map'));

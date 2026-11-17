@@ -1,6 +1,7 @@
 import './glass-ui.css';
 import './companion-ui.css';
 import { buildInvestmentSummary, buildResourceSheet } from './investment-data.js';
+import { renderPreviousSession } from './previous-session-view.js';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
@@ -366,6 +367,7 @@ export function renderCompanion(root, state = {}) {
     agendaViews.delete(root);
   }
   if (state.mode === 'agenda') agendaView(root, state);
+  else if (state.mode === 'previous-session') renderPreviousSession(root, state.session);
   else if (state.mode === 'forecast') forecastView(root, state);
   else if (state.mode === 'resource') resourceView(root, state);
   else if (state.mode === 'sector') sectorView(root, state);

@@ -27,7 +27,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   panel.dataset.side = 'left';
   panel.setAttribute('aria-labelledby', 'forecast-title');
   panel.hidden = true;
-  const title = element('h1', null, 'Simular futuro');
+  const title = element('h1', null, 'Simular inversión');
   title.id = 'forecast-title';
   title.tabIndex = -1;
   const heading = element('div', 'analysis-title-row');
