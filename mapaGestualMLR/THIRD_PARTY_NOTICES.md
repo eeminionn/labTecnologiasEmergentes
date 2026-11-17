@@ -1,5 +1,7 @@
 # Componentes de terceros
 
+La identidad de la pantalla complementaria utiliza el logotipo blanco de la Municipalidad de La Reina, obtenido de su [sitio oficial](https://lareina.cl/) el 17 de noviembre de 2026. [Imagen original](https://lareina.cl/wp-content/uploads/elementor/thumbs/lareina-monotono-przxay3628ls6foz0ys9nw0b7h7za372ifpndaom3k.png). Los derechos de esta identidad corresponden a la Municipalidad.
+
 Mapa Gestual MLR 0.3.1, prototipo académico del proyecto territorial de La Reina. Actualización del 3 de noviembre de 2026 para la aplicación independiente.
 
 - **MediaPipe Tasks Vision 1.0.1 y Hand Landmarker float16 v1:** Google, Apache License 2.0. [Código y licencia](https://github.com/google-ai-edge/mediapipe/blob/master/LICENSE), [modelo y ficha](https://developers.google.com/edge/mediapipe/solutions/vision/hand_landmarker#models). SHA-256 del paquete de modelo: `fbc2a30080c3c557093b5ddfc334698132eb341044ccee322ccf8bcf3607cde1`.

@@ -6,7 +6,7 @@ const percentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFra
 const measures = { camera: 'Cámara monitoreada', fixed: 'Caseta con personal' };
 const [year] = FORECAST_YEARS;
 
-export function createForecastView(overlay, container, { map, signal, inside, onExit, renderSurface, renderPlacements }) {
+export function createForecastView(overlay, container, { map, signal, inside, onExit, renderSurface, renderPlacements, onChange = () => {} }) {
   let model, loading, baselineSurface, surface, selectedPoint, placing, serial = 0;
   let showAfter = true, placements = [];
 
@@ -174,6 +174,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
     })));
     viewStatus.textContent = showAfter ? 'Después · simulado' : 'Antes · sin medidas';
     viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver después';
+    onChange(info());
   }
   function redraw() {
     if (!model || panel.hidden) return;
@@ -191,8 +192,19 @@ export function createForecastView(overlay, container, { map, signal, inside, on
     updateReadout();
   }
 
+  function info() {
+    return {
+      year, showAfter, placements: placements.map(point => ({ ...point })),
+      baselineTotal: surface?.baselineTotal ?? null,
+      scenarioTotal: surface?.scenarioTotal ?? null,
+      reduction: surface?.reduction ?? null,
+      ready: Boolean(model), error: loading ? '' : loadStatus.hidden ? '' : loadStatus.textContent
+    };
+  }
+
   return {
     panel,
+    info,
     get active() { return !panel.hidden; },
     get isPlacing() { return Boolean(placing); },
     open() {
@@ -215,7 +227,10 @@ export function createForecastView(overlay, container, { map, signal, inside, on
           redraw();
         })
         .catch(() => { if (!signal.aborted) loadStatus.textContent = 'No se pudo cargar la proyección. Vuelve al histórico para reintentar.'; })
-        .finally(() => { loading = null; });
+        .finally(() => {
+          loading = null;
+          if(!signal.aborted&&!panel.hidden)onChange(info());
+        });
     },
     close() {
       panel.hidden = readout.hidden = true;

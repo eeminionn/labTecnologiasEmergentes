@@ -2,6 +2,8 @@ const { contextBridge, ipcRenderer } = require('electron');
 const twinBridge = process.argv.includes('--mlr-twin-projection');
 let leaseEpoch;
 contextBridge.exposeInMainWorld('desktop', {
+  publishCompanionState: state => { if (!twinBridge) ipcRenderer.send('companion-publish', state); },
+  openCompanionWindow: () => twinBridge ? Promise.resolve(false) : ipcRenderer.invoke('companion-open'),
   click: point => ipcRenderer.invoke('map-click', point, leaseEpoch),
   reportSmoke: report => ipcRenderer.send('smoke-result', report),
   twinBridge,

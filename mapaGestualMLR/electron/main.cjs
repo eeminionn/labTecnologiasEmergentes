@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createTwinBridge } = require('./twin-bridge.cjs');
+const { createCompanionWindow } = require('./companion-window.cjs');
 
 const twinMode = process.argv.includes('--twin-bridge');
 const twinPort = Number(process.argv.find(v => v.startsWith('--twin-port='))?.slice(12));
@@ -135,6 +136,7 @@ else {
     win.setMenuBarVisibility(false);
     win.webContents.setWindowOpenHandler(({url}) => {openMapLink(url);return { action: 'deny' };});
     win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`${origin}/`)) {event.preventDefault();openMapLink(url);} });
+    const companion = !twinMode && !smoke && !trafficCheck && !analysisCheck ? createCompanionWindow(win, origin) : null;
     if (!twinMode) win.on('blur', () => win.webContents.send('window-blur'));
     if (bridge) {
       win.webContents.setFrameRate(15);
@@ -234,6 +236,7 @@ else {
     });
     if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?180000:trafficCheck?90000:40000);
     await win.loadURL(`${origin}/${smoke ? '?smoke=1' : trafficCheck ? '?traffic-check=1' : analysisCheck ? '?analysis-check=1' : ''}`);
+    if(companion)await companion.open().catch(error=>console.error('No se pudo abrir la ficha técnica.',error));
     if (bridge && !bridge.isActive()) win.webContents.stopPainting();
     // Smoke exercises the same focus-gated native click path as camera input.
     // A hidden window would only test DOM dispatch and miss real input bugs.

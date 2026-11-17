@@ -13,6 +13,7 @@ import { createMap } from './map.js';
 import { createContentViewer } from './content-viewer.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
 import { createCouncilAgenda } from './council-agenda.js';
+import { createCompanionPublisher } from './companion-channel.js';
 
 const $ = id => document.getElementById(id);
 const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
@@ -20,6 +21,11 @@ const smoke = new URLSearchParams(location.search).has('smoke');
 const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
 const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
 const twinProjection = window.desktop?.twinBridge === true;
+const companion = createCompanionPublisher({ enabled: !twinProjection && !smoke && !trafficCheck && !analysisCheck });
+$('companion-open').hidden = twinProjection;
+$('companion-open').onclick = () => {
+  Promise.resolve(companion.open()).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
+};
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
 if(trafficCheck && !twinProjection)$('mode-experiences').hidden=false;
@@ -117,6 +123,7 @@ function openPointContent(item) {
 }
 function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
 function showSurfaceMode(mode) {
+  companion.publish({mode:'idle'});
   document.body.classList.toggle('experience-open', mode==='experience');
   document.body.classList.toggle('analysis-open', mode==='analysis');
   $('mode-map').setAttribute('aria-pressed', String(mode==='map'));
@@ -176,7 +183,10 @@ async function enterAnalysis({ focusFilters = false } = {}) {
   try {
     const module=await import('./analysis-view.js');
     if(generation!==analysisGeneration)return;
-    instance=await module.createAnalysisView($('map'),{map,notify,onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();}});
+    instance=await module.createAnalysisView($('map'),{map,notify,
+      onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();},
+      onCompanion:state=>{if(generation===analysisGeneration)companion.publish(state);}
+    });
     if(generation!==analysisGeneration){instance.destroy();return;}
     analysisView=instance; await instance.ready;
     if(generation!==analysisGeneration){instance.destroy();return;}

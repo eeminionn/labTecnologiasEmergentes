@@ -8,6 +8,7 @@
         <span id="status" role="status"><i></i> Gestos desactivados</span>
         <button id="pause-gestures" type="button" hidden>Pausar gestos</button>
         <button id="camera-toggle" class="primary" type="button">Activar gestos</button>
+        <button id="companion-open" type="button" title="Abrir ficha técnica en otra ventana">Ficha técnica ↗</button>
         <button id="settings-open">Ajustes</button>
         <button id="help-open" type="button">Ayuda</button>
       </nav>
@@ -39,6 +40,17 @@
           <span id="council-agenda-progress"></span>
           <button id="council-agenda-next" type="button">Siguiente</button>
         </div>
+        <section class="council-topic-timer" aria-label="Tiempo del tema en curso">
+          <div class="council-timer-reading">
+            <span id="council-timer-label">Tiempo restante</span>
+            <output id="council-timer-value" role="timer" aria-live="off">20:00</output>
+          </div>
+          <div class="council-timer-controls" role="group" aria-label="Controles del tiempo">
+            <button id="council-timer-toggle" type="button">Pausar</button>
+            <button id="council-timer-reset" type="button" aria-label="Reiniciar tiempo del tema" title="Reiniciar tiempo del tema"><span aria-hidden="true">↺</span></button>
+          </div>
+          <div class="council-timer-track" aria-hidden="true"><span id="council-timer-fill"></span></div>
+        </section>
       </section>
       <div id="map" aria-label="Mapa interactivo de La Reina"></div>
       <div id="cursor" class="hand-cursor" aria-hidden="true"><span></span><svg viewBox="0 0 96 96"><circle class="cursor-track" cx="48" cy="48" r="34"/><circle class="cursor-progress" cx="48" cy="48" r="34"/></svg></div>

@@ -1,0 +1,66 @@
+body:not(.twin-projection) .council-topic-timer {
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  color: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .council-timer-reading {
+  display: grid;
+  gap: 1px;
+}
+body:not(.twin-projection) #council-timer-label {
+  color: var(--ink-secondary);
+  font-size: 10px;
+  line-height: 1.2;
+}
+body:not(.twin-projection) #council-timer-value {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+body:not(.twin-projection) .council-timer-controls { display: flex; gap: 5px; }
+body:not(.twin-projection) .council-timer-controls button {
+  min-height: 36px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--municipal-petroleo);
+  box-shadow: none;
+  font-size: 11px;
+}
+body:not(.twin-projection) #council-timer-reset { min-width: 36px; font-size: 22px; }
+body:not(.twin-projection) .council-timer-controls button.gesture-target {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: -2px;
+}
+body:not(.twin-projection) .council-timer-track {
+  height: 3px;
+  grid-column: 1 / -1;
+  overflow: hidden;
+  background: #e1ebed;
+}
+body:not(.twin-projection) #council-timer-fill {
+  display: block;
+  height: 100%;
+  background: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .council-topic-timer[data-overtime="true"] #council-timer-value {
+  color: var(--municipal-morado);
+}
+
+@media (max-height: 780px) {
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-description,
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro-label { display: none; }
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open):has(#diagnostics:not([hidden])) .map-intro {
+    gap: 4px;
+  }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-current { padding-block: 6px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-topic { font-size: 17px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-nav { padding-top: 4px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-topic-timer { padding-top: 5px; }
+}

@@ -30,7 +30,7 @@ function densityImage(surface,camera=false) {
   }
   context.clip(shape,'evenodd');context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.drawImage(source,0,0,image.width,image.height);return image.toDataURL('image/png');
 }
-export async function createAnalysisView(container,{map,notify=()=>{},onChange=()=>{}}={}) {
+export async function createAnalysisView(container,{map,notify=()=>{},onChange=()=>{},onCompanion=()=>{}}={}) {
   let destroyed=false,loaded=false,failure='',activeCategory='security',compareCategory=null,hoverTimer=null,hoverAnchor=null,hoverDetails=null;
   let pinned=false,displayedAnchor=null,restoreFocus=null,dismissedAnchor=null,resourceError='',resourcesReady=false;
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
@@ -104,6 +104,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const forecastImages=new WeakMap();
   const forecast=createForecastView(overlay,container,{
     map,signal:abort.signal,inside,onExit:closeForecast,
+    onChange:state=>onCompanion({mode:'forecast',forecast:state}),
     renderSurface:surface=>{
       if(!forecastImages.has(surface))forecastImages.set(surface,densityImage(surface));
       map.setAnalysisLayer({url:forecastImages.get(surface),bounds:surface.bounds,opacity:.66,transitionMs:200});
@@ -124,6 +125,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       const dataset=datasets[kind];
       panel.update({...dataset,loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
     }
+    publishCompanion();
   }
   function openForecast(trigger){
     if(!loaded||destroyed||forecast.active)return;
@@ -204,6 +206,29 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   })().catch(error=>{if(destroyed||error.name==='AbortError')return;failure=error.message||'No se pudo preparar el análisis.';overlay.dataset.state='error';updatePanels();notify(failure);throw error;});ready.catch(()=>{});
   function datasetInfo(kind){const d=datasets[kind],s=d.surface,layer=getAnalysisLayer(kind);return{ready:layer.resource?resourcesReady:loaded,error:layer.resource?resourceError:failure,datasetCount:d.records.length,filteredCount:d.summary.total,filters:Object.fromEntries(Object.entries(d.filters).map(([key,value])=>[key,Array.isArray(value)?[...value]:value])),temporalMode:d.temporalMode,picker:panels[kind].picker,dateRange:d.dateRange,category:layer.label,display:d.display,opacity:d.opacity,summary:{...d.summary},surface:s?{width:s.width,height:s.height,max:s.max,bounds:s.bounds,projectedBounds:s.projectedBounds,includedCount:s.includedCount,excludedCount:s.excludedCount,bandwidthMetres:s.bandwidthMetres,colorExponent:.65,imageWidth:1024,imageHeight:512,coverage:'límite comunal completo'}:null};}
   function info(){return{...datasetInfo(activeCategory),isOpen:!destroyed,activeCategory,compareCategory,crossed:crossed(),simulated:true,playback:playback.info(),hover:hoverDetails?{...hoverDetails,pinned}:null,datasets:Object.fromEntries(ANALYSIS_LAYERS.map(layer=>[layer.id,datasetInfo(layer.id)]))};}
+  function publishCompanion() {
+    if(destroyed)return;
+    if(forecast.active){onCompanion({mode:'forecast',forecast:forecast.info()});return;}
+    if(!loaded){onCompanion({mode:'idle'});return;}
+    const kind=hoverDetails?.record?.kind ?? activeCategory;
+    const d=datasets[kind] ?? datasets[activeCategory];
+    const period=d.dateRange?.label ?? d.filters.year ?? 'Todos los años';
+    if(hoverDetails){
+      onCompanion({
+        mode:hoverDetails.record?'resource':'sector',kind,period,
+        resource:hoverDetails.record,sector:hoverDetails,
+        filters:{...d.filters},dateRange:d.dateRange
+      });
+      return;
+    }
+    const layers=[activeCategory,...(compareCategory?[compareCategory]:[])].map(id=>({
+      kind:id,title:getAnalysisLayer(id).label,
+      period:datasets[id].dateRange?.label ?? datasets[id].filters.year ?? 'Todos los años',
+      summary:{...datasets[id].summary}
+    }));
+    onCompanion({mode:'summary',kind:activeCategory,title:getAnalysisLayer(activeCategory).label,
+      period,summary:{...d.summary},layers});
+  }
   function prepareTimelineFrames(){
     if(timelineFrames)return;
     const d=datasets.security;
@@ -350,7 +375,9 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   }
   function clearHover({keepPinned=false}={}){
     if(keepPinned&&pinned)return;
+    const hadDetails=Boolean(hoverDetails);
     clearTimeout(hoverTimer);hoverTimer=null;hoverAnchor=null;displayedAnchor=null;hoverDetails=null;pinned=false;restoreFocus=null;tooltip.hidden=true;hoverRing.hidden=true;
+    if(hadDetails)publishCompanion();
   }
   function dismissDetails(){
     if(displayedAnchor)dismissedAnchor={...displayedAnchor};
@@ -414,6 +441,14 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       security={total,lastIncident:last,last7Days,last7DaysRange,last7DaysLabel,referenceDate,radiusMetres};
     }
     const cameras=visible('cameras')?c.index.query({...anchor,radiusMetres}):null;
+    if(!anchor.record&&c.display==='points'&&cameras?.nearest){
+      const point=map.locationToScreen(cameras.nearest);
+      if(point&&Math.hypot(point.x-anchor.x,point.y-anchor.y)<=18){
+        anchor={...anchor,record:{...cameras.nearest,kind:'cameras',
+          title:`Cámara ${cameras.nearest.tipo_camara.toLowerCase()}`,address:cameras.nearest.direccion}};
+        displayedAnchor=anchor;
+      }
+    }
     const resources=Object.fromEntries(ANALYSIS_LAYERS.filter(layer=>layer.resource&&visible(layer.id)).map(({id})=>[id,nearbySecurityResources(datasets[id].filtered,anchor,radiusMetres)]));
     hoverDetails={...(security||cameras),security,cameras,resources,record:anchor.record??null,radiusMetres,source:anchor.source,lat:anchor.lat,lng:anchor.lng};
     securityTip.hidden=!security;cameraTip.hidden=!cameras;
@@ -485,6 +520,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const east=map.locationToScreen({lat:anchor.lat,lng:anchor.lng+radiusMetres/(111320*Math.cos(anchor.lat*Math.PI/180))});
     const radius=east?Math.hypot(east.x-anchor.x,east.y-anchor.y):28;
     Object.assign(hoverRing.style,{left:`${anchor.x}px`,top:`${anchor.y}px`,width:`${radius*2}px`,height:`${radius*2}px`});hoverRing.hidden=false;
+    publishCompanion();
   }
   function cardBounds(){
     const outer=container.getBoundingClientRect(),left=panels[activeCategory].element.getBoundingClientRect(),right=compareCategory?panels[compareCategory].element.getBoundingClientRect():null;

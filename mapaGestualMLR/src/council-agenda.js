@@ -1,3 +1,5 @@
+import './council-timer.css';
+
 const priorities = { urgente: 'Urgente', prioritario: 'Prioritario', programado: 'Programado' };
 
 const topics = [
@@ -33,7 +35,7 @@ const topics = [
   }
 ];
 
-export function createCouncilAgenda(panel) {
+export function createCouncilAgenda(panel, { onChange = () => {} } = {}) {
   const list = panel.querySelector('#council-agenda-list');
   const time = panel.querySelector('#council-current-time');
   const priority = panel.querySelector('#council-current-priority');
@@ -43,7 +45,56 @@ export function createCouncilAgenda(panel) {
   const previous = panel.querySelector('#council-agenda-prev');
   const next = panel.querySelector('#council-agenda-next');
   const progress = panel.querySelector('#council-agenda-progress');
+  const timer = panel.querySelector('.council-topic-timer');
+  const timerLabel = panel.querySelector('#council-timer-label');
+  const timerValue = panel.querySelector('#council-timer-value');
+  const timerToggle = panel.querySelector('#council-timer-toggle');
+  const timerReset = panel.querySelector('#council-timer-reset');
+  const timerFill = panel.querySelector('#council-timer-fill');
+  const durations = topics.map((topic, index) => {
+    const minutes = value => Number(value.slice(0, 2)) * 60 + Number(value.slice(3));
+    const following = topics[index + 1];
+    return (following ? minutes(following.time) - minutes(topic.time) : 20) * 60000;
+  });
+  const clocks = topics.map(() => ({ elapsedMs: 0, startedAt: null, paused: false }));
   let current = -1;
+
+  function elapsed(clock, now = Date.now()) {
+    return clock.elapsedMs + (clock.startedAt === null ? 0 : Math.max(0, now - clock.startedAt));
+  }
+
+  function getState() {
+    const clock = clocks[current];
+    const remainingMs = durations[current] - elapsed(clock);
+    return {
+      index: current,
+      topic: { ...topics[current] },
+      durationSeconds: durations[current] / 1000,
+      remainingSeconds: Math.sign(remainingMs) * Math.ceil(Math.abs(remainingMs) / 1000),
+      running: clock.startedAt !== null,
+      overtime: remainingMs < 0,
+    };
+  }
+
+  function updateTimer() {
+    const state = getState();
+    const seconds = Math.abs(state.remainingSeconds);
+    const minutesText = String(Math.floor(seconds / 60)).padStart(2, '0');
+    const secondsText = String(seconds % 60).padStart(2, '0');
+    timerValue.textContent = `${state.remainingSeconds < 0 ? '−' : ''}${minutesText}:${secondsText}`;
+    timerLabel.textContent = state.overtime ? 'Tiempo excedido' : 'Tiempo restante';
+    timer.dataset.overtime = String(state.overtime);
+    timerToggle.textContent = state.running ? 'Pausar' : 'Reanudar';
+    timerToggle.setAttribute('aria-label', state.running ? 'Pausar tiempo del tema' : 'Reanudar tiempo del tema');
+    timerFill.style.width = `${Math.max(0, Math.min(100, state.remainingSeconds / state.durationSeconds * 100))}%`;
+    return state;
+  }
+
+  function announceChange() {
+    const state = updateTimer();
+    onChange(state);
+    panel.dispatchEvent(new CustomEvent('council-agenda-change', { bubbles: true, detail: state }));
+  }
 
   const choices = topics.map((topic, index) => {
     const item = document.createElement('li');
@@ -78,10 +129,13 @@ export function createCouncilAgenda(panel) {
     const topic = topics[index];
     if (!topic || index === current) return;
     if (current >= 0) {
+      clocks[current].elapsedMs = elapsed(clocks[current]);
+      clocks[current].startedAt = null;
       choices[current].button.removeAttribute('aria-current');
       choices[current].state.textContent = priorities[topics[current].priority];
     }
     current = index;
+    if (!clocks[current].paused) clocks[current].startedAt = Date.now();
     choices[index].button.setAttribute('aria-current', 'true');
     choices[index].state.textContent = 'En curso';
     time.dateTime = topic.time;
@@ -95,13 +149,30 @@ export function createCouncilAgenda(panel) {
     previous.setAttribute('aria-disabled', String(index === 0));
     next.setAttribute('aria-disabled', String(index === topics.length - 1));
     revealCurrent();
+    announceChange();
   }
 
   previous.addEventListener('click', () => select(current - 1));
   next.addEventListener('click', () => select(current + 1));
+  timerToggle.addEventListener('click', () => {
+    const clock = clocks[current];
+    clock.elapsedMs = elapsed(clock);
+    clock.paused = !clock.paused;
+    clock.startedAt = clock.paused ? null : Date.now();
+    announceChange();
+  });
+  timerReset.addEventListener('click', () => {
+    const clock = clocks[current];
+    clock.elapsedMs = 0;
+    clock.startedAt = clock.paused ? null : Date.now();
+    announceChange();
+  });
   select(0);
+  const interval = setInterval(updateTimer, 250);
 
   return {
+    getState,
+    destroy() { clearInterval(interval); },
     selectPoint: pointId => select(topics.findIndex(topic => topic.pointId === pointId)),
     focus() {
       revealCurrent();
