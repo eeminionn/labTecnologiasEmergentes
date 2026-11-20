@@ -16,6 +16,7 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-investment-amount { display: grid; gap: 4px; min-width: 0; }
 .companion-investment-amount > span { font-size: 13px; color: #e2f1f4; }
 .companion-price { font-size: clamp(31px, 4vw, 49px); font-weight: 600; letter-spacing: -.8px; font-variant-numeric: tabular-nums; line-height: 1.2; overflow-wrap: anywhere; }
+.companion-investment-amount > .companion-price-uf { color: #fff; font-weight: 500; font-variant-numeric: tabular-nums; }
 .companion-quantities { display: flex; justify-content: flex-end; align-items: flex-start; gap: 28px; }
 .companion-quantities .companion-metric { border-left: 1px solid rgba(255,255,255,.3); padding-left: 22px; }
 .companion-quantities .companion-metric dt { color: #e2f1f4; font-size: 11px; }
@@ -35,7 +36,8 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-cost-chart { display: grid; gap: 18px; }
 .companion-cost-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; }
 .companion-cost-row dt { color: var(--ink-secondary); font-size: 12px; }
-.companion-cost-row dd { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.companion-cost-row dd { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.companion-breakdown-uf { display: block; color: var(--ink-secondary); font-weight: 400; }
 .companion-cost-track { grid-column: 1 / -1; height: 9px; border-radius: 3px; background: #e9eff0; overflow: hidden; }
 .companion-cost-track > span { display: block; height: 100%; background: var(--municipal-petroleo); border-radius: inherit; }
 .companion-cost-row[data-category="infrastructure"] .companion-cost-track > span { background: var(--municipal-turquesa); }
@@ -45,6 +47,8 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 17px 20px; }
 .companion-fact dt { color: var(--ink-secondary); font-size: 11px; margin-bottom: 3px; }
 .companion-fact dd { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; line-height: 1.5; }
+.companion-milestones { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.companion-milestones dd { color: var(--municipal-petroleo); font-weight: 600; font-variant-numeric: tabular-nums; }
 .companion-delivery-total { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px !important; }
 .companion-delivery-total strong { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; }
 .companion-delivery-total span { color: var(--ink-secondary); font-size: 11px; }

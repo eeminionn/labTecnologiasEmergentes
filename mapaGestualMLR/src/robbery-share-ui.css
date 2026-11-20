@@ -1,0 +1,23 @@
+.robbery-share { padding: 22px 24px; border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,.88); min-width: 0; }
+.robbery-share-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 18px; margin-bottom: 18px; }
+.robbery-share-heading h2 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.4; }
+.robbery-share-period { margin: 0; color: var(--ink-secondary); font-size: 11px; line-height: 1.5; }
+.robbery-share-visual { display: grid; grid-template-columns: minmax(110px, 148px) minmax(0, 1fr); gap: 24px; align-items: center; }
+.robbery-share-matrix { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 3px; width: 100%; aspect-ratio: 1; }
+.robbery-share-cell { display: block; position: relative; background: #e6edef; border-radius: 2px; overflow: hidden; }
+.robbery-share-cell-fill { display: block; height: 100%; background: var(--municipal-petroleo); }
+.robbery-share-result { min-width: 0; }
+.robbery-share-percentage { display: block; color: var(--municipal-petroleo); font-size: clamp(32px, 3.8vw, 46px); line-height: 1.2; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -1px; white-space: nowrap; }
+.robbery-share-caption { margin: 4px 0 16px !important; color: var(--ink-secondary); font-size: 12px; line-height: 1.5; }
+.robbery-share-counts { display: flex; gap: 28px; margin: 0; }
+.robbery-share-counts dt { color: var(--ink-secondary); font-size: 10px; margin-bottom: 2px; }
+.robbery-share-counts dd { margin: 0; color: var(--ink); font-size: 18px; line-height: 1.35; font-weight: 600; font-variant-numeric: tabular-nums; }
+.robbery-share-note { margin: 16px 0 0 !important; color: var(--ink-secondary); font-size: 10px; line-height: 1.5; }
+.robbery-share[data-state="empty"] .robbery-share-matrix { opacity: .55; }
+@media (max-width: 900px) {
+  .robbery-share { padding: 20px; }
+  .robbery-share-visual { grid-template-columns: minmax(105px, 130px) minmax(0, 1fr); gap: 18px; }
+  .robbery-share-percentage { font-size: 34px; }
+  .robbery-share-counts { gap: 20px; }
+  .robbery-share-counts dd { font-size: 17px; }
+}

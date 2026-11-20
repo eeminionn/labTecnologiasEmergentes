@@ -40,6 +40,14 @@
 .previous-session-carryover h2 { font-size: 18px; line-height: 1.35; }
 .previous-session-carryover > p { font-size: 13px; line-height: 1.65; color: var(--ink-secondary); }
 .previous-session-carryover > p strong { color: var(--ink); }
+.previous-session-attendance-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 14px; }
+.previous-session-attendance .previous-session-attendance-heading h2 { margin: 0; font-size: 18px; }
+.previous-session-attendance-summary { color: var(--ink-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
+.previous-session-attendees { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 16px; list-style: none; margin: 0; padding: 0; }
+.previous-session-attendee { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; padding-block: 6px; border-bottom: 1px solid var(--border); }
+.previous-session-attendee-name { font-size: 12px; line-height: 1.4; }
+.previous-session-attendee-status { flex: none; padding: 3px 6px; border-radius: 4px; background: #eaf5f5; color: var(--municipal-petroleo); font-size: 10px; line-height: 1.4; }
+.previous-session-attendee[data-present="false"] .previous-session-attendee-status { background: #f8eef6; color: var(--municipal-morado); }
 @media (max-width: 1000px) {
   .previous-session-chart .previous-session-axis, .previous-session-chart .previous-session-row { grid-template-columns: minmax(160px, 28%) minmax(0, 1fr) 66px; column-gap: 16px; }
   .previous-session-view .previous-session-chart { padding: 20px; }

@@ -195,8 +195,10 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     for(const kind of ['security','cameras'])if(datasets[kind].records.length!==datasets[kind].metadata.cantidad)throw new Error('La base está incompleta.');
     for(const layer of ANALYSIS_LAYERS.filter(layer=>layer.resource)){
       const d=datasets[layer.id];
-      d.records=resources.filter(record=>record.kind===layer.id);
       d.historyByYear=layer.id==='alarms'?usageByYear:fixedHistory;
+      d.records=resources.filter(record=>record.kind===layer.id).map(record=>({
+        ...record,firstInventoryYear:ANALYSIS_YEARS.find(year=>d.historyByYear.get(year)?.has(record.id))
+      }));
       d.filters.year=latestResourceYear(d);
       if(d.filters.year)d.temporalMode='year';
       filterResources(layer.id,d);
@@ -438,7 +440,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
         const {id,fecha,hora,direccion,tipo_incidente,lat,lng}=lastIncident;
         last={id,fecha,hora,direccion,tipo_incidente,lat,lng};
       }
-      security={total,lastIncident:last,last7Days,last7DaysRange,last7DaysLabel,referenceDate,radiusMetres};
+      const [,hoursLabel]=SECURITY_CHOICES.period.find(([value])=>value===s.filters.period);
+      security={
+        total,lastIncident:last,last7Days,last7DaysRange,last7DaysLabel,referenceDate,radiusMetres,
+        communeTotal:s.summary.total,period:`${s.dateRange.label} · ${hoursLabel}`
+      };
     }
     const cameras=visible('cameras')?c.index.query({...anchor,radiusMetres}):null;
     if(!anchor.record&&c.display==='points'&&cameras?.nearest){

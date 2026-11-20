@@ -4,6 +4,16 @@ export const PREVIOUS_COUNCIL_SESSION = {
   title: 'Sesión pasada',
   durationMinutes: 120,
   carryoverTopic: 'Presupuesto y seguimiento de acuerdos',
+  attendance: [
+    { name: 'Javiera Montes', present: true },
+    { name: 'Tomás Valdés', present: true },
+    { name: 'Daniela Rivas', present: true },
+    { name: 'Ignacio Salas', present: true },
+    { name: 'Martina Fuentes', present: true },
+    { name: 'Gabriel Espinoza', present: true },
+    { name: 'Josefina Paredes', present: false },
+    { name: 'Felipe Cárdenas', present: false }
+  ],
   topics: [
     { title: 'Anegamientos y drenaje', plannedMinutes: 20, actualMinutes: 34 },
     { title: 'Cámaras y casetas de seguridad', plannedMinutes: 20, actualMinutes: 29 },

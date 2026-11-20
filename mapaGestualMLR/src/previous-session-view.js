@@ -129,6 +129,28 @@ export function renderPreviousSession(root, session = {}) {
     content.append(callout);
   }
 
+  const attendees = Array.isArray(session.attendance) ? session.attendance.filter(person => typeof person?.name === 'string' && person.name.trim()) : [];
+  if (attendees.length) {
+    const attendance = element('section', 'companion-card previous-session-attendance');
+    attendance.setAttribute('aria-labelledby', 'previous-session-attendance-title');
+    const attendanceHeading = element('header', 'previous-session-attendance-heading');
+    const attendanceTitle = element('h2', null, 'Asistencia de ejemplo');
+    attendanceTitle.id = 'previous-session-attendance-title';
+    const presentCount = attendees.filter(person => person.present === true).length;
+    const absentCount = attendees.length - presentCount;
+    const summary = element('p', 'previous-session-attendance-summary', `${number.format(presentCount)} presentes · ${number.format(absentCount)} ausentes`);
+    attendanceHeading.append(attendanceTitle, summary);
+    const attendanceList = element('ul', 'previous-session-attendees');
+    for (const person of attendees) {
+      const row = element('li', 'previous-session-attendee');
+      row.dataset.present = String(person.present === true);
+      row.append(element('span', 'previous-session-attendee-name', person.name), element('span', 'previous-session-attendee-status', person.present === true ? 'Presente' : 'Ausente'));
+      attendanceList.append(row);
+    }
+    attendance.append(attendanceHeading, attendanceList);
+    content.append(attendance);
+  }
+
   main.append(topbar, content);
   root.replaceChildren(main);
   renderedSessions.set(root, { key, main });

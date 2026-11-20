@@ -1,10 +1,13 @@
 import './glass-ui.css';
 import './companion-ui.css';
-import { buildInvestmentSummary, buildResourceSheet } from './investment-data.js';
+import { buildInvestmentSummary, buildResourceSheet, UF_REFERENCE } from './investment-data.js';
 import { renderPreviousSession } from './previous-session-view.js';
+import { createRobberyShare } from './robbery-share-view.js';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
+const decimals = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const inUF = pesos => `${decimals.format(pesos / UF_REFERENCE.pesos)} UF`;
 const date = value => value ? new Intl.DateTimeFormat('es-CL', { timeZone: 'UTC' }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`)) : 'Por definir';
 const agendaViews = new WeakMap();
 const categoryCountLabels = {
@@ -76,6 +79,7 @@ function budgetChart(budget) {
     row.dataset.category = item.key;
     const label = element('dt', null, item.label);
     const value = element('dd', null, money.format(item.value));
+    value.append(element('small', 'companion-breakdown-uf', inUF(item.value)));
     const track = element('div', 'companion-cost-track');
     track.setAttribute('aria-hidden', 'true');
     const fill = element('span');
@@ -103,7 +107,31 @@ function delivery(budget) {
 }
 
 function budgetFooter() {
-  return element('p', 'companion-footnote', 'Presupuesto referencial · pesos chilenos · IVA incluido');
+  return element('p', 'companion-footnote',
+    `Presupuesto referencial · IVA incluido · Unidad de Fomento (UF) al ${date(UF_REFERENCE.date)} · 1 UF = $${decimals.format(UF_REFERENCE.pesos)} · SII`);
+}
+
+function investmentAmount(label, pesos) {
+  const amount = element('div', 'companion-investment-amount');
+  amount.append(element('span', null, label), element('strong', 'companion-price', money.format(pesos)),
+    element('span', 'companion-price-uf', inUF(pesos)));
+  return amount;
+}
+
+function milestoneCard({ delivery, operation, elapsedDays }) {
+  const section = card(elapsedDays === null ? 'Hitos del proyecto' : 'Hitos del proyecto · ejemplo');
+  const dates = element('dl', 'companion-milestones');
+  dates.append(fact('Entrega de la licitación', delivery ? date(delivery) : 'Por confirmar'),
+    fact('Puesta en operación', operation ? date(operation) : 'Por confirmar'));
+  section.append(dates);
+  if (elapsedDays !== null) {
+    section.append(element('p', 'companion-secondary', `${number.format(elapsedDays)} días corridos entre ambos hitos`));
+  }
+  return section;
+}
+
+function robberyShare(security) {
+  return createRobberyShare({ count: security.total, total: security.communeTotal, period: security.period });
 }
 
 function updateAgendaClock(view, agenda) {
@@ -228,13 +256,12 @@ function forecastView(root, state) {
     return;
   }
   const hero = element('section', 'companion-investment');
-  const amount = element('div', 'companion-investment-amount');
-  amount.append(element('span', null, 'Inversión inicial estimada'), element('strong', 'companion-price', money.format(budget.initial)));
   const quantities = element('dl', 'companion-quantities');
   quantities.append(metric('Cámaras nuevas', number.format(budget.counts.camera)), metric('Casetas nuevas', number.format(budget.counts.fixed)));
-  hero.append(amount, quantities);
+  hero.append(investmentAmount('Inversión inicial estimada', budget.initial), quantities);
   const metrics = element('dl', 'companion-metrics');
-  metrics.append(metric('Operación anual', money.format(budget.annualOperation), 'Conectividad, mantención y personal'), metric('Total del primer año', money.format(budget.firstYear), 'Instalación y operación'));
+  metrics.append(metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
+    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear)));
   const grid = element('div', 'companion-grid');
   const first = element('div', 'companion-column');
   first.append(budgetChart(budget));
@@ -257,26 +284,28 @@ function resourceView(root, state) {
   view.title.textContent = sheet.name;
   view.subtitle.textContent = sheet.address;
   const hero = element('section', 'companion-investment');
-  const amount = element('div', 'companion-investment-amount');
-  amount.append(element('span', null, 'Costo inicial de referencia'), element('strong', 'companion-price', money.format(sheet.budget.initial)));
   const status = element('dl', 'companion-quantities');
   status.append(metric('Estado del período', sheet.state));
-  hero.append(amount, status);
+  hero.append(investmentAmount('Costo inicial de referencia', sheet.budget.initial), status);
   const metrics = element('dl', 'companion-metrics');
-  metrics.append(metric('Operación anual', money.format(sheet.budget.annualOperation)));
+  metrics.append(metric('Operación anual', money.format(sheet.budget.annualOperation), inUF(sheet.budget.annualOperation)));
   if (sheet.activations !== null) metrics.append(metric('Pulsaciones', number.format(sheet.activations), sheet.period));
   else metrics.append(metric('Instalación', sheet.installed ? date(sheet.installed) : `${sheet.budget.totalDays} días hábiles`, sheet.installed ? 'Fecha del inventario' : 'Plazo de referencia'));
   const grid = element('div', 'companion-grid');
   const first = budgetChart(sheet.budget);
-  const second = card('Identificación y gestión');
+  const second = element('div', 'companion-column');
+  const management = card('Identificación y gestión');
   const facts = element('dl', 'companion-facts');
   facts.append(fact('Responsable', sheet.lead), fact('Unidad a cargo', sheet.unit), fact('Equipamiento', sheet.type));
   if (sheet.id) facts.append(fact('Identificador', sheet.id));
   if (sheet.period) facts.append(fact('Período consultado', sheet.period));
   if (sheet.rank) facts.append(fact('Uso en la selección', `Puesto ${sheet.rank}`));
-  second.append(facts);
+  management.append(facts);
+  second.append(milestoneCard(sheet.milestones), management);
   grid.append(first, second);
-  view.content.append(hero, metrics, grid, budgetFooter());
+  view.content.append(hero, metrics, grid);
+  if (state.sector?.security) view.content.append(robberyShare(state.sector.security));
+  view.content.append(budgetFooter());
   root.replaceChildren(view.main);
 }
 
@@ -289,7 +318,7 @@ function sectorView(root, state) {
   const security = sector.security;
   const cameras = sector.cameras;
   if (security) {
-    metrics.append(metric('Robos registrados', number.format(security.total ?? 0)));
+    view.content.append(robberyShare(security));
     metrics.append(metric('Últimos 7 días del período', number.format(security.last7Days ?? 0), security.last7DaysRange?.label));
   }
   if (cameras) {
@@ -317,7 +346,8 @@ function sectorView(root, state) {
     else nearby.append(element('p', null, 'Sin cámaras en el radio seleccionado.'));
     grid.append(nearby);
   }
-  view.content.append(metrics, grid);
+  if (metrics.childElementCount) view.content.append(metrics);
+  if (grid.childElementCount) view.content.append(grid);
   root.replaceChildren(view.main);
 }
 
