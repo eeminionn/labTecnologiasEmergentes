@@ -1,66 +1,108 @@
-.previous-session-heading { display: flex; justify-content: space-between; align-items: center; gap: 28px; }
-.previous-session-total { min-width: 190px; display: grid; gap: 2px; text-align: right; }
+.previous-session-view .companion-content { padding-block: 28px 24px; gap: 18px; }
+.previous-session-layout { display: grid; align-items: start; gap: 20px; }
+.previous-session-layout.has-attendance { grid-template-columns: minmax(0, 1fr) clamp(220px, 25vw, 290px); }
+.previous-session-view .previous-session-chart,
+.previous-session-view .previous-session-attendance { margin: 0; padding: 22px; }
+
+.previous-session-chart-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px 16px;
+  margin-bottom: 16px;
+}
+.previous-session-chart-heading h2,
+.previous-session-attendance-heading h2 { margin: 0; font-size: 22px; line-height: 1.25; }
+.previous-session-total { text-align: right; font-variant-numeric: tabular-nums; }
 .previous-session-total dt { color: var(--ink-secondary); font-size: 12px; }
-.previous-session-total dd { color: var(--municipal-petroleo); font-size: 40px; font-weight: 600; line-height: 1.2; font-variant-numeric: tabular-nums; }
-.previous-session-view .previous-session-chart { margin: 0; padding: 24px 28px 20px; }
-.previous-session-chart-heading { margin-bottom: 20px; display: grid; gap: 10px; }
-.previous-session-chart .previous-session-chart-heading h2 { margin: 0; font-size: 18px; }
-.previous-session-keys { display: flex; flex-wrap: wrap; gap: 8px 22px; }
-.previous-session-key { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-secondary); font-size: 11px; }
-.previous-session-key i { display: block; width: 19px; height: 8px; border-radius: 2px; }
-.previous-session-key .previous-session-actual-key { background: var(--municipal-petroleo); }
-.previous-session-key .previous-session-overrun-key { background: var(--municipal-morado); }
-.previous-session-key .previous-session-unused-key { background: repeating-linear-gradient(135deg, #fff5f9 0, #fff5f9 4px, #efbfd4 4px, #efbfd4 6px); }
-.previous-session-key .previous-session-planned-key { width: 0; height: 15px; border-left: 2px dashed var(--ink-secondary); border-radius: 0; margin: 0 7px; }
-.previous-session-axis, .previous-session-row { display: grid; grid-template-columns: minmax(190px, 28%) minmax(0, 1fr) 78px; align-items: center; column-gap: 22px; }
-.previous-session-axis { margin: 0 12px 12px; color: var(--ink-secondary); font-size: 10px; }
-.previous-session-ticks { height: 20px; position: relative; }
-.previous-session-ticks > span { position: absolute; bottom: 0; transform: translateX(-50%); font-variant-numeric: tabular-nums; }
+.previous-session-total dd { color: var(--municipal-petroleo); font-size: 26px; font-weight: 600; line-height: 1.2; }
+.previous-session-keys { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 8px 18px; }
+.previous-session-key { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-secondary); font-size: 12px; }
+.previous-session-key .previous-session-actual-key { width: 16px; height: 8px; border-radius: 2px; background: var(--municipal-petroleo); }
+.previous-session-key .previous-session-planned-key { height: 14px; border-left: 2px dashed var(--ink-secondary); margin-inline: 7px; }
+
+.previous-session-axis, .previous-session-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 34%) minmax(0, 1fr) 64px;
+  align-items: center;
+  column-gap: 12px;
+  padding-inline: 10px;
+  border: 1px solid transparent;
+}
+.previous-session-axis { margin-bottom: 3px; color: var(--ink-secondary); font-size: 12px; }
+.previous-session-ticks { height: 19px; position: relative; font-variant-numeric: tabular-nums; }
+.previous-session-ticks > span { position: absolute; bottom: 0; transform: translateX(-50%); }
 .previous-session-ticks > span:first-child { transform: none; }
 .previous-session-ticks > span:last-child { transform: translateX(-100%); }
 .previous-session-axis-unit { text-align: right; }
-.previous-session-rows { list-style: none; display: grid; gap: 6px; padding: 0; margin: 0; }
-.previous-session-row { min-height: 54px; padding: 9px 12px; border: 1px solid transparent; border-radius: 9px; }
-.previous-session-topic strong { display: block; font-size: 13px; font-weight: 500; line-height: 1.4; }
-.previous-session-track { position: relative; height: 20px; background: #edf1f2; border-radius: 3px; }
-.previous-session-actual, .previous-session-overrun, .previous-session-unused { display: block; position: absolute; height: 100%; top: 0; }
-.previous-session-actual { left: 0; border-radius: 3px 0 0 3px; background: var(--municipal-petroleo); }
-.previous-session-overrun { background: var(--municipal-morado); border-radius: 0 3px 3px 0; }
-.previous-session-planned { display: block; position: absolute; top: -5px; bottom: -5px; border-left: 2px dashed #47636a; }
-.previous-session-value { text-align: right; display: grid; gap: 2px; font-variant-numeric: tabular-nums; }
-.previous-session-value strong { font-size: 17px; font-weight: 600; }
-.previous-session-value small { font-size: 10px; color: var(--ink-secondary); }
-.previous-session-row[data-carryover="true"] { border-color: #e8b3ca; background: #fff5f9; }
+.previous-session-rows { list-style: none; display: grid; padding: 0; margin: 0; }
+.previous-session-row { min-height: 46px; padding-block: 7px; border-top-color: var(--border); }
+.previous-session-topic strong { display: block; font-size: 14px; font-weight: 500; line-height: 1.35; overflow-wrap: anywhere; }
+.previous-session-track { position: relative; height: 14px; background: #edf1f2; border-radius: 3px; }
+.previous-session-actual { position: absolute; inset: 0 auto 0 0; border-radius: 3px; background: var(--municipal-petroleo); }
+.previous-session-planned {
+  position: absolute;
+  inset-block: -4px;
+  border-left: 2px dashed var(--ink-secondary);
+  transform: translateX(-50%);
+  filter: drop-shadow(1px 0 0 #fff) drop-shadow(-1px 0 0 #fff);
+}
+.previous-session-value { display: grid; gap: 2px; text-align: right; font-variant-numeric: tabular-nums; }
+.previous-session-value strong { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.previous-session-value small { font-size: 11px; color: var(--ink-secondary); }
+.previous-session-row[data-carryover="true"] { border: 1px solid var(--border); border-radius: 7px; margin-top: 2px; }
 .previous-session-row[data-carryover="true"] .previous-session-topic strong { font-weight: 600; }
-.previous-session-row[data-carryover="true"] .previous-session-actual { background: var(--municipal-fucsia); }
-.previous-session-unused { background: repeating-linear-gradient(135deg, #fff5f9 0, #fff5f9 4px, #efbfd4 4px, #efbfd4 6px); }
-.previous-session-row[data-carryover="true"] .previous-session-value strong { color: var(--municipal-morado); }
-.previous-session-carryover { display: grid; grid-template-columns: 1.15fr 1fr; align-items: center; gap: 28px; padding: 20px 24px; border: 1px solid #e8b3ca; border-radius: 14px; background: #fff5f9; }
-.previous-session-carryover .previous-session-carryover-label { margin-bottom: 4px; font-size: 12px; font-weight: 600; color: var(--municipal-morado); }
-.previous-session-carryover h2 { font-size: 18px; line-height: 1.35; }
-.previous-session-carryover > p { font-size: 13px; line-height: 1.65; color: var(--ink-secondary); }
-.previous-session-carryover > p strong { color: var(--ink); }
-.previous-session-attendance-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 6px 20px; margin-bottom: 14px; }
-.previous-session-attendance .previous-session-attendance-heading h2 { margin: 0; font-size: 18px; }
-.previous-session-attendance-summary { color: var(--ink-secondary); font-size: 12px; font-variant-numeric: tabular-nums; }
-.previous-session-attendees { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 8px 16px; list-style: none; margin: 0; padding: 0; }
-.previous-session-attendee { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; padding-block: 6px; border-bottom: 1px solid var(--border); }
-.previous-session-attendee-name { font-size: 12px; line-height: 1.4; }
-.previous-session-attendee-status { flex: none; padding: 3px 6px; border-radius: 4px; background: #eaf5f5; color: var(--municipal-petroleo); font-size: 10px; line-height: 1.4; }
-.previous-session-attendee[data-present="false"] .previous-session-attendee-status { background: #f8eef6; color: var(--municipal-morado); }
-@media (max-width: 1000px) {
-  .previous-session-chart .previous-session-axis, .previous-session-chart .previous-session-row { grid-template-columns: minmax(160px, 28%) minmax(0, 1fr) 66px; column-gap: 16px; }
-  .previous-session-view .previous-session-chart { padding: 20px; }
-  .previous-session-row { min-height: 61px; }
-  .previous-session-topic strong { font-size: 12px; }
-  .previous-session-carryover { padding: 18px 20px; gap: 20px; }
-  .previous-session-carryover h2 { font-size: 16px; }
-  .previous-session-total dd { font-size: 34px; }
+
+.previous-session-carryover {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px 20px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 9px;
+  background: var(--municipal-morado);
+  color: #fff;
 }
-@media (max-width: 680px) {
-  .previous-session-heading { align-items: start; }
-  .previous-session-total { min-width: 125px; }
-  .previous-session-chart .previous-session-axis, .previous-session-chart .previous-session-row { grid-template-columns: 145px minmax(0, 1fr) 58px; column-gap: 10px; }
-  .previous-session-carryover { grid-template-columns: 1fr; gap: 10px; }
+.previous-session-chart .previous-session-carryover p { font-size: 12px; line-height: 1.5; }
+.previous-session-chart .previous-session-carryover h3 { margin: 1px 0 0; font-size: 14px; line-height: 1.35; font-weight: 600; }
+.previous-session-carryover-time { display: grid; gap: 2px; white-space: nowrap; text-align: right; }
+.previous-session-carryover-time strong { font-size: 15px; font-weight: 600; }
+
+.previous-session-attendance-heading { display: grid; gap: 4px; margin-bottom: 18px; }
+.previous-session-attendance .previous-session-attendance-heading p { color: var(--ink-secondary); font-size: 12px; }
+.previous-session-attendance-groups { display: grid; align-items: start; gap: 16px; }
+.previous-session-attendance-group { --attendance-color: var(--ink-secondary); }
+.previous-session-attendance-group[data-present="true"] { --attendance-color: var(--municipal-petroleo); }
+.previous-session-attendance-group[data-present="false"] { --attendance-color: var(--municipal-morado); }
+.previous-session-attendance-group h3 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 0;
+  padding: 0 0 6px;
+  border-bottom: 2px solid var(--attendance-color);
+  color: var(--attendance-color);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
-.previous-session-view .companion-content { padding-top: 28px; padding-bottom: 22px; gap: 18px; }
+.previous-session-attendees { list-style: none; margin: 0; padding: 0; }
+.previous-session-attendee { padding-block: 6px; font-size: 14px; line-height: 1.45; overflow-wrap: anywhere; }
+.previous-session-attendee + .previous-session-attendee { border-top: 1px solid var(--border); }
+.previous-session-attendance .previous-session-attendance-empty { margin-top: 6px; color: var(--ink-secondary); font-size: 13px; }
+
+@media (max-height: 740px) {
+  .previous-session-view .companion-content { padding-block: 18px; gap: 14px; }
+  .previous-session-view .previous-session-chart,
+  .previous-session-view .previous-session-attendance { padding: 18px; }
+  .previous-session-chart-heading { row-gap: 6px; margin-bottom: 10px; }
+  .previous-session-row { min-height: 40px; padding-block: 4px; }
+  .previous-session-carryover { margin-top: 10px; padding-block: 10px; }
+}
+
+@media (max-width: 850px) {
+  .previous-session-layout.has-attendance { grid-template-columns: minmax(0, 1fr); }
+  .previous-session-attendance-groups { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px 24px; }
+}
