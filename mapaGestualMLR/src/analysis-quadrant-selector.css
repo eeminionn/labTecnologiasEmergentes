@@ -5,27 +5,40 @@ body:not(.twin-projection) .analysis-quadrant-selector {
   overflow: hidden;
   pointer-events: none;
 }
-.analysis-quadrant-selector[hidden] { display: none !important; }
+.analysis-quadrant-selector[hidden],
 body.twin-projection .analysis-quadrant-selector { display: none !important; }
 .analysis-quadrant-selector,
 .analysis-quadrant-selector * { pointer-events: none !important; }
 .analysis-quadrant-selector > svg { display: block; width: 100%; height: 100%; overflow: hidden; font-family: inherit; }
 .analysis-quadrant-selector path { vector-effect: non-scaling-stroke; stroke-linejoin: round; }
-.analysis-quadrant-fill { fill: transparent; transition: fill 150ms ease; }
-.analysis-quadrant-underlay { fill: none; stroke: #fff; stroke-width: 3.8; stroke-opacity: .7; }
-.analysis-quadrant-edge { fill: none; stroke: var(--municipal-petroleo, #00677f); stroke-width: 1.2; stroke-dasharray: 6 5; stroke-opacity: .8; }
-.analysis-quadrant-selected-boundary { fill: none; stroke: var(--municipal-petroleo, #00677f); stroke-width: 3; stroke-opacity: 0; }
-.analysis-quadrant-boundary-underlay { fill: none; stroke: white; stroke-width: 4; stroke-opacity: .8; }
-.analysis-quadrant-boundary { fill: none; stroke: var(--municipal-petroleo, #00677f); stroke-width: 1.3; stroke-opacity: .8; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-fill { fill: var(--municipal-petroleo, #00677f); fill-opacity: .05; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-edge { stroke-width: 2.5; stroke-dasharray: none; stroke-opacity: 1; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-selected-boundary { stroke-opacity: 1; }
-.analysis-quadrant[data-preview="true"] .analysis-quadrant-fill { fill: #fff; fill-opacity: .14; }
-.analysis-quadrant[data-preview="true"] .analysis-quadrant-edge { stroke-width: 2.5; stroke-dasharray: none; stroke-opacity: 1; }
-.analysis-quadrant-label rect { fill: #fffffff0; stroke: #00677f80; stroke-width: 1; }
-.analysis-quadrant-label text { fill: var(--municipal-petroleo, #00677f); font-size: 12px; font-weight: 600; }
-.analysis-quadrant-label[data-selected="true"] rect { fill: var(--municipal-petroleo, #00677f); stroke: #fff; stroke-width: 1.5; }
-.analysis-quadrant-label[data-selected="true"] text { fill: #fff; }
-.analysis-quadrant-label[data-preview="true"] rect { stroke: var(--municipal-petroleo, #00677f); stroke-width: 2; }
+.analysis-subdivision-boundaries,
+.analysis-unit-boundaries,
+.analysis-unit-underlay,
+.analysis-commune-boundary { fill: none; }
+.analysis-subdivision-boundaries { stroke: var(--municipal-petroleo, #00677f); stroke-width: .65; stroke-opacity: .28; }
+.analysis-unit-underlay { stroke: #fff; stroke-width: 2; stroke-opacity: .5; }
+.analysis-unit-boundaries { stroke: var(--municipal-petroleo, #00677f); stroke-width: 1.05; stroke-opacity: .65; }
+.analysis-commune-boundary { stroke: var(--municipal-petroleo, #00677f); stroke-width: 1.1; stroke-opacity: .6; }
+.analysis-quadrant-fill { fill: transparent; transition: fill 120ms ease; }
+.analysis-quadrant-underlay { fill: none; stroke: #fff; stroke-width: 3.2; stroke-opacity: 0; }
+.analysis-quadrant-edge { fill: none; stroke: var(--municipal-petroleo, #00677f); stroke-width: 1.8; stroke-opacity: 0; }
+.analysis-quadrant[data-selected="true"] .analysis-quadrant-fill { fill: var(--municipal-petroleo, #00677f); fill-opacity: .055; }
+.analysis-quadrant[data-selected="true"] .analysis-quadrant-underlay { stroke-opacity: .8; }
+.analysis-quadrant[data-selected="true"] .analysis-quadrant-edge { stroke-opacity: 1; }
+.analysis-quadrant[data-preview="true"] .analysis-quadrant-fill { fill: #fff; fill-opacity: .08; }
+.analysis-quadrant[data-preview="true"] .analysis-quadrant-underlay { stroke-opacity: .7; }
+.analysis-quadrant[data-preview="true"] .analysis-quadrant-edge { stroke-opacity: .9; }
+.analysis-unit-label rect { fill: #fffffff0; stroke: var(--municipal-petroleo, #00677f); stroke-width: .7; stroke-opacity: .55; }
+.analysis-unit-label text { fill: var(--municipal-petroleo, #00677f); font-size: 10px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.analysis-unit-label[data-selected="true"] rect { fill: var(--municipal-petroleo, #00677f); stroke: white; stroke-opacity: 1; }
+.analysis-unit-label[data-selected="true"] text { fill: white; }
+.analysis-unit-label[data-preview="true"] rect { stroke-opacity: 1; stroke-width: 1.2; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-subdivision-boundaries { stroke-width: .4; stroke-opacity: .13; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-unit-underlay { stroke-width: 1.2; stroke-opacity: .22; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-unit-boundaries { stroke-width: .65; stroke-opacity: .32; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-commune-boundary { stroke-width: .75; stroke-opacity: .35; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-quadrant-underlay { stroke-width: 2.5; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-quadrant-edge { stroke-width: 1.4; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-quadrant-fill { fill-opacity: .035; }
 @media (prefers-reduced-motion: reduce) { .analysis-quadrant-fill { transition: none; } }
-@media (prefers-reduced-transparency: reduce) { .analysis-quadrant-label rect { fill: white; } }
+@media (prefers-reduced-transparency: reduce) { .analysis-unit-label rect { fill: white; } }

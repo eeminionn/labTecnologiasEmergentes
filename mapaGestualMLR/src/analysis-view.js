@@ -1,5 +1,6 @@
 import './analysis-ui.css';
 import boundaryText from '../assets/la-reina.geojson?raw';
+import neighborsText from '../assets/la-reina-neighborhoods.geojson?raw';
 import { parseSecurityCSV, filterSecurityRecords, buildDensitySurface, boundaryPolygons, projectSecurityPoint, heatColor, pointInsideBoundary, summarizeSecurityArea, getSecurityDateRange, normalizeSecurityRobberyTypes, toggleSecurityRobberyType } from './analysis-data.js';
 import { parseCameraCSV, filterCameraRecords, summarizeCameraRecords, cameraHeatColor, normalizeCameraTypes, toggleCameraType } from './camera-analysis-data.js';
 import { createAnalysisPanel, SECURITY_CHOICES, CAMERA_CHOICES } from './analysis-panel.js';
@@ -8,17 +9,28 @@ import { ANALYSIS_LAYERS, ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MO
 import { createLayerPicker } from './analysis-layer-picker.js';
 import { createResourceMarkers } from './analysis-resource-markers.js';
 import { createForecastView } from './analysis-forecast-view.js';
-import { createAnalysisQuadrants, classifyAnalysisQuadrant, normalizeAnalysisQuadrants, toggleAnalysisQuadrant } from './analysis-quadrants.js';
+import { createAnalysisQuadrants, classifyAnalysisQuadrant, normalizeAnalysisQuadrants, toggleAnalysisArea, STREET_DETAIL_ZOOM } from './analysis-quadrants.js';
 import { createAnalysisQuadrantSelector } from './analysis-quadrant-selector.js';
 
 const boundary=JSON.parse(boundaryText),number=value=>new Intl.NumberFormat('es-CL').format(value);
 const defaults={security:{year:'all',month:'all',period:'all',robbery:'all'},cameras:{year:'all',month:'all',state:'all',type:'all'}};
 const resourceDefaults={fixed:{year:null},alarms:{year:null,usage:'all',limit:ALARM_RANK_DEFAULT}};
 const inside=(lng,lat)=>pointInsideBoundary(lng,lat,boundary);
-const district=createAnalysisQuadrants(boundary);
-const spatialLabel=ids=>ids.length
-  ?district.quadrants.filter(({id})=>ids.includes(id)).map(({label})=>label).join(' · ')
-  :'Toda la comuna';
+const district=createAnalysisQuadrants(JSON.parse(neighborsText),boundary);
+const unitIds=ids=>new Set(ids.map(id=>district.byId.get(id).unit));
+function spatialLabel(ids) {
+  if(!ids.length)return 'Toda la comuna';
+  if(ids.length<=4)return ids.join(' · ');
+  const count=unitIds(ids).size;
+  return `${ids.length} subcuadrantes · ${count} ${count===1?'unidad':'unidades'}`;
+}
+function areaTitle(ids) {
+  if(ids.length===1)return `Subcuadrante ${ids[0]}`;
+  const units=unitIds(ids);
+  const [unit]=units;
+  if(units.size===1&&district.byUnit.get(unit).children.length===ids.length)return `Unidad vecinal ${unit}`;
+  return 'Subcuadrantes seleccionados';
+}
 function densityImage(surface,camera=false,quadrantIds=[]) {
   const source=document.createElement('canvas');source.width=surface.width;source.height=surface.height;
   const small=source.getContext('2d'),pixels=small.createImageData(surface.width,surface.height);
@@ -34,18 +46,18 @@ function densityImage(surface,camera=false,quadrantIds=[]) {
     const [x,y]=projectSecurityPoint(lng,lat);
     return [(x-west)/(east-west)*image.width,(north-y)/(north-south)*image.height];
   };
-  for(const polygon of boundaryPolygons(boundary))for(const ring of polygon) {
-    ring.forEach(([lng,lat],i)=>{const [x,y]=pixel(lng,lat);if(i===0)shape.moveTo(x,y);else shape.lineTo(x,y);});shape.closePath();
+  function addRings(path,polygons) {
+    for(const polygon of polygons)for(const ring of polygon) {
+      ring.forEach(([lng,lat],i)=>{const [x,y]=pixel(lng,lat);if(i===0)path.moveTo(x,y);else path.lineTo(x,y);});
+      path.closePath();
+    }
   }
+  addRings(shape,boundaryPolygons(boundary));
   context.clip(shape,'evenodd');
   if(quadrantIds.length) {
     const mask=new Path2D();
-    for(const {id,bounds:[[south,w],[n,e]]} of district.quadrants) {
-      if(!quadrantIds.includes(id))continue;
-      const [left,top]=pixel(w,n),[right,bottom]=pixel(e,south);
-      mask.rect(left,top,right-left,bottom-top);
-    }
-    context.clip(mask);
+    for(const id of quadrantIds)addRings(mask,district.byId.get(id).polygons);
+    context.clip(mask,'evenodd');
   }
   context.imageSmoothingEnabled=true;context.imageSmoothingQuality='high';context.drawImage(source,0,0,image.width,image.height);return image.toDataURL('image/png');
 }
@@ -60,7 +72,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     if(!quadrantCache.has(record))quadrantCache.set(record,classifyAnalysisQuadrant(record,district));
     return quadrantCache.get(record);
   };
-  const inQuadrants=(records,ids=quadrantIds)=>ids.length?records.filter(record=>ids.includes(recordQuadrant(record))):records;
+  function inQuadrants(records,ids=quadrantIds) {
+    if(!ids.length)return records;
+    const selected=new Set(ids);
+    return records.filter(record=>selected.has(recordQuadrant(record)));
+  }
   const abort=new AbortController(),datasets={},panels={};
   const crossed=()=>compareCategory!==null, selection=()=>({primary:activeCategory,compare:compareCategory});
   const defaultOpacity=(kind, compare=false)=>kind==='security'?(compare ? .45 : .62):kind==='cameras'&&datasets.cameras?.display==='heatmap'?(compare ? .55 : .62):.9;
@@ -74,7 +90,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
       filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),forecast:openForecast,
       reset:()=>layer.resource?setResourceFilters(kind,{...resourceDefaults[kind],year:latestResourceYear(datasets[kind])}):setDatasetFilters(kind,defaults[kind]),
-      toggleQuadrant,clearQuadrants:()=>setQuadrants([]),
+      toggleQuadrant,toggleUnit,clearQuadrants:()=>setQuadrants([]),
       cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
   }
@@ -161,7 +177,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     for(const [kind,panel] of Object.entries(panels)){
       const resource=getAnalysisLayer(kind).resource;
       const dataset=datasets[kind];
-      panel.update({...dataset,quadrantIds,spatialLabel:spatialLabel(quadrantIds),loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
+      panel.update({...dataset,units:district.units,quadrantIds,spatialLabel:spatialLabel(quadrantIds),loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
     }
     paintQuadrants();
     publishCompanion();
@@ -191,7 +207,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const pointerLeave=()=>clearHover({keepPinned:true,keepCompanion:true}),outsidePicker=event=>{
     const target=event.target;
     if(!target.closest?.('.analysis-layer-picker,.analysis-layer-trigger,.analysis-compare'))catalog.close(false);
-    if(!target.closest?.('.analysis-date-popover,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter'))closeAllPickers();
+    if(!target.closest?.('.analysis-date-popover,.analysis-quadrant-filter,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter'))closeAllPickers();
   },keyDown=event=>{
     if(event.key!=='Escape')return;
     if(forecast.active){forecast.stopPlacing();return;}
@@ -303,14 +319,15 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     if(hoverDetails?.record || hoverDetails&&!quadrantIds.length){
       onCompanion({
         mode:hoverDetails.record?'resource':'sector',kind,period:crossed()&&!hoverDetails.record?null:period,
-        title:`Cuadrante ${hoverDetails.label}`,resource:hoverDetails.record,sector:hoverDetails,
+        title:hoverDetails.quadrantIds.length?areaTitle(hoverDetails.quadrantIds):'Área consultada',
+        resource:hoverDetails.record,sector:hoverDetails,
         filters:{...d.filters},dateRange:d.dateRange,layers
       });
       return;
     }
     if(quadrantIds.length){
       const area=areaDetails(quadrantIds);
-      onCompanion({mode:'sector',kind,title:quadrantIds.length===1?`Cuadrante ${area.label}`:'Cuadrantes seleccionados',
+      onCompanion({mode:'sector',kind,title:areaTitle(quadrantIds),
         period:crossed()?null:period,sector:area,layers});
       return;
     }
@@ -384,13 +401,12 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   }
   function setQuadrants(ids){
     if(!loaded||destroyed||forecast.active)return false;
-    let normalized;
-    try{normalized=normalizeAnalysisQuadrants(ids);}catch{return false;}
-    const next=normalized==='all'?[]:normalized;
+    let next;
+    try{next=normalizeAnalysisQuadrants(ids,district);}catch{return false;}
     if(next.join(',')===quadrantIds.join(','))return false;
     quadrantIds=next;
     clearHover({keepCompanion:true});
-    closeAllPickers();
+    for(const panel of Object.values(panels))if(panel.picker!=='area')panel.closePicker();
     const resume=playback.info().playing;
     const keepTimeline=timelineActive;
     suppressTimelineFrame=true;
@@ -406,8 +422,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     return true;
   }
   function toggleQuadrant(id){
-    if(!district.quadrants.some(quadrant=>quadrant.id===id))return false;
-    return setQuadrants(toggleAnalysisQuadrant(quadrantIds,id));
+    return district.byId.has(id)&&setQuadrants(toggleAnalysisArea(quadrantIds,[id]));
+  }
+  function toggleUnit(id){
+    const unit=district.byUnit.get(id);
+    return Boolean(unit?.children.length)&&setQuadrants(toggleAnalysisArea(quadrantIds,unit.children.map(part=>part.id)));
   }
   function setResourceFilters(kind,values,{redraw=true}={}){
     const dataset=datasets[kind];
@@ -583,7 +602,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const camera=anchor.record?.kind==='cameras'?anchor.record:null;
     hoverDetails={...(security||cameras),...area,record:anchor.record??null,source:anchor.source,lat:anchor.lat,lng:anchor.lng};
     securityTip.hidden=!security;cameraTip.hidden=!cameras;
-    tipTitle.textContent=anchor.record?.title||`Cuadrante ${area.label}`;
+    tipTitle.textContent=anchor.record?.title||areaTitle(area.quadrantIds);
     tipScope.textContent=anchor.record?(pinned?`Ubicación seleccionada · ${area.label}`:area.label)
       :quadrantIds.includes(anchor.quadrant)?'Cuadrante seleccionado':'Haz clic para seleccionar';
     pinTip.hidden=pinned||!anchor.record;
@@ -633,6 +652,12 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       resourcesTip.append(section);
     }
     resourcesTip.hidden=!resourcesTip.childElementCount;
+    paintQuadrants(anchor.quadrant);
+    if(!anchor.record&&!anchor.alarm&&map.info().zoom>=STREET_DETAIL_ZOOM){
+      tooltip.hidden=true;
+      publishCompanion();
+      return;
+    }
     tooltip.hidden=false;
     const {min,max}=cardBounds();
     tooltip.style.width=`${Math.max(190,Math.min(310,max-min))}px`;
@@ -654,7 +679,6 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
       if(coversFocus){clearHover();return;}
     }
     tooltip.style.left=`${left}px`;tooltip.style.top=`${top}px`;
-    paintQuadrants(anchor.quadrant);
     publishCompanion();
   }
   function cardBounds(){

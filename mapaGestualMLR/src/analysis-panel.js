@@ -1,6 +1,5 @@
 import { SECURITY_ROBBERY_TYPES } from './analysis-data.js';
 import { ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS } from './analysis-catalog.js';
-import { ANALYSIS_QUADRANTS } from './analysis-quadrants.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const number = value => new Intl.NumberFormat('es-CL').format(value);
 export const CAMERA_CHOICES = {
@@ -44,15 +43,10 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   if(monitoring)stats.append(monitoring);
   body.append(stats);
   const area=el('fieldset','analysis-filter analysis-quadrant-filter');
-  const areaButtons=el('div','analysis-options');
-  const areaButtonsById=new Map();
-  for(const {id,label} of ANALYSIS_QUADRANTS) {
-    const control=button(areaButtons,`${prefix}-quadrant-${id}`,label,()=>callbacks.toggleQuadrant(id));
-    control.setAttribute('aria-pressed','false');
-    areaButtonsById.set(id,control);
-  }
+  const areaTrigger=button(area,`${prefix}-area-picker`,'Unidades vecinales',()=>openPicker('area'),'analysis-area-trigger');
+  areaTrigger.setAttribute('aria-haspopup','dialog');areaTrigger.setAttribute('aria-expanded','false');
   const whole=button(area,`${prefix}-quadrant-all`,'Toda la comuna',()=>callbacks.clearQuadrants(),'analysis-quadrant-reset');
-  area.prepend(el('legend',null,'Cuadrantes'),areaButtons);
+  area.prepend(el('legend',null,'Área del análisis'));
   body.append(area);
   if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
   const resourceList=kind==='fixed'?el('div','analysis-resource-list'):null;
@@ -149,10 +143,72 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     overlay.append(timeline);
     for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])timeline.addEventListener(type,event=>event.stopPropagation());
   }
-  const popover=el('section','analysis-date-popover');popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-labelledby',`${prefix}-picker-title`);
+  const popover=el('section','analysis-date-popover');popover.id=`${prefix}-filter-popover`;popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-labelledby',`${prefix}-picker-title`);
+  areaTrigger.setAttribute('aria-controls',popover.id);
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverTitle.id=`${prefix}-picker-title`;popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar opciones');
   const grids={};
+  const areaPicker=el('div','analysis-area-picker');grids.area=areaPicker;
+  const areaSummary=el('p','analysis-area-summary');areaSummary.setAttribute('role','status');
+  const unitGrid=el('div','analysis-unit-grid');unitGrid.setAttribute('role','group');unitGrid.setAttribute('aria-label','Unidades vecinales');
+  const unitDetail=el('div','analysis-unit-detail');unitDetail.hidden=true;
+  const unitBack=button(unitDetail,`${prefix}-unit-back`,'‹ Otras unidades',()=>showAreaUnit(null),'analysis-unit-back');
+  const unitAll=button(unitDetail,`${prefix}-unit-all`,'Seleccionar toda la unidad',()=>callbacks.toggleUnit(activeUnitId),'analysis-unit-all');
+  const childGrid=el('div','analysis-subquadrant-grid');childGrid.setAttribute('role','group');
+  unitDetail.append(childGrid);areaPicker.append(areaSummary,unitGrid,unitDetail);popover.append(areaPicker);
+  const unitButtonsById=new Map(),areaButtonsById=new Map();
+  let areaUnits=[],unitsSource=null,unitsSignature='',activeUnitId=null;
+  function showAreaUnit(id,focus=true) {
+    const previous=activeUnitId;activeUnitId=id;
+    const unit=areaUnits.find(item=>item.id===id);
+    unitGrid.hidden=id!==null;unitDetail.hidden=id===null;
+    for(const [childId,control] of areaButtonsById)control.hidden=!unit?.children.some(child=>child.id===childId);
+    popoverTitle.textContent=unit?`Unidad vecinal ${unit.label}`:'Unidades vecinales';
+    childGrid.setAttribute('aria-label',unit?`Subcuadrantes de la unidad vecinal ${unit.label}`:'Subcuadrantes');
+    updateAreaSelection();
+    if(focus) {
+      positionPicker(areaTrigger);
+      (unit?unitAll:unitButtonsById.get(previous)||unitGrid.querySelector('button'))?.focus({preventScroll:true});
+    }
+  }
+  function updateAreaUnits(units) {
+    if(units===unitsSource)return;
+    unitsSource=units;
+    const signature=JSON.stringify(units.map(unit=>[unit.id,unit.label,unit.children.map(child=>[child.id,child.label])]));
+    if(signature===unitsSignature)return;
+    unitsSignature=signature;areaUnits=units;
+    for(const e of [...unitButtonsById.values(),...areaButtonsById.values()])controls.splice(controls.indexOf(e),1);
+    unitButtonsById.clear();areaButtonsById.clear();unitGrid.replaceChildren();childGrid.replaceChildren();
+    for(const unit of units) {
+      const control=button(unitGrid,`${prefix}-unit-${unit.id}`,unit.label,()=>showAreaUnit(unit.id),'analysis-unit-option');
+      control.append(el('small','analysis-unit-count'));unitButtonsById.set(unit.id,control);
+      for(const child of unit.children) {
+        const item=button(childGrid,`${prefix}-quadrant-${child.id}`,child.label,()=>callbacks.toggleQuadrant(child.id),'analysis-subquadrant-option');
+        item.setAttribute('aria-label',`Subcuadrante ${child.label}`);areaButtonsById.set(child.id,item);
+      }
+    }
+    if(!areaUnits.some(unit=>unit.id===activeUnitId))activeUnitId=null;
+    showAreaUnit(activeUnitId,false);
+  }
+  function updateAreaSelection() {
+    const selected=state?.quadrantIds??[];
+    for(const unit of areaUnits) {
+      const control=unitButtonsById.get(unit.id),count=unit.children.filter(child=>selected.includes(child.id)).length;
+      control.disabled=!state?.canChoose;
+      control.dataset.selection=count===0?'none':count===unit.children.length?'all':'partial';
+      control.setAttribute('aria-label',`Unidad vecinal ${unit.label}, ${count} de ${unit.children.length} subcuadrantes seleccionados`);
+      control.querySelector('small').textContent=count?`${count}/${unit.children.length}`:'';
+    }
+    for(const [id,control] of areaButtonsById) {
+      control.disabled=!state?.canChoose;control.setAttribute('aria-pressed',String(selected.includes(id)));
+    }
+    const unit=areaUnits.find(unit=>unit.id===activeUnitId),all=Boolean(unit?.children.length)&&unit.children.every(child=>selected.includes(child.id));
+    unitAll.disabled=!state?.canChoose;unitBack.disabled=!state?.canChoose;
+    unitAll.setAttribute('aria-pressed',String(all));
+    unitAll.textContent=all?'Quitar toda la unidad':'Seleccionar toda la unidad';
+    const scope=state?.spatialLabel??'Toda la comuna';
+    if(areaSummary.textContent!==scope)areaSummary.textContent=scope;
+  }
   for(const [key,items] of resource?[]:[['year',ANALYSIS_YEARS.map(year=>[year,year])],['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
     const grid=el('div','analysis-date-grid');grid.dataset.grid=key;grids[key]=grid;
     for(const [value,label,detail] of items) {
@@ -168,25 +224,31 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   }
   popover.prepend(popoverHeading);overlay.append(panel,popover);
   for(const area of [panel,popover])for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])area.addEventListener(type,event=>event.stopPropagation());
-  function pickerAnchor(key){return key==='year'?yearPicker:key==='month'?monthPicker:cameraTriggers[key];}
+  function pickerAnchor(key){return key==='area'?areaTrigger:key==='year'?yearPicker:key==='month'?monthPicker:cameraTriggers[key];}
   function closePicker(){
     const anchor=pickerAnchor(picker);
     if(popover.contains(document.activeElement)&&anchor?.getClientRects().length)anchor.focus({preventScroll:true});
     picker=null;popover.hidden=true;
-    for(const e of [yearPicker,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
+    for(const e of [areaTrigger,yearPicker,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
   }
-  function openPicker(key) {
-    if(!state?.loaded || !grids[key] || key==='year'&&state.temporalMode==='all' || key==='month'&&state.temporalMode!=='month')return;
-    if(picker===key){closePicker();return;}
-    callbacks.clearHover();picker=key;popover.hidden=false;
-    for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
-    popoverTitle.textContent={year:'Elige el año',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
-    const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
+  function positionPicker(anchor) {
     const outer=container.getBoundingClientRect(),a=anchor.getBoundingClientRect(),p=popover.getBoundingClientRect(),r=panel.getBoundingClientRect();
     const left=panel.dataset.side==='right'?r.left-outer.left-p.width-10:r.right-outer.left+10;
     popover.style.left=`${Math.max(12,Math.min(outer.width-p.width-12,left))}px`;
     popover.style.top=`${Math.max(68,Math.min(outer.height-p.height-12,a.top-outer.top))}px`;
-    (grids[key].querySelector('[aria-pressed="true"]')||grids[key].querySelector('button'))?.focus({preventScroll:true});
+  }
+  function openPicker(key) {
+    if(!state?.loaded || !grids[key] || key==='area'&&!state.canChoose || key==='year'&&state.temporalMode==='all' || key==='month'&&state.temporalMode!=='month')return;
+    if(picker===key){closePicker();return;}
+    callbacks.clearHover();picker=key;popover.hidden=false;
+    for(const e of [areaTrigger,yearPicker,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
+    for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
+    popoverTitle.textContent={area:'Unidades vecinales',year:'Elige el año',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
+    if(key==='area')showAreaUnit(null,false);
+    const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
+    positionPicker(anchor);
+    const first=key==='area'?(unitGrid.querySelector('[data-selection="all"]')||unitGrid.querySelector('[data-selection="partial"]')||unitGrid.querySelector('button')):(grids[key].querySelector('[aria-pressed="true"]')||grids[key].querySelector('button'));
+    first?.focus({preventScroll:true});
   }
   function update(next) {
     state=next;panel.hidden=!next.visible;panel.dataset.side=next.side;
@@ -199,11 +261,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     category.disabled=compare.disabled=!next.canChoose;
     forecast.disabled=!next.canChoose;
     area.hidden=!primary;
+    updateAreaUnits(next.units??[]);updateAreaSelection();
+    areaTrigger.disabled=!next.canChoose||areaUnits.length===0;
     const quadrantIds=next.quadrantIds??[];
-    for(const [id,control] of areaButtonsById) {
-      control.disabled=!next.canChoose;
-      control.setAttribute('aria-pressed',String(quadrantIds.includes(id)));
-    }
     whole.setAttribute('aria-pressed',String(quadrantIds.length===0));
     whole.disabled=!next.canChoose;
     const scopeText=next.spatialLabel??'Toda la comuna';
