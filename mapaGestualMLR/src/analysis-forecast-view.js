@@ -4,9 +4,22 @@ import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt 
 const counts = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
 const percentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
 const measures = { camera: 'Cámara monitoreada', fixed: 'Caseta con personal' };
+const toolIcons = {
+  camera: 'M3 6h13v10H3zM16 9l5-3v10l-5-3M8 16v4m-4 0h8',
+  fixed: 'M3 21h18M5 21V10l7-5 7 5v11M10 21v-6h4v6M12 5V2m0 1h5'
+};
 const [year] = FORECAST_YEARS;
 
-export function createForecastView(overlay, container, { map, signal, inside, onExit, renderSurface, renderPlacements, onChange = () => {} }) {
+function placementCursor(kind) {
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="30" viewBox="0 0 34 30">'
+    + '<rect x="9" y="2" width="23" height="22" rx="5" fill="#00647c" stroke="white" stroke-width="1.5"/>'
+    + '<path transform="translate(12 4) scale(.73)" d="' + toolIcons[kind] + '" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
+    + '<circle cx="7" cy="23" r="5.5" fill="white" stroke="#00647c" stroke-width="1.5"/>'
+    + '<path d="M4.5 23h5M7 20.5v5" stroke="#00647c" stroke-width="1.4" stroke-linecap="round"/></svg>';
+  return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 7 23, crosshair';
+}
+
+export function createForecastView(overlay, container, { map, signal, inside, quadrantOf, onExit, renderSurface, renderPlacements, onChange = () => {} }) {
   let model, loading, baselineSurface, surface, selectedPoint, placing, serial = 0;
   let showAfter = true, placements = [];
 
@@ -93,10 +106,10 @@ export function createForecastView(overlay, container, { map, signal, inside, on
 
   const readout = element('aside', 'forecast-readout');
   readout.hidden = true;
-  readout.setAttribute('aria-label', 'Resultados de la simulación');
+  readout.setAttribute('aria-label', 'Resultados de la proyección');
   const resultLabel = element('strong', 'forecast-result-label');
   const metrics = element('dl');
-  const metricValues = ['Antes', 'Después simulado', 'Variación'].map(label => {
+  const metricValues = ['Antes', 'Con inversión', 'Variación'].map(label => {
     const item = element('div');
     const value = element('dd', null, '—');
     item.append(element('dt', null, label), value);
@@ -119,8 +132,10 @@ export function createForecastView(overlay, container, { map, signal, inside, on
     for (const [kind, choice] of deviceButtons) choice.setAttribute('aria-pressed', String(kind === placing));
     reticle.hidden = aimButton.hidden = finish.hidden = !armed;
     container.classList.toggle('forecast-placing', !panel.hidden && armed);
+    if (!panel.hidden && armed) container.style.setProperty('--forecast-cursor', placementCursor(placing));
+    else container.style.removeProperty('--forecast-cursor');
     aimButton.setAttribute('aria-label', armed ? `Colocar en la mira: ${measures[placing]}` : 'Colocar en la mira');
-    if (armed && !message.textContent) message.textContent = 'Marca un punto en el mapa o usa la mira.';
+    if (armed && !message.textContent) message.textContent = 'Marca un punto en el mapa.';
   }
   function stopPlacing() {
     if (!placing) return false;
@@ -141,7 +156,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
       message.textContent = 'Ya hay una medida en ese punto.';
       return;
     }
-    placements.push({ id: String(++serial), kind: placing, lat: point.lat, lng: point.lng });
+    placements.push({ id: String(++serial), kind: placing, lat: point.lat, lng: point.lng, quadrantId: quadrantOf(point) });
     selectedPoint = point;
     showAfter = true;
     const plural = placements.length === 1 ? 'medida agregada' : 'medidas agregadas';
@@ -171,7 +186,7 @@ export function createForecastView(overlay, container, { map, signal, inside, on
       title: `Quitar ${measures[kind].toLowerCase()}`,
       address: `Medida ${point.id} del escenario`
     })));
-    viewStatus.textContent = showAfter ? 'Después · simulado' : 'Antes · sin medidas';
+    viewStatus.textContent = showAfter ? 'Con inversión' : 'Antes · sin medidas';
     viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver después';
     onChange(info());
   }

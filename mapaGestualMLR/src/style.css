@@ -11,7 +11,7 @@ label input[type=range]{padding:0!important;border:0!important;accent-color:var(
 
 /* Original project pin artwork. Only the first pin gently grows and shrinks. */
 .demo-marker{display:flex;align-items:center;justify-content:center;cursor:pointer;background:transparent;border:0;overflow:visible}
-.category-pin{position:relative;display:block;width:88px;height:112px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#24282b;transform-origin:50% 29.2%;pointer-events:none}
+.category-pin{position:relative;display:block;width:88px;height:112px;border:0;border-radius:0;background:transparent;box-shadow:none;color:#24282b;transform-origin:50% 100%;pointer-events:none}
 .category-pin img{display:block;width:100%!important;height:100%!important;object-fit:contain;filter:drop-shadow(0 2px 3px #0002)}
 .pin-number{position:absolute;left:50%;top:29.2%;transform:translate(-50%,-50%);font-size:22px;font-weight:750;line-height:1;color:#253238;text-shadow:0 0 3px #fff,1px 0 1px #fff,-1px 0 1px #fff,0 1px 1px #fff,0 -1px 1px #fff}
 .category-pin.is-featured{animation:pin-size-pulse 2s ease-in-out infinite}

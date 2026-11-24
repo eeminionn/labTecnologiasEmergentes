@@ -79,6 +79,10 @@ function createCompanionWindow(parent, origin) {
     state = value;
     sendState();
   });
+  const showCurrentSession = event => {
+    if (fromCompanion(event.sender) && !parent.isDestroyed()) parent.webContents.send('companion-current-session');
+  };
+  ipcMain.on('companion-current-session', showCurrentSession);
   ipcMain.handle('companion-state-request', event => fromCompanion(event.sender) ? state : null);
   ipcMain.handle('companion-open', async event => {
     if (!fromMap(event.sender)) return false;
@@ -92,6 +96,7 @@ function createCompanionWindow(parent, origin) {
   parent.on('closed', () => {
     window?.destroy();
     ipcMain.removeAllListeners('companion-publish');
+    ipcMain.removeListener('companion-current-session', showCurrentSession);
     ipcMain.removeHandler('companion-state-request');
     ipcMain.removeHandler('companion-open');
   });

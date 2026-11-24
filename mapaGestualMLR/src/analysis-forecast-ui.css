@@ -27,6 +27,7 @@ body:not(.twin-projection) #forecast-view-toggle {
 body:not(.twin-projection) .forecast-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 body:not(.twin-projection) .forecast-options button {
   min-height: 40px; padding: 5px 4px; white-space: normal; font-size: 11px;
+  transition: none;
 }
 body:not(.twin-projection) .forecast-placement-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 body:not(.twin-projection) .forecast-placement-tools button { min-height: 36px; padding: 5px 8px; font-size: 11px; box-shadow: none; }
@@ -51,14 +52,18 @@ body:not(.twin-projection) .forecast-readout dd { margin: 0; font-size: 17px; fo
 body:not(.twin-projection) .forecast-reticle {
   position: absolute; left: 62%; top: 51%; width: 24px; height: 24px; transform: translate(-50%,-50%);
   border: 2px solid var(--municipal-petroleo); border-radius: 50%; box-shadow: 0 0 0 2px #fff;
+  visibility: hidden; pointer-events: none;
 }
+body:not(.twin-projection) .analysis-experience:has(#forecast-aim-add:is(:hover,:focus-visible)) .forecast-reticle { visibility: visible; }
 body:not(.twin-projection) .forecast-reticle::before,
 body:not(.twin-projection) .forecast-reticle::after {
   content: ''; position: absolute; top: 50%; left: 50%; background: var(--municipal-petroleo);
   transform: translate(-50%, -50%); width: 12px; height: 2px;
 }
 body:not(.twin-projection) .forecast-reticle::after { width: 2px; height: 12px; }
-body:not(.twin-projection) #map.forecast-placing { cursor: crosshair; }
+body:not(.twin-projection) #map.forecast-placing,
+body:not(.twin-projection) #map.forecast-placing .gm-style { cursor: var(--forecast-cursor); }
+body:not(.twin-projection) #map.forecast-placing .gm-style > div:first-child { cursor: var(--forecast-cursor) !important; }
 body:not(.twin-projection) #map.forecast-placing .analysis-resource-marker[data-scenario] { pointer-events: none; }
 body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-scenario] {
   outline: 2px dashed white; outline-offset: 1px;

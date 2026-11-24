@@ -7,5 +7,6 @@ contextBridge.exposeInMainWorld('desktop', {
     ipcRenderer.on('companion-state', listener);
     return () => ipcRenderer.removeListener('companion-state', listener);
   },
-  requestCompanionState: () => ipcRenderer.invoke('companion-state-request')
+  requestCompanionState: () => ipcRenderer.invoke('companion-state-request'),
+  showCurrentSession: () => ipcRenderer.send('companion-current-session')
 });

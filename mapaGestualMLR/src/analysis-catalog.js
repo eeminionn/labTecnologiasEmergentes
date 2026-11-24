@@ -35,12 +35,12 @@ export function chooseAnalysisLayer(selection, id, role) {
 export function parseSimulatedSecurityResources(text) {
   const [header, ...rows] = csvRows(text);
   if (header?.join(',') !== 'id,kind,address,lat,lng') {
-    throw new Error('El CSV de recursos simulados no tiene las columnas requeridas.');
+    throw new Error('El CSV de recursos de seguridad no tiene las columnas requeridas.');
   }
   return rows.map((row, index) => {
     const [id, kind, address, lat, lng] = row;
     if (row.length !== header.length || !lat.trim() || !lng.trim()) {
-      throw new Error(`La fila ${index + 2} del CSV contiene una ubicación simulada no válida.`);
+      throw new Error(`La fila ${index + 2} del CSV contiene una ubicación no válida.`);
     }
     return {
       id, kind, address, lat: Number(lat), lng: Number(lng), simulated: true,

@@ -1,4 +1,4 @@
-export function createCompanionPublisher({ enabled = true } = {}) {
+export function createCompanionPublisher({ enabled = true, onCurrentSession = () => {} } = {}) {
   let latest = { mode: 'idle' };
   let popup = null;
   let channel = null;
@@ -7,10 +7,13 @@ export function createCompanionPublisher({ enabled = true } = {}) {
   const session = crypto.randomUUID();
   const channelName = `mlr-council-companion-${session}`;
 
-  if (enabled && !native && typeof BroadcastChannel === 'function') {
+  if (enabled && native) {
+    window.desktop.onCompanionCurrentSession?.(onCurrentSession);
+  } else if (enabled && typeof BroadcastChannel === 'function') {
     channel = new BroadcastChannel(channelName);
     channel.onmessage = event => {
       if (event.data?.type === 'ready') channel.postMessage({ type: 'state', state: latest });
+      else if (event.data?.type === 'current-session') onCurrentSession();
     };
   }
 

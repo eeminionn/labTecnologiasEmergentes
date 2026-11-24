@@ -29,7 +29,7 @@ function legend(label, className) {
   return item;
 }
 
-export function renderPreviousSession(root, session = {}) {
+export function renderPreviousSession(root, session = {}, onCurrentSession) {
   const key = JSON.stringify(session);
   const previous = renderedSessions.get(root);
   if (previous?.key === key && previous.main.isConnected) return;
@@ -51,6 +51,12 @@ export function renderPreviousSession(root, session = {}) {
   title.id = 'companion-title';
   headingText.append(title, element('p', 'companion-subtitle', sessionDate(session.date)));
   heading.append(headingText);
+  if (typeof onCurrentSession === 'function') {
+    const next = element('button', 'primary previous-session-next', 'Ir a la sesión actual');
+    next.type = 'button';
+    next.addEventListener('click', onCurrentSession);
+    heading.append(next);
+  }
 
   const layout = element('div', 'previous-session-layout');
   const figure = element('figure', 'companion-card previous-session-chart');
@@ -123,7 +129,7 @@ export function renderPreviousSession(root, session = {}) {
     const attendanceHeading = element('header', 'previous-session-attendance-heading');
     const attendanceTitle = element('h2', null, 'Asistencia');
     attendanceTitle.id = 'previous-session-attendance-title';
-    attendanceHeading.append(attendanceTitle, element('p', null, 'Registro de ejemplo'));
+    attendanceHeading.append(attendanceTitle);
     const groups = element('div', 'previous-session-attendance-groups');
     for (const { present, label, empty } of [
       { present: true, label: 'Presentes', empty: 'Sin asistentes' },

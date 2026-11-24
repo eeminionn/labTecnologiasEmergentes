@@ -123,8 +123,9 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     closeCross();document.getElementById(`${getAnalysisLayer(activeCategory).prefix}-cross`)?.focus({preventScroll:true});
   };
   const inspector=createAnalysisInspector(dismissDetails);
-  const quadrantSelector=createAnalysisQuadrantSelector(container,{map,quadrants:district});
-  const resourceMarkers=createResourceMarkers(container,{map,onSelect:(record,event)=>{
+  const quadrantSelector=createAnalysisQuadrantSelector(container,{map,quadrants:district,
+    resourceAnchors:()=>resourceMarkers.labelObstacles()});
+  const resourceMarkers=createResourceMarkers(container,{map,onLayout:()=>quadrantSelector.refreshLabels(),onSelect:(record,event)=>{
       if(forecast.active){
         if(forecast.isPlacing)return;
         forecast.remove(record.id);
@@ -152,7 +153,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     }});
   const forecastImages=new WeakMap();
   const forecast=createForecastView(overlay,container,{
-    map,signal:abort.signal,inside,onExit:closeForecast,
+    map,signal:abort.signal,inside,quadrantOf:recordQuadrant,onExit:closeForecast,
     onChange:state=>onCompanion({mode:'forecast',forecast:state}),
     renderSurface:surface=>{
       if(!forecastImages.has(surface))forecastImages.set(surface,densityImage(surface));
@@ -174,7 +175,9 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     return unit&&Number.isFinite(count)?`Unidad ${unit} · ${number(count)} ${count===1?'robo':'robos'}`:'';
   }
   function paintQuadrants(preview=null){
-    quadrantSelector.update({selected:quadrantIds,visible:loaded&&!forecast.active,preview});
+    const variant=forecast.active||visible('cameras')||visible('fixed')||visible('alarms')?'resources':'default';
+    quadrantSelector.update({selected:forecast.active?null:quadrantIds,visible:loaded,
+      preview:forecast.active?null:preview,variant});
   }
   function updatePanels(){
     overlay.dataset.crossed=String(!forecast.active&&crossed());
@@ -439,7 +442,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const selected=quadrantIds===null?null:new Set(quadrantIds);
     const mapPoints=camera?records.map(record=>({
       ...record,kind:'cameras',title:'Cámara '+record.tipo_camara.toLowerCase(),address:record.direccion,
-      outsideArea:!withinScope(record,selected)
+      outsideArea:!withinScope(record,selected),quadrantId:recordQuadrant(record)
     })):[];
     return {filtered,communeTotal:records.length,summary:camera?summarizeCameraRecords(filtered):{total:filtered.length},
       areaDetails:new Map(),surface,communeSurface,mapPoints,

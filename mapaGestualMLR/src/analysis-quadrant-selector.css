@@ -33,6 +33,16 @@ body.twin-projection .analysis-quadrant-selector { display: none !important; }
 .analysis-unit-number-badge { fill: var(--unit-color); }
 .analysis-unit-label text { fill: var(--analysis-unit-number-ink); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .analysis-unit-label[data-compact="true"] text { font-size: 9.5px; }
+.analysis-unit-name { display: none; }
+.analysis-quadrant-selector[data-territory-labels="resources"] :is(.analysis-unit-number-halo, .analysis-unit-number-badge, .analysis-unit-number-text) { display: none; }
+.analysis-quadrant-selector[data-territory-labels="resources"] .analysis-unit-name {
+  display: block;
+  fill: var(--cartographic-ink);
+  stroke: #fff;
+  stroke-width: 3px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
+}
 .analysis-quadrant-selector[data-scale="street"] .analysis-subdivision-underlay { stroke-width: 2; stroke-opacity: .85; }
 .analysis-quadrant-selector[data-scale="street"] .analysis-subdivision-boundaries { stroke-width: 1; stroke-opacity: .8; }
 .analysis-quadrant-selector[data-scale="street"] .analysis-unit-underlay { stroke-width: 2.8; stroke-opacity: .95; }

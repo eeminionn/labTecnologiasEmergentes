@@ -23,8 +23,14 @@ const smoke = new URLSearchParams(location.search).has('smoke');
 const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
 const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
 const twinProjection = window.desktop?.twinBridge === true;
-const companion = createCompanionPublisher({ enabled: !twinProjection && !smoke && !trafficCheck && !analysisCheck });
-let previousSessionVisible=false;
+const companionEnabled = !twinProjection && !smoke && !trafficCheck && !analysisCheck;
+const companion = createCompanionPublisher({ enabled: companionEnabled, onCurrentSession: showCurrentSession });
+const previousSession = {mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION};
+let awaitingCurrentSession=companionEnabled;
+let previousSessionVisible=companionEnabled;
+let currentCompanionState={mode:'idle'};
+setPreviousSessionVisible(previousSessionVisible);
+if(previousSessionVisible)companion.publish(previousSession);
 let lastAgendaIndex=councilAgenda.getState().index;
 document.addEventListener('council-agenda-change', event => {
   if(event.detail.index!==lastAgendaIndex){
@@ -34,8 +40,11 @@ document.addEventListener('council-agenda-change', event => {
   if(!document.body.classList.contains('analysis-open')&&!document.body.classList.contains('experience-open'))publishMapAgenda();
 });
 $('council-previous-session').onclick=()=>{
-  setPreviousSessionVisible(!previousSessionVisible);
-  publishMapAgenda();
+  if(previousSessionVisible)showCurrentSession();
+  else {
+    setPreviousSessionVisible(true);
+    publishMapAgenda();
+  }
 };
 $('companion-open').hidden = twinProjection;
 $('companion-open').onclick = () => {
@@ -140,18 +149,24 @@ function openPointContent(item) {
 }
 function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
 function setPreviousSessionVisible(visible) {
+  if(!visible&&awaitingCurrentSession)return;
   previousSessionVisible=visible;
   const button=$('council-previous-session');
   button.setAttribute('aria-pressed',String(visible));
   button.textContent=visible?'Sesión actual':'Sesión pasada';
 }
+function showCurrentSession() {
+  awaitingCurrentSession=false;
+  setPreviousSessionVisible(false);
+  companion.publish(currentCompanionState);
+}
+function publishCurrentState(state) {
+  currentCompanionState=state;
+  companion.publish(previousSessionVisible?previousSession:state);
+}
 function publishMapAgenda() {
-  if(previousSessionVisible){
-    companion.publish({mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION});
-    return;
-  }
   const agenda=councilAgenda.getState();
-  companion.publish({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null});
+  publishCurrentState({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null});
 }
 function showSurfaceMode(mode) {
   if(mode!=='map')setPreviousSessionVisible(false);
@@ -161,7 +176,7 @@ function showSurfaceMode(mode) {
   $('mode-experiences').setAttribute('aria-pressed', String(mode==='experience'));
   $('mode-analysis').setAttribute('aria-pressed', String(mode==='analysis'));
   if(mode==='map')publishMapAgenda();
-  else companion.publish({mode:'idle'});
+  else publishCurrentState({mode:'idle'});
 }
 function showExperienceMode(enabled) { showSurfaceMode(enabled?'experience':'map'); }
 function leaveExperience() {
@@ -218,7 +233,7 @@ async function enterAnalysis({ focusFilters = false } = {}) {
     if(generation!==analysisGeneration)return;
     instance=await module.createAnalysisView($('map'),{map,notify,
       onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();},
-      onCompanion:state=>{if(generation===analysisGeneration)companion.publish(state);}
+      onCompanion:state=>{if(generation===analysisGeneration)publishCurrentState(state);}
     });
     if(generation!==analysisGeneration){instance.destroy();return;}
     analysisView=instance; await instance.ready;

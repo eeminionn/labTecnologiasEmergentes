@@ -72,7 +72,7 @@ function labelCandidates(unit, polygons, box, commune) {
  * Passive territorial overlay. The map and the accessible panel own selection
  * events, so neither its polygons nor its number badges intercept map input.
  */
-export function createAnalysisQuadrantSelector(container, { map, quadrants: definition } = {}) {
+export function createAnalysisQuadrantSelector(container, { map, quadrants: definition, resourceAnchors = () => [] } = {}) {
   if (!container || typeof map?.locationToScreen !== 'function') throw new Error('El selector necesita el contenedor y la proyección del mapa.');
   if (!Array.isArray(definition?.quadrants) || !Array.isArray(definition.units) || !Array.isArray(definition.boundaryPolygons)) {
     throw new Error('El selector necesita las unidades vecinales, sus subdivisiones y el límite comunal.');
@@ -153,14 +153,20 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     parentBoundaries.append(boundary);
     const halo = svgElement('circle', { class: 'analysis-unit-number-halo', r: '11.5' });
     const badge = svgElement('circle', { class: 'analysis-unit-number-badge', r: '11.5' });
-    const text = svgElement('text', { 'text-anchor': 'middle', 'dominant-baseline': 'central' });
+    const text = svgElement('text', { class: 'analysis-unit-number-text', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
     text.textContent = String(unit.label ?? unit.id);
-    label.append(halo, badge, text);
+    const territoryName = svgElement('text', {
+      class: 'analysis-unit-name', 'text-anchor': 'middle', 'dominant-baseline': 'central'
+    });
+    const name = 'Unidad ' + (unit.label ?? unit.id);
+    territoryName.textContent = name;
+    label.append(halo, badge, text, territoryName);
     labels.append(label);
     const box = geographicBounds(polygons);
     const candidates = labelCandidates(unit, polygons, box, definition.boundaryPolygons);
     parents.set(String(unit.id), {
-      polygons, label, halo, badge, fill, boundary, clipPath: clip.path, candidates, selectionFill, selectionOutline,
+      polygons, geometry: unit.geometry, label, halo, badge, fill, boundary, clipPath: clip.path, candidates, selectionFill, selectionOutline,
+      territoryName, name, number: text.textContent,
       clearance: Math.max(0, ...candidates.map(candidate => candidate.clearance))
     });
   }
@@ -168,7 +174,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   svg.append(title, description, definitions, surface, labels);
   layer.append(svg);
   container.append(layer);
-  let selected = null, preview = null;
+  let selected = null, preview = null, variant = 'default';
   let visible = false, destroyed = false, frame = null, projectionSignature = null;
 
   function paintSelection() {
@@ -242,6 +248,12 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     paintSelection();
     display(labels, !atStreet);
     if (!atStreet) {
+      const names = variant === 'resources';
+      const radii = names ? [24, 20, 7.5] : [11.5, 9.5];
+      const obstacles = names ? resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
+        const point = project(location);
+        return point ? [{ ...point, halfWidth, halfHeight }] : [];
+      }) : [];
       const placed = [];
       const [westWorld, southWorld] = projectSecurityPoint(bounds.west, bounds.south);
       const [eastWorld, northWorld] = projectSecurityPoint(bounds.east, bounds.north);
@@ -253,12 +265,21 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       // an alternate interior point when a nearby number would overlap.
       for (const parent of [...parents.values()].sort((left, right) => left.clearance - right.clearance)) {
         let placement = null;
-        for (const radius of [11.5, 9.5]) {
+        for (const radius of radii) {
           for (const candidate of parent.candidates) {
-            if (candidate.clearance * pixelsPerMetre < radius + 3.5) continue;
+            const halfHeight = names ? 8 : radius;
+            if (candidate.clearance * pixelsPerMetre < halfHeight + 3.5) continue;
             const point = project(candidate);
-            if (!point || point.x < radius + 4 || point.x > width - radius - 4 || point.y < radius + 4 || point.y > height - radius - 4) continue;
-            if (placed.some(other => Math.hypot(point.x - other.x, point.y - other.y) < radius + other.radius + 7)) continue;
+            if (!point || point.x < radius + 4 || point.x > width - radius - 4 || point.y < halfHeight + 4 || point.y > height - halfHeight - 4) continue;
+            if (placed.some(other => names
+              ? Math.abs(point.x - other.x) < radius + other.radius + 5 && Math.abs(point.y - other.y) < 20
+              : Math.hypot(point.x - other.x, point.y - other.y) < radius + other.radius + 7)) continue;
+            if (obstacles.some(other => Math.abs(point.x - other.x) < radius + other.halfWidth + 3
+              && Math.abs(point.y - other.y) < halfHeight + other.halfHeight + 3)) continue;
+            if (names && map.screenToLocation && ![-radius, radius].every(dx => {
+              const edge = map.screenToLocation(point.x + dx, point.y);
+              return edge && pointInsideBoundary(edge.lng, edge.lat, parent.geometry);
+            })) continue;
             placement = { ...point, radius }; break;
           }
           if (placement) break;
@@ -266,7 +287,11 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
         display(parent.label, Boolean(placement));
         if (!placement) continue;
         attribute(parent.label, 'transform', `translate(${placement.x.toFixed(2)},${placement.y.toFixed(2)})`);
-        attribute(parent.label, 'data-compact', placement.radius < 11);
+        attribute(parent.label, 'data-compact', placement.radius < radii[0]);
+        if (names) {
+          const name = placement.radius < 20 ? parent.number : parent.name;
+          if (parent.territoryName.textContent !== name) parent.territoryName.textContent = name;
+        }
         attribute(parent.badge, 'r', placement.radius);
         attribute(parent.halo, 'r', placement.radius);
         placed.push(placement);
@@ -278,6 +303,12 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   function schedulePosition() {
     if (destroyed || !visible || frame !== null) return;
     frame = requestAnimationFrame(() => { frame = null; position(); });
+  }
+
+  function refreshLabels() {
+    if (variant !== 'resources') return;
+    projectionSignature = null;
+    schedulePosition();
   }
 
   function paintState() {
@@ -304,7 +335,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
 
   function update(state = {}) {
     if (destroyed) return;
-    let changed = false, becameVisible = false;
+    let changed = false, needsPosition = false;
     if (Object.hasOwn(state, 'selected')) {
       const values = Array.isArray(state.selected) || state.selected instanceof Set ? new Set(state.selected) : new Set([state.selected]);
       const next = values.has(null) || values.has('all') ? null : new Set(options.filter(option => values.has(option.id)).map(option => option.id));
@@ -321,14 +352,20 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       if (preview !== nextPreview) { preview = nextPreview; changed = true; }
     }
     if (Object.hasOwn(state, 'visible') && visible !== Boolean(state.visible)) {
-      visible = Boolean(state.visible); becameVisible = visible; changed = true;
+      visible = Boolean(state.visible); needsPosition = visible; changed = true;
+    }
+    if ((state.variant === 'default' || state.variant === 'resources') && variant !== state.variant) {
+      variant = state.variant;
+      attribute(layer, 'data-territory-labels', variant);
+      projectionSignature = null;
+      needsPosition = true;
     }
     if (changed) paintState();
-    if (becameVisible) schedulePosition();
+    if (needsPosition) schedulePosition();
   }
 
   return {
-    update,
+    update, refreshLabels,
     setVisible(value) { update({ visible: value }); },
     info() { return { visible, selected: selected === null ? null : [...selected], preview }; },
     destroy() {

@@ -3,6 +3,9 @@ const twinBridge = process.argv.includes('--mlr-twin-projection');
 let leaseEpoch;
 contextBridge.exposeInMainWorld('desktop', {
   publishCompanionState: state => { if (!twinBridge) ipcRenderer.send('companion-publish', state); },
+  onCompanionCurrentSession: callback => {
+    if (!twinBridge && typeof callback === 'function') ipcRenderer.on('companion-current-session', () => callback());
+  },
   openCompanionWindow: () => twinBridge ? Promise.resolve(false) : ipcRenderer.invoke('companion-open'),
   click: point => ipcRenderer.invoke('map-click', point, leaseEpoch),
   reportSmoke: report => ipcRenderer.send('smoke-result', report),

@@ -1,4 +1,6 @@
 .previous-session-view .companion-content { padding-block: 28px 24px; gap: 18px; }
+.previous-session-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 24px; }
+.companion-app .previous-session-next { min-height: 44px; padding-inline: 18px; }
 .previous-session-layout { display: grid; align-items: start; gap: 20px; }
 .previous-session-layout.has-attendance { grid-template-columns: minmax(0, 1fr) clamp(220px, 25vw, 290px); }
 .previous-session-view .previous-session-chart,
@@ -70,7 +72,6 @@
 .previous-session-carryover-time strong { font-size: 15px; font-weight: 600; }
 
 .previous-session-attendance-heading { display: grid; gap: 4px; margin-bottom: 18px; }
-.previous-session-attendance .previous-session-attendance-heading p { color: var(--ink-secondary); font-size: 12px; }
 .previous-session-attendance-groups { display: grid; align-items: start; gap: 16px; }
 .previous-session-attendance-group { --attendance-color: var(--ink-secondary); }
 .previous-session-attendance-group[data-present="true"] { --attendance-color: var(--municipal-petroleo); }

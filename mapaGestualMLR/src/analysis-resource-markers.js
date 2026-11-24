@@ -13,10 +13,7 @@ const icons = {
   }
 };
 const svgNamespace = 'http://www.w3.org/2000/svg';
-const markerOffsets = [[0,0],[42,0],[-42,0],[0,42],[0,-42],[38,38],[-38,38],[38,-38],[-38,-38]];
-const markerRadius = 16;
-const cameraGroupDistance = 42;
-const cameraGroupZoom = 17;
+const cameraDetailZoom = 18;
 const markerId = record => `analysis-resource-${record.kind}-${record.id}`;
 
 function markerIcon(kind) {
@@ -37,7 +34,7 @@ function markerIcon(kind) {
   return svg;
 }
 
-export function createResourceMarkers(container, { map, onSelect = () => {}, onHover = () => {} }) {
+export function createResourceMarkers(container, { map, onSelect = () => {}, onHover = () => {}, onLayout = () => {} }) {
   const layer = document.createElement('div');
   layer.className = 'analysis-resource-markers';
   layer.setAttribute('role', 'group');
@@ -46,96 +43,37 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
   container.append(layer);
 
   const markers = new Map(), groups = new Map();
-  let selected = null, expandedGroup = null;
+  let selected = null, expandedGroupId = null;
   let frame = null;
   let destroyed = false;
+
+  function place(element, location, width, height) {
+    const point = map.locationToScreen(location);
+    const visible = point && point.x >= 0 && point.x < width && point.y >= 0 && point.y < height;
+    element.hidden = !visible;
+    if (visible) Object.assign(element.style, { left: point.x + 'px', top: point.y + 'px' });
+  }
 
   function position() {
     if (destroyed) return;
     if (layer.parentElement !== container) container.append(layer);
     const width = container.clientWidth, height = container.clientHeight;
-    const zoom = map.info()?.zoom ?? 14;
-    if (expandedGroup && zoom < expandedGroup.zoom - .01) expandedGroup = null;
-    const toPlace = [], cameraGroups = [];
-    for (const [id, entry] of markers) {
-      const { element, stem, record } = entry;
-      const point = map.locationToScreen(record);
-      const visible = point && point.x >= 0 && point.x < width && point.y >= 0 && point.y < height;
-      element.hidden = !visible;
-      stem.hidden = true;
-      if (!visible) continue;
-      if (record.kind !== 'cameras' || zoom >= cameraGroupZoom || id === selected || expandedGroup?.ids.has(id)) {
-        toPlace.push({ ...entry, point, radius: record.kind === 'cameras' ? 13 : markerRadius });
-        continue;
+    for (const { element, record, groupId } of markers.values()) {
+      if (groupId && groupId !== expandedGroupId) {
+        element.hidden = true;
+      } else {
+        place(element, record, width, height);
       }
-      const group = cameraGroups.find(candidate => Boolean(candidate.record.outsideArea) === Boolean(record.outsideArea)
-        && Math.hypot(candidate.point.x - point.x, candidate.point.y - point.y) < cameraGroupDistance);
-      if (group) group.entries.push({ id, entry, point });
-      else cameraGroups.push({ record, point, entries: [{ id, entry, point }] });
     }
-
-    const present = new Set();
-    for (const { point, entries, record } of cameraGroups) {
-      const first = entries[0];
-      if (entries.length === 1) {
-        toPlace.push({ ...first.entry, point, radius: 13 });
-        continue;
-      }
-      const id = `analysis-camera-group-${first.entry.record.id}`;
-      const group = groups.get(id) || addGroup(id);
-      present.add(id);
-      group.entries = entries;
-      const count = String(entries.length);
-      if (group.element.dataset.count !== count) {
-        group.element.dataset.count = count;
-        group.element.textContent = count;
-      }
-      const outside = Boolean(record.outsideArea);
-      const label = `${entries.length} cámaras${outside ? ' fuera del área seleccionada' : ''} · Acercar al grupo`;
-      group.element.setAttribute('aria-label', label);
-      group.element.title = label;
-      setScope(group.element, group.stem, record);
-      for (const item of entries) item.entry.element.hidden = true;
-      const centroid = {
-        x: entries.reduce((total, item) => total + item.point.x, 0) / entries.length,
-        y: entries.reduce((total, item) => total + item.point.y, 0) / entries.length
-      };
-      toPlace.push({ ...group, point: centroid, record, radius: markerRadius });
-    }
-    for (const [id, { element, stem }] of groups) {
-      if (present.has(id)) continue;
-      element.remove();
-      stem.remove();
-      groups.delete(id);
-    }
-
-    // Keep markers in scope on their geographic positions whenever possible.
-    // Stems make displacement visible when a close neighbour needs room.
-    toPlace.sort((a, b) => Number(b.element.id === selected) - Number(a.element.id === selected)
-      || Number(Boolean(a.record.outsideArea)) - Number(Boolean(b.record.outsideArea))
-      || Number(a.record.kind === 'cameras') - Number(b.record.kind === 'cameras'));
-    const placed = [];
-    for (const { element, stem, point, radius } of toPlace) {
-      const [dx, dy] = markerOffsets.find(([dx, dy], index) => {
-        const x = point.x + dx, y = point.y + dy;
-        return (index === 0 || x >= radius && x <= width - radius && y >= radius && y <= height - radius)
-          && placed.every(other => Math.max(Math.abs(other.x - x), Math.abs(other.y - y)) >= other.radius + radius + 3);
-      }) ?? markerOffsets[0];
-      const x = point.x + dx, y = point.y + dy;
-      placed.push({ x, y, radius });
-      element.style.left = `${x}px`;
-      element.style.top = `${y}px`;
-      stem.hidden = !dx && !dy;
-      if (!stem.hidden) Object.assign(stem.style, {
-        left: `${point.x}px`, top: `${point.y}px`, width: `${Math.hypot(dx, dy)}px`, transform: `rotate(${Math.atan2(dy, dx)}rad)`
-      });
+    for (const group of groups.values()) {
+      place(group.element, group.location, width, height);
     }
   }
 
-  function setScope(element, stem, record) {
+  function setScope(element, record) {
     const opacity = Number.isFinite(record.opacity) ? Math.max(0, Math.min(1, record.opacity)) : 1;
-    element.dataset.outsideArea = stem.dataset.outsideArea = String(Boolean(record.outsideArea));
-    element.style.opacity = stem.style.opacity = String(opacity);
+    element.dataset.outsideArea = String(Boolean(record.outsideArea));
+    element.style.opacity = String(opacity);
   }
 
   function stopMapInput(element) {
@@ -144,58 +82,117 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     }
   }
 
+  function setGroupLabel(group) {
+    const count = group.entries.length;
+    const expanded = expandedGroupId === group.element.id;
+    group.element.setAttribute('aria-expanded', String(expanded));
+    const unit = group.element.dataset.unit;
+    const location = unit ? ' en la unidad vecinal ' + unit : '';
+    const scope = group.entries[0].record.outsideArea ? ', fuera del área elegida' : '';
+    const label = (expanded ? 'Volver a agrupar ' : 'Ver ') + count + ' cámaras' + location + scope;
+    group.element.title = label;
+    group.element.setAttribute('aria-label', label);
+    group.count.textContent = expanded ? '−' : String(count);
+    group.element.dataset.count = String(count);
+  }
+
   async function focusGroup(group, keyboard) {
-    const entries = group.entries;
-    const records = entries.map(({ entry }) => entry.record);
-    const latitudes = records.map(record => record.lat), longitudes = records.map(record => record.lng);
-    const location = {
-      lat: (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
-      lng: (Math.min(...longitudes) + Math.max(...longitudes)) / 2
-    };
-    // Frame all members in the unobstructed portion of the map, including
-    // narrow comparison views. Open this group even if its points are close.
+    const groupId = group.element.id;
+    const previous = groups.get(expandedGroupId);
+    expandedGroupId = expandedGroupId === groupId ? null : groupId;
+    if (previous && previous !== group) setGroupLabel(previous);
+    setGroupLabel(group);
+    position();
+    onLayout();
+    if (!expandedGroupId) return;
+
     const bounds = container.getBoundingClientRect();
     const left = container.querySelector('.analysis-panel[data-side="left"]:not([hidden])')?.getBoundingClientRect().right ?? bounds.left;
     const right = container.querySelector('.analysis-panel[data-side="right"]:not([hidden])')?.getBoundingClientRect().left ?? bounds.right;
-    const xs = entries.map(({ point }) => point.x), ys = entries.map(({ point }) => point.y);
-    const width = Math.max(...xs) - Math.min(...xs), height = Math.max(...ys) - Math.min(...ys);
-    const fit = Math.min(Math.max(32, right - left - 72) / Math.max(1, width), Math.max(32, bounds.height - 96) / Math.max(1, height));
-    const currentZoom = map.info()?.zoom ?? 14;
-    const goal = Math.max(16, currentZoom + 1.5);
-    const zoom = Math.min(cameraGroupZoom, Math.max(currentZoom + .25, Math.min(goal, currentZoom + Math.log2(fit))));
-    await map.focus(location, zoom, { animate: false });
-    if (destroyed) return;
-    expandedGroup = { ids: new Set(entries.map(item => item.id)), zoom: map.info()?.zoom ?? zoom };
-    const center = map.locationToScreen(location);
-    if (center && right > left) {
-      const dx = (left + right) / 2 - bounds.left - center.x, dy = bounds.height / 2 - center.y;
-      if (Math.abs(dx) > 1 || Math.abs(dy) > 1) map.pan(dx, dy);
+    const projected = group.entries.map(entry => map.locationToScreen(entry.record)).filter(Boolean);
+    if (projected.length) {
+      const xs = projected.map(point => point.x), ys = projected.map(point => point.y);
+      const width = Math.max(...xs) - Math.min(...xs), height = Math.max(...ys) - Math.min(...ys);
+      const fit = Math.min(Math.max(32, right - left - 64) / Math.max(1, width),
+        Math.max(32, bounds.height - 84) / Math.max(1, height));
+      const currentZoom = map.info()?.zoom ?? 14;
+      const goal = Math.min(cameraDetailZoom, Math.max(16, currentZoom + 1.5));
+      const zoom = Math.min(goal, currentZoom + Math.log2(fit));
+      await map.focus(group.location, zoom, { animate: false });
+      if (destroyed || expandedGroupId !== groupId) return;
+      const center = map.locationToScreen(group.location);
+      if (center && right > left) {
+        const dx = (left + right) / 2 - bounds.left - center.x, dy = bounds.height / 2 - center.y;
+        if (Math.abs(dx) > 1 || Math.abs(dy) > 1) map.pan(dx, dy);
+      }
+      position();
     }
-    position();
+
     if (keyboard) {
-      const first = targets().find(target => expandedGroup.ids.has(target.id));
+      const first = targets().find(target => markers.get(target.id)?.groupId === groupId);
       first?.element.focus({ preventScroll: true });
     }
   }
 
   function addGroup(id) {
-    const element = document.createElement('button'), stem = document.createElement('span');
+    const element = document.createElement('button');
     element.id = id;
     element.type = 'button';
     element.className = 'analysis-resource-marker analysis-resource-group';
     element.dataset.kind = 'cameras';
-    stem.className = 'analysis-resource-stem';
-    stem.hidden = true;
-    stem.setAttribute('aria-hidden', 'true');
-    const group = { element, stem, entries: [] };
+    const count = document.createElement('span');
+    count.setAttribute('aria-hidden', 'true');
+    element.append(markerIcon('cameras'), count);
+    const group = { element, count, entries: [], location: null };
     stopMapInput(element);
     element.addEventListener('click', event => {
       event.stopPropagation();
       focusGroup(group, event.detail === 0 && element.matches(':focus-visible'));
     });
-    layer.append(stem, element);
+    layer.append(element);
     groups.set(id, group);
     return group;
+  }
+
+  function updateGroups() {
+    const byArea = new Map();
+    for (const entry of markers.values()) {
+      entry.groupId = null;
+      const { record } = entry;
+      if (record.kind !== 'cameras') continue;
+      const unit = record.quadrantId?.split('-')[0];
+      const location = unit ?? [record.lat, record.lng].map(value => Math.floor(value / .004)).join('-');
+      const key = record.outsideArea ? location + '-outside' : location;
+      const entries = byArea.get(key) || [];
+      entries.push(entry);
+      byArea.set(key, entries);
+    }
+
+    const retained = new Set();
+    for (const [key, entries] of byArea) {
+      if (entries.length < 2) continue;
+      const id = 'analysis-camera-group-' + key;
+      const group = groups.get(id) || addGroup(id);
+      group.entries = entries;
+      const latitudes = entries.map(({ record }) => record.lat);
+      const longitudes = entries.map(({ record }) => record.lng);
+      group.location = {
+        lat: (Math.min(...latitudes) + Math.max(...latitudes)) / 2,
+        lng: (Math.min(...longitudes) + Math.max(...longitudes)) / 2
+      };
+      group.element.dataset.unit = entries[0].record.quadrantId?.split('-')[0] ?? '';
+      setGroupLabel(group);
+      setScope(group.element, entries[0].record);
+      for (const entry of entries) entry.groupId = id;
+      retained.add(id);
+    }
+
+    for (const [id, group] of groups) {
+      if (retained.has(id)) continue;
+      group.element.remove();
+      groups.delete(id);
+    }
+    if (!retained.has(expandedGroupId)) expandedGroupId = null;
   }
 
   function schedulePosition() {
@@ -217,9 +214,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     const badge=document.createElement('span');
     badge.className='analysis-resource-badge';badge.hidden=true;badge.setAttribute('aria-hidden','true');
     element.append(markerIcon(record.kind),badge);
-    const stem=document.createElement('span');
-    stem.className='analysis-resource-stem';stem.hidden=true;stem.setAttribute('aria-hidden','true');
-    const entry = { element, stem, badge, record };
+    const entry = { element, badge, record, groupId: null };
     stopMapInput(element);
     element.addEventListener('click', event => {
       event.stopPropagation();
@@ -229,7 +224,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       if (event.pointerType !== 'touch') onHover(entry.record, event);
     });
     element.addEventListener('focus', event => onHover(entry.record, event));
-    layer.append(stem,element);
+    layer.append(element);
     markers.set(id, entry);
     return entry;
   }
@@ -249,19 +244,28 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       const detail = record.rank ? ` · Puesto ${record.rank}` : monitoring ? ` · ${monitoring}` : '';
       const scope = record.outsideArea ? ' · Fuera del área seleccionada' : '';
       entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}${detail}${scope}`);
-      entry.badge.textContent = record.rank ?? (monitoring ? record.monitoringStatus === 'monitoreando' ? '✓' : '–' : '');
+      entry.badge.textContent = monitoring ? record.monitoringStatus === 'monitoreando' ? '✓' : '–' : '';
       entry.badge.hidden = !entry.badge.textContent;
       entry.element.dataset.selected = String(id === selected);
-      setScope(entry.element, entry.stem, record);
+      setScope(entry.element, record);
     }
-    for (const [id, { element, stem }] of markers) {
+    for (const [id, { element }] of markers) {
       if (present.has(id)) continue;
-      element.remove();stem.remove();
+      element.remove();
       markers.delete(id);
     }
-    if (!markers.size) expandedGroup = null;
+    updateGroups();
     layer.hidden = !markers.size;
     position();
+    onLayout();
+  }
+
+  function labelObstacles() {
+    const individuals = [...markers.values()].filter(entry => !entry.groupId || entry.groupId === expandedGroupId);
+    return [
+      ...individuals.map(entry => ({ location: entry.record, halfWidth: 15, halfHeight: 15 })),
+      ...[...groups.values()].map(group => ({ location: group.location, halfWidth: 23, halfHeight: 15 }))
+    ];
   }
 
   function targets() {
@@ -298,7 +302,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
   }
 
   return {
-    render, targets, position, select, recordFor,
+    render, targets, position, select, recordFor, labelObstacles,
     destroy() {
       if (destroyed) return;
       destroyed = true;

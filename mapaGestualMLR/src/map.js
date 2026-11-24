@@ -11,6 +11,8 @@ const circulationLegend = 'Autorizada su circulación por Resolución Nº50 del 
 const center = { lat: -33.442, lng: -70.536 };
 const markerSize = 88;
 const markerHeight = 112;
+const markerAnchor = [markerSize / 2, markerHeight];
+const markerNumberY = markerHeight * .292;
 const categoryLegend = [
   { id: 'territorio', label: 'Territorio, movilidad y entorno', color: '#afc439' },
   { id: 'gobernanza', label: 'Gobernanza y recursos municipales', color: '#00adb2' },
@@ -77,6 +79,11 @@ function markerElement(item, sequence) {
   const number = document.createElement('span'); number.className = 'pin-number'; number.textContent = String(item.number);
   dot.append(image, number); element.append(dot); updateMarker(element, item, sequence);
   return element;
+}
+
+function markerTarget(item, element, tip) {
+  return { id: item.id, x: tip.x, y: tip.y - markerHeight + markerNumberY,
+    width: markerSize, height: markerSize, element };
 }
 
 function diagnostics(sequence, featureCount) {
@@ -272,7 +279,7 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   const markers = samples.map(item => {
     const marker = L.marker([item.lat, item.lng], {
       title: item.title,
-      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerHeight], iconAnchor: [markerSize / 2, markerHeight * .292] })
+      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerHeight], iconAnchor: markerAnchor })
     }).addTo(map);
     // Automatic popup listeners would bypass identity checks, including Enter.
     marker.off('click');
@@ -397,8 +404,8 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     targets() {
       if (analysisMode) return [];
       return markers.map((marker, index) => {
-        const p = map.latLngToContainerPoint(marker.getLatLng());
-        return { id: samples[index].id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.getElement() };
+        const tip = map.latLngToContainerPoint(marker.getLatLng());
+        return markerTarget(samples[index], marker.getElement(), tip);
       });
     }
   };
@@ -488,8 +495,8 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       if (!this.element) return;
       const p = this.getProjection().fromLatLngToDivPixel(this.position);
       if (!p) return;
-      this.element.style.left = `${p.x - markerSize / 2}px`;
-      this.element.style.top = `${p.y - markerHeight * .292}px`;
+      this.element.style.left = `${p.x - markerAnchor[0]}px`;
+      this.element.style.top = `${p.y - markerAnchor[1]}px`;
     }
     onRemove() { this.element?.remove(); this.element = null; }
   }
@@ -599,8 +606,8 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       if (analysisMode) return [];
       return markers.flatMap(marker => {
         if (!marker.element) return [];
-        const p = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
-        return p ? [{ id: marker.item.id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.element }] : [];
+        const tip = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
+        return tip ? [markerTarget(marker.item, marker.element, tip)] : [];
       });
     }
   };

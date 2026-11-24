@@ -102,7 +102,7 @@ export function parseSecurityCSV(text) {
       || record.origen !== 'simulado' || !['sí', 'no'].includes(record.resuelto) || !validDate || !time
       || Number(time[1]) > 23 || Number(time[2]) > 59 || Number(time[3] || 0) > 59
       || !Number.isFinite(lng) || !Number.isFinite(lat) || lng < -180 || lng > 180 || lat <= -85 || lat >= 85) {
-      throw new Error(`La fila ${index + 2} del CSV contiene un incidente simulado no válido.`);
+      throw new Error(`La fila ${index + 2} del CSV contiene un incidente no válido.`);
     }
     ids.add(record.id);
     return { ...record, latitud: lat, longitud: lng, lat, lng, year: record.fecha.slice(0, 4), month: record.fecha.slice(5, 7), hour: Number(time[1]), resolved: record.resuelto === 'sí', robberyType: classifySecurityRobbery(record) };
