@@ -20,7 +20,7 @@ function placementCursor(kind) {
 }
 
 export function createForecastView(overlay, container, { map, signal, inside, quadrantOf, onExit, renderSurface, renderPlacements, onChange = () => {} }) {
-  let model, loading, baselineSurface, surface, selectedPoint, placing, serial = 0;
+  let model, loading, baselineSurface, surface, selectedPoint, localReadout, placing, serial = 0;
   let showAfter = true, placements = [];
 
   function element(tag, className, text) {
@@ -164,7 +164,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     redraw();
   }
   function updateReadout() {
-    if (!surface) return;
+    if (!surface) return false;
     const local = selectedPoint && forecastAt(surface, selectedPoint);
     const baseline = local?.baseline ?? surface.baselineTotal;
     const scenario = local?.scenario ?? surface.scenarioTotal;
@@ -177,6 +177,11 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     }
     const note = local ? 'Robos estimados en el sector por año' : 'Robos estimados en la comuna por año';
     if (resultNote.textContent !== note) resultNote.textContent = note;
+    const next = local ? { ...local, id: quadrantOf(selectedPoint) } : null;
+    if (next && localReadout && Object.keys(next).every(key => next[key] === localReadout[key])) return false;
+    const changed = Boolean(next || localReadout);
+    localReadout = next;
+    return changed;
   }
   function renderMap() {
     renderSurface(showAfter ? surface : baselineSurface);
@@ -188,6 +193,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     })));
     viewStatus.textContent = showAfter ? 'Con inversión' : 'Antes · sin medidas';
     viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver después';
+    updateReadout();
     onChange(info());
   }
   function redraw() {
@@ -197,13 +203,12 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     updatePlacementTools();
     undo.disabled = clear.disabled = placements.length === 0;
     readout.hidden = false;
-    updateReadout();
   }
 
   function inspect(point) {
     if (!surface || !point || !inside(point.lng, point.lat)) return;
     selectedPoint = point;
-    updateReadout();
+    if (updateReadout()) onChange(info());
   }
 
   function info() {
@@ -212,6 +217,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
       baselineTotal: surface?.baselineTotal ?? null,
       scenarioTotal: surface?.scenarioTotal ?? null,
       reduction: surface?.reduction ?? null,
+      local: localReadout ?? null,
       ready: Boolean(model), error: loading ? '' : loadStatus.hidden ? '' : loadStatus.textContent
     };
   }

@@ -67,6 +67,8 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   chartTitle.id = 'previous-session-chart-title';
   const totalTime = element('dl', 'previous-session-total');
   totalTime.append(element('dt', null, 'Duración de la sesión'), element('dd', null, `${number.format(total)} min`));
+  const plannedTotal = topics.reduce((sum, topic) => sum + minutes(topic.plannedMinutes), 0);
+  if (plannedTotal > 0) totalTime.append(element('dd', 'previous-session-plan-total', `${number.format(plannedTotal)} min previstos`));
   caption.append(chartTitle, totalTime);
   const keys = element('div', 'previous-session-keys');
   keys.append(legend('Minutos usados', 'previous-session-actual-key'));
@@ -74,6 +76,11 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   keys.append(legend('Tiempo excedido', 'previous-session-overrun-key'));
   keys.append(legend('Tiempo pendiente', 'previous-session-pending-key'));
   caption.append(keys);
+  const overruns = topics.filter(topic => minutes(topic.actualMinutes) > minutes(topic.plannedMinutes) + 3).length;
+  const pending = topics.filter(topic => minutes(topic.actualMinutes) < minutes(topic.plannedMinutes) / 2).length;
+  if (overruns || pending) caption.append(element('p', 'previous-session-overview',
+    [overruns ? `${overruns} ${overruns === 1 ? 'tema excedido' : 'temas excedidos'}` : '',
+      pending ? `${pending} ${pending === 1 ? 'tema pendiente' : 'temas pendientes'}` : ''].filter(Boolean).join(' · ')));
 
   const axis = element('div', 'previous-session-axis');
   axis.setAttribute('aria-hidden', 'true');

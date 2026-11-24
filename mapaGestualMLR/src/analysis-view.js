@@ -1,7 +1,7 @@
 import './analysis-ui.css';
 import boundaryText from '../assets/la-reina.geojson?raw';
 import neighborsText from '../assets/la-reina-neighborhoods.geojson?raw';
-import { parseSecurityCSV, filterSecurityRecords, buildDensitySurface, boundaryPolygons, projectSecurityPoint, heatColor, pointInsideBoundary, summarizeSecurityArea, getSecurityDateRange, normalizeSecurityRobberyTypes, toggleSecurityRobberyType } from './analysis-data.js';
+import { parseSecurityCSV, filterSecurityRecords, buildDensitySurface, boundaryPolygons, projectSecurityPoint, heatColor, pointInsideBoundary, summarizeSecurityArea, getSecurityDateRange, normalizeSecurityRobberyTypes, toggleSecurityRobberyType, SECURITY_ROBBERY_TYPES } from './analysis-data.js';
 import { parseCameraCSV, filterCameraRecords, summarizeCameraRecords, cameraHeatColor, normalizeCameraTypes, toggleCameraType } from './camera-analysis-data.js';
 import { createAnalysisPanel, SECURITY_CHOICES, CAMERA_CHOICES } from './analysis-panel.js';
 import { createAnalysisPlayback } from './analysis-playback.js';
@@ -12,13 +12,45 @@ import { createForecastView } from './analysis-forecast-view.js';
 import { createAnalysisQuadrants, classifyAnalysisQuadrant, normalizeAnalysisQuadrants, toggleAnalysisArea } from './analysis-quadrants.js';
 import { createAnalysisQuadrantSelector } from './analysis-quadrant-selector.js';
 import { createAnalysisInspector } from './analysis-inspector.js';
+import { buildCompanionAnalysis } from './companion-analysis-data.js';
+import { analysisBlendOpacity } from './analysis-transition.js';
 
 const boundary=JSON.parse(boundaryText),number=value=>new Intl.NumberFormat('es-CL').format(value);
 const defaults={security:{year:'all',month:'all',period:'all',robbery:'all'},cameras:{year:'all',month:'all',state:'all',type:'all'}};
 const resourceDefaults={fixed:{year:null},alarms:{year:null,usage:'all',limit:ALARM_RANK_DEFAULT}};
 const inside=(lng,lat)=>pointInsideBoundary(lng,lat,boundary);
 const district=createAnalysisQuadrants(JSON.parse(neighborsText),boundary);
+const allQuadrantIds=district.quadrants.map(({id})=>id);
 const unitIds=ids=>new Set(ids.map(id=>district.byId.get(id).unit));
+const shortDate=value=>value.split('-').reverse().join('/');
+const totalActivations=records=>records.reduce((sum,record)=>sum+(record.activations??0),0);
+function companionFilters(kind,filters) {
+  if(kind==='security')return Array.isArray(filters.robbery)
+    ? SECURITY_ROBBERY_TYPES.filter(({value})=>filters.robbery.includes(value)).map(({label})=>label) : [];
+  if(kind==='cameras')return [
+    ...(Array.isArray(filters.type)?filters.type:[]),
+    ...(filters.state!=='all'?[CAMERA_CHOICES.state.find(([state])=>state===filters.state)?.[1]].filter(Boolean):[])
+  ];
+  return filters.usage==='top'?[`Hasta ${filters.limit} botones más usados`]:[];
+}
+function companionCut(kind,filters,dateRange) {
+  if(kind==='security' && dateRange){
+    const [,label,hours]=SECURITY_CHOICES.period.find(([period])=>period===filters.period);
+    return {dateRange,period:[dateRange.label,label,hours].filter(Boolean).join(' · ')};
+  }
+  if(kind==='cameras' && dateRange)return {dateRange,period:`Inventario al ${shortDate(dateRange.end)}`};
+  if(filters.year && filters.year!=='all'){
+    const end=`${filters.year}-12-31`;
+    return {dateRange:{start:`${filters.year}-01-01`,end},period:kind==='alarms'
+      ? `Pulsaciones de ${filters.year}` : `Estado al ${shortDate(end)}`};
+  }
+  return {dateRange:null,period:'Sin corte definido'};
+}
+function companionPoints(records) {
+  return records.map(({id,lat,lng,title,outsideArea,rank,scenario,quadrantId})=>({
+    id,lat,lng,label:title,inArea:!outsideArea,highlighted:Boolean(rank),scenario,quadrantId
+  }));
+}
 function spatialLabel(ids) {
   if(ids===null)return 'Toda la comuna';
   if(!ids.length)return 'Ningún subcuadrante';
@@ -82,6 +114,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   let pinned=false,displayedAnchor=null,restoreFocus=null,dismissedAnchor=null,resourceError='',resourcesReady=false;
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
   let forecastTrigger=null, forecastPointerDown=null, forecastViewport=null;
+  let forecastRaster=null, companionContext=null, companionAnalysis=null;
   let quadrantIds=null, mapPointerStart=null;
   const quadrantCache=new WeakMap();
   const recordQuadrant=record=>{
@@ -159,10 +192,11 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   const forecastImages=new WeakMap();
   const forecast=createForecastView(overlay,container,{
     map,signal:abort.signal,inside,quadrantOf:recordQuadrant,onExit:closeForecast,
-    onChange:state=>onCompanion({mode:'forecast',forecast:state}),
+    onChange:publishForecastCompanion,
     renderSurface:surface=>{
       if(!forecastImages.has(surface))forecastImages.set(surface,densityImage(surface));
-      map.setAnalysisLayer({url:forecastImages.get(surface),bounds:surface.bounds,opacity:.66,transitionMs:200});
+      forecastRaster={url:forecastImages.get(surface),bounds:surface.bounds,opacity:.66};
+      map.setAnalysisLayer({...forecastRaster,transitionMs:200});
     },
     renderPlacements:points=>resourceMarkers.render(points)
   });
@@ -206,7 +240,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const {center,zoom}=map.info();
     if(center&&Number.isFinite(zoom))forecastViewport={center,zoom};
     playback.pause();clearHover();closeAllPickers();catalog.close();
-    map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();resourceMarkers.render([]);
+    forecastRaster=null;map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();resourceMarkers.render([]);
     forecast.open();updatePanels();map.home();
     forecast.panel.querySelector('h1').focus({preventScroll:true});
   }
@@ -301,7 +335,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   function datasetInfo(kind){const d=datasets[kind],s=d.surface,layer=getAnalysisLayer(kind);return{ready:layer.resource?resourcesReady:loaded,error:layer.resource?resourceError:failure,datasetCount:d.records.length,filteredCount:d.summary.total,filters:Object.fromEntries(Object.entries(d.filters).map(([key,value])=>[key,Array.isArray(value)?[...value]:value])),temporalMode:d.temporalMode,picker:panels[kind].picker,dateRange:d.dateRange,category:layer.label,display:d.display,opacity:d.opacity,summary:{...d.summary},surface:s?{width:s.width,height:s.height,max:s.max,bounds:s.bounds,projectedBounds:s.projectedBounds,includedCount:s.includedCount,excludedCount:s.excludedCount,bandwidthMetres:s.bandwidthMetres,colorExponent:.65,imageWidth:1024,imageHeight:512,coverage:quadrantIds===null?'límite comunal completo':quadrantIds.length?'cuadrantes seleccionados':'ningún subcuadrante'}:null};}
   function info(){return{...datasetInfo(activeCategory),isOpen:!destroyed,activeCategory,compareCategory,crossed:crossed(),quadrantIds:quadrantIds===null?null:[...quadrantIds],simulated:true,playback:playback.info(),hover:hoverDetails?{...hoverDetails,pinned}:null,datasets:Object.fromEntries(ANALYSIS_LAYERS.map(layer=>[layer.id,datasetInfo(layer.id)]))};}
   function securityArea(d,ids=quadrantIds) {
-    const key=ids.join(',');
+    const key=ids===null?'commune':ids.join(',');
     if(!d.areaDetails.has(key)){
       const details=summarizeSecurityArea(inQuadrants(d.filtered,ids),d.dateRange.end);
       const [,hoursLabel]=SECURITY_CHOICES.period.find(([value])=>value===d.filters.period);
@@ -317,46 +351,105 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   }
   function areaDetails(ids){
     return {
-      label:spatialLabel(ids),quadrantIds:[...ids],
-      security:visible('security')?securityArea(datasets.security,ids):null,
+      label:spatialLabel(ids),quadrantIds:ids===null?null:[...ids],
+      security:visible('security')&&datasets.security.dateRange?securityArea(datasets.security,ids):null,
       cameras:visible('cameras')?summarizeCameraRecords(inQuadrants(datasets.cameras.filtered,ids)):null,
       resources:Object.fromEntries(ANALYSIS_LAYERS.filter(layer=>layer.resource&&visible(layer.id)).map(({id})=>{
-        const points=inQuadrants(datasets[id].filtered,ids);
+        const dataset=datasets[id],points=ids===quadrantIds?dataset.filtered:inQuadrants(dataset.filtered,ids);
         const detail=id==='fixed'?{monitoring:points.filter(record=>record.monitoringStatus==='monitoreando').length}
-          :{activations:points.reduce((sum,point)=>sum+(point.activations??0),0)};
+          :dataset.historyByYear?.has(dataset.filters.year)?{activations:totalActivations(points)}:{};
         return [id,{total:points.length,...detail}];
       }))
     };
   }
+  function companionLayer(kind){
+    const dataset=datasets[kind],layer=getAnalysisLayer(kind);
+    return {kind,title:layer.label,...companionCut(kind,dataset.filters,dataset.dateRange),
+      records:dataset.filtered,filters:dataset.filters,filterLabels:companionFilters(kind,dataset.filters),
+      display:dataset.display==='heatmap'?'Mapa de calor':'Puntos',opacity:dataset.opacity,
+      summary:dataset.summary,ready:layer.resource?resourcesReady:Boolean(dataset.dateRange),
+      error:layer.resource?resourceError:failure};
+  }
+  function contextFor(layer){
+    const kind=layer.kind==='security'?'cameras':'security';
+    const reference=layer.kind==='security' || layer.kind==='cameras'
+      ? {year:layer.filters.year,month:layer.filters.month} : {year:layer.filters.year??'all',month:'all'};
+    const filters={...defaults[kind],...reference};
+    const dataset=datasets[kind];
+    if(!dataset.dateRange)return null;
+    const key=JSON.stringify([kind,reference,quadrantIds]);
+    if(companionContext?.key===key)return companionContext.layer;
+    const filtered=kind==='cameras'?filterCameraRecords(dataset.records,filters,dataset.metadata)
+      :filterSecurityRecords(dataset.records,filters);
+    const context={kind,context:true,records:inQuadrants(filtered),filters,ready:true,
+      ...companionCut(kind,filters,getSecurityDateRange(filters,dataset.metadata))};
+    companionContext={key,layer:context};
+    return context;
+  }
+  function companionInsights(layers){
+    const reference=layers.length===1&&layers[0].ready?contextFor(layers[0]):null;
+    const inputs=reference?[...layers,reference]:layers;
+    const unchanged=companionAnalysis?.ids===quadrantIds&&companionAnalysis.layers.length===inputs.length
+      &&inputs.every((layer,index)=>{
+        const before=companionAnalysis.layers[index];
+        return layer.kind===before.kind&&layer.records===before.records&&layer.period===before.period&&layer.ready===before.ready;
+      });
+    if(!unchanged)companionAnalysis={ids:quadrantIds,layers:inputs,value:buildCompanionAnalysis({
+      layers:inputs.map(layer=>({...layer,filtered:Boolean(layer.filterLabels?.length)
+        ||layer.kind==='security'&&layer.filters.period!=='all'})),
+      quadrantIds,allQuadrantIds,quadrantOf:recordQuadrant
+    })};
+    return companionAnalysis.value;
+  }
+  function territoryLayer(kind){
+    const {display,image,surface,opacity,mapPoints}=datasets[kind];
+    if(kind==='security'&&timelineActive&&timelineFrames){
+      const {period,nextPeriod,mix,durationMs,playing}=playback.info();
+      const {previous,next}=analysisBlendOpacity(opacity,mix);
+      const rasters=[[timelineFrames[period],previous],[timelineFrames[nextPeriod],next]].map(([frame,alpha])=>({
+        url:frame.image,bounds:frame.surface.bounds,opacity:alpha
+      }));
+      return {kind,mode:display,opacity,rasters,blend:{opacity,mix,durationMs:durationMs/4,playing,startedAt:Date.now()}};
+    }
+    const rasters=display==='heatmap'&&image&&surface?[{url:image,bounds:surface.bounds,opacity}]:[];
+    return {kind,mode:display,opacity,rasters,points:companionPoints(mapPoints)};
+  }
+  function publishForecastCompanion(state){
+    if(destroyed)return;
+    const placements=state.showAfter?state.placements:[];
+    const infrastructure=Object.entries({camera:'cámaras',fixed:'casetas'}).flatMap(([kind,label])=>{
+      const points=companionPoints(placements.filter(point=>point.kind===kind)
+        .map(point=>({...point,scenario:true,title:label})));
+      return points.length?[{kind:kind==='camera'?'cameras':kind,mode:'points',points}]:[];
+    });
+    const territory={quadrantIds:null,areaLabel:'Toda la comuna',layers:[
+      {kind:'security',mode:'heatmap',rasters:forecastRaster?[forecastRaster]:[]},
+      ...infrastructure
+    ],focusQuadrantId:state.local?.id};
+    onCompanion({mode:'forecast',forecast:state,territory});
+  }
   function publishCompanion() {
     if(destroyed)return;
-    if(forecast.active){onCompanion({mode:'forecast',forecast:forecast.info()});return;}
+    if(forecast.active){publishForecastCompanion(forecast.info());return;}
     if(!loaded){onCompanion({mode:'idle'});return;}
-    const kind=hoverDetails?.record?.kind ?? activeCategory;
-    const d=datasets[kind] ?? datasets[activeCategory];
-    const period=d.dateRange?.label ?? d.filters.year ?? 'Todos los años';
-    const layers=[activeCategory,...(compareCategory?[compareCategory]:[])].map(id=>({
-      kind:id,title:getAnalysisLayer(id).label,
-      period:datasets[id].dateRange?.label ?? datasets[id].filters.year ?? 'Todos los años',
-      summary:{...datasets[id].summary}
-    }));
-    if(hoverDetails&&(quadrantIds===null||pinned&&hoverDetails.record)){
-      onCompanion({
-        mode:hoverDetails.record?'resource':'sector',kind,period:crossed()&&!hoverDetails.record?null:period,
-        title:hoverDetails.quadrantIds.length?areaTitle(hoverDetails.quadrantIds):'Área consultada',
-        resource:hoverDetails.record,sector:hoverDetails,
-        filters:{...d.filters},dateRange:d.dateRange,layers
-      });
-      return;
-    }
-    if(quadrantIds!==null){
-      const area=areaDetails(quadrantIds);
-      onCompanion({mode:'sector',kind,title:areaTitle(quadrantIds),
-        period:crossed()?null:period,sector:area,layers});
-      return;
-    }
-    onCompanion({mode:'summary',kind:activeCategory,title:getAnalysisLayer(activeCategory).label,
-      period,summary:{...d.summary},layers});
+    const record=hoverDetails?.record;
+    const kind=record?.kind??activeCategory;
+    const dataset=datasets[kind];
+    const ids=compareCategory?[activeCategory,compareCategory]:[activeCategory];
+    const layers=ids.map(companionLayer);
+    const scope=areaDetails(quadrantIds);
+    const sector=hoverDetails??(quadrantIds===null?null:scope);
+    const title=quadrantIds===null?getAnalysisLayer(activeCategory).label:areaTitle(quadrantIds);
+    const territory={quadrantIds,areaLabel:scope.label,layers:ids.map(territoryLayer),
+      focus:record?{lat:record.lat,lng:record.lng,label:record.title}:null,
+      focusQuadrantId:hoverDetails?.quadrantIds?.[0]??null};
+    onCompanion({
+      mode:record?'resource':sector?'sector':'summary',kind,title,
+      period:record?(dataset.dateRange?.label??dataset.filters.year):crossed()?null:layers[0].period,
+      resource:record,sector,inspected:Boolean(hoverDetails),overview:scope,
+      filters:dataset.filters,dateRange:dataset.dateRange,summary:dataset.summary,
+      layers:layers.map(({records,...layer})=>layer),territory,insights:companionInsights(layers)
+    });
   }
   function prepareTimelineFrames(){
     if(timelineFrames)return;
@@ -406,6 +499,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const points=locations.map(record=>({
       ...record,
       outsideArea:!withinScope(record,selected),
+      quadrantId:recordQuadrant(record),
       ...(kind==='fixed'?{monitoringStatus:history?.get(record.id)}:{activations:history?.get(record.id)??null})
     }));
     const included=points.filter(record=>!record.outsideArea);
@@ -423,6 +517,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const simulated=dataset.filtered.filter(record=>record.simulated).length;
     dataset.summary={total:dataset.filtered.length,documented:dataset.filtered.length-simulated,simulated};
     if(kind==='fixed')dataset.summary.monitoring=dataset.filtered.filter(record=>record.monitoringStatus==='monitoreando').length;
+    if(kind==='alarms'&&history)dataset.summary.activations=totalActivations(dataset.filtered);
   }
   function mapDataset(kind,filters,withImage=true){
     const dataset=datasets[kind],camera=kind==='cameras',cache=dataset.communeCache;
@@ -666,6 +761,10 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   }
   function showHover(anchor){
     if(!anchor||destroyed||!loaded)return;
+    if(!anchor.record&&hoverDetails&&!hoverDetails.record&&displayedAnchor?.quadrant===anchor.quadrant){
+      displayedAnchor=anchor;
+      return;
+    }
     displayedAnchor=anchor;
     const area=areaDetails(anchor.quadrant?[anchor.quadrant]:[]);
     hoverDetails={...(area.security||area.cameras),...area,record:anchor.record??null,source:anchor.source,lat:anchor.lat,lng:anchor.lng};

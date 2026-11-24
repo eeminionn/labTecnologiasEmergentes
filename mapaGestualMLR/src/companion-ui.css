@@ -62,13 +62,6 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-delivery strong { font-weight: 500; font-variant-numeric: tabular-nums; }
 .companion-footnote { text-align: right; font-size: 10px; color: var(--ink-secondary); }
 .companion-empty-note { color: var(--ink-secondary); font-size: 13px; }
-.companion-sector-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-.companion-sector-metrics .companion-metric { padding: 25px 26px; border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,.88); }
-.companion-sector-metrics .companion-metric dd { color: var(--municipal-petroleo); font-size: clamp(32px, 5vw, 56px); }
-.companion-comparison-period { color: var(--ink-secondary); font-size: 12px !important; margin-bottom: 18px !important; }
-.companion-card .companion-sector-metrics { grid-template-columns: 1fr; gap: 18px; }
-.companion-card .companion-sector-metrics .companion-metric { padding: 0; border: 0; background: transparent; }
-.companion-quadrant-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 .companion-agenda-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: 22px 26px 0; background: var(--municipal-petroleo); color: #fff; border-radius: 16px; overflow: hidden; }
 .companion-agenda-position { display: grid; align-content: start; gap: 4px; }
 .companion-agenda-position > span { font-size: 12px; color: #e2f1f4; }
@@ -80,10 +73,16 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-timer-track { height: 5px; background: rgba(255,255,255,.25); grid-column: 1 / -1; margin: 0 -26px; }
 .companion-timer-track > span { display: block; height: 100%; background: #fff; transition: width .25s linear; }
 .companion-agenda-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.companion-agenda-grid .companion-agenda-counts {
+  display: grid; grid-template-columns: auto auto 1fr; gap: 8px 20px;
+  margin-block: 0 12px; padding-block-end: 12px; border-bottom: 1px solid var(--border);
+}
+.companion-agenda-counts dd { color: var(--municipal-petroleo); font-weight: 600; }
 .companion-agenda-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
 .companion-agenda-list > li { display: grid; grid-template-columns: 48px minmax(0, 1fr) 72px; align-items: center; gap: 12px; min-height: 51px; padding: 10px; border: 1px solid transparent; border-radius: 8px; }
 .companion-agenda-list time { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--municipal-petroleo); }
 .companion-agenda-name { font-size: 13px; line-height: 1.4; }
+.companion-agenda-priority { display: block; margin-top: 2px; font-size: 10px; color: var(--ink-secondary); font-weight: 500; }
 .companion-agenda-status { font-size: 10px; text-align: right; color: var(--ink-secondary); }
 .companion-agenda-list > li[data-status="current"] { background: #edf6f6; border-color: var(--border); }
 .companion-agenda-list > li[data-status="current"] .companion-agenda-name { font-weight: 600; }
@@ -98,6 +97,7 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-map-theme h3 { font-size: 14px; line-height: 1.4; margin-bottom: 5px; }
 .companion-map-theme p { font-size: 12px; line-height: 1.5; color: var(--ink-secondary); }
 .companion-map-selected { display: block; color: var(--municipal-petroleo); font-size: 10px; margin-top: 7px; }
+.companion-graphic-name { color: var(--municipal-petroleo); font-weight: 600; }
 .companion-agenda-notice { position: fixed; z-index: 20; right: 28px; bottom: 26px; width: min(360px, calc(100% - 56px)); display: grid; gap: 5px; padding: 18px 20px; border: 1px solid var(--municipal-petroleo); border-radius: 12px; color: var(--ink); background: #fff; box-shadow: 0 8px 30px rgba(0,66,82,.15); }
 .companion-agenda-notice strong { font-size: 18px; color: var(--municipal-petroleo); }
 .companion-agenda-notice span { font-size: 12px; line-height: 1.5; }
@@ -146,3 +146,100 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-procurement-reason h3 { margin: 0 0 5px; font-size: 12px; font-weight: 600; }
 .companion-procurement-reason p { font-size: 12px; line-height: 1.55; }
 .companion-procurement-reason small { display: block; margin-top: 8px; color: var(--ink-secondary); font-size: 10px; }
+.previous-session-total .previous-session-plan-total { margin-top: 3px; color: var(--ink-secondary); font-size: 11px; }
+.previous-session-overview { grid-column: 1 / -1; color: var(--municipal-petroleo); font-size: 12px; font-weight: 600; }
+
+.companion-territorial .companion-content {
+  width: min(1600px, 100%); height: calc(100dvh - 56px); min-height: 540px;
+  padding: 20px 28px 24px; gap: 14px; grid-template-rows: auto minmax(0, 1fr);
+}
+.companion-territorial-layout {
+  display: grid; min-height: 0; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: 18px;
+}
+.companion-territory-card {
+  min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0, 1fr); gap: 12px;
+  padding: 16px; border: 1px solid var(--border); border-radius: 16px;
+  background: rgba(255,255,255,.88); box-shadow: var(--glass-shadow);
+}
+.companion-territory-heading { display: flex; justify-content: space-between; align-items: baseline; gap: 5px 12px; flex-wrap: wrap; }
+.companion-territory-heading h2 { font-size: 15px; font-weight: 600; }
+.companion-territory-area { color: var(--municipal-petroleo); font-size: 12px; font-weight: 600; }
+.companion-territory-map-slot {
+  position: relative; min-height: 0; min-width: 0; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 10px; background: #e7eeee;
+}
+.companion-territorial-details {
+  min-height: 0; min-width: 0; overflow-y: auto; padding-right: 3px;
+  scrollbar-gutter: stable; scrollbar-width: thin; align-content: start; display: grid; gap: 14px;
+}
+.companion-territorial-details > * { min-width: 0; }
+.companion-territorial-details .companion-card,
+.companion-territorial-details .robbery-share { padding: 16px 18px; }
+.companion-territorial-details .companion-card h2 { margin-bottom: 10px; }
+.companion-territorial .companion-analysis-note,
+.companion-territorial .companion-cross-context { color: var(--ink-secondary); font-size: 11px; line-height: 1.5; }
+.companion-territorial .companion-analysis-status + .companion-analysis-note { margin-top: 9px; }
+.companion-territorial [data-kind="security"] { --companion-layer-color: var(--municipal-morado); }
+.companion-territorial [data-kind="cameras"] { --companion-layer-color: var(--municipal-petroleo); }
+.companion-territorial [data-kind="fixed"] { --companion-layer-color: var(--municipal-verde); }
+.companion-territorial [data-kind="alarms"] { --companion-layer-color: var(--municipal-fucsia); }
+.companion-layer-result + .companion-layer-result,
+.companion-pattern-layer + .companion-pattern-layer { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.companion-layer-result-main { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.companion-territorial .companion-layer-result-main h3,
+.companion-territorial .companion-pattern-layer h3 {
+  display: flex; align-items: baseline; gap: 7px; color: var(--ink); font-size: 13px; font-weight: 600;
+}
+.companion-layer-result-main h3::before,
+.companion-pattern-layer h3::before {
+  content: ''; flex: none; width: .55em; height: .55em; border-radius: 2px; background: var(--companion-layer-color);
+}
+.companion-layer-result-main > strong {
+  color: var(--municipal-petroleo); font-size: clamp(24px, 2.9vw, 36px);
+  line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+.companion-territorial .companion-layer-period { font-size: 12px; line-height: 1.45; }
+.companion-territorial .companion-analysis-status {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 85px), 1fr)); gap: 6px 12px; margin-top: 8px;
+}
+.companion-analysis-status dt { font-size: 10px; line-height: 1.4; }
+.companion-analysis-status dd { color: var(--municipal-petroleo); font-weight: 600; font-variant-numeric: tabular-nums; }
+.companion-cross-context { display: grid; gap: 3px; margin-bottom: 7px !important; }
+.companion-card .companion-cross-finding { font-size: 13px; line-height: 1.55; }
+.companion-cross-finding strong { color: var(--municipal-petroleo); font-weight: 650; }
+.companion-card .companion-cross-priority { margin-top: 4px; color: var(--ink-secondary); font-size: 11px; line-height: 1.45; }
+.companion-cross-table {
+  width: 100%; margin-block: 10px 8px; border-collapse: separate; border-spacing: 6px 4px;
+  table-layout: fixed; font-size: 11px; text-align: left; font-variant-numeric: tabular-nums;
+}
+.companion-cross-table thead th { color: var(--ink-secondary); font-weight: 500; padding: 0 2px 3px; }
+.companion-cross-table th:first-child { width: 25%; }
+.companion-cross-value { position: relative; height: 25px; padding: 0 6px; background-color: #eff4f4; border-radius: 4px; text-align: right; }
+.companion-cross-value span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background-color: color-mix(in srgb, var(--companion-layer-color) 23%, transparent); }
+.companion-cross-value strong { position: relative; color: var(--ink); font-weight: 600; }
+.companion-pattern-layer .companion-pattern-group,
+.companion-pattern-layer .companion-pattern-peak { margin-top: 9px; color: var(--ink-secondary); font-size: 11px; }
+.companion-pattern-layer .companion-pattern-group { font-weight: 600; }
+.companion-territorial .companion-resource-details,
+.companion-territorial .companion-forecast-details { gap: 12px; }
+.companion-territorial .companion-investment { grid-template-columns: 1fr; padding: 18px; gap: 12px; }
+.companion-territorial .companion-quantities { justify-content: start; gap: 15px; }
+.companion-territorial .companion-price { font-size: clamp(24px, 3vw, 38px); }
+.companion-territorial .companion-grid { grid-template-columns: 1fr; gap: 12px; }
+.companion-territorial .companion-metrics { padding-inline: 6px; gap: 12px; }
+.companion-territorial .robbery-share-visual { grid-template-columns: minmax(70px, 96px) minmax(0, 1fr); gap: 12px; }
+.companion-territorial .robbery-share-counts { gap: 14px; flex-wrap: wrap; }
+.companion-territorial .robbery-share-percentage { font-size: 32px; }
+@media (max-width: 900px) {
+  .companion-territorial .companion-content { padding-inline: 20px; }
+  .companion-territory-card { padding: 12px; }
+  .companion-territorial-details .companion-card { padding-inline: 14px; }
+  .companion-territorial-layout { gap: 12px; }
+  .companion-agenda-grid .companion-agenda-counts { grid-template-columns: auto 1fr; }
+  .companion-agenda-counts .companion-fact:nth-child(3) { grid-column: 1 / -1; }
+}
+@media (max-width: 740px) {
+  .companion-territorial .companion-content { height: auto; grid-template-rows: auto; }
+  .companion-territorial-layout { grid-template-columns: 1fr; grid-template-rows: clamp(360px, 55vh, 520px) auto; }
+  .companion-territorial-details { overflow: visible; scrollbar-gutter: auto; }
+}

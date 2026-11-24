@@ -9,6 +9,7 @@
       "id": "graphic-02",
       "sourcePage": 2,
       "title": "Demora en los Desplazamientos Durante la Inundación",
+      "reading": "La ruta B muestra el mayor aumento. Pasa de unos 8 minutos en condiciones normales a unos 25 durante la emergencia.",
       "src": "/content/charts/graphic-02.webp",
       "width": 2400,
       "height": 1567
@@ -17,6 +18,7 @@
       "id": "graphic-03",
       "sourcePage": 3,
       "title": "Exposición de las Viviendas",
+      "reading": "El 67 % de las viviendas del gráfico se concentra en riesgo medio o alto.",
       "src": "/content/charts/graphic-03.webp",
       "width": 2400,
       "height": 1421
@@ -25,6 +27,7 @@
       "id": "graphic-04",
       "sourcePage": 4,
       "title": "Elementos Expuestos en el Área",
+      "reading": "Las 19 viviendas representan la mitad de los 38 elementos expuestos. El gráfico también identifica 5 accesos viales y 4 paraderos.",
       "src": "/content/charts/graphic-04.webp",
       "width": 2400,
       "height": 1299
@@ -33,6 +36,7 @@
       "id": "graphic-05",
       "sourcePage": 5,
       "title": "Reportes Recibidos por Vecinos",
+      "reading": "El agua en calles y las viviendas en riesgo concentran cerca del 72 % de los reportes vecinales.",
       "src": "/content/charts/graphic-05.webp",
       "width": 2400,
       "height": 1902
@@ -41,6 +45,7 @@
       "id": "graphic-06",
       "sourcePage": 6,
       "title": "Caudal en m3/s en Horas Pick",
+      "reading": "El caudal supera los 4 m³/s a las 12:00, alcanza su máximo a las 13:00 y baja a las 14:00.",
       "src": "/content/charts/graphic-06.webp",
       "width": 2400,
       "height": 1609

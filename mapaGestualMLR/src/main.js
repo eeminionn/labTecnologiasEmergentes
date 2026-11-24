@@ -131,6 +131,7 @@ async function loadMap() {
     // must never turn into a second click on the new page.
     engine.cancelClick(true);selection.reset();highlightTarget(null);
     $('click-ripple').classList.remove('play');
+    publishMapAgenda();
   }});
   try {
     await contentViewer.ready;
@@ -166,7 +167,9 @@ function publishCurrentState(state) {
 }
 function publishMapAgenda() {
   const agenda=councilAgenda.getState();
-  publishCurrentState({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null});
+  const page=contentViewer?.info();
+  const graphic=page?.isOpen?{title:page.title,index:page.slideIndex,total:page.slideCount,takeaway:page.reading}:null;
+  publishCurrentState({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null,graphic});
 }
 function showSurfaceMode(mode) {
   if(mode!=='map')setPreviousSessionVisible(false);

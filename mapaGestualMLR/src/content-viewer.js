@@ -83,8 +83,9 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   ready.catch(() => {});
 
   function info() {
+    const page = slides[slideIndex];
     return { isOpen: opened, slideIndex, slideCount: slides.length, count: slides.length,
-      sourcePage: slides[slideIndex]?.sourcePage ?? null, title: slides[slideIndex]?.title ?? '',
+      sourcePage: page?.sourcePage ?? null, title: page?.title ?? '', reading: page?.reading ?? '',
       scale: viewport.scale, offset: { x: viewport.x, y: viewport.y },
       canPrevious: opened && slideIndex > 0, canNext: opened && slideIndex < slides.length - 1 };
   }
