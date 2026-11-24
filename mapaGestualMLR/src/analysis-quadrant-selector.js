@@ -146,27 +146,24 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     const boundary = svgElement('path', {
       class: 'analysis-unit-boundaries', 'data-unit': unit.id, 'clip-path': clip.reference
     });
-    for (const element of [label, fill, boundary, selectionFill, selectionOutline]) element.style.setProperty('--unit-color', color);
+    for (const element of [fill, boundary, selectionFill, selectionOutline]) element.style.setProperty('--unit-color', color);
     unitFills.append(fill);
     selectionFills.append(selectionFill);
     selectionOutlines.append(selectionOutline);
     parentBoundaries.append(boundary);
-    const halo = svgElement('circle', { class: 'analysis-unit-number-halo', r: '11.5' });
-    const badge = svgElement('circle', { class: 'analysis-unit-number-badge', r: '11.5' });
-    const text = svgElement('text', { class: 'analysis-unit-number-text', 'text-anchor': 'middle', 'dominant-baseline': 'central' });
-    text.textContent = String(unit.label ?? unit.id);
     const territoryName = svgElement('text', {
       class: 'analysis-unit-name', 'text-anchor': 'middle', 'dominant-baseline': 'central'
     });
-    const name = 'Unidad ' + (unit.label ?? unit.id);
+    const number = String(unit.label ?? unit.id);
+    const name = 'Unidad ' + number;
     territoryName.textContent = name;
-    label.append(halo, badge, text, territoryName);
+    label.append(territoryName);
     labels.append(label);
     const box = geographicBounds(polygons);
     const candidates = labelCandidates(unit, polygons, box, definition.boundaryPolygons);
     parents.set(String(unit.id), {
-      polygons, geometry: unit.geometry, label, halo, badge, fill, boundary, clipPath: clip.path, candidates, selectionFill, selectionOutline,
-      territoryName, name, number: text.textContent,
+      polygons, geometry: unit.geometry, label, fill, boundary, clipPath: clip.path, candidates, selectionFill, selectionOutline,
+      territoryName, name, number,
       clearance: Math.max(0, ...candidates.map(candidate => candidate.clearance))
     });
   }
@@ -174,7 +171,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   svg.append(title, description, definitions, surface, labels);
   layer.append(svg);
   container.append(layer);
-  let selected = null, preview = null, variant = 'default';
+  let selected = null, preview = null;
   let visible = false, destroyed = false, frame = null, projectionSignature = null;
 
   function paintSelection() {
@@ -248,12 +245,11 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     paintSelection();
     display(labels, !atStreet);
     if (!atStreet) {
-      const names = variant === 'resources';
-      const radii = names ? [24, 20, 7.5] : [11.5, 9.5];
-      const obstacles = names ? resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
+      const labelHalfHeight = 8;
+      const obstacles = resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
         const point = project(location);
         return point ? [{ ...point, halfWidth, halfHeight }] : [];
-      }) : [];
+      });
       const placed = [];
       const [westWorld, southWorld] = projectSecurityPoint(bounds.west, bounds.south);
       const [eastWorld, northWorld] = projectSecurityPoint(bounds.east, bounds.north);
@@ -265,35 +261,29 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       // an alternate interior point when a nearby number would overlap.
       for (const parent of [...parents.values()].sort((left, right) => left.clearance - right.clearance)) {
         let placement = null;
-        for (const radius of radii) {
+        const forms = [[parent.name, parent.number.length === 1 ? 25 : 28], [parent.number, 9]];
+        for (const [name, halfWidth] of forms) {
           for (const candidate of parent.candidates) {
-            const halfHeight = names ? 8 : radius;
-            if (candidate.clearance * pixelsPerMetre < halfHeight + 3.5) continue;
+            if (candidate.clearance * pixelsPerMetre < labelHalfHeight + 3.5) continue;
             const point = project(candidate);
-            if (!point || point.x < radius + 4 || point.x > width - radius - 4 || point.y < halfHeight + 4 || point.y > height - halfHeight - 4) continue;
-            if (placed.some(other => names
-              ? Math.abs(point.x - other.x) < radius + other.radius + 5 && Math.abs(point.y - other.y) < 20
-              : Math.hypot(point.x - other.x, point.y - other.y) < radius + other.radius + 7)) continue;
-            if (obstacles.some(other => Math.abs(point.x - other.x) < radius + other.halfWidth + 3
-              && Math.abs(point.y - other.y) < halfHeight + other.halfHeight + 3)) continue;
-            if (names && map.screenToLocation && ![-radius, radius].every(dx => {
+            if (!point || point.x < halfWidth + 4 || point.x > width - halfWidth - 4
+              || point.y < labelHalfHeight + 4 || point.y > height - labelHalfHeight - 4) continue;
+            if (placed.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 5
+              && Math.abs(point.y - other.y) < labelHalfHeight * 2 + 4)) continue;
+            if (obstacles.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 3
+              && Math.abs(point.y - other.y) < labelHalfHeight + other.halfHeight + 3)) continue;
+            if (map.screenToLocation && ![-halfWidth, halfWidth].every(dx => {
               const edge = map.screenToLocation(point.x + dx, point.y);
               return edge && pointInsideBoundary(edge.lng, edge.lat, parent.geometry);
             })) continue;
-            placement = { ...point, radius }; break;
+            placement = { ...point, halfWidth, name }; break;
           }
           if (placement) break;
         }
         display(parent.label, Boolean(placement));
         if (!placement) continue;
         attribute(parent.label, 'transform', `translate(${placement.x.toFixed(2)},${placement.y.toFixed(2)})`);
-        attribute(parent.label, 'data-compact', placement.radius < radii[0]);
-        if (names) {
-          const name = placement.radius < 20 ? parent.number : parent.name;
-          if (parent.territoryName.textContent !== name) parent.territoryName.textContent = name;
-        }
-        attribute(parent.badge, 'r', placement.radius);
-        attribute(parent.halo, 'r', placement.radius);
+        if (parent.territoryName.textContent !== placement.name) parent.territoryName.textContent = placement.name;
         placed.push(placement);
       }
     }
@@ -306,7 +296,6 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   }
 
   function refreshLabels() {
-    if (variant !== 'resources') return;
     projectionSignature = null;
     schedulePosition();
   }
@@ -318,7 +307,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       attribute(entry.group, 'data-selected', selected?.has(id) ?? false);
       attribute(entry.group, 'data-preview', preview === id);
     }
-    const hierarchy = 'El número y el color identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los números se ocultan al acercarse a las calles. Las subdivisiones seleccionadas muestran un contorno común en el color de su unidad.';
+    const hierarchy = 'El rótulo y el color de los límites identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los rótulos se ocultan al acercarse a las calles. Las subdivisiones seleccionadas muestran un contorno común en el color de su unidad.';
     const text = selected === null
       ? `Se muestran todas las unidades vecinales y sus subdivisiones. ${hierarchy}`
       : selected.size ? `Subdivisiones seleccionadas: ${[...selected].join(', ')}. ${hierarchy}`
@@ -353,12 +342,6 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     }
     if (Object.hasOwn(state, 'visible') && visible !== Boolean(state.visible)) {
       visible = Boolean(state.visible); needsPosition = visible; changed = true;
-    }
-    if ((state.variant === 'default' || state.variant === 'resources') && variant !== state.variant) {
-      variant = state.variant;
-      attribute(layer, 'data-territory-labels', variant);
-      projectionSignature = null;
-      needsPosition = true;
     }
     if (changed) paintState();
     if (needsPosition) schedulePosition();

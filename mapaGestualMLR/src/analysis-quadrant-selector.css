@@ -1,6 +1,5 @@
 :root {
   --analysis-unit-ink: var(--ink, #183a43);
-  --analysis-unit-number-ink: #0a1012;
 }
 body:not(.twin-projection) .analysis-quadrant-selector {
   --cartographic-ink: var(--analysis-unit-ink);
@@ -29,15 +28,11 @@ body.twin-projection .analysis-quadrant-selector { display: none !important; }
 .analysis-quadrant-edge { stroke: color-mix(in srgb, var(--unit-color) 75%, var(--cartographic-ink)); stroke-width: 3.5; stroke-opacity: 0; stroke-dasharray: 5 4; }
 .analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-underlay { stroke-opacity: .85; }
 .analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-edge { stroke-opacity: 1; }
-.analysis-unit-number-halo { fill: white; stroke: white; stroke-width: 4; }
-.analysis-unit-number-badge { fill: var(--unit-color); }
-.analysis-unit-label text { fill: var(--analysis-unit-number-ink); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.analysis-unit-label[data-compact="true"] text { font-size: 9.5px; }
-.analysis-unit-name { display: none; }
-.analysis-quadrant-selector[data-territory-labels="resources"] :is(.analysis-unit-number-halo, .analysis-unit-number-badge, .analysis-unit-number-text) { display: none; }
-.analysis-quadrant-selector[data-territory-labels="resources"] .analysis-unit-name {
-  display: block;
+.analysis-unit-name {
   fill: var(--cartographic-ink);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
   stroke: #fff;
   stroke-width: 3px;
   stroke-linejoin: round;

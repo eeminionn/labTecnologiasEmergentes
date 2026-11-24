@@ -175,9 +175,8 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     return unit&&Number.isFinite(count)?`Unidad ${unit} · ${number(count)} ${count===1?'robo':'robos'}`:'';
   }
   function paintQuadrants(preview=null){
-    const variant=forecast.active||visible('cameras')||visible('fixed')||visible('alarms')?'resources':'default';
     quadrantSelector.update({selected:forecast.active?null:quadrantIds,visible:loaded,
-      preview:forecast.active?null:preview,variant});
+      preview:forecast.active?null:preview});
   }
   function updatePanels(){
     overlay.dataset.crossed=String(!forecast.active&&crossed());
