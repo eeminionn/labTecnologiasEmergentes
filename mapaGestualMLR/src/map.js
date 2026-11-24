@@ -2,6 +2,7 @@ import L from 'leaflet';
 import boundaryText from '../assets/la-reina.geojson?raw';
 import { PointSequence } from './sequence.js';
 import { createAnalysisRasterTransition } from './analysis-transition.js';
+import { attachMapWheelZoom } from './map-wheel-zoom.js';
 import { MAP_TOPICS } from './map-topics.js';
 
 const boundary = JSON.parse(boundaryText);
@@ -239,7 +240,10 @@ export async function createMap(container, config, notify, providerChanged = () 
 }
 
 function osmMap(container, notify, offline = false, sequence, onPointSelected) {
-  const map = L.map(container, { zoomControl: false, zoomSnap: 0, zoomDelta: .5, zoomAnimation: false, fadeAnimation: false }).setView([center.lat, center.lng], 14);
+  const minZoom = 3, maxZoom = 19;
+  const map = L.map(container, { zoomControl: false, scrollWheelZoom: false, zoomSnap: 0, zoomDelta: .5,
+    zoomAnimation: false, minZoom, maxZoom }).setView([center.lat, center.lng], 14);
+  const wheelZoom = attachMapWheelZoom(map, container);
   let analysisMode = false;
   const analysisRaster = createAnalysisRasterTransition({
     createLayer(spec, onLoad, onError) {
@@ -263,13 +267,14 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   cameraPane.style.zIndex = '360'; cameraPane.style.pointerEvents = 'none';
   map.attributionControl.setPrefix(false);
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, minZoom: 3, updateWhenIdle: true, keepBuffer: 1,
+    maxZoom, minZoom, updateWhenIdle: true, keepBuffer: 2,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map).once('tileerror', () => notify('No se pudieron cargar algunas teselas. Comprueba la conexión a Internet.'));
   else container.style.background = 'repeating-linear-gradient(0deg,transparent 0 59px,#d1d9e0 60px),repeating-linear-gradient(90deg,#e9eef2 0 59px,#d1d9e0 60px)';
   map.attributionControl.addAttribution(`<span title="${circulationLegend}">${boundaryCredit}</span>`);
   const outline = L.geoJSON(boundary, { style: boundaryStyle, interactive: false }).addTo(map);
   const home = () => {
+    wheelZoom.finish();
     const padding = analysisPadding(container);
     return map.fitBounds(outline.getBounds(), analysisMode
       ? { paddingTopLeft: [padding.left, padding.top], paddingBottomRight: [padding.right, padding.bottom], animate: false }
@@ -364,8 +369,8 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     },
     onViewChange(callback) {
       if (typeof callback !== 'function') return () => {};
-      const handler = () => callback(); map.on('movestart zoomstart resize', handler);
-      return () => map.off('movestart zoomstart resize', handler);
+      const handler = () => callback(); map.on('movestart resize', handler);
+      return () => map.off('movestart resize', handler);
     },
     onPositionChange(callback) {
       if (typeof callback !== 'function') return () => {};
@@ -373,9 +378,16 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
       map.on(events, callback);
       return () => map.off(events, callback);
     },
-    pan(dx, dy) { map.panBy([-dx, -dy], { animate: false }); },
-    zoom(delta, x, y) { map.setZoomAround(L.point(x, y), Math.min(19, Math.max(3, map.getZoom() + delta)), { animate: false }); },
+    pan(dx, dy) {
+      wheelZoom.finish();
+      map.panBy([-dx, -dy], { animate: false });
+    },
+    zoom(delta, x, y) {
+      wheelZoom.finish();
+      map.setZoomAround(L.point(x, y), Math.min(maxZoom, Math.max(minZoom, map.getZoom() + delta)), { animate: false });
+    },
     focus(point, zoom = 19, { animate = true } = {}) {
+      wheelZoom.finish();
       map.stop();
       if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
         map.setView([point.lat, point.lng], zoom, { animate: false }); return Promise.resolve();
@@ -392,8 +404,8 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     setAnalysisMode, setAnalysisLayer, setAnalysisFrame, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
     setCameraAnalysisLayer, clearCameraAnalysisLayer, setCameraAnalysisOpacity,
     resetSequence() { map.closePopup(); const state = sequence.reset(); refreshMarkers(); return state; },
-    destroy() { analysisRaster.destroy(); clearCameraAnalysisLayer(); legend.remove(); map.remove(); container.style.background = ''; },
-    info() { return { zoom: map.getZoom(), center: map.getCenter(), analysisMode,
+    destroy() { wheelZoom.destroy(); analysisRaster.destroy(); clearCameraAnalysisLayer(); legend.remove(); map.remove(); container.style.background = ''; },
+    info() { return { zoom: map.getZoom(), center: map.getCenter(), analysisMode, wheelZooming: wheelZoom.active,
       analysisLayerLoaded: analysisRaster.info().loaded, analysisLayerVisible: analysisRaster.info().visible,
       analysisTransitioning: analysisRaster.info().transitioning,
       analysisBounds: analysisRaster.info().spec?.bounds, analysisOpacity: analysisRaster.info().spec?.opacity ?? null,

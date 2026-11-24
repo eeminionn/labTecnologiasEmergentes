@@ -104,6 +104,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   }
   const communeClip = clipGeometry('commune');
   const outsideSelection = clipGeometry('outside-selection');
+  const movingSurface = svgElement('g');
   const surface = svgElement('g', { 'clip-path': communeClip.reference });
   // One compound stroke per level keeps shared edges from becoming darker
   // through repeated transparent strokes on adjacent geographic polygons.
@@ -120,6 +121,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   const communeBoundary = svgElement('path', { class: 'analysis-commune-boundary' });
   const highlights = svgElement('g', { class: 'analysis-quadrant-highlights' });
   surface.append(unitFills, subdivisionLines, selectionFills, selectionOutlines, highlights, parentUnderlay, parentBoundaries, communeUnderlay, communeBoundary);
+  movingSurface.append(surface);
   const labels = svgElement('g', { class: 'analysis-unit-labels', 'aria-hidden': 'true' });
   const entries = new Map();
   const parents = new Map();
@@ -168,11 +170,13 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     });
   }
 
-  svg.append(title, description, definitions, surface, labels);
+  const orderedParents = [...parents.values()].sort((left, right) => left.clearance - right.clearance);
+  svg.append(title, description, definitions, movingSurface, labels);
   layer.append(svg);
   container.append(layer);
   let selected = null, preview = null;
   let visible = false, destroyed = false, frame = null, projectionSignature = null;
+  let projectedAnchors = null;
 
   function paintSelection() {
     const pathsByUnit = new Map();
@@ -196,7 +200,10 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     if (destroyed || !visible) return;
     // Position subscriptions survive a late provider fallback that replaces the
     // map DOM. Restore this layer without requiring a map-adapter special case.
-    if (layer.parentElement !== container) container.append(layer);
+    if (layer.parentElement !== container) {
+      container.append(layer);
+      projectionSignature = projectedAnchors = null;
+    }
     const width = container.clientWidth, height = container.clientHeight;
     if (!width || !height || !bounds) { svg.style.visibility = 'hidden'; projectionSignature = null; return; }
     const cache = new Map();
@@ -214,15 +221,56 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       { lng: bounds.east, lat: bounds.south }
     ].map(project);
     if (anchors.some(point => !point)) { svg.style.visibility = 'hidden'; projectionSignature = null; return; }
-    const zoom = map.info?.()?.zoom;
+    const { zoom, wheelZooming } = map.info?.() ?? {};
     const atStreet = Number.isFinite(zoom) && zoom >= STREET_DETAIL_ZOOM;
     const signature = `${width},${height},${atStreet},${anchors.map(point => `${point.x.toFixed(3)},${point.y.toFixed(3)}`).join(',')}`;
-    if (signature === projectionSignature) return;
-    const boundaryPath = projectedPath(definition.boundaryPolygons, project);
-    if (!boundaryPath) { svg.style.visibility = 'hidden'; projectionSignature = null; return; }
+    if (!wheelZooming && signature === projectionSignature && !movingSurface.hasAttribute('transform')) return;
     attribute(svg, 'viewBox', `0 0 ${width} ${height}`);
     attribute(layer, 'data-scale', atStreet ? 'street' : 'overview');
     svg.style.visibility = '';
+    display(labels, !atStreet);
+
+    const labelHalfHeight = 8;
+    const obstacles = atStreet ? [] : resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
+      const point = project(location);
+      return point ? [{ ...point, halfWidth, halfHeight }] : [];
+    });
+    const placed = [];
+    const labelFits = (point, halfWidth) => point && point.x >= halfWidth + 4 && point.x <= width - halfWidth - 4
+      && point.y >= labelHalfHeight + 4 && point.y <= height - labelHalfHeight - 4
+      && !placed.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 5
+        && Math.abs(point.y - other.y) < labelHalfHeight * 2 + 4)
+      && !obstacles.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 3
+        && Math.abs(point.y - other.y) < labelHalfHeight + other.halfHeight + 3);
+    function showLabel(parent, placement) {
+      display(parent.label, Boolean(placement));
+      if (!placement) return;
+      attribute(parent.label, 'transform', `translate(${placement.x.toFixed(2)},${placement.y.toFixed(2)})`);
+      placed.push(placement);
+    }
+
+    // Trackpad frames share the same Mercator projection. Transform the existing
+    // paths and clips together, then rebuild them once at the settled view.
+    if (wheelZooming && projectedAnchors) {
+      const [baseWest, baseNorth, baseEast] = projectedAnchors;
+      const [west, north, east] = anchors;
+      const scaleX = (east.x - west.x) / (baseEast.x - baseWest.x);
+      const scaleY = (north.y - east.y) / (baseNorth.y - baseEast.y);
+      if (Number.isFinite(scaleX) && Number.isFinite(scaleY) && scaleX > 0 && scaleY > 0) {
+        const x = west.x - baseWest.x * scaleX, y = east.y - baseEast.y * scaleY;
+        attribute(movingSurface, 'transform', `matrix(${scaleX} 0 0 ${scaleY} ${x} ${y})`);
+        if (!atStreet) for (const parent of orderedParents) {
+          const placement = parent.placement;
+          const point = placement && project(placement.location);
+          showLabel(parent, placement && labelFits(point, placement.halfWidth) ? { ...point, halfWidth: placement.halfWidth } : null);
+        }
+        return;
+      }
+    }
+
+    movingSurface.removeAttribute('transform');
+    const boundaryPath = projectedPath(definition.boundaryPolygons, project);
+    if (!boundaryPath) { svg.style.visibility = 'hidden'; projectionSignature = null; return; }
     attribute(communeClip.path, 'd', boundaryPath);
     attribute(communeUnderlay, 'd', boundaryPath);
     attribute(communeBoundary, 'd', boundaryPath);
@@ -243,14 +291,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     }
     attribute(parentUnderlay, 'd', parentPaths.join(''));
     paintSelection();
-    display(labels, !atStreet);
     if (!atStreet) {
-      const labelHalfHeight = 8;
-      const obstacles = resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
-        const point = project(location);
-        return point ? [{ ...point, halfWidth, halfHeight }] : [];
-      });
-      const placed = [];
       const [westWorld, southWorld] = projectSecurityPoint(bounds.west, bounds.south);
       const [eastWorld, northWorld] = projectSecurityPoint(bounds.east, bounds.north);
       const pixelsPerMetre = Math.min(
@@ -259,34 +300,28 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       );
       // Give the narrow units their interior space first. Larger units can use
       // an alternate interior point when a nearby number would overlap.
-      for (const parent of [...parents.values()].sort((left, right) => left.clearance - right.clearance)) {
+      for (const parent of orderedParents) {
         let placement = null;
         const forms = [[parent.name, parent.number.length === 1 ? 25 : 28], [parent.number, 9]];
         for (const [name, halfWidth] of forms) {
           for (const candidate of parent.candidates) {
             if (candidate.clearance * pixelsPerMetre < labelHalfHeight + 3.5) continue;
             const point = project(candidate);
-            if (!point || point.x < halfWidth + 4 || point.x > width - halfWidth - 4
-              || point.y < labelHalfHeight + 4 || point.y > height - labelHalfHeight - 4) continue;
-            if (placed.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 5
-              && Math.abs(point.y - other.y) < labelHalfHeight * 2 + 4)) continue;
-            if (obstacles.some(other => Math.abs(point.x - other.x) < halfWidth + other.halfWidth + 3
-              && Math.abs(point.y - other.y) < labelHalfHeight + other.halfHeight + 3)) continue;
+            if (!labelFits(point, halfWidth)) continue;
             if (map.screenToLocation && ![-halfWidth, halfWidth].every(dx => {
               const edge = map.screenToLocation(point.x + dx, point.y);
               return edge && pointInsideBoundary(edge.lng, edge.lat, parent.geometry);
             })) continue;
-            placement = { ...point, halfWidth, name }; break;
+            placement = { ...point, location: candidate, halfWidth, name }; break;
           }
           if (placement) break;
         }
-        display(parent.label, Boolean(placement));
-        if (!placement) continue;
-        attribute(parent.label, 'transform', `translate(${placement.x.toFixed(2)},${placement.y.toFixed(2)})`);
-        if (parent.territoryName.textContent !== placement.name) parent.territoryName.textContent = placement.name;
-        placed.push(placement);
+        parent.placement = placement;
+        showLabel(parent, placement);
+        if (placement && parent.territoryName.textContent !== placement.name) parent.territoryName.textContent = placement.name;
       }
     }
+    projectedAnchors = anchors;
     projectionSignature = signature;
   }
 
