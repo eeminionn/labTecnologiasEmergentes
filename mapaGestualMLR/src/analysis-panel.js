@@ -37,9 +37,10 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   categoryOptions.setAttribute('aria-label','Datos de análisis');
   const categoryButtons=ANALYSIS_LAYERS.map(option=>{
     const caption=option.id==='fixed'?'Casetas':option.label;
-    const choice=button(categoryOptions,`${prefix}-category-${option.id}`,caption,(_,anchor)=>{
+    const choice=button(categoryOptions,`${prefix}-category-${option.id}`,null,(_,anchor)=>{
       if(option.id!==kind)callbacks.category(option.id,anchor);
     },'analysis-category-choice');
+    choice.append(el('span','analysis-category-label',caption));
     choice.dataset.tone=option.tone;
     choice.setAttribute('aria-pressed',String(option.id===kind));
     if(option.id==='fixed')choice.setAttribute('aria-label','Casetas de seguridad ciudadana');
