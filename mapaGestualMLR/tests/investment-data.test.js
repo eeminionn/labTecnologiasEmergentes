@@ -6,15 +6,15 @@ import { readSecurityResources } from '../src/analysis-catalog.js';
 
 test('las fichas de ejemplo distinguen cierre, entrega comprometida y operación real', () => {
   const samples = [
-    ['cameras', { datos_operativos: 'simulados', fecha_instalacion: '2023-03-21' }, 'Ejemplo 01', 9],
-    ['fixed', { simulated: true, firstInventoryYear: '2023' }, 'Ejemplo 02', 26],
-    ['alarms', { simulated: true, firstInventoryYear: '2023', activations: 31 }, 'Ejemplo 03', 5],
+    ['cameras', { datos_operativos: 'simulados', fecha_instalacion: '2023-03-21' }, 'CAM', 9],
+    ['fixed', { simulated: true, firstInventoryYear: '2023' }, 'CAS', 26],
+    ['alarms', { simulated: true, firstInventoryYear: '2023', activations: 31 }, 'BOT', 5],
   ];
-  for (const [kind, record, id, delay] of samples) {
+  for (const [kind, record, code, delay] of samples) {
     const sheet = buildResourceSheet(kind, record);
     const procurement = sheet.procurement;
     assert.equal(procurement.illustrative, true);
-    assert.equal(procurement.id, id);
+    assert.match(procurement.id, new RegExp(`^LR-${code}-[A-Z0-9]{7}$`));
     assert(procurement.name && procurement.lead && procurement.reason);
     assert(procurement.close < procurement.promisedDelivery);
     assert(procurement.promisedDelivery < procurement.operation);
@@ -29,13 +29,14 @@ test('las fichas de ejemplo distinguen cierre, entrega comprometida y operación
   }
 });
 
-test('las ubicaciones documentadas no adquieren una licitación ni fechas por su año de inventario', () => {
+test('las ubicaciones documentadas reciben un ID local y conservan sus antecedentes pendientes', () => {
   const documented = JSON.parse(readFileSync(new URL('../public/analysis/recursos-seguridad.json', import.meta.url), 'utf8'));
   for (const record of documented) {
     const sheet = buildResourceSheet(record.kind, { ...record, firstInventoryYear: '2023' });
-    for (const field of ['name', 'id', 'lead', 'close', 'promisedDelivery', 'operation', 'plannedDays', 'elapsedDays', 'delayDays', 'reason']) {
+    for (const field of ['name', 'lead', 'close', 'promisedDelivery', 'operation', 'plannedDays', 'elapsedDays', 'delayDays', 'reason']) {
       assert.equal(sheet.procurement[field], null, `${record.id}: ${field}`);
     }
+    assert.match(sheet.procurement.id, /^LR-(CAS|BOT)-[A-Z0-9]{7}$/);
     assert.equal(sheet.procurement.illustrative, false);
     assert.equal(sheet.procurement.compliance, 'Por confirmar');
     assert.equal(sheet.lead, 'Por confirmar');
@@ -87,7 +88,7 @@ test('la comparación de entrega y operación funciona cuando el cierre no está
 test('el catastro conserva antecedentes existentes para una ficha de ejemplo en plazo', () => {
   const [documented] = JSON.parse(readFileSync(new URL('../public/analysis/recursos-seguridad.json', import.meta.url), 'utf8'));
   const data = {
-    illustrative: true, name: 'Licitación de ejemplo', id: 'Ejemplo en plazo', lead: 'Encargado de ejemplo',
+    illustrative: true, name: 'Implementación de casetas', id: 'LR-CAS-0000001', lead: 'Encargado de seguridad',
     promisedDelivery: '2024-03-01', operation: '2024-03-01',
   };
   const [normalized] = readSecurityResources([{ ...documented, procurement: data }], () => true);
@@ -100,6 +101,17 @@ test('el catastro conserva antecedentes existentes para una ficha de ejemplo en 
   assert.equal(procurement.id, data.id);
   const [withoutData] = readSecurityResources([documented], () => true);
   assert.equal(Object.hasOwn(withoutData, 'procurement'), false);
+});
+
+test('el ID local es estable para el mismo recurso y distingue recursos y categorías', () => {
+  const procurementFor = (kind, record, context) => buildResourceSheet(kind, record, context).procurement;
+  const resource = { id: 'cabina-simulada-01' };
+  const first = procurementFor('fixed', resource).id;
+  assert.equal(first, procurementFor('fixed', { ...resource, monitoringStatus: 'monitoreando' }, { period: '2024' }).id);
+  assert.equal(first, procurementFor('fixed', { ...resource, procurement: { id: 'Ejemplo 02' } }).id);
+  assert.notEqual(first, procurementFor('fixed', { id: 'cabina-simulada-02' }).id);
+  assert.notEqual(first, procurementFor('alarms', resource).id);
+  assert.equal(procurementFor('cameras', { id: 1 }).id, procurementFor('camera', { id: '1' }).id);
 });
 
 test('fechas incompletas o imposibles no producen una evaluación de cumplimiento', () => {

@@ -10,7 +10,7 @@ const investmentProfiles = Object.freeze({
     integration: 650000, reserve: 600000, annualOperation: 960000,
     installationDays: 6, crewCapacity: 4, deliveryToOperation: 9, lead: 'Camila Rojas',
     unit: 'Dirección de Seguridad',
-    exampleProcurementId: 'Ejemplo 01',
+    procurementCode: 'CAM',
     exampleDelayReason: 'Ajuste de la conexión eléctrica antes de las pruebas finales.',
   }),
   fixed: Object.freeze({
@@ -19,7 +19,7 @@ const investmentProfiles = Object.freeze({
     integration: 1000000, reserve: 3000000, annualOperation: 36000000,
     installationDays: 18, crewCapacity: 2, deliveryToOperation: 26, lead: 'Diego Muñoz',
     unit: 'Dirección de Seguridad',
-    exampleProcurementId: 'Ejemplo 02',
+    procurementCode: 'CAS',
     exampleDelayReason: 'Adecuación de la acometida eléctrica y del enlace de monitoreo.',
   }),
   alarms: Object.freeze({
@@ -28,7 +28,7 @@ const investmentProfiles = Object.freeze({
     integration: 150000, reserve: 120000, annualOperation: 240000,
     installationDays: 3, crewCapacity: 6, deliveryToOperation: 5, lead: 'Valentina Soto',
     unit: 'Dirección de Seguridad',
-    exampleProcurementId: 'Ejemplo 03',
+    procurementCode: 'BOT',
     exampleDelayReason: 'Reprogramación de las pruebas de comunicación con la central.',
   }),
 });
@@ -53,6 +53,19 @@ function shiftDate(value, days) {
 
 function daysBetween(start, end) {
   return start && end && start <= end ? (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / DAY_MS : null;
+}
+
+function procurementId(storedId, record, code) {
+  const id = String(storedId ?? '').trim();
+  if (id && !/^Ejemplo\b/i.test(id)) return id;
+  const assetKey = String(record.id ?? record.address ?? record.direccion ?? record.title ?? '');
+  // FNV-1a makes a stable, short local ID from the asset key.
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < assetKey.length; index++) {
+    hash = Math.imul(hash ^ assetKey.charCodeAt(index), 0x01000193);
+  }
+  const suffix = (hash >>> 0).toString(36).toUpperCase().padStart(7, '0');
+  return `LR-${code}-${suffix}`;
 }
 
 function resourceProcurement(record, profile, budget, milestones, illustrative) {
@@ -83,7 +96,7 @@ function resourceProcurement(record, profile, budget, milestones, illustrative) 
     : typeof data.reason === 'string' && data.reason.trim() && (reasonSource || example) ? data.reason.trim() : null;
   return {
     name: data.name || (modeled ? `Implementación de ${profile.plural}` : null),
-    id: data.id || (modeled ? [profile.exampleProcurementId, record.id].filter(Boolean).join(' · ') : null),
+    id: procurementId(data.id, record, profile.procurementCode),
     lead: data.lead || (modeled ? profile.lead : null),
     close, promisedDelivery, operation, plannedDays, elapsedDays, delayDays,
     compliance: delayDays === null ? 'Por confirmar' : delayDays > 0 ? 'Fuera de plazo' : 'En plazo',

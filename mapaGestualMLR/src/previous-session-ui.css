@@ -110,11 +110,16 @@
 .previous-session-attendance .previous-session-attendance-empty { margin-top: 6px; color: var(--ink-secondary); font-size: 13px; }
 
 @media (max-height: 740px) {
-  .previous-session-view .companion-content { padding-block: 18px; gap: 14px; }
+  .previous-session-view .companion-content { padding-block: 12px; gap: 10px; }
   .previous-session-view .previous-session-chart,
-  .previous-session-view .previous-session-attendance { padding: 18px; }
-  .previous-session-chart-heading { row-gap: 6px; margin-bottom: 10px; }
-  .previous-session-row { min-height: 40px; padding-block: 4px; }
+  .previous-session-view .previous-session-attendance { padding: 14px; }
+  .previous-session-chart-heading { row-gap: 5px; margin-bottom: 8px; }
+  .previous-session-chart-heading h2, .previous-session-attendance-heading h2 { font-size: 18px; }
+  .previous-session-keys { gap: 4px 11px; }
+  .previous-session-key { font-size: 11px; }
+  .previous-session-row { min-height: 38px; padding-block: 3px; }
+  .previous-session-attendance-heading, .previous-session-attendance-groups { margin-bottom: 10px; gap: 9px; }
+  .previous-session-attendee { padding-block: 5px; font-size: 13px; }
 }
 
 @media (max-width: 850px) {

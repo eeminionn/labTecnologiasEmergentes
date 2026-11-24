@@ -16,6 +16,7 @@
 }
 
 .companion-territory-viewport .leaflet-tile-pane { filter: saturate(.8); }
+.companion-territory-viewport .leaflet-control-attribution { font-size: 9px; line-height: 1.35; }
 
 .companion-territory-viewport .leaflet-control-scale-line {
   background: #fff;
@@ -95,3 +96,7 @@
 .companion-territory-map .analysis-subdivision-underlay { stroke-width: 1.6px; }
 .companion-territory-map .analysis-subdivision-boundaries { stroke-width: .85px; }
 .companion-territory-map .analysis-unit-name { font-size: 10px; stroke-width: 2.6px; }
+
+@media (max-width: 1100px) {
+  .companion-territory-legend { bottom: 32px; }
+}

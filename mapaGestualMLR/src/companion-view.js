@@ -1,9 +1,10 @@
 import './glass-ui.css';
 import './companion-ui.css';
-import { buildInvestmentSummary, buildResourceSheet, UF_REFERENCE } from './investment-data.js';
+import { buildInvestmentSummary, UF_REFERENCE } from './investment-data.js';
 import { renderPreviousSession } from './previous-session-view.js';
 import { createRobberyShare } from './robbery-share-view.js';
 import { createCompanionTerritoryMap } from './companion-territory-map.js';
+import { renderCompanionResource } from './companion-resource-view.js';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
@@ -57,14 +58,12 @@ function brand() {
   return logo;
 }
 
-function shell(state) {
+function shell() {
   const main = element('div', 'companion-shell');
   const top = element('header', 'companion-topbar');
   top.append(element('strong', null, 'La Reina'), element('span', null, 'Concejo en perspectiva'));
   const content = element('div', 'companion-content');
   const heading = element('header', 'companion-heading');
-  const eyebrow = state.mode === 'forecast' ? 'Plan de inversión' : state.mode === 'agenda' ? 'Sesión del concejo' : 'Ficha territorial';
-  heading.append(element('p', 'companion-eyebrow', eyebrow));
   const title = element('h1');
   title.id = 'companion-title';
   heading.append(title);
@@ -76,7 +75,8 @@ function shell(state) {
 }
 
 function budgetChart(budget) {
-  const section = card('Distribución de la inversión');
+  const section = element('section', 'companion-forecast-breakdown');
+  section.append(element('h3', null, 'Distribución de la inversión'));
   const list = element('dl', 'companion-cost-chart');
   const largest = Math.max(1, ...budget.breakdown.map(item => item.value));
   for (const item of budget.breakdown) {
@@ -84,7 +84,6 @@ function budgetChart(budget) {
     row.dataset.category = item.key;
     const label = element('dt', null, item.label);
     const value = element('dd', null, money.format(item.value));
-    value.append(element('small', 'companion-breakdown-uf', inUF(item.value)));
     const track = element('div', 'companion-cost-track');
     track.setAttribute('aria-hidden', 'true');
     const fill = element('span');
@@ -98,62 +97,21 @@ function budgetChart(budget) {
 }
 
 function delivery(budget) {
-  const section = card('Plazo de implementación');
-  const total = element('p', 'companion-delivery-total');
-  total.append(element('strong', null, number.format(budget.totalDays)), element('span', null, 'días hábiles estimados'));
+  const section = element('section', 'companion-forecast-delivery');
+  section.append(element('h3', null, `Plazo estimado · ${number.format(budget.totalDays)} días hábiles`));
   const list = element('ol', 'companion-delivery');
-  budget.timeline.forEach((step, index) => {
+  budget.timeline.forEach(step => {
     const row = element('li');
-    row.append(element('span', 'companion-step-number', index + 1), element('span', null, step.label), element('strong', null, `${number.format(step.days)} días`));
+    row.append(element('span', null, step.label), element('strong', null, `${number.format(step.days)} días`));
     list.append(row);
   });
-  section.append(total, list);
+  section.append(list, element('p', 'companion-analysis-note', `${budget.lead} · ${budget.unit}`));
   return section;
 }
 
 function budgetFooter() {
   return element('p', 'companion-footnote',
-    `Presupuesto referencial · IVA incluido · Unidad de Fomento (UF) al ${date(UF_REFERENCE.date)} · 1 UF = $${decimals.format(UF_REFERENCE.pesos)} · SII`);
-}
-
-function investmentAmount(label, pesos) {
-  const amount = element('div', 'companion-investment-amount');
-  amount.append(element('span', null, label), element('strong', 'companion-price', money.format(pesos)),
-    element('span', 'companion-price-uf', inUF(pesos)));
-  return amount;
-}
-
-function procurementCard(procurement) {
-  const section = card(procurement.illustrative ? 'Licitación de referencia' : 'Licitación');
-  section.classList.add('companion-procurement');
-  const identity = element('dl', 'companion-procurement-identity');
-  const procurementId = procurement.id?.startsWith('Ejemplo ') ? null : procurement.id;
-  identity.append(fact('Nombre de la licitación', procurement.name || 'Por confirmar'),
-    fact('ID de la licitación', procurementId || 'Por confirmar'),
-    fact('Encargado', procurement.lead || 'Por confirmar'));
-  const dates = element('dl', 'companion-procurement-dates');
-  dates.append(fact('Cierre de la licitación', procurement.close ? date(procurement.close) : 'Por confirmar'),
-    fact('Entrega prometida', procurement.promisedDelivery ? date(procurement.promisedDelivery) : 'Por confirmar'),
-    fact('Puesta en marcha real', procurement.operation ? date(procurement.operation) : 'Por confirmar'));
-  const compliance = element('div', 'companion-procurement-compliance');
-  compliance.append(element('span', null, 'Cumplimiento'), element('strong', null, procurement.compliance));
-  compliance.dataset.status = procurement.delayDays === null ? 'unknown' : procurement.delayDays > 0 ? 'late' : 'on-time';
-  const durations = element('dl', 'companion-procurement-durations');
-  const days = value => value === null ? 'Por confirmar' : `${number.format(value)} días`;
-  const difference = procurement.delayDays === null ? 'Por confirmar'
-    : procurement.delayDays > 0 ? `${number.format(procurement.delayDays)} días de atraso`
-      : procurement.delayDays < 0 ? `${number.format(-procurement.delayDays)} días de adelanto` : 'Sin diferencia';
-  durations.append(fact('Plazo comprometido', days(procurement.plannedDays)),
-    fact('Plazo real', days(procurement.elapsedDays)), fact('Diferencia', difference));
-  const reason = element('div', 'companion-procurement-reason');
-  reason.append(element('h3', null, procurement.illustrative ? 'Motivo de referencia' : 'Motivo documentado'),
-    element('p', null, procurement.reason || 'Por confirmar'));
-  if (procurement.reasonSource) {
-    reason.append(element('small', null, `Fuente · ${procurement.reasonSource.label}`));
-  }
-  section.append(identity, dates, compliance, durations,
-    element('p', 'companion-procurement-note', 'Plazos en días corridos desde el cierre hasta la entrega operativa.'), reason);
-  return section;
+    `IVA incluido · UF al ${date(UF_REFERENCE.date)} (SII)`);
 }
 
 function quadrantsLabel(ids = []) {
@@ -206,7 +164,7 @@ function agendaView(root, state) {
   }
   clearTimeout(previous?.noticeTimeout);
 
-  const view = shell(state);
+  const view = shell();
   view.main.classList.add('companion-agenda');
   view.title.textContent = current.title || 'Temas del concejo';
   view.subtitle.textContent = current.description || '';
@@ -230,12 +188,6 @@ function agendaView(root, state) {
 
   const grid = element('div', 'companion-grid companion-agenda-grid');
   const schedule = card('Horario de la sesión');
-  const pending = topics.filter(topic => topic.status === 'pending');
-  const reviewed = topics.filter(topic => topic.status === 'reviewed').length;
-  const agendaCounts = element('dl', 'companion-agenda-counts');
-  agendaCounts.append(fact('Revisados', `${reviewed} de ${topics.length}`), fact('Pendientes', pending.length));
-  if (pending[0]) agendaCounts.append(fact('Siguiente pendiente', `${pending[0].time} · ${pending[0].title}`));
-  schedule.append(agendaCounts);
   const list = element('ol', 'companion-agenda-list');
   topics.forEach((topic, index) => {
     const row = element('li');
@@ -302,12 +254,14 @@ function installationAreas(placements) {
   const list = element('dl', 'companion-installation-areas');
   const sorted = [...groups].sort(([left], [right]) => !left ? 1 : !right ? -1 : left.localeCompare(right, 'es-CL', { numeric: true }));
   const quantity = (count, singular, plural) => count ? number.format(count) + ' ' + (count === 1 ? singular : plural) : '';
-  for (const [id, counts] of sorted) {
+  for (const [id, counts] of sorted.slice(0, 3)) {
     const label = id ? quadrantsLabel([id]) : 'Sin cuadrante asignado';
     const summary = [quantity(counts.camera, 'cámara', 'cámaras'), quantity(counts.fixed, 'caseta', 'casetas')].filter(Boolean).join(' · ');
     list.append(fact(label, summary));
   }
   section.append(list);
+  if (sorted.length > 3) section.append(element('p', 'companion-analysis-note',
+    `+${sorted.length - 3} cuadrantes en el mapa`));
   return section;
 }
 
@@ -315,109 +269,59 @@ function forecastDetails(state) {
   const forecast = state.forecast || {};
   const placements = forecast.placements || [];
   const budget = buildInvestmentSummary(placements);
-  const content = element('div', 'companion-column companion-forecast-details');
+  const content = card('Presupuesto del escenario');
+  content.classList.add('companion-forecast-details');
   if (forecast.error || forecast.ready === false) {
-    const status = card(forecast.error ? 'Proyección no disponible' : 'Preparando la estimación');
-    status.append(element('p', null, forecast.error ? 'No se pudo cargar la proyección del mapa.' : 'La ficha se actualizará al completar la carga.'));
-    content.append(status);
+    content.append(element('p', null, forecast.error ? 'Proyección no disponible' : 'Preparando la estimación…'));
     return content;
   }
+  const metrics = element('dl', 'companion-forecast-metrics');
+  metrics.append(metric('Inversión inicial', money.format(budget.initial), inUF(budget.initial)),
+    metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
+    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear)));
+  content.append(element('p', 'companion-analysis-note',
+    `${formatCount(budget.counts.camera, 'cameras')} · ${formatCount(budget.counts.fixed, 'fixed')}`), metrics);
   if (Number.isFinite(forecast.baselineTotal) && Number.isFinite(forecast.scenarioTotal)) {
-    const comparison = card('Estimación para La Reina');
-    comparison.append(element('p', 'companion-analysis-note', forecast.showAfter === false ? 'Mapa actual · Antes de invertir' : 'Mapa actual · Escenario de inversión'));
-    const totals = element('dl', 'companion-metrics');
-    totals.append(metric('Sin nuevas instalaciones', number.format(Math.round(forecast.baselineTotal))),
-      metric('Con la inversión', number.format(Math.round(forecast.scenarioTotal))));
-    if (Number.isFinite(forecast.reduction)) {
-      const delta = forecast.scenarioTotal - forecast.baselineTotal;
-      comparison.append(element('p', 'companion-analysis-note',
-        `${delta < 0 ? '−' : delta > 0 ? '+' : ''}${number.format(Math.round(Math.abs(delta)))} robos en la estimación`));
-    }
+    const comparison = element('section', 'companion-forecast-estimates');
+    comparison.append(element('h3', null, 'Robos estimados en la comuna'));
+    const totals = element('dl', 'companion-forecast-metrics');
+    totals.append(metric(forecast.showAfter ? 'Antes' : 'Antes · En el mapa', number.format(Math.round(forecast.baselineTotal))),
+      metric(forecast.showAfter ? 'Con inversión · En el mapa' : 'Con inversión', number.format(Math.round(forecast.scenarioTotal))),
+      metric('Variación', percentages.format(forecast.reduction ? -forecast.reduction : 0)));
     comparison.append(totals);
     if (forecast.local?.id && Number.isFinite(forecast.local.baseline) && Number.isFinite(forecast.local.scenario)) {
-      const local = element('dl', 'companion-analysis-status');
-      local.append(fact(quadrantsLabel([forecast.local.id]),
-        `${number.format(Math.round(forecast.local.baseline))} → ${number.format(Math.round(forecast.local.scenario))} robos estimados`));
-      comparison.append(local);
+      comparison.append(element('p', 'companion-analysis-note',
+        `Consulta local en ${forecast.local.id} · ${number.format(Math.round(forecast.local.baseline))} antes y ${number.format(Math.round(forecast.local.scenario))} con inversión`));
     }
     content.append(comparison);
   }
-  const hero = element('section', 'companion-investment');
-  const quantities = element('dl', 'companion-quantities');
-  quantities.append(metric('Cámaras nuevas', number.format(budget.counts.camera)), metric('Casetas nuevas', number.format(budget.counts.fixed)));
-  hero.append(investmentAmount('Inversión inicial estimada', budget.initial), quantities);
-  const metrics = element('dl', 'companion-metrics');
-  metrics.append(metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
-    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear)));
-  const grid = element('div', 'companion-grid');
-  const first = element('div', 'companion-column');
-  first.append(budgetChart(budget));
-  const second = element('div', 'companion-column');
-  const management = card('Gestión del proyecto');
-  const facts = element('dl', 'companion-facts');
-  facts.append(fact('Responsable', budget.lead), fact('Unidad a cargo', budget.unit), fact('Etapa', 'Planificación'), fact('Año de inversión', forecast.year || 2027));
-  management.append(facts);
-  const areas = installationAreas(placements);
-  if (areas) second.append(areas);
-  second.append(management, delivery(budget));
-  grid.append(first, second);
-  if (!budget.quantity) content.append(element('p', 'companion-empty-note', 'El presupuesto se actualizará al incorporar cámaras o casetas en el mapa.'));
-  content.append(hero, metrics, grid, budgetFooter());
+  if (budget.quantity) {
+    const grid = element('div', 'companion-forecast-grid');
+    grid.append(budgetChart(budget), delivery(budget));
+    content.append(grid, budgetFooter());
+  }
   return content;
 }
 
-function resourceFocus(state, sheet) {
-  const heading = card(sheet.name);
-  const quadrant = quadrantsLabel(state.sector?.quadrantIds);
-  heading.append(element('p', 'companion-analysis-note',
-    [sheet.address, quadrant, state.resource?.outsideArea ? 'Fuera del área seleccionada' : ''].filter(Boolean).join(' · ')));
-  const facts = element('dl', 'companion-analysis-status');
-  facts.append(fact('Estado del período', sheet.state));
-  if (sheet.activations !== null) facts.append(fact('Pulsaciones', number.format(sheet.activations)));
-  heading.append(facts);
-  return heading;
-}
-
-function resourceDetails(sheet) {
-  const content = element('div', 'companion-column companion-resource-details');
-  const hero = element('section', 'companion-investment');
-  hero.append(investmentAmount('Costo inicial de referencia', sheet.budget.initial));
-  const metrics = element('dl', 'companion-metrics');
-  metrics.append(metric('Operación anual', money.format(sheet.budget.annualOperation), inUF(sheet.budget.annualOperation)));
-  metrics.append(metric('Instalación', sheet.installed ? date(sheet.installed) : `${sheet.budget.totalDays} días hábiles`, sheet.installed ? 'Fecha del inventario' : 'Plazo de referencia'));
-  const grid = element('div', 'companion-grid');
-  const first = budgetChart(sheet.budget);
-  const second = element('div', 'companion-column');
-  const management = card('Identificación y gestión');
-  const facts = element('dl', 'companion-facts');
-  facts.append(fact('Unidad a cargo', sheet.unit), fact('Equipamiento', sheet.type));
-  if (sheet.id) facts.append(fact('ID del recurso', sheet.id));
-  if (sheet.period) facts.append(fact('Período consultado', sheet.period));
-  if (sheet.rank) facts.append(fact('Uso en la selección', `Puesto ${sheet.rank}`));
-  management.append(facts);
-  second.append(procurementCard(sheet.procurement), management);
-  grid.append(first, second);
-  content.append(hero, metrics, grid);
-  content.append(budgetFooter());
-  return content;
-}
-
-function resultsCard(layers) {
-  const section = card(layers.length > 1 ? 'Resultados de la comparación' : 'Resultado de la consulta');
+function resultsCard(layers, { compact = false } = {}) {
+  const section = element('section', 'companion-results');
+  section.setAttribute('aria-label', 'Resultados de la consulta');
   const results = element('div', 'companion-layer-results');
+  results.dataset.count = String(layers.length);
   for (const { kind, title, summary = {}, ready, error, period, filterLabels = [], display, opacity } of layers) {
     const result = element('div', 'companion-layer-result');
     result.dataset.kind = kind;
     const main = element('div', 'companion-layer-result-main');
-    main.append(element('h3', null, title || names[kind]?.[2] || 'Registros'),
+    const category = compact ? names[kind]?.[2] || title : title || names[kind]?.[2];
+    main.append(element('h3', null, category || 'Registros'),
       element('strong', null, Number.isFinite(summary.total) && ready !== false && !error ? number.format(summary.total) : '—'));
     result.append(main);
     if (error || ready === false) result.append(element('p', 'companion-analysis-note', error || 'Cargando datos…'));
     else {
       if (period) result.append(element('p', 'companion-layer-period', period));
       const filters = [...filterLabels];
-      if (display) filters.push(display);
-      if (layers.length > 1 && Number.isFinite(opacity)) filters.push(`Visibilidad ${percentages.format(opacity)}`);
+      if (display && !compact) filters.push(display);
+      if (!compact && layers.length > 1 && Number.isFinite(opacity)) filters.push(`Visibilidad ${percentages.format(opacity)}`);
       if (filters.length) result.append(element('p', 'companion-analysis-note', filters.join(' · ')));
       const status = element('dl', 'companion-analysis-status');
       for (const [key, label] of [
@@ -434,17 +338,16 @@ function resultsCard(layers) {
   return section;
 }
 
-function crossCard(cross, scopeCount) {
+function crossCard(cross, scopeCount, { compact = false } = {}) {
   if (!cross || !scopeCount) return null;
-  const { primary, secondary, rows } = cross;
-  const section = card('Cruce por cuadrante');
+  const { primary, secondary, rows: selectedRows, withoutEquipment } = cross;
+  const rows = selectedRows.slice(0, 3);
+  if (withoutEquipment && !rows.some(row => row.id === withoutEquipment.id)) rows[rows.length - 1] = withoutEquipment;
+  const section = element('section', 'companion-cross-summary');
+  section.append(element('h2', null, 'Cruce por cuadrante'));
   const label = layer => names[layer.kind]?.[2] || layer.kind;
-  if (cross.contextual || cross.differentCutoffs) {
-    const context = element('p', 'companion-cross-context');
-    context.append(element('span', null, [label(primary), primary.period].filter(Boolean).join(' · ')),
-      element('span', null, [cross.contextual ? `${label(secondary)} de referencia` : label(secondary), secondary.period].filter(Boolean).join(' · ')));
-    section.append(context);
-  }
+  if (cross.contextual) section.append(element('p', 'companion-cross-context',
+    [label(secondary), secondary.period].filter(Boolean).join(' · ')));
   const robbery = primary.kind === 'security' ? primary : secondary.kind === 'security' ? secondary : null;
   const related = robbery === primary ? secondary : primary;
   const unmatched = robbery === primary ? cross.primaryUnmatched : cross.secondaryUnmatched;
@@ -458,13 +361,8 @@ function crossCard(cross, scopeCount) {
       ' tienen registros en ambas categorías.');
   }
   section.append(text);
-  if (cross.withoutEquipment && robbery) {
-    const { id, primary: left, secondary: right } = cross.withoutEquipment;
-    const count = robbery === primary ? left : right;
-    section.append(element('p', 'companion-cross-priority',
-      `${quadrantsLabel([id])} · ${formatCount(count, 'security')} en ese grupo`));
-  }
-  if (rows?.length) {
+  if (compact) return section;
+  if (rows.length) {
     const table = element('table', 'companion-cross-table');
     table.setAttribute('aria-label', 'Recuentos por cuadrante');
     const header = element('tr');
@@ -481,6 +379,7 @@ function crossCard(cross, scopeCount) {
     const maxima = axes.map(([key]) => Math.max(1, ...rows.map(row => row[key])));
     for (const row of rows) {
       const tr = element('tr');
+      if (row.id === withoutEquipment?.id) tr.dataset.priority = 'true';
       const heading = element('th', null, row.id);
       heading.scope = 'row';
       tr.append(heading);
@@ -498,41 +397,41 @@ function crossCard(cross, scopeCount) {
     table.append(body);
     section.append(table);
   }
-  const notes = [rows?.length ? 'Escala propia en cada columna.' : '', 'Coincidencia territorial según los filtros.'];
-  if (primary.unassignedTotal || secondary.unassignedTotal) notes.push('Cruce limitado a registros con cuadrante.');
-  section.append(element('p', 'companion-analysis-note', notes.filter(Boolean).join(' ')));
+  if (rows.length || primary.unassignedTotal || secondary.unassignedTotal) {
+    const notes = [rows.length ? 'Escala propia por columna.' : '',
+      primary.unassignedTotal || secondary.unassignedTotal ? 'Solo registros con cuadrante.' : ''];
+    section.append(element('p', 'companion-analysis-note', notes.filter(Boolean).join(' ')));
+  }
   return section;
 }
 
 function patternsCard(layers) {
-  const populated = layers.filter(layer => layer.breakdown?.length || layer.topQuadrants?.length);
-  if (!populated.length) return null;
-  const section = card('Distribución de los registros');
-  for (const { kind, breakdown = [], topQuadrants = [] } of populated) {
-    const group = element('div', 'companion-pattern-layer');
-    group.dataset.kind = kind;
-    group.append(element('h3', null, names[kind]?.[2] || 'Registros'));
-    const groups = new Map();
-    for (const item of breakdown.filter(item => (kind === 'fixed' || item.group !== 'Estado') && item.unit !== 'pulsaciones')) {
-      if (!groups.has(item.group)) groups.set(item.group, []);
-      groups.get(item.group).push(item);
+  const list = element('dl', 'companion-analysis-patterns');
+  for (const { kind, breakdown = [], topQuadrants = [] } of layers) {
+    const largest = group => breakdown.filter(item => item.group === group && item.total > 0)
+      .sort((a, b) => b.total - a.total)[0];
+    if (kind === 'security') {
+      const hour = largest('Horario');
+      const type = largest('Tipo de robo');
+      if (hour) list.append(fact('Horario con más robos', `${hour.label} · ${number.format(hour.total)}`));
+      if (type) list.append(fact('Tipo más frecuente', `${type.label} · ${number.format(type.total)}`));
+    } else if (kind === 'cameras') {
+      const type = largest('Tipo de cámara');
+      if (type) list.append(fact('Tipo más frecuente', `${type.label} · ${number.format(type.total)}`));
     }
-    for (const [name, items] of groups) {
-      const list = element('dl', 'companion-analysis-status');
-      items.forEach(item => list.append(fact(item.label, number.format(item.total))));
-      group.append(element('p', 'companion-pattern-group', name), list);
+    if (topQuadrants[0]) {
+      const { id, total } = topQuadrants[0];
+      list.append(fact(`Mayor recuento de ${countName(0, kind)}`, `${id} · ${number.format(total)}`));
     }
-    const top = topQuadrants[0];
-    if (top) group.append(element('p', 'companion-pattern-peak', `Mayor recuento · ${quadrantsLabel([top.id])} · ${formatCount(top.total, kind)}`));
-    section.append(group);
   }
-  return section;
+  return list.childElementCount ? list : null;
 }
 
 function sectorCard(sector, isPreview) {
   if (!sector || (isPreview ? !sector.quadrantIds?.length : !sector.security)) return null;
   const { security, cameras, resources = {} } = sector;
-  const section = card(isPreview ? `En el mapa · ${quadrantsLabel(sector.quadrantIds)}` : 'Actividad reciente');
+  const section = element('section', 'companion-local-detail');
+  section.append(element('h2', null, isPreview ? quadrantsLabel(sector.quadrantIds) : 'Actividad reciente'));
   const facts = element('dl', 'companion-analysis-status');
   if (isPreview) {
     for (const [kind, detail] of [['security', security], ['cameras', cameras], ...Object.entries(resources)]) {
@@ -542,7 +441,8 @@ function sectorCard(sector, isPreview) {
   if (security) {
     facts.append(fact('Últimos 7 días del período', number.format(security.last7Days ?? 0)));
     if (isPreview && security.communeTotal > 0) facts.append(fact('Del total comunal', percentages.format(security.total / security.communeTotal)));
-    if (security.last7DaysRange?.label) section.append(element('p', 'companion-analysis-note', security.last7DaysRange.label));
+    const week = security.last7DaysRange?.label;
+    if (week) facts.append(fact('Período', week));
   }
   if (facts.childElementCount) section.append(facts);
   if (security?.lastIncident) {
@@ -557,28 +457,26 @@ function sectorCard(sector, isPreview) {
 function territorialView(root, state) {
   let view = territorialViews.get(root);
   if (!view) {
-    view = shell({ mode: 'summary' });
+    view = shell();
     view.main.classList.add('companion-territorial');
-    view.content.querySelector('.companion-eyebrow').remove();
     view.subtitle.hidden = true;
     const layout = element('div', 'companion-territorial-layout');
+    const aside = element('aside', 'companion-territorial-aside');
     const mapCard = element('section', 'companion-territory-card');
     mapCard.setAttribute('aria-labelledby', 'companion-territory-title');
-    const mapHeading = element('header', 'companion-territory-heading');
-    const mapTitle = element('h2', null, 'Área en el mapa');
-    mapTitle.id = 'companion-territory-title';
-    view.area = element('p', 'companion-territory-area');
+    view.area = element('h2', 'companion-territory-area');
+    view.area.id = 'companion-territory-title';
     view.area.setAttribute('aria-live', 'polite');
-    mapHeading.append(mapTitle, view.area);
     const mapSlot = element('div', 'companion-territory-map-slot');
     view.map = createCompanionTerritoryMap();
     mapSlot.append(view.map.element);
-    mapCard.append(mapHeading, mapSlot);
+    mapCard.append(view.area, mapSlot);
+    view.context = element('div', 'companion-territorial-context');
+    aside.append(mapCard, view.context);
     view.details = element('div', 'companion-territorial-details');
     view.details.setAttribute('role', 'region');
     view.details.setAttribute('aria-label', 'Resultados y cruces');
-    view.details.tabIndex = 0;
-    layout.append(mapCard, view.details);
+    layout.append(aside, view.details);
     view.content.append(layout);
     root.replaceChildren(view.main);
     territorialViews.set(root, view);
@@ -591,32 +489,41 @@ function territorialView(root, state) {
     : territory?.areaLabel || (ids === null ? 'Toda la comuna' : 'Sin cuadrantes seleccionados');
   if (view.area.textContent !== areaLabel) view.area.textContent = areaLabel;
   view.title.textContent = isForecast ? `Simular inversión · ${state.forecast?.year || 2027}` : 'Análisis territorial';
+  view.main.dataset.mode = state.mode;
   view.map.update(territory || { quadrantIds: null, layers: [] });
   const { territory: mapData, ...detailsState } = state;
   const key = JSON.stringify([areaLabel, detailsState]);
   if (view.key === key) return;
   const details = document.createDocumentFragment();
-  if (isForecast) details.append(forecastDetails(state));
-  else {
-    if (state.layers?.length) details.append(resultsCard(state.layers));
-    const sheet = state.resource ? buildResourceSheet(state.kind || state.resource.kind, state.resource, state) : null;
-    const focus = state.inspected ? sectorCard(sector, true) : null;
-    if (sheet) details.append(resourceFocus(state, sheet));
-    else if (focus) details.append(focus);
-    const cross = crossCard(insights?.cross, insights?.scopeCount);
-    if (cross) details.append(cross);
-    if (sheet) details.append(resourceDetails(sheet));
-    if (overview?.security && ids?.length) details.append(robberyShare(overview.security, areaLabel));
-    const latest = sheet ? sectorCard(sector, false) : !focus ? sectorCard(overview, false) : null;
-    if (latest) details.append(latest);
-    const patterns = patternsCard(insights?.layers || []);
-    if (patterns) details.append(patterns);
+  const context = document.createDocumentFragment();
+  if (isForecast) {
+    details.append(forecastDetails(state));
+    const areas = installationAreas(state.forecast?.placements || []);
+    if (areas) context.append(areas);
+  } else {
+    const resource = state.resource ? renderCompanionResource(state) : null;
+    const results = state.layers?.length ? resultsCard(state.layers, { compact: Boolean(resource) }) : null;
+    const cross = crossCard(insights?.cross, insights?.scopeCount, { compact: Boolean(resource) });
+    if (resource) {
+      details.append(resource);
+      const side = element('section', 'companion-card companion-query-context');
+      if (results) side.append(results);
+      if (cross) side.append(cross);
+      if (side.childElementCount) context.append(side);
+    } else {
+      const report = element('section', 'companion-card companion-analysis-report');
+      const patterns = patternsCard(insights?.layers || []);
+      const local = state.inspected ? sectorCard(sector, true) : sectorCard(overview, false);
+      if (results) report.append(results);
+      if (cross) report.append(cross);
+      if (patterns) report.append(patterns);
+      if (local) report.append(local);
+      details.append(report);
+      if (overview?.security && ids?.length) context.append(robberyShare(overview.security, areaLabel));
+    }
   }
-
-  const previousMode = view.mode;
+  view.context.replaceChildren(context);
   view.details.replaceChildren(details);
-  if (previousMode && (previousMode === 'forecast') !== isForecast) view.details.scrollTop = 0;
-  view.mode = state.mode;
   view.key = key;
 }
 

@@ -14,6 +14,8 @@ export function createAnalysisInspector(onClose) {
   title.tabIndex = -1;
   const summary = document.createElement('p');
   summary.className = 'analysis-inspector-summary';
+  summary.id = 'analysis-sector-summary';
+  title.setAttribute('aria-describedby', summary.id);
   copy.append(status, title, summary);
 
   const close = document.createElement('button');
@@ -28,8 +30,10 @@ export function createAnalysisInspector(onClose) {
     element.dataset.state = type;
     status.textContent = label;
     title.textContent = name;
+    title.title = name;
     title.hidden = !name;
     summary.textContent = detail;
+    summary.title = detail;
     close.hidden = type !== 'selected';
   }
   update();
