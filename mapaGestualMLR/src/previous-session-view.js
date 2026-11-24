@@ -29,26 +29,12 @@ function legend(label, className) {
   return item;
 }
 
-function priorityLink(label, targetId) {
-  const link = element('a', 'previous-session-priority-link', label);
-  link.href = '#' + targetId;
-  link.addEventListener('click', event => {
-    const target = document.getElementById(targetId);
-    if (!target) return;
-    event.preventDefault();
-    target.focus({ preventScroll: true });
-    target.scrollIntoView({ block: 'nearest' });
-  });
-  return link;
-}
-
 export function renderPreviousSession(root, session = {}, onCurrentSession) {
   const key = JSON.stringify(session);
   const previous = renderedSessions.get(root);
   if (previous?.key === key && previous.main.isConnected) return;
 
   const topics = Array.isArray(session.topics) ? session.topics : [];
-  const carryover = topics.find(topic => topic.carryover);
   const total = Number.isFinite(session.durationMinutes)
     ? session.durationMinutes
     : topics.reduce((sum, topic) => sum + minutes(topic.actualMinutes), 0);
@@ -106,16 +92,13 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
     const expected = minutes(topic.plannedMinutes);
     const overrun = actual > expected + 3;
     const pending = actual < expected / 2;
+    const carryover = Boolean(topic.carryover);
     const row = element('li', 'previous-session-row');
     row.dataset.timing = overrun ? 'overrun' : pending ? 'pending' : 'regular';
-    row.dataset.carryover = String(topic === carryover);
+    row.dataset.carryover = String(carryover);
     const topicTitle = element('div', 'previous-session-topic');
+    if (carryover) topicTitle.append(element('span', 'previous-session-priority-label', 'Retomar con prioridad'));
     topicTitle.append(element('strong', null, topic.title));
-    if (topic === carryover) {
-      row.id = 'previous-session-priority-topic';
-      row.tabIndex = -1;
-      topicTitle.append(priorityLink('Retomar con prioridad ↓', 'previous-session-priority'));
-    }
     const track = element('div', 'previous-session-track');
     track.setAttribute('aria-hidden', 'true');
     const actualBar = element('span', 'previous-session-actual');
@@ -140,21 +123,6 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   });
   figure.append(caption, axis, list);
   layout.append(figure);
-
-  if (carryover) {
-    const callout = element('aside', 'previous-session-carryover');
-    callout.id = 'previous-session-priority';
-    callout.tabIndex = -1;
-    const label = element('div');
-    label.append(element('p', 'previous-session-carryover-label', 'Retomar con prioridad'),
-      element('h3', null, carryover.title), priorityLink('Ver en la tabla ↑', 'previous-session-priority-topic'));
-    const text = element('p', 'previous-session-carryover-time');
-    const pending = Math.max(0, minutes(carryover.plannedMinutes) - minutes(carryover.actualMinutes));
-    text.append(element('strong', null, `${number.format(carryover.actualMinutes)} de ${number.format(carryover.plannedMinutes)} min`));
-    if (pending > 0) text.append(element('span', null, `${number.format(pending)} min pendientes`));
-    callout.append(label, text);
-    figure.append(callout);
-  }
 
   const attendees = Array.isArray(session.attendance) ? session.attendance.filter(person => typeof person?.name === 'string' && person.name.trim()) : [];
   if (attendees.length) {
