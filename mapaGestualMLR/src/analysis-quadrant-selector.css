@@ -19,28 +19,25 @@ body.twin-projection .analysis-quadrant-selector { display: none !important; }
 .analysis-subdivision-underlay { stroke: white; stroke-width: 2.4; stroke-opacity: .9; stroke-dasharray: 3 5; stroke-linecap: round; }
 .analysis-subdivision-boundaries { stroke: #526b70; stroke-width: 1.25; stroke-dasharray: 3 5; stroke-linecap: round; }
 .analysis-quadrant-selector .analysis-unit-fill { fill: var(--unit-color); fill-opacity: .065; }
-.analysis-unit-underlay { stroke: white; stroke-width: 4.4; }
-.analysis-unit-boundaries { stroke: color-mix(in srgb, var(--unit-color) 79%, var(--cartographic-ink)); stroke-width: 4; }
-.analysis-commune-underlay { stroke: white; stroke-width: 4.6; stroke-opacity: 1; }
-.analysis-commune-boundary { stroke: var(--cartographic-ink); stroke-width: 1.5; stroke-opacity: .82; }
-.analysis-quadrant-selector .analysis-quadrant-fill { fill: var(--unit-color); fill-opacity: 0; }
-.analysis-quadrant-underlay { stroke: white; stroke-width: 13; stroke-opacity: 0; }
-.analysis-quadrant-edge { stroke: color-mix(in srgb, var(--unit-color) 75%, var(--cartographic-ink)); stroke-width: 9.5; stroke-opacity: 0; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-fill { fill-opacity: .10; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-underlay { stroke-opacity: 1; }
-.analysis-quadrant[data-selected="true"] .analysis-quadrant-edge { stroke-opacity: 1; }
-.analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-underlay { stroke-opacity: .95; stroke-width: 10; stroke-dasharray: 5 4; }
-.analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-edge { stroke-opacity: 1; stroke-width: 7.5; stroke-dasharray: 5 4; }
+.analysis-unit-underlay { stroke: white; stroke-width: 3.6; }
+.analysis-unit-boundaries { stroke: color-mix(in srgb, var(--unit-color) 79%, var(--cartographic-ink)); stroke-width: 3.2; }
+.analysis-commune-underlay { stroke: white; stroke-width: 3; }
+.analysis-commune-boundary { stroke: var(--cartographic-ink); stroke-width: 1.25; stroke-opacity: .82; }
+.analysis-quadrant-selector .analysis-selection-fill { fill: var(--unit-color); fill-opacity: .10; }
+.analysis-selection-outline { stroke: color-mix(in srgb, var(--unit-color) 56%, var(--cartographic-ink)); stroke-width: 3.4; }
+.analysis-quadrant-underlay { stroke: white; stroke-width: 5; stroke-opacity: 0; stroke-dasharray: 5 4; }
+.analysis-quadrant-edge { stroke: color-mix(in srgb, var(--unit-color) 75%, var(--cartographic-ink)); stroke-width: 3.5; stroke-opacity: 0; stroke-dasharray: 5 4; }
+.analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-underlay { stroke-opacity: .85; }
+.analysis-quadrant[data-preview="true"]:not([data-selected="true"]) .analysis-quadrant-edge { stroke-opacity: 1; }
 .analysis-unit-number-halo { fill: white; stroke: white; stroke-width: 4; }
 .analysis-unit-number-badge { fill: var(--unit-color); }
 .analysis-unit-label text { fill: var(--analysis-unit-number-ink); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .analysis-unit-label[data-compact="true"] text { font-size: 9.5px; }
 .analysis-quadrant-selector[data-scale="street"] .analysis-subdivision-underlay { stroke-width: 2; stroke-opacity: .85; }
 .analysis-quadrant-selector[data-scale="street"] .analysis-subdivision-boundaries { stroke-width: 1; stroke-opacity: .8; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-unit-underlay { stroke-width: 3.6; stroke-opacity: .95; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-unit-boundaries { stroke-width: 3.2; stroke-opacity: .95; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-unit-underlay { stroke-width: 2.8; stroke-opacity: .95; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-unit-boundaries { stroke-width: 2.5; stroke-opacity: .95; }
 .analysis-quadrant-selector[data-scale="street"] .analysis-unit-fill { fill-opacity: .035; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-commune-underlay { stroke-width: 3.5; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-commune-boundary { stroke-width: 1.25; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-quadrant[data-selected="true"] .analysis-quadrant-underlay { stroke-width: 10; }
-.analysis-quadrant-selector[data-scale="street"] .analysis-quadrant[data-selected="true"] .analysis-quadrant-edge { stroke-width: 7; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-commune-underlay { stroke-width: 2.6; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-commune-boundary { stroke-width: 1.1; }
+.analysis-quadrant-selector[data-scale="street"] .analysis-selection-outline { stroke-width: 2.6; }

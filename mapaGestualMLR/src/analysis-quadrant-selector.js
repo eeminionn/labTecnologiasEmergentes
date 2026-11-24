@@ -103,18 +103,23 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     return { path, reference: `url(#${id})` };
   }
   const communeClip = clipGeometry('commune');
+  const outsideSelection = clipGeometry('outside-selection');
   const surface = svgElement('g', { 'clip-path': communeClip.reference });
   // One compound stroke per level keeps shared edges from becoming darker
   // through repeated transparent strokes on adjacent geographic polygons.
   const subdivisionUnderlay = svgElement('path', { class: 'analysis-subdivision-underlay' });
   const subdivisions = svgElement('path', { class: 'analysis-subdivision-boundaries' });
+  const subdivisionLines = svgElement('g', { 'clip-path': outsideSelection.reference });
+  subdivisionLines.append(subdivisionUnderlay, subdivisions);
   const unitFills = svgElement('g');
+  const selectionFills = svgElement('g');
+  const selectionOutlines = svgElement('g', { 'clip-path': outsideSelection.reference });
   const parentUnderlay = svgElement('path', { class: 'analysis-unit-underlay' });
   const parentBoundaries = svgElement('g');
   const communeUnderlay = svgElement('path', { class: 'analysis-commune-underlay' });
   const communeBoundary = svgElement('path', { class: 'analysis-commune-boundary' });
   const highlights = svgElement('g', { class: 'analysis-quadrant-highlights' });
-  surface.append(unitFills, subdivisionUnderlay, subdivisions, highlights, parentUnderlay, parentBoundaries, communeUnderlay, communeBoundary);
+  surface.append(unitFills, subdivisionLines, selectionFills, selectionOutlines, highlights, parentUnderlay, parentBoundaries, communeUnderlay, communeBoundary);
   const labels = svgElement('g', { class: 'analysis-unit-labels', 'aria-hidden': 'true' });
   const entries = new Map();
   const parents = new Map();
@@ -125,23 +130,26 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       class: 'analysis-quadrant', 'data-quadrant': option.id, 'data-unit': option.unit, 'clip-path': clip.reference
     });
     group.style.setProperty('--unit-color', unitNeighborhoodColor(option.unit));
-    const fill = svgElement('path', { class: 'analysis-quadrant-fill', 'fill-rule': 'evenodd' });
     const underlay = svgElement('path', { class: 'analysis-quadrant-underlay' });
     const edge = svgElement('path', { class: 'analysis-quadrant-edge' });
-    group.append(fill, underlay, edge);
+    group.append(underlay, edge);
     highlights.append(group);
-    entries.set(option.id, { polygons: option.polygons, group, clipPath: clip.path, fill, underlay, edge });
+    entries.set(option.id, { unit: option.unit, polygons: option.polygons, group, clipPath: clip.path, underlay, edge });
   }
   for (const unit of units) {
     const polygons = unit.polygons, label = svgElement('g', { class: 'analysis-unit-label', 'data-unit': unit.id });
     const clip = clipGeometry(`unit-${unit.id}`);
     const color = unitNeighborhoodColor(unit.id);
     const fill = svgElement('path', { class: 'analysis-unit-fill', 'fill-rule': 'evenodd' });
+    const selectionFill = svgElement('path', { class: 'analysis-selection-fill', 'fill-rule': 'evenodd' });
+    const selectionOutline = svgElement('path', { class: 'analysis-selection-outline', 'data-unit': unit.id });
     const boundary = svgElement('path', {
       class: 'analysis-unit-boundaries', 'data-unit': unit.id, 'clip-path': clip.reference
     });
-    for (const element of [label, fill, boundary]) element.style.setProperty('--unit-color', color);
+    for (const element of [label, fill, boundary, selectionFill, selectionOutline]) element.style.setProperty('--unit-color', color);
     unitFills.append(fill);
+    selectionFills.append(selectionFill);
+    selectionOutlines.append(selectionOutline);
     parentBoundaries.append(boundary);
     const halo = svgElement('circle', { class: 'analysis-unit-number-halo', r: '11.5' });
     const badge = svgElement('circle', { class: 'analysis-unit-number-badge', r: '11.5' });
@@ -152,7 +160,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     const box = geographicBounds(polygons);
     const candidates = labelCandidates(unit, polygons, box, definition.boundaryPolygons);
     parents.set(String(unit.id), {
-      polygons, label, halo, badge, fill, boundary, clipPath: clip.path, candidates,
+      polygons, label, halo, badge, fill, boundary, clipPath: clip.path, candidates, selectionFill, selectionOutline,
       clearance: Math.max(0, ...candidates.map(candidate => candidate.clearance))
     });
   }
@@ -162,6 +170,24 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
   container.append(layer);
   let selected = null, preview = null;
   let visible = false, destroyed = false, frame = null, projectionSignature = null;
+
+  function paintSelection() {
+    const pathsByUnit = new Map();
+    for (const id of selected ?? []) {
+      const { unit, clipPath } = entries.get(id);
+      const path = clipPath.getAttribute('d') ?? '';
+      pathsByUnit.set(unit, (pathsByUnit.get(unit) ?? '') + path);
+    }
+    // Clip the strokes to the outside of the combined selection. A shared edge
+    // has selected area on both sides, so neither its stroke nor its dashes show.
+    const boundary = communeClip.path.getAttribute('d') ?? '';
+    attribute(outsideSelection.path, 'd', boundary + [...pathsByUnit.values()].join(''));
+    for (const [id, parent] of parents) {
+      const path = pathsByUnit.get(id) ?? '';
+      attribute(parent.selectionFill, 'd', path);
+      attribute(parent.selectionOutline, 'd', path);
+    }
+  }
 
   function position() {
     if (destroyed || !visible) return;
@@ -201,7 +227,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     for (const entry of entries.values()) {
       const path = projectedPath(entry.polygons, project) ?? '';
       subdivisionPaths.push(path);
-      for (const element of [entry.clipPath, entry.fill, entry.underlay, entry.edge]) attribute(element, 'd', path);
+      for (const element of [entry.clipPath, entry.underlay, entry.edge]) attribute(element, 'd', path);
     }
     const subdivisionPath = subdivisionPaths.join('');
     attribute(subdivisionUnderlay, 'd', subdivisionPath);
@@ -213,6 +239,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       for (const element of [parent.clipPath, parent.fill, parent.boundary]) attribute(element, 'd', path);
     }
     attribute(parentUnderlay, 'd', parentPaths.join(''));
+    paintSelection();
     display(labels, !atStreet);
     if (!atStreet) {
       const placed = [];
@@ -260,7 +287,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       attribute(entry.group, 'data-selected', selected?.has(id) ?? false);
       attribute(entry.group, 'data-preview', preview === id);
     }
-    const hierarchy = 'El número y el color identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los números se ocultan al acercarse a las calles. Las subdivisiones seleccionadas tienen un borde interior más grueso del color de su unidad.';
+    const hierarchy = 'El número y el color identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los números se ocultan al acercarse a las calles. Las subdivisiones seleccionadas muestran un contorno común en el color de su unidad.';
     const text = selected === null
       ? `Se muestran todas las unidades vecinales y sus subdivisiones. ${hierarchy}`
       : selected.size ? `Subdivisiones seleccionadas: ${[...selected].join(', ')}. ${hierarchy}`
@@ -284,6 +311,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       const key = selection => selection === null ? 'all' : [...selection].join(',');
       if (key(selected) !== key(next)) {
         selected = next;
+        paintSelection();
         changed = true;
       }
     }
