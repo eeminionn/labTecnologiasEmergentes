@@ -1340,7 +1340,7 @@ async function verifyAnalysis() {
     checks.quadrantPersists=analysisView.info().quadrantIds[0]===shown?.quadrantIds[0];
     document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     checks.escapeDismissesDetail=inspector.dataset.state==='idle' && analysisView.info().hover===null;
-    analysisView.setQuadrants([]);
+    analysisView.setQuadrants(null);
     const handPointer={id:'analysis-hand',x:screen.x/viewport.width,y:screen.y/viewport.height};
     await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
     await sleep(500);
@@ -1491,8 +1491,8 @@ async function verifyAnalysis() {
     const alarmMarker='analysis-resource-alarms-boton-paradero-pd308';
     await waitFor(()=>analysisView.targets().some(target=>target.id===alarmMarker),2500,'marcador de emergencia');
     await hold(alarmMarker);
-    checks.alarmSelectsQuadrant=analysisView.info().quadrantIds.length===1
-      && analysisView.info().datasets.alarms.filteredCount>0;
+    checks.alarmOpensDetails=analysisView.info().hover?.record?.id==='boton-paradero-pd308'
+      && analysisView.info().quadrantIds===null;
     await capture('botones');
     await hold('mode-map');
     checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible

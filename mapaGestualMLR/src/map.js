@@ -122,10 +122,6 @@ function cameraLayerSpec(value) {
     opacity: Number.isFinite(value.opacity) ? Math.max(0, Math.min(1, value.opacity)) : .85 };
 }
 
-function cameraPointStyle(subtle = false) {
-  return { radius: subtle ? 3 : 4.8, color: '#ffffff', weight: subtle ? 1.2 : 1.8, opacity: 1, fillColor: '#16ceff', fillOpacity: 1 };
-}
-
 function analysisPadding(container) {
   const padding = { top: 80, right: 70, bottom: 70, left: container.clientWidth <= 1000 ? 280 : 318 };
   const outer = container.getBoundingClientRect();
@@ -258,7 +254,6 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   analysisPane.style.zIndex = '350'; analysisPane.style.pointerEvents = 'none';
   const cameraPane = map.createPane('analysis-cameras');
   cameraPane.style.zIndex = '360'; cameraPane.style.pointerEvents = 'none';
-  const cameraRenderer = L.canvas({ pane: 'analysis-cameras', padding: .25 });
   map.attributionControl.setPrefix(false);
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19, minZoom: 3, updateWhenIdle: true, keepBuffer: 1,
@@ -328,27 +323,15 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     clearCameraAnalysisLayer(); cameraSpec = nextSpec;
     if (!cameraSpec) return;
     cameraPane.style.opacity = String(cameraSpec.opacity);
-    const group = L.layerGroup();
-    const heatmap = cameraSpec.mode === 'heatmap';
-    if (heatmap) {
-      const next = L.imageOverlay(cameraSpec.url, cameraSpec.bounds, { pane: 'analysis-cameras',
-        opacity: 1, interactive: false, alt: 'Concentración de ubicaciones de cámaras de seguridad' });
-      next.on('load', () => { if (cameraOverlay === group) cameraLoaded = true; });
-      next.on('error', () => { if (cameraOverlay === group) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } });
-      next.addTo(group);
+    if (cameraSpec.mode === 'points') {
+      cameraLoaded = true;
+      return;
     }
-    const style = cameraPointStyle(heatmap);
-    for (const point of cameraSpec.points) {
-      if (!heatmap) {
-        L.circleMarker([point.lat, point.lng], { ...style, radius: style.radius + 3,
-          color: '#00aaff', opacity: .38, weight: 1.2, fillOpacity: .22,
-          renderer: cameraRenderer, pane: 'analysis-cameras', interactive: false }).addTo(group);
-      }
-      L.circleMarker([point.lat, point.lng], { ...style, renderer: cameraRenderer,
-        pane: 'analysis-cameras', interactive: false }).addTo(group);
-    }
-    cameraOverlay = group;
-    cameraLoaded = !heatmap;
+    const next = L.imageOverlay(cameraSpec.url, cameraSpec.bounds, { pane: 'analysis-cameras',
+      opacity: 1, interactive: false, alt: 'Concentración de ubicaciones de cámaras de seguridad' });
+    next.on('load', () => { if (cameraOverlay === next) cameraLoaded = true; });
+    next.on('error', () => { if (cameraOverlay === next) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } });
+    cameraOverlay = next;
     if (analysisMode) cameraOverlay.addTo(map);
   }
   function setCameraAnalysisOpacity(value) {
@@ -402,13 +385,13 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     setAnalysisMode, setAnalysisLayer, setAnalysisFrame, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
     setCameraAnalysisLayer, clearCameraAnalysisLayer, setCameraAnalysisOpacity,
     resetSequence() { map.closePopup(); const state = sequence.reset(); refreshMarkers(); return state; },
-    destroy() { analysisRaster.destroy(); clearCameraAnalysisLayer(); cameraRenderer.remove(); legend.remove(); map.remove(); container.style.background = ''; },
+    destroy() { analysisRaster.destroy(); clearCameraAnalysisLayer(); legend.remove(); map.remove(); container.style.background = ''; },
     info() { return { zoom: map.getZoom(), center: map.getCenter(), analysisMode,
       analysisLayerLoaded: analysisRaster.info().loaded, analysisLayerVisible: analysisRaster.info().visible,
       analysisTransitioning: analysisRaster.info().transitioning,
       analysisBounds: analysisRaster.info().spec?.bounds, analysisOpacity: analysisRaster.info().spec?.opacity ?? null,
       cameraAnalysisMode: cameraSpec?.mode ?? null, cameraAnalysisLoaded: analysisMode && cameraLoaded,
-      cameraAnalysisVisible: analysisMode && !!cameraOverlay, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
+      cameraAnalysisVisible: analysisMode && !!cameraSpec, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
       cameraAnalysisOpacity: cameraSpec?.opacity ?? null,
       ...diagnostics(sequence, outline.getLayers().length) }; },
     targets() {
@@ -462,7 +445,7 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     },
     onError: () => notify('No se pudo mostrar el mapa de calor.')
   });
-  let cameraSpec = null, cameraOverlay = null, cameraGround = null, cameraLoaded = false, cameraImage = null;
+  let cameraSpec = null, cameraGround = null, cameraLoaded = false, cameraImage = null;
   map.addListener('renderingtype_changed', () => { if (map.getRenderingType() === 'RASTER') notify('Este equipo usa Google Maps raster. El zoom puede tener menos fluidez que el mapa vectorial.'); });
   const features = map.data.addGeoJson(boundary);
   map.data.setStyle({ strokeColor: boundaryStyle.color, strokeWeight: boundaryStyle.weight, strokeOpacity: boundaryStyle.opacity, fillColor: boundaryStyle.fillColor, fillOpacity: boundaryStyle.fillOpacity, clickable: false });
@@ -510,50 +493,6 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     }
     onRemove() { this.element?.remove(); this.element = null; }
   }
-  // A single pointer-transparent canvas keeps hundreds of camera locations
-  // aligned with the provider's own projection while the map pans or zooms.
-  class CameraPointsOverlay extends OverlayView {
-    constructor(points, opacity, subtle) { super(); this.points = points; this.opacity = opacity; this.subtle = subtle; this.canvas = null; this.observer = null; }
-    onAdd() {
-      this.canvas = document.createElement('canvas');
-      this.canvas.setAttribute('role', 'img');
-      this.canvas.setAttribute('aria-label', 'Ubicaciones de cámaras de seguridad');
-      Object.assign(this.canvas.style, { position: 'absolute', pointerEvents: 'none', zIndex: '360', opacity: String(this.opacity) });
-      this.getPanes().overlayLayer.append(this.canvas);
-      this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(container);
-    }
-    draw() {
-      if (!this.canvas) return;
-      const projection = this.getProjection();
-      if (!projection || !container.clientWidth || !container.clientHeight) return;
-      const corner = projection.fromContainerPixelToLatLng(new google.maps.Point(0, 0));
-      if (!corner) return;
-      const origin = projection.fromLatLngToDivPixel(corner);
-      if (!origin) return;
-      const width = container.clientWidth, height = container.clientHeight;
-      const scale = Math.min(2, window.devicePixelRatio || 1);
-      this.canvas.width = Math.round(width * scale); this.canvas.height = Math.round(height * scale);
-      Object.assign(this.canvas.style, { left: `${origin.x}px`, top: `${origin.y}px`, width: `${width}px`, height: `${height}px` });
-      const context = this.canvas.getContext('2d'); context.setTransform(scale, 0, 0, scale, 0, 0);
-      const style = cameraPointStyle(this.subtle);
-      for (const point of this.points) {
-        const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(point.lat, point.lng));
-        if (!position) continue;
-        const x = position.x - origin.x, y = position.y - origin.y;
-        if (x < -10 || y < -10 || x > width + 10 || y > height + 10) continue;
-        if (!this.subtle) {
-          context.beginPath(); context.arc(x, y, style.radius + 3, 0, Math.PI * 2);
-          context.fillStyle = '#00aaff38'; context.fill();
-          context.strokeStyle = '#00aaff61'; context.lineWidth = 1.2; context.stroke();
-        }
-        context.beginPath(); context.arc(x, y, style.radius, 0, Math.PI * 2);
-        context.fillStyle = style.fillColor; context.fill();
-        context.strokeStyle = style.color; context.lineWidth = style.weight; context.stroke();
-      }
-    }
-    setOpacity(value) { this.opacity = value; if (this.canvas) this.canvas.style.opacity = String(value); }
-    onRemove() { this.observer?.disconnect(); this.observer = null; this.canvas?.remove(); this.canvas = null; }
-  }
   const markers = samples.map(item => new SequenceMarker(item));
   const refreshMarkers = () => markers.forEach(marker => {
     updateMarker(marker.element, marker.item, sequence);
@@ -564,7 +503,6 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     info.close(); legend.style.display = analysisMode ? 'none' : '';
     refreshMarkers(); analysisRaster.setVisible(analysisMode);
     cameraGround?.setMap(analysisMode ? map : null);
-    cameraOverlay?.setMap(analysisMode ? map : null);
     return analysisMode;
   }
   function setAnalysisLayer(value) {
@@ -578,7 +516,6 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     if (cameraImage) { cameraImage.onload = null; cameraImage.onerror = null; cameraImage.src = ''; cameraImage = null; }
   }
   function clearCameraAnalysisLayer() {
-    cameraOverlay?.setMap(null); cameraOverlay = null;
     cameraGround?.setMap(null); cameraGround = null;
     clearCameraAnalysisImage(); cameraSpec = null; cameraLoaded = false;
   }
@@ -595,15 +532,14 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       image.onerror = () => { if (cameraImage === image) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } };
       image.src = cameraSpec.url;
     }
-    cameraOverlay = new CameraPointsOverlay(cameraSpec.points, cameraSpec.opacity, heatmap);
     cameraLoaded = !heatmap;
-    if (analysisMode) { cameraGround?.setMap(map); cameraOverlay.setMap(map); }
+    if (analysisMode) cameraGround?.setMap(map);
   }
   function setCameraAnalysisOpacity(value) {
     if (!cameraSpec || !Number.isFinite(value)) return false;
     cameraSpec.opacity = Math.max(0, Math.min(1, value));
     cameraGround?.setOpacity(cameraSpec.opacity);
-    cameraOverlay?.setOpacity(cameraSpec.opacity); return true;
+    return true;
   }
   markers.forEach(marker => marker.setMap(map)); home();
   return {
@@ -656,7 +592,7 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       analysisTransitioning: analysisRaster.info().transitioning,
       analysisBounds: analysisRaster.info().spec?.bounds, analysisOpacity: analysisRaster.info().spec?.opacity ?? null,
       cameraAnalysisMode: cameraSpec?.mode ?? null, cameraAnalysisLoaded: analysisMode && cameraLoaded,
-      cameraAnalysisVisible: analysisMode && !!cameraOverlay, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
+      cameraAnalysisVisible: analysisMode && !!cameraSpec, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
       cameraAnalysisOpacity: cameraSpec?.opacity ?? null,
       ...diagnostics(sequence, features.length) }; },
     targets() {

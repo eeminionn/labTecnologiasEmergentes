@@ -28,7 +28,10 @@ test('Permite combinar unidades y partes con un orden estable y sin duplicar ár
   const unit = district.byUnit.get('13').children.map(part => part.id);
   assert.deepEqual(normalizeAnalysisQuadrants(['14-A', '13-A', '13-A'], district), ['13-A', '14-A']);
   assert.deepEqual(normalizeAnalysisQuadrants([], district), []);
-  assert.deepEqual(normalizeAnalysisQuadrants('all', district), []);
+  assert.equal(normalizeAnalysisQuadrants('all', district), null);
+  assert.equal(normalizeAnalysisQuadrants(null, district), null);
+  assert.deepEqual(toggleAnalysisArea(null, ['13-A']), ['13-A']);
+  assert.deepEqual(toggleAnalysisArea(['13-A'], ['13-A']), []);
   assert.throws(() => normalizeAnalysisQuadrants(['13-ZZZ'], district), /no es válido/);
   const expanded = normalizeAnalysisQuadrants(toggleAnalysisArea(['13-A', '14-A'], unit), district);
   assert.deepEqual(expanded, [...unit, '14-A']);

@@ -302,7 +302,7 @@ function resourceView(root, state) {
   if (!sheet) return idleView(root);
   const view = shell(state);
   view.title.textContent = sheet.name;
-  view.subtitle.textContent = sheet.address;
+  view.subtitle.textContent = [sheet.address, state.resource?.outsideArea ? 'Fuera del área seleccionada' : ''].filter(Boolean).join(' · ');
   const hero = element('section', 'companion-investment');
   const status = element('dl', 'companion-quantities');
   status.append(metric('Estado del período', sheet.state));
@@ -324,7 +324,7 @@ function resourceView(root, state) {
   second.append(procurementCard(sheet.procurement), management);
   grid.append(first, second);
   view.content.append(hero, metrics, grid);
-  if (state.sector?.security) view.content.append(robberyShare(state.sector.security));
+  if (state.sector?.security && !state.resource?.outsideArea) view.content.append(robberyShare(state.sector.security));
   view.content.append(budgetFooter());
   root.replaceChildren(view.main);
 }

@@ -1,9 +1,11 @@
 import { SECURITY_ROBBERY_TYPES, HEAT_COLOR_STOPS } from './analysis-data.js';
 import { ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS } from './analysis-catalog.js';
 import { CAMERA_HEAT_COLOR_STOPS } from './camera-analysis-data.js';
-import { UNIT_ROBBERY_COLORS } from './analysis-quadrants.js';
+import { unitNeighborhoodColor } from './analysis-quadrants.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const number = value => new Intl.NumberFormat('es-CL').format(value);
+const HIGH_ROBBERY_THRESHOLD = .9;
+const MAX_HIGHLIGHTED_UNITS = 3;
 export const CAMERA_CHOICES = {
   state: [['all','Todos'],['Operativa','Operativas'],['Mantención','Mantención'],['Inactiva','Inactivas']],
   type: [['all','Todos'],['Domo','Domo'],['Fija','Fija'],['Lectora de patentes','Lectora de patentes']]
@@ -53,15 +55,15 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const areaLegend=el('legend',null,'Área');
   const areaTrigger=button(area,`${prefix}-area-picker`,'Unidades vecinales',()=>openPicker('area'),'analysis-area-trigger');
   areaTrigger.setAttribute('aria-haspopup','dialog');areaTrigger.setAttribute('aria-expanded','false');
-  const whole=button(area,`${prefix}-quadrant-all`,'Toda la comuna',()=>callbacks.clearQuadrants(),'analysis-quadrant-reset');
+  const scopeActions=el('div','analysis-area-actions');
+  const whole=button(scopeActions,`${prefix}-quadrant-all`,'Toda la comuna',()=>callbacks.clearQuadrants(),'analysis-quadrant-reset');
+  const noSelection=button(scopeActions,`${prefix}-quadrant-empty`,'Quitar selección',()=>callbacks.emptyQuadrants(),'analysis-quadrant-reset');
   const sharedArea=el('p','analysis-shared-area','Vinculada a la capa izquierda');sharedArea.hidden=true;
   const mapKey=el('div','analysis-boundary-key');mapKey.setAttribute('aria-label','Límites en el mapa');
   mapKey.append(el('span','analysis-boundary-unit','Unidad vecinal'),el('span','analysis-boundary-part','Subcuadrante'));
-  const unitRobberyKey=el('div','analysis-unit-robbery-key');unitRobberyKey.hidden=true;
-  unitRobberyKey.style.setProperty('--unit-robbery-low',UNIT_ROBBERY_COLORS[0]);unitRobberyKey.style.setProperty('--unit-robbery-high',UNIT_ROBBERY_COLORS.at(-1));
-  unitRobberyKey.setAttribute('role','img');unitRobberyKey.setAttribute('aria-label','Robos por unidad. Contorno verde para menos robos y rojo para más robos.');
-  unitRobberyKey.append(el('span',null,'Robos por unidad'),el('span','analysis-unit-robbery-low','Menos'),el('span','analysis-unit-robbery-high','Más'));
-  area.prepend(areaLegend,spatialContext);area.append(sharedArea,mapKey,unitRobberyKey);
+  const outsideKey=el('span','analysis-boundary-outside','Fuera del área elegida');outsideKey.hidden=true;
+  mapKey.append(outsideKey);
+  area.prepend(areaLegend,spatialContext);area.append(scopeActions,sharedArea,mapKey);
   const filters=el('section','analysis-query-filters');filters.setAttribute('aria-label','Filtros');
   filters.append(el('h2','analysis-filter-title','Filtros'));
   body.append(area,filters);
@@ -177,18 +179,21 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const grids={};
   const areaPicker=el('div','analysis-area-picker');grids.area=areaPicker;
   const areaSummary=el('p','analysis-area-summary');areaSummary.setAttribute('role','status');
+  const robberyKey=el('div','analysis-unit-robbery-key','Robos por unidad');robberyKey.hidden=true;
+  const highRobberyKey=el('strong','analysis-unit-robbery-high','Mayor cantidad');highRobberyKey.hidden=true;robberyKey.append(highRobberyKey);
   const unitGrid=el('div','analysis-unit-grid');unitGrid.setAttribute('role','group');unitGrid.setAttribute('aria-label','Unidades vecinales');
   const unitDetail=el('div','analysis-unit-detail');unitDetail.hidden=true;
   const unitBack=button(unitDetail,`${prefix}-unit-back`,'‹ Otras unidades',()=>showAreaUnit(null),'analysis-unit-back');
   const unitAll=button(unitDetail,`${prefix}-unit-all`,'Seleccionar toda la unidad',()=>callbacks.toggleUnit(activeUnitId),'analysis-unit-all');
   const childGrid=el('div','analysis-subquadrant-grid');childGrid.setAttribute('role','group');
-  unitDetail.append(childGrid);areaPicker.append(areaSummary,unitGrid,unitDetail);popover.append(areaPicker);
+  unitDetail.append(childGrid);areaPicker.append(areaSummary,robberyKey,unitGrid,unitDetail);popover.append(areaPicker);
   const unitButtonsById=new Map(),areaButtonsById=new Map();
   let areaUnits=[],unitsSource=null,unitsSignature='',activeUnitId=null;
   function showAreaUnit(id,focus=true) {
     const previous=activeUnitId;activeUnitId=id;
     const unit=areaUnits.find(item=>item.id===id);
     unitGrid.hidden=id!==null;unitDetail.hidden=id===null;
+    if(unit)unitDetail.style.setProperty('--unit-color',unitNeighborhoodColor(unit.id));
     for(const [childId,control] of areaButtonsById)control.hidden=!unit?.children.some(child=>child.id===childId);
     popoverTitle.textContent=unit?`Unidad vecinal ${unit.label}`:'Unidades vecinales';
     childGrid.setAttribute('aria-label',unit?`Subcuadrantes de la unidad vecinal ${unit.label}`:'Subcuadrantes');
@@ -208,6 +213,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     unitButtonsById.clear();areaButtonsById.clear();unitGrid.replaceChildren();childGrid.replaceChildren();
     for(const unit of units) {
       const control=button(unitGrid,`${prefix}-unit-${unit.id}`,'',()=>showAreaUnit(unit.id),'analysis-unit-option');
+      control.style.setProperty('--unit-color',unitNeighborhoodColor(unit.id));
       control.append(el('span','analysis-unit-number',unit.label),el('small','analysis-unit-robbery-total'),el('small','analysis-unit-count'));unitButtonsById.set(unit.id,control);
       for(const child of unit.children) {
         const item=button(childGrid,`${prefix}-quadrant-${child.id}`,child.label,()=>callbacks.toggleQuadrant(child.id),'analysis-subquadrant-option');
@@ -219,15 +225,22 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   }
   function updateAreaSelection() {
     const selected=state?.quadrantIds??[];
+    const totals=state?.unitRobberies;
+    const ranked=areaUnits.filter(unit=>totals?.[unit.id]>0).sort((left,right)=>totals[right.id]-totals[left.id]);
+    const cutoff=(totals?.[ranked[0]?.id]??0)*HIGH_ROBBERY_THRESHOLD;
+    const highlighted=new Set(ranked.slice(0,MAX_HIGHLIGHTED_UNITS).filter(unit=>totals[unit.id]>=cutoff).map(unit=>unit.id));
+    robberyKey.hidden=!totals||activeUnitId!==null;
+    highRobberyKey.hidden=!highlighted.size;
     for(const unit of areaUnits) {
       const control=unitButtonsById.get(unit.id),count=unit.children.filter(child=>selected.includes(child.id)).length;
-      const robberyTotal=state?.unitRobberies?.[unit.id],hasTotal=Number.isFinite(robberyTotal)&&robberyTotal>=0;
+      const robberyTotal=totals?.[unit.id],hasTotal=Number.isFinite(robberyTotal)&&robberyTotal>=0;
       const robberyLabel=control.querySelector('.analysis-unit-robbery-total');
       robberyLabel.hidden=!hasTotal;robberyLabel.textContent=hasTotal?number(robberyTotal):'';
+      robberyLabel.dataset.highRobberies=String(highlighted.has(unit.id));
       if(hasTotal)control.dataset.robberyTotal=String(robberyTotal);else delete control.dataset.robberyTotal;
       control.disabled=!state?.canChoose;
       control.dataset.selection=count===0?'none':count===unit.children.length?'all':'partial';
-      const description=`Unidad vecinal ${unit.label}${hasTotal?`, ${number(robberyTotal)} robos`:''}, ${count} de ${unit.children.length} subcuadrantes seleccionados`;
+      const description=`Unidad vecinal ${unit.label}${hasTotal?`, ${number(robberyTotal)} robos`:''}${highlighted.has(unit.id)?', entre las de mayor cantidad':''}, ${count} de ${unit.children.length} subcuadrantes seleccionados`;
       control.setAttribute('aria-label',description);control.title=description;
       control.querySelector('.analysis-unit-count').textContent=count?`${count}/${unit.children.length}`:'';
     }
@@ -294,15 +307,15 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     forecast.disabled=!next.canChoose;
     comparisonSlot.hidden=primary||!next.crossed;
     areaLegend.textContent=next.crossed?'Área compartida':'Área';
-    areaTrigger.hidden=whole.hidden=!primary;
+    areaTrigger.hidden=scopeActions.hidden=!primary;
     sharedArea.hidden=primary;
     mapKey.hidden=!primary;
-    unitRobberyKey.hidden=!primary||!next.unitRobberies;
+    outsideKey.hidden=next.quadrantIds===null;
     updateAreaUnits(next.units??[]);updateAreaSelection();
     areaTrigger.disabled=!next.canChoose||areaUnits.length===0;
-    const quadrantIds=next.quadrantIds??[];
-    whole.setAttribute('aria-pressed',String(quadrantIds.length===0));
-    whole.disabled=!next.canChoose;
+    whole.setAttribute('aria-pressed',String(next.quadrantIds===null));
+    noSelection.setAttribute('aria-pressed',String(next.quadrantIds?.length===0));
+    whole.disabled=noSelection.disabled=!next.canChoose;
     const scopeText=next.spatialLabel??'Toda la comuna';
     if(spatialContext.textContent!==scopeText)spatialContext.textContent=scopeText;
     heatKey.hidden=resource||camera&&next.display!=='heatmap';

@@ -1,7 +1,17 @@
 import { boundaryPolygons, pointInsideBoundary } from './analysis-data.js';
 
 export const STREET_DETAIL_ZOOM = 15.5;
-export const UNIT_ROBBERY_COLORS = ['#13764b', '#647b1f', '#9d7200', '#ae4b23', '#b12634'];
+
+// Dominant fill sampled from each numbered unit in the reference neighbourhood map.
+const UNIT_COLORS = {
+  1: '#e7696d', 2: '#adca76', 3: '#ffbb00', 4: '#c480b3', 5: '#01c5ff',
+  6: '#b0c640', 7: '#5399ba', 8: '#ff71ef', 9: '#00c8c8', 10: '#fe213a',
+  11: '#e2478b', 12: '#00a295', 13: '#ffe900', 14: '#b756b7', 15: '#fe8c00'
+};
+
+export function unitNeighborhoodColor(id) {
+  return UNIT_COLORS[id] ?? '#7290a0';
+}
 
 function coordinates(record) {
   const number = value => typeof value === 'string' && value.trim() ? Number(value) : value;
@@ -70,12 +80,13 @@ export function classifyAnalysisQuadrant(record, district) {
 }
 
 export function normalizeAnalysisQuadrants(selection, district) {
+  if (selection === null || selection === 'all') return null;
   const values = Array.isArray(selection) ? selection : [selection];
   const ids = new Set(values);
   for (const id of ids) {
     if (id !== 'all' && !district.byId.has(id)) throw new Error('El subcuadrante seleccionado no es válido.');
   }
-  return ids.has('all') ? [] : district.quadrants.filter(part => ids.has(part.id)).map(part => part.id);
+  return ids.has('all') ? null : district.quadrants.filter(part => ids.has(part.id)).map(part => part.id);
 }
 
 export function toggleAnalysisArea(selection, ids) {

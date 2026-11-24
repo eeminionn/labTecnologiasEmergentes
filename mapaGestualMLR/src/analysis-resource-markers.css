@@ -1,0 +1,41 @@
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker {
+  transition: none;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind="cameras"] {
+  width: 26px;
+  height: 26px;
+  min-height: 26px;
+  border-radius: 8px;
+  background: #0678b7;
+}
+
+body:not(.twin-projection) .analysis-resource-marker[data-kind="cameras"] > svg {
+  width: 16px;
+  height: 16px;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-group[data-kind="cameras"] {
+  width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind][data-outside-area="true"] {
+  z-index: 0;
+  background: #66737a;
+  box-shadow: 0 1px 3px #26374055;
+}
+
+body:not(.twin-projection) .analysis-resource-stem[data-outside-area="true"] {
+  background: #66737a;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-selected="true"] {
+  z-index: 2;
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: 2px;
+}
