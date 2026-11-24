@@ -1,6 +1,7 @@
 import { boundaryPolygons, pointInsideBoundary } from './analysis-data.js';
 
 export const STREET_DETAIL_ZOOM = 15.5;
+export const UNIT_ROBBERY_COLORS = ['#13764b', '#647b1f', '#9d7200', '#ae4b23', '#b12634'];
 
 function coordinates(record) {
   const number = value => typeof value === 'string' && value.trim() ? Number(value) : value;

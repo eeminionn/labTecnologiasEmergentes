@@ -33,8 +33,8 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   const heading = element('div', 'analysis-title-row');
   heading.append(title);
   const header = element('header', 'analysis-heading');
-  const back = button('back', '← Histórico', onExit);
-  header.append(back, heading, element('p', 'forecast-caption', `Robos · Proyección ${year} · Demostración`));
+  const back = button('back', '← Volver a Análisis', onExit);
+  header.append(back, heading, element('p', 'forecast-caption', `Robos en La Reina · Proyección ${year}`));
 
   const body = element('div', 'analysis-body');
   const loadStatus = element('p', 'forecast-caption', 'Cargando la proyección…');
@@ -105,14 +105,13 @@ export function createForecastView(overlay, container, { map, signal, inside, on
   });
   const resultNote = element('small');
   readout.append(resultLabel, metrics, resultNote);
+  body.append(readout);
   const reticle = element('div', 'forecast-reticle');
   reticle.hidden = true;
   reticle.setAttribute('aria-hidden', 'true');
-  overlay.append(panel, readout, reticle);
-  for (const node of [panel, readout]) {
-    for (const event of ['pointerdown', 'mousedown', 'touchstart', 'click', 'dblclick', 'wheel']) {
-      node.addEventListener(event, input => input.stopPropagation());
-    }
+  overlay.append(panel, reticle);
+  for (const event of ['pointerdown', 'mousedown', 'touchstart', 'click', 'dblclick', 'wheel']) {
+    panel.addEventListener(event, input => input.stopPropagation());
   }
 
   function updatePlacementTools() {

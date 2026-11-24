@@ -136,12 +136,6 @@ function analysisPadding(container) {
     if (!box.width || !box.height || box.right <= outer.left || box.left >= outer.right) continue;
     padding[side] = Math.ceil(side === 'left' ? box.right - outer.left + 12 : outer.right - box.left + 12);
   }
-  const timeline = container.querySelector('.analysis-timeline-bar');
-  if (timeline && !timeline.hidden) {
-    const box = timeline.getBoundingClientRect();
-    if (box.width > 0 && box.height > 0) padding.bottom = Math.min(Math.max(0, outer.height - padding.top - 100),
-      Math.max(padding.bottom, Math.ceil(outer.bottom - box.top + 12)));
-  }
   return padding;
 }
 

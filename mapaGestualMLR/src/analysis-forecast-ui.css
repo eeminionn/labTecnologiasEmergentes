@@ -40,10 +40,8 @@ body:not(.twin-projection) .forecast-gradient {
   background: linear-gradient(90deg,#008d36,#afc439,#f5dd61,#ef8b3a,#d73027);
 }
 body:not(.twin-projection) .forecast-readout {
-  position: absolute; z-index: 30; left: 64%; bottom: 30px; transform: translateX(-50%);
-  width: min(410px, calc(100% - 390px)); padding: 10px 14px;
-  background: rgba(255,255,255,.96); color: var(--ink); border: 1px solid var(--border);
-  border-radius: 12px; box-shadow: var(--glass-shadow); pointer-events: auto;
+  margin-top: 12px; padding-block: 10px;
+  border-top: 1px solid var(--border); color: var(--ink);
 }
 body:not(.twin-projection) .forecast-result-label { font-size: 13px; color: var(--municipal-petroleo); }
 body:not(.twin-projection) .forecast-readout dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 5px 0 2px; }

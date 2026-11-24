@@ -1189,6 +1189,8 @@ async function verifyAnalysis() {
   $('workspace').addEventListener('click',observe,true);
   const capture=async name=>{cancelGesture();await sleep(300);window.desktop.reportSmoke({phase:`analysis-${name}`});await sleep(100);};
   const hold=async id=>{
+    const control=$(id);
+    if(control?.closest('.analysis-body')&&control.getClientRects().length)control.scrollIntoView({block:'nearest'});
     const target=selectionTargets($('map').getBoundingClientRect()).find(item=>item.element.id===id);
     if(!target)throw new Error(`Análisis: control no visible ${id}`);
     if(!document.hasFocus())await window.desktop.click({x:-1,y:-1});
@@ -1324,10 +1326,11 @@ async function verifyAnalysis() {
     };
     moveOver(screen.x,screen.y);await sleep(210);
     checks.hoverPreview=analysisView.info().hover?.source==='mouse' && !analysisView.info().hover?.pinned;
-    const tooltip=document.querySelector('.analysis-map-tooltip');
-    const box=tooltip.getBoundingClientRect();
+    const inspector=document.querySelector('.analysis-inspector');
+    const box=inspector.getBoundingClientRect();
     moveOver(box.left-viewport.left+12,box.top-viewport.top+14);await sleep(210);
-    checks.hoverReadable=!tooltip.hidden && analysisView.info().hover?.source==='mouse';
+    checks.hoverReadable=inspector.dataset.state==='preview' && analysisView.info().hover?.source==='mouse'
+      && !!inspector.closest('.analysis-panel') && !document.querySelector('.analysis-map-tooltip');
     const shown=analysisView.info().hover;
     await window.desktop.click({x:viewport.left+screen.x,y:viewport.top+screen.y});await sleep(240);
     const chosen=analysisView.info();
@@ -1336,14 +1339,14 @@ async function verifyAnalysis() {
     moveOver(160,200);
     checks.quadrantPersists=analysisView.info().quadrantIds[0]===shown?.quadrantIds[0];
     document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
-    checks.escapeDismissesDetail=tooltip.hidden && analysisView.info().hover===null;
+    checks.escapeDismissesDetail=inspector.dataset.state==='idle' && analysisView.info().hover===null;
     analysisView.setQuadrants([]);
     const handPointer={id:'analysis-hand',x:screen.x/viewport.width,y:screen.y/viewport.height};
     await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
     await sleep(500);
     const detail=analysisView.info().hover;snapshots.detalle=detail;
     checks.handDetails=detail?.source==='hand' && detail.quadrantIds.length===1 && Number.isInteger(detail.total)
-      && document.querySelector('.analysis-tooltip-hours').textContent.includes('Noche');
+      && detail.security?.period.includes('Noche');
     checks.weekUsesSelectedPeriod=detail?.referenceDate==='2024-07-31' && detail.last7DaysRange.start==='2024-07-25' && detail.last7Days<=detail.total;
     window.desktop.reportSmoke({phase:'analysis-detalle'});await sleep(150);
     const before=map.info();analysisView.pan(90,35);
@@ -1473,10 +1476,10 @@ async function verifyAnalysis() {
     checks.fixedInComparison=analysisView.info().compareCategory==='fixed' && fixedInfo.summary.documented>=3 && fixedInfo.summary.simulated>0
       && $('map').querySelectorAll('.analysis-resource-marker[data-kind="fixed"]').length===fixedInfo.filteredCount
       && !map.info().cameraAnalysisVisible;
-    await hold('fixed-analysis-loc-centro-fidias');
+    await hold('fixed-analysis-locations-toggle');await hold('fixed-analysis-loc-centro-fidias');
     await waitFor(()=>analysisView.info().hover?.record?.id==='centro-fidias',2500,'ficha de ubicación documentada');
     checks.resourceDetail=analysisView.info().hover?.pinned && analysisView.info().hover.resources.fixed.total>=1
-      && tooltip.textContent.includes('Fidias con Leonardo da Vinci');
+      && inspector.textContent.includes('Fidias con Leonardo da Vinci');
     await capture('puntosfijos');
     await hold('analysis-sector-close');
     await hold('fixed-analysis-layers');await hold('analysis-layer-alarms');await waitLayer();
