@@ -70,7 +70,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     updatePlacementTools();
   })]));
   deviceRow.append(...deviceButtons.values());
-  devices.append(element('legend', null, 'Agregar al escenario'), deviceRow);
+  devices.append(element('legend', null, 'Agregar'), deviceRow);
   const placementTools = element('div', 'forecast-placement-tools');
   const aimButton = button('aim-add', 'Colocar en la mira', () => {
     const point = map.screenToLocation(reticle.offsetLeft, reticle.offsetTop);

@@ -1,4 +1,4 @@
-import { ANALYSIS_GROUPS, chooseAnalysisLayer } from './analysis-catalog.js';
+import { ANALYSIS_LAYERS, chooseAnalysisLayer } from './analysis-catalog.js';
 
 export function createLayerPicker(overlay, container, { selection, onSelect }) {
   const el = (tag, cls, content) => {
@@ -17,36 +17,35 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
   const closeButton = el('button', null, '×');
   closeButton.type = 'button';
   closeButton.id = 'analysis-layer-picker-close';
-  closeButton.setAttribute('aria-label', 'Cerrar selector de capas');
+  closeButton.setAttribute('aria-label', 'Cerrar selector de datos');
   closeButton.onclick = () => close();
   head.append(title, closeButton);
   picker.append(head);
   let role, anchor;
-  const choices = [];
-  for (const group of ANALYSIS_GROUPS) {
-    const section = el('section', 'analysis-layer-group');
-    section.append(el('h3', null, group.title));
-    for (const layer of group.layers) {
-      const choice = el('button', 'analysis-layer-option');
-      choice.type = 'button';
-      choice.id = `analysis-layer-${layer.id}`;
-      choice.dataset.tone = layer.tone;
-      const text = el('span');
-      const description = el('small', null, layer.description);
-      text.append(el('strong', null, layer.label), description);
-      choice.append(text);
-      choice.onclick = () => {
-        if (!chooseAnalysisLayer(selection(), layer.id, role)) return;
-        const chosenRole = role, hadFocus = picker.contains(document.activeElement);
-        close(false);
-        const focusTarget = onSelect(layer.id, chosenRole);
-        if (hadFocus) focusTarget?.focus({ preventScroll: true });
-      };
-      section.append(choice);
-      choices.push({ layer, choice, description });
-    }
-    picker.append(section);
-  }
+  const list = el('div', 'analysis-layer-choices');
+  const choices = ANALYSIS_LAYERS.map(layer => {
+    const choice = el('button', 'analysis-layer-option');
+    choice.type = 'button';
+    choice.id = `analysis-layer-${layer.id}`;
+    choice.dataset.tone = layer.tone;
+    const text = el('span');
+    const action = el('small', null, 'Intercambiar posiciones');
+    action.hidden = true;
+    text.append(el('strong', null, layer.label), action);
+    choice.append(text);
+    choice.onclick = () => {
+      const current = selection();
+      if (!chooseAnalysisLayer(current, layer.id, role)) return;
+      if (current[role] === layer.id) { close(); return; }
+      const chosenRole = role, hadFocus = picker.contains(document.activeElement);
+      close(false);
+      const focusTarget = onSelect(layer.id, chosenRole);
+      if (hadFocus) focusTarget?.focus({ preventScroll: true });
+    };
+    list.append(choice);
+    return { layer, choice, action };
+  });
+  picker.append(list);
   for (const event of ['pointerdown','mousedown','touchstart','click','dblclick','wheel']) picker.addEventListener(event, e => e.stopPropagation());
   overlay.append(picker);
   function close(restoreFocus = true) {
@@ -62,16 +61,15 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
     close(false);
     role = nextRole; anchor = trigger;
     const state = selection();
-    title.textContent = state.compare
-      ? (role === 'compare' ? 'Cambiar capa derecha' : 'Cambiar capa izquierda')
-      : (role === 'compare' ? '¿Con qué quieres comparar?' : 'Elige una capa');
+    title.textContent = role === 'primary' ? 'Cambiar análisis'
+      : state.compare ? 'Cambiar comparación' : 'Comparar con';
     const otherLayer = role === 'compare' ? state.primary : state.compare;
-    for (const {layer, choice, description} of choices) {
+    for (const {layer, choice, action} of choices) {
       const selected = state[role] === layer.id;
       choice.disabled = !chooseAnalysisLayer(state, layer.id, role);
+      choice.hidden = choice.disabled;
       choice.setAttribute('aria-pressed', String(selected));
-      choice.title = choice.disabled ? 'Esta capa ya está en el mapa' : '';
-      description.textContent = state.compare && layer.id === otherLayer ? 'Intercambiar capas' : layer.description;
+      action.hidden = !state.compare || layer.id !== otherLayer;
     }
     picker.hidden = false;
     anchor.setAttribute('aria-expanded', 'true');

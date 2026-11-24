@@ -107,9 +107,14 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     const kind=layer.id;
     panels[kind]=createAnalysisPanel(overlay,container,layer,{
       filters:values=>setDatasetFilters(kind,values),mode:mode=>setTemporalMode(mode,kind),forecast:openForecast,
-      reset:()=>layer.resource?setResourceFilters(kind,{year:latestResourceYear(datasets[kind])})
-        :setDatasetFilters(kind,kind==='security'?{year:'all',month:'all',period:'all'}:{year:'all',month:'all'}),
+      reset:()=>setDatasetFilters('security',{year:'all',month:'all',period:'all'}),
       toggleQuadrant,toggleUnit,clearQuadrants:()=>setQuadrants(null),emptyQuadrants:()=>setQuadrants([]),
+      category:(next,anchor)=>{
+        const focused=document.activeElement===anchor;
+        if(setCategory(next)&&focused){
+          document.getElementById(`${getAnalysisLayer(next).prefix}-category-${next}`)?.focus({preventScroll:true});
+        }
+      },
       cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
     });
   }
@@ -532,7 +537,16 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
     }
     return true;
   }
-  function setTemporalMode(mode,kind='security'){if(!loaded||!['all','year','month'].includes(mode)||!defaults[kind])return false;const d=datasets[kind];setDatasetFilters(kind,{year:mode==='all'?'all':d.selectedYear,month:mode==='month'?d.selectedMonth:'all'});if(mode!=='all')panels[kind].openPicker(mode);return true;}
+  function setTemporalMode(mode,kind='security'){
+    if(!loaded||!['all','year','month'].includes(mode)||!defaults[kind])return false;
+    const dataset=datasets[kind];
+    if(dataset.temporalMode!==mode)setDatasetFilters(kind,{
+      year:mode==='all'?'all':dataset.selectedYear,
+      month:mode==='month'?dataset.selectedMonth:'all'
+    });
+    if(mode==='month')panels[kind].openPicker('month');
+    return true;
+  }
   function changeSelection(next,reason){
     if(!loaded||destroyed||!next)return false;
     const layoutChanged=crossed()!==(next.compare!==null);

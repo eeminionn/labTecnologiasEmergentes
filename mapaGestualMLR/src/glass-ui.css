@@ -608,7 +608,6 @@ body:not(.twin-projection) label input[type="range"] { min-height: 22px; accent-
 body:not(.twin-projection) input[type="checkbox"] { accent-color: var(--municipal-petroleo); }
 body:not(.twin-projection) .field-note { color: var(--ink-secondary); font-size: 11px; line-height: 1.65; }
 body:not(.twin-projection) .field-note a { color: var(--municipal-petroleo); }
-body:not(.twin-projection) .dialog-intro { color: var(--ink-secondary); font-size: 13px; }
 body:not(.twin-projection) #camera-device-note:empty { display: none; }
 body:not(.twin-projection) .dialog-actions button { min-height: 42px; }
 body:not(.twin-projection) .settings-details {

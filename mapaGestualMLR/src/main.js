@@ -240,7 +240,7 @@ async function enterAnalysis({ focusFilters = false } = {}) {
     if(generation!==analysisGeneration){instance.destroy();return;}
     cancelGesture();
     if(focusFilters&&[document.body,$('mode-analysis')].includes(document.activeElement)){
-      $('analysis-layers')?.focus({preventScroll:true});
+      $('analysis-category-security')?.focus({preventScroll:true});
     }
   } catch(error) {
     instance?.destroy();
@@ -1304,7 +1304,8 @@ async function verifyAnalysis() {
     checks.robberyAllRestored=analysisView.info().filteredCount===60000 && analysisView.info().filters.robbery==='all';
     await hold('analysis-date-close');
     await hold('analysis-mode-year');
-    checks.yearPicker=analysisView.info().picker==='year';
+    checks.directYears=analysisView.info().picker===null && ['2023','2024','2025'].every(year=>
+      analysisView.targets().some(target=>target.id==='analysis-year-'+year));
     await hold('analysis-year-2024');await waitLayer();
     checks.yearFilter=analysisView.info().filteredCount===20066;
     await hold('analysis-mode-month');
@@ -1372,17 +1373,16 @@ async function verifyAnalysis() {
     checks.resetFilters=analysisView.info().filteredCount===60000 && analysisView.info().temporalMode==='all' && analysisView.info().filters.month==='all';
     analysisView.home();
     const targets=analysisView.targets(),rect=$('map').getBoundingClientRect();
-    const basicControls=['analysis-layers','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-reset','analysis-cross'];
+    const basicControls=['analysis-category-security','analysis-mode-year','analysis-mode-month','analysis-robbery-picker','analysis-period-picker','analysis-playback','analysis-cross'];
     const missingControls=basicControls.filter(id=>!targets.some(target=>target.id===id));
     const obstructedControls=targets.filter(target=>target.width<30 || target.height<32 || !target.element.contains(document.elementFromPoint(rect.left+target.x,rect.top+target.y))).map(target=>target.id);
     snapshots.controles={missingControls,obstructedControls};
     checks.controlsReachable=!missingControls.length && !obstructedControls.length;
     const waitCameras=()=>waitFor(()=>map.info().cameraAnalysisLoaded&&map.info().cameraAnalysisVisible,5000,'capa de cámaras visible');
-    await hold('analysis-layers');
-    checks.groupedCatalog=document.querySelectorAll('.analysis-layer-group').length===2
-      && ['security','cameras','fixed','alarms'].every(layer=>analysisView.targets().some(target=>target.id===`analysis-layer-${layer}`));
+    checks.directCategories=['security','cameras','fixed','alarms']
+      .every(layer=>analysisView.targets().some(target=>target.id===`analysis-category-${layer}`));
     await capture('catalogo');
-    await hold('analysis-layer-cameras');await waitCameras();
+    await hold('analysis-category-cameras');await waitCameras();
     const cameras=analysisView.info();snapshots.camaras=cameras;
     checks.playbackOnlySecurity=!analysisView.targets().some(target=>target.id==='analysis-playback')
       && !document.querySelector('.analysis-camera-panel .analysis-playback') && !cameras.playback.playing;
@@ -1410,8 +1410,8 @@ async function verifyAnalysis() {
     await hold('camera-analysis-date-close');
     await hold('camera-analysis-state-picker');await hold('camera-analysis-state-1');await waitCameras();
     checks.cameraStateFilter=analysisView.info().filteredCount===240 && analysisView.info().summary.operational===240;
-    await hold('camera-analysis-reset');await waitCameras();
-    checks.cameraResetFilters=analysisView.info().filteredCount===320 && analysisView.info().filters.state==='all';
+    await hold('camera-analysis-state-picker');await hold('camera-analysis-state-0');await waitCameras();
+    checks.cameraAllStates=analysisView.info().filteredCount===320 && analysisView.info().filters.state==='all';
     await hold('camera-analysis-display-heatmap');await waitCameras();
     const cameraHeat=$('map').querySelector('img[alt="Concentración de ubicaciones de cámaras de seguridad"]');
     if(cameraHeat)await cameraHeat.decode();
@@ -1482,7 +1482,7 @@ async function verifyAnalysis() {
     checks.playbackStopsWhenSecurityHidden=!analysisView.info().playback.playing;
     checks.returnToSeparate=!analysisView.info().crossed && analysisView.info().activeCategory==='cameras'
       && !map.info().analysisLayerVisible && map.info().cameraAnalysisVisible && map.info().cameraAnalysisPointCount===expectedCamerasJuly2024;
-    await hold('camera-analysis-layers');await hold('analysis-layer-security');await waitLayer();
+    await hold('camera-analysis-category-security');await waitLayer();
     analysisView.setFilters({period:'all'});await waitLayer();
     checks.restoreSecurityFilters=analysisView.info().activeCategory==='security' && analysisView.info().filteredCount===20009 && !map.info().cameraAnalysisVisible;
     analysisView.setFilters({period:'all'});await waitLayer();
