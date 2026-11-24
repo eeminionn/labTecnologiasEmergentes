@@ -118,20 +118,40 @@ function investmentAmount(label, pesos) {
   return amount;
 }
 
-function milestoneCard({ delivery, operation, elapsedDays }) {
-  const section = card(elapsedDays === null ? 'Hitos del proyecto' : 'Hitos del proyecto · ejemplo');
-  const dates = element('dl', 'companion-milestones');
-  dates.append(fact('Entrega de la licitación', delivery ? date(delivery) : 'Por confirmar'),
-    fact('Puesta en operación', operation ? date(operation) : 'Por confirmar'));
-  section.append(dates);
-  if (elapsedDays !== null) {
-    section.append(element('p', 'companion-secondary', `${number.format(elapsedDays)} días corridos entre ambos hitos`));
+function procurementCard(procurement) {
+  const section = card(procurement.illustrative ? 'Licitación · ejemplo' : 'Licitación');
+  section.classList.add('companion-procurement');
+  const identity = element('dl', 'companion-procurement-identity');
+  identity.append(fact('Nombre de la licitación', procurement.name || 'Por confirmar'),
+    fact('ID de la licitación', procurement.id || 'Por confirmar'),
+    fact('Encargado', procurement.lead || 'Por confirmar'));
+  const dates = element('dl', 'companion-procurement-dates');
+  dates.append(fact('Cierre de la licitación', procurement.close ? date(procurement.close) : 'Por confirmar'),
+    fact('Entrega prometida', procurement.promisedDelivery ? date(procurement.promisedDelivery) : 'Por confirmar'),
+    fact('Puesta en marcha real', procurement.operation ? date(procurement.operation) : 'Por confirmar'));
+  const compliance = element('div', 'companion-procurement-compliance');
+  compliance.append(element('span', null, 'Cumplimiento'), element('strong', null, procurement.compliance));
+  compliance.dataset.status = procurement.delayDays === null ? 'unknown' : procurement.delayDays > 0 ? 'late' : 'on-time';
+  const durations = element('dl', 'companion-procurement-durations');
+  const days = value => value === null ? 'Por confirmar' : `${number.format(value)} días`;
+  const difference = procurement.delayDays === null ? 'Por confirmar'
+    : procurement.delayDays > 0 ? `${number.format(procurement.delayDays)} días de atraso`
+      : procurement.delayDays < 0 ? `${number.format(-procurement.delayDays)} días de adelanto` : 'Sin diferencia';
+  durations.append(fact('Plazo comprometido', days(procurement.plannedDays)),
+    fact('Plazo real', days(procurement.elapsedDays)), fact('Diferencia', difference));
+  const reason = element('div', 'companion-procurement-reason');
+  reason.append(element('h3', null, procurement.illustrative ? 'Motivo · ejemplo' : 'Motivo documentado'),
+    element('p', null, procurement.reason || 'Por confirmar'));
+  if (procurement.reasonSource) {
+    reason.append(element('small', null, `Fuente · ${procurement.reasonSource.label}`));
   }
+  section.append(identity, dates, compliance, durations,
+    element('p', 'companion-procurement-note', 'Plazos en días corridos desde el cierre hasta la entrega operativa.'), reason);
   return section;
 }
 
 function robberyShare(security) {
-  return createRobberyShare({ count: security.total, total: security.communeTotal, period: security.period });
+  return createRobberyShare({ count: security.total, total: security.communeTotal, period: security.period, area: security.areaLabel });
 }
 
 function updateAgendaClock(view, agenda) {
@@ -296,12 +316,12 @@ function resourceView(root, state) {
   const second = element('div', 'companion-column');
   const management = card('Identificación y gestión');
   const facts = element('dl', 'companion-facts');
-  facts.append(fact('Responsable', sheet.lead), fact('Unidad a cargo', sheet.unit), fact('Equipamiento', sheet.type));
-  if (sheet.id) facts.append(fact('Identificador', sheet.id));
+  facts.append(fact('Unidad a cargo', sheet.unit), fact('Equipamiento', sheet.type));
+  if (sheet.id) facts.append(fact('ID del recurso', sheet.id));
   if (sheet.period) facts.append(fact('Período consultado', sheet.period));
   if (sheet.rank) facts.append(fact('Uso en la selección', `Puesto ${sheet.rank}`));
   management.append(facts);
-  second.append(milestoneCard(sheet.milestones), management);
+  second.append(procurementCard(sheet.procurement), management);
   grid.append(first, second);
   view.content.append(hero, metrics, grid);
   if (state.sector?.security) view.content.append(robberyShare(state.sector.security));
@@ -312,42 +332,43 @@ function resourceView(root, state) {
 function sectorView(root, state) {
   const sector = state.sector || {};
   const view = shell(state);
-  view.title.textContent = state.title || 'Sector consultado';
-  view.subtitle.textContent = [state.period, `Radio de ${sector.radiusMetres || 250} m`].filter(Boolean).join(' · ');
-  const metrics = element('dl', 'companion-sector-metrics');
-  const security = sector.security;
-  const cameras = sector.cameras;
-  if (security) {
-    view.content.append(robberyShare(security));
-    metrics.append(metric('Últimos 7 días del período', number.format(security.last7Days ?? 0), security.last7DaysRange?.label));
+  view.title.textContent = state.title || 'Cuadrantes seleccionados';
+  view.subtitle.textContent = [sector.quadrantIds?.length > 1 ? sector.label : '', state.period].filter(Boolean).join(' · ');
+  const layers = state.layers || [];
+  const content = element('div', layers.length > 1 ? 'companion-grid companion-quadrant-grid' : 'companion-column');
+  for (const {kind, title, period} of layers) {
+    const detail = kind === 'security' ? sector.security : kind === 'cameras' ? sector.cameras : sector.resources?.[kind];
+    if (!detail) continue;
+    const metrics = element('dl', 'companion-sector-metrics');
+    if (kind === 'security') {
+      const column = element('div', 'companion-column');
+      const recent = card('Actividad reciente');
+      metrics.append(metric('Últimos 7 días del período', number.format(detail.last7Days ?? 0), detail.last7DaysRange?.label));
+      recent.append(metrics);
+      if (detail.lastIncident) {
+        const last = detail.lastIncident;
+        recent.append(element('p', 'companion-secondary', `Último registro · ${date(last.fecha)} · ${last.hora}`),
+          element('p', null, last.tipo_incidente),
+          element('p', null, String(last.direccion || '').replace(' (numeración simulada)', '')));
+      } else recent.append(element('p', 'companion-secondary', 'Sin registros para esta selección.'));
+      column.append(robberyShare(detail), recent);
+      content.append(column);
+      continue;
+    }
+    const section = card(title);
+    if (period) section.append(element('p', 'companion-comparison-period', period));
+    if (kind === 'cameras') {
+      metrics.append(metric('Cámaras seleccionadas', number.format(detail.total)), metric('Operativas', number.format(detail.operational)),
+        metric('En mantención', number.format(detail.maintenance)), metric('Inactivas', number.format(detail.inactive)));
+    } else if (kind === 'fixed') {
+      metrics.append(metric('Puntos fijos seleccionados', number.format(detail.total)), metric('Monitoreando', number.format(detail.monitoring)));
+    } else {
+      metrics.append(metric('Botones seleccionados', number.format(detail.total)), metric('Pulsaciones del período', number.format(detail.activations)));
+    }
+    section.append(metrics);
+    content.append(section);
   }
-  if (cameras) {
-    metrics.append(metric('Cámaras en el sector', number.format(cameras.total ?? 0)));
-    metrics.append(metric('Cámaras operativas', number.format(cameras.operational ?? 0)));
-    metrics.append(metric('Cámaras en mantención', number.format(cameras.maintenance ?? 0)));
-    metrics.append(metric('Cámaras inactivas', number.format(cameras.inactive ?? 0)));
-  }
-  for (const [kind, detail] of Object.entries(sector.resources || {})) {
-    metrics.append(metric(kind === 'fixed' ? 'Puntos fijos en el sector' : 'Botones en el sector', number.format(detail.total ?? 0)));
-  }
-  const grid = element('div', 'companion-grid');
-  if (security) {
-    const recent = card('Último registro del período');
-    const last = security.lastIncident;
-    if (last) {
-      recent.append(element('h3', null, last.tipo_incidente), element('p', null, String(last.direccion || '').replace(' (numeración simulada)', '')));
-      recent.append(element('p', 'companion-secondary', `${date(last.fecha)} · ${last.hora}`));
-    } else recent.append(element('p', null, 'Sin registros para esta selección.'));
-    grid.append(recent);
-  }
-  if (cameras) {
-    const nearby = card('Equipamiento cercano');
-    if (cameras.nearest) nearby.append(element('h3', null, cameras.nearest.tipo_camara), element('p', null, String(cameras.nearest.direccion || '').replace(' (numeración simulada)', '')), element('p', 'companion-secondary', `${Math.round(cameras.nearest.distanceMetres || 0)} m del punto consultado`));
-    else nearby.append(element('p', null, 'Sin cámaras en el radio seleccionado.'));
-    grid.append(nearby);
-  }
-  if (metrics.childElementCount) view.content.append(metrics);
-  if (grid.childElementCount) view.content.append(grid);
+  view.content.append(content);
   root.replaceChildren(view.main);
 }
 

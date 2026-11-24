@@ -165,6 +165,19 @@ function distanceMetres(lng1, lat1, lng2, lat2) {
 
 const shortDate = value => value.split('-').reverse().join('/');
 
+export function summarizeSecurityArea(records, referenceDate) {
+  const end = isoDay(referenceDate);
+  const start = new Date(end - 6 * DAY_MS).toISOString().slice(0, 10);
+  const last7DaysRange = { start, end: referenceDate, label: `Del ${shortDate(start)} al ${shortDate(referenceDate)}` };
+  let last7Days = 0, lastIncident = null;
+  for (const record of records) {
+    if (record.fecha >= start && record.fecha <= referenceDate) last7Days++;
+    if (!lastIncident || record.fecha > lastIncident.fecha
+      || record.fecha === lastIncident.fecha && record.hora > lastIncident.hora) lastIncident = record;
+  }
+  return { total: records.length, last7Days, last7DaysRange, last7DaysLabel: last7DaysRange.label, referenceDate, lastIncident };
+}
+
 /** Build once per filter change. Pointer movement only inspects nearby buckets. */
 export function createSecuritySpatialIndex(records) {
   const cellSize = 400, buckets = new Map(); let latestDate = null;

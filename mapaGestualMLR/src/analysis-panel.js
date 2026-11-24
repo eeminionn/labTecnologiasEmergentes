@@ -1,5 +1,6 @@
 import { SECURITY_ROBBERY_TYPES } from './analysis-data.js';
 import { ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MONITORING_STATUS_LABELS } from './analysis-catalog.js';
+import { ANALYSIS_QUADRANTS } from './analysis-quadrants.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 const number = value => new Intl.NumberFormat('es-CL').format(value);
 export const CAMERA_CHOICES = {
@@ -35,12 +36,24 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const totalRow=el('div','analysis-total-row'),total=el('strong',null,'—');total.id=`${prefix}-total`;
   const totalLabel=el('span','analysis-total-label',layer.count);totalRow.append(total,totalLabel);
   const selectedPeriod=el('p','analysis-selected-period','Cargando datos…');
+  const spatialContext=el('p','analysis-spatial-context');
   (resource?stats:selectedPeriod).setAttribute('role','status');
   const empty=el('p','analysis-empty',resource?'No hay ubicaciones para mostrar.':`No hay ${layer.count} con estos filtros. Prueba con otro período o restablece los filtros.`);empty.hidden=true;
-  stats.append(resultLabel,totalRow,selectedPeriod,empty);
+  stats.append(resultLabel,totalRow,spatialContext,selectedPeriod,empty);
   const monitoring=kind==='fixed'?el('p','analysis-monitoring-count'):null;
   if(monitoring)stats.append(monitoring);
   body.append(stats);
+  const area=el('fieldset','analysis-filter analysis-quadrant-filter');
+  const areaButtons=el('div','analysis-options');
+  const areaButtonsById=new Map();
+  for(const {id,label} of ANALYSIS_QUADRANTS) {
+    const control=button(areaButtons,`${prefix}-quadrant-${id}`,label,()=>callbacks.toggleQuadrant(id));
+    control.setAttribute('aria-pressed','false');
+    areaButtonsById.set(id,control);
+  }
+  const whole=button(area,`${prefix}-quadrant-all`,'Toda la comuna',()=>callbacks.clearQuadrants(),'analysis-quadrant-reset');
+  area.prepend(el('legend',null,'Cuadrantes'),areaButtons);
+  body.append(area);
   if(!resource)body.append(el('h2','analysis-filter-title','Ajusta los filtros'));
   const resourceList=kind==='fixed'?el('div','analysis-resource-list'):null;
   let currentRecords=null;
@@ -185,6 +198,16 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     controls.forEach(e=>{e.disabled=!next.loaded;});
     category.disabled=compare.disabled=!next.canChoose;
     forecast.disabled=!next.canChoose;
+    area.hidden=!primary;
+    const quadrantIds=next.quadrantIds??[];
+    for(const [id,control] of areaButtonsById) {
+      control.disabled=!next.canChoose;
+      control.setAttribute('aria-pressed',String(quadrantIds.includes(id)));
+    }
+    whole.setAttribute('aria-pressed',String(quadrantIds.length===0));
+    whole.disabled=!next.canChoose;
+    const scopeText=next.spatialLabel??'Toda la comuna';
+    if(spatialContext.textContent!==scopeText)spatialContext.textContent=scopeText;
     if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
     filterButtons.forEach(e=>{
@@ -195,11 +218,12 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     if(ranking){
       ranking.hidden=f.usage!=='top';
       const max=Math.max(1,next.rankCount||0);
-      rankRange.max=String(max);rankRange.value=String(f.limit);rankRange.disabled=!next.loaded;
-      const count=`${f.limit} ${f.limit===1?'botón':'botones'}`;
+      const shown=Math.min(f.limit,max);
+      rankRange.max=String(max);rankRange.value=String(shown);rankRange.disabled=!next.loaded||!next.rankCount;
+      const count=next.rankCount?`${shown} ${shown===1?'botón':'botones'}`:'Sin botones';
       rankValue.textContent=count;rankRange.setAttribute('aria-valuetext',count);
-      rankLess.setAttribute('aria-disabled',String(f.limit<=1));
-      rankMore.setAttribute('aria-disabled',String(f.limit>=max));
+      rankLess.setAttribute('aria-disabled',String(shown<=1));
+      rankMore.setAttribute('aria-disabled',String(shown>=max));
     }
     modeButtons.forEach((e,i)=>e.setAttribute('aria-pressed',String(['all','year','month'][i]===next.temporalMode)));
     dateSelection.hidden=next.temporalMode==='all';monthPicker.hidden=next.temporalMode!=='month';

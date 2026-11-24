@@ -17,7 +17,7 @@ function countMetric(label, value, valid) {
 }
 
 /** The total must cover La Reina with the same period and active filters. */
-export function createRobberyShare({ count, total, period } = {}) {
+export function createRobberyShare({ count, total, period, area } = {}) {
   const validCount = Number.isFinite(count) && count >= 0;
   const validTotal = Number.isFinite(total) && total >= 0;
   const comparable = validCount && validTotal && total > 0 && count <= total;
@@ -26,9 +26,9 @@ export function createRobberyShare({ count, total, period } = {}) {
 
   const section = element('section', 'robbery-share');
   section.dataset.state = comparable ? 'ready' : 'empty';
-  section.setAttribute('aria-label', 'Proporción de robos del sector respecto de La Reina');
+  section.setAttribute('aria-label', 'Proporción de robos del área consultada respecto de La Reina');
   const heading = element('header', 'robbery-share-heading');
-  heading.append(element('h2', null, 'Robos en este sector'));
+  heading.append(element('h2', null, area ? 'Robos en el área consultada' : 'Robos en este sector'));
   if (period) heading.append(element('p', 'robbery-share-period', period));
 
   const visual = element('div', 'robbery-share-visual');
@@ -52,7 +52,7 @@ export function createRobberyShare({ count, total, period } = {}) {
   const description = comparable ? 'del total comunal' : validCount && validTotal && count === 0 && total === 0 ? 'sin robos en la selección' : 'sin base de comparación';
   result.append(element('p', 'robbery-share-caption', description));
   const counts = element('dl', 'robbery-share-counts');
-  counts.append(countMetric('Sector', count, validCount), countMetric('La Reina', total, validTotal));
+  counts.append(countMetric(area || 'Sector', count, validCount), countMetric('La Reina', total, validTotal));
   result.append(counts);
   visual.append(matrix, result);
   const note = element('p', 'robbery-share-note', 'Mismo período y filtros activos · cada cuadro representa el 1 %');

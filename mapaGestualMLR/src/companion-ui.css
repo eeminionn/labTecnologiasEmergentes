@@ -64,6 +64,7 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-comparison-period { color: var(--ink-secondary); font-size: 12px !important; margin-bottom: 18px !important; }
 .companion-card .companion-sector-metrics { grid-template-columns: 1fr; gap: 18px; }
 .companion-card .companion-sector-metrics .companion-metric { padding: 0; border: 0; background: transparent; }
+.companion-quadrant-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
 .companion-agenda-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: 22px 26px 0; background: var(--municipal-petroleo); color: #fff; border-radius: 16px; overflow: hidden; }
 .companion-agenda-position { display: grid; align-content: start; gap: 4px; }
 .companion-agenda-position > span { font-size: 12px; color: #e2f1f4; }
@@ -120,3 +121,24 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
   .companion-quantities { justify-content: flex-start; }
   .companion-facts { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+
+.companion-procurement dl { margin: 0; }
+.companion-procurement-identity { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 18px; }
+.companion-procurement-identity > :first-child { grid-column: 1 / -1; }
+.companion-procurement dt { margin-bottom: 4px; color: var(--ink-secondary); font-size: 11px; }
+.companion-procurement dd { margin: 0; color: var(--ink); font-size: 13px; font-weight: 500; overflow-wrap: anywhere; }
+.companion-procurement-dates { display: grid; gap: 10px; padding-block: 18px; border-bottom: 1px solid var(--border); }
+.companion-procurement-dates > div { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.companion-procurement-dates dd { text-align: right; flex: none; font-variant-numeric: tabular-nums; }
+.companion-procurement-compliance { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-block: 16px 12px; font-size: 16px; }
+.companion-procurement-compliance > span { color: var(--ink-secondary); font-size: 11px; }
+.companion-procurement-compliance > strong { font-weight: 600; }
+.companion-procurement-compliance[data-status="late"] { color: var(--municipal-morado); }
+.companion-procurement-compliance[data-status="on-time"] { color: var(--municipal-petroleo); }
+.companion-procurement-durations { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 18px; }
+.companion-procurement-durations > :last-child { grid-column: 1 / -1; }
+.companion-procurement-note { margin-block: 12px 16px !important; color: var(--ink-secondary); font-size: 10px !important; }
+.companion-procurement-reason { padding-top: 14px; border-top: 1px solid var(--border); }
+.companion-procurement-reason h3 { margin: 0 0 5px; font-size: 12px; font-weight: 600; }
+.companion-procurement-reason p { font-size: 12px; line-height: 1.55; }
+.companion-procurement-reason small { display: block; margin-top: 8px; color: var(--ink-secondary); font-size: 10px; }

@@ -1329,24 +1329,20 @@ async function verifyAnalysis() {
     moveOver(box.left-viewport.left+12,box.top-viewport.top+14);await sleep(210);
     checks.hoverReadable=!tooltip.hidden && analysisView.info().hover?.source==='mouse';
     const shown=analysisView.info().hover;
-    moveOver(screen.x-46,screen.y);
-    moveOver(box.left-viewport.left+12,box.top-viewport.top+14);
-    $('analysis-sector-pin').click();
-    const pinned=analysisView.info().hover;
-    checks.pinKeepsDisplayedSector=!!shown && pinned?.pinned && pinned.lat===shown.lat && pinned.lng===shown.lng;
-    analysisView.dismissDetails();
-    checks.pinReturnsFocus=document.activeElement===$('analysis-layers') && tooltip.hidden;
     await window.desktop.click({x:viewport.left+screen.x,y:viewport.top+screen.y});await sleep(240);
-    checks.mouseDetails=analysisView.info().hover?.source==='mouse' && analysisView.info().hover?.pinned;
+    const chosen=analysisView.info();
+    checks.mouseSelectsQuadrant=shown?.quadrantIds.length===1 && chosen.quadrantIds[0]===shown.quadrantIds[0]
+      && chosen.filteredCount===shown.total && chosen.surface.coverage==='cuadrantes seleccionados';
     moveOver(160,200);
-    checks.pinnedDetailsPersist=analysisView.info().hover?.pinned && analysisView.info().hover?.source==='mouse';
+    checks.quadrantPersists=analysisView.info().quadrantIds[0]===shown?.quadrantIds[0];
     document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));
     checks.escapeDismissesDetail=tooltip.hidden && analysisView.info().hover===null;
+    analysisView.setQuadrants([]);
     const handPointer={id:'analysis-hand',x:screen.x/viewport.width,y:screen.y/viewport.height};
     await renderGesture({mode:'point',cursor:handPointer,pointers:[handPointer],selectionHandId:null,events:[],progress:0},1);
     await sleep(500);
     const detail=analysisView.info().hover;snapshots.detalle=detail;
-    checks.handDetails=detail?.source==='hand' && detail.radiusMetres===250 && Number.isInteger(detail.total)
+    checks.handDetails=detail?.source==='hand' && detail.quadrantIds.length===1 && Number.isInteger(detail.total)
       && document.querySelector('.analysis-tooltip-hours').textContent.includes('Noche');
     checks.weekUsesSelectedPeriod=detail?.referenceDate==='2024-07-31' && detail.last7DaysRange.start==='2024-07-25' && detail.last7Days<=detail.total;
     window.desktop.reportSmoke({phase:'analysis-detalle'});await sleep(150);
@@ -1448,14 +1444,14 @@ async function verifyAnalysis() {
     checks.crossHeatmaps=map.info().cameraAnalysisMode==='heatmap' && map.info().cameraAnalysisVisible && map.info().analysisLayerVisible;
     analysisView.setCameraDisplay('points');await waitCameras();await waitLayer();
     const crossViewport=$('map').getBoundingClientRect(),crossPoint=map.locationToScreen(local);
-    await window.desktop.click({x:crossViewport.left+crossPoint.x,y:crossViewport.top+crossPoint.y});await sleep(240);
+    moveOver(crossPoint.x,crossPoint.y);await sleep(240);
     checks.crossMouseDetails=analysisView.info().hover?.source==='mouse' && !!analysisView.info().hover?.security && !!analysisView.info().hover?.cameras;
     analysisView.dismissDetails();
     const crossHand={id:'analysis-cross-hand',x:crossPoint.x/crossViewport.width,y:crossPoint.y/crossViewport.height};
     await renderGesture({mode:'point',cursor:crossHand,pointers:[crossHand],selectionHandId:null,events:[],progress:0},1);await sleep(500);
     const crossDetail=analysisView.info().hover;snapshots.cruce={...analysisView.info(),map:map.info()};
     checks.crossHandDetails=crossDetail?.source==='hand' && crossDetail.security?.referenceDate==='2023-12-31'
-      && crossDetail.cameras?.radiusMetres===250 && crossDetail.cameras.total<=expectedCamerasJuly2024;
+      && crossDetail.quadrantIds.length===1 && crossDetail.cameras?.total<=expectedCamerasJuly2024;
     window.desktop.reportSmoke({phase:'analysis-cruce'});await sleep(150);
     const fixedCameras=JSON.stringify(analysisView.info().datasets.cameras),fixedCameraLayer=$('map').querySelector('.leaflet-analysis-cameras-pane').firstChild;
     await hold('analysis-playback');await waitLayer();
@@ -1492,8 +1488,8 @@ async function verifyAnalysis() {
     const alarmMarker='analysis-resource-alarms-boton-paradero-pd308';
     await waitFor(()=>analysisView.targets().some(target=>target.id===alarmMarker),2500,'marcador de emergencia');
     await hold(alarmMarker);
-    checks.alarmsDetail=analysisView.info().hover?.record?.kind==='alarms'
-      && analysisView.info().hover?.pinned && tooltip.textContent.includes('Paradero PD308');
+    checks.alarmSelectsQuadrant=analysisView.info().quadrantIds.length===1
+      && analysisView.info().datasets.alarms.filteredCount>0;
     await capture('botones');
     await hold('mode-map');
     checks.returnToMap=!analysisView && !map.info().analysisMode && !map.info().analysisLayerVisible

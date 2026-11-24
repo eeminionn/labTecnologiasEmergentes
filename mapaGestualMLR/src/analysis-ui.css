@@ -41,6 +41,11 @@ body:not(.twin-projection) .analysis-total-label { font-size: 12px; line-height:
 body:not(.twin-projection) .analysis-selected-period,
 body:not(.twin-projection) .analysis-monitoring-count { margin: 5px 0 0; font-size: 12px; color: var(--ink-secondary); font-weight: 500; line-height: 1.35; }
 body:not(.twin-projection) .analysis-selected-period[data-error="true"] { color: #82234c; }
+body:not(.twin-projection) .analysis-spatial-context { margin: 5px 0 0; color: var(--municipal-petroleo); font-size: 12px; font-weight: 600; }
+body:not(.twin-projection) .analysis-quadrant-filter .analysis-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body:not(.twin-projection) .analysis-quadrant-filter .analysis-options button { min-height: 36px; }
+body:not(.twin-projection) .analysis-quadrant-reset { margin-top: 6px; padding: 4px 9px; min-height: 34px; box-shadow: none; background: white; font-size: 12px; }
+body:not(.twin-projection) .analysis-quadrant-reset[aria-pressed="true"] { color: var(--municipal-petroleo); border-color: var(--municipal-petroleo); font-weight: 600; }
 body:not(.twin-projection) .analysis-empty { margin: 5px 0 0; font-size: 10px; line-height: 1.4; color: var(--ink); }
 body:not(.twin-projection) .analysis-filter-title { margin: 13px 0 0; font-size: 13px; line-height: 1.3; font-weight: 700; }
 body:not(.twin-projection) .analysis-filter { margin: 7px 0 0; padding: 0; border: 0; min-width: 0; }
@@ -151,7 +156,6 @@ body:not(.twin-projection) .analysis-tooltip-week { margin-top: 8px; border-top:
 body:not(.twin-projection) .analysis-resource-title { font-size: 12px; }
 body:not(.twin-projection) .analysis-pin-tip { min-height: 32px; margin-top: 8px; padding: 5px 9px; font-size: 11px; color: var(--municipal-petroleo); }
 body:not(.twin-projection) .analysis-map-tooltip small { display: block; font-size: 10px; line-height: 1.35; color: var(--ink-secondary); }
-body:not(.twin-projection) .analysis-hover-ring { position: absolute; z-index: 20; transform: translate(-50%,-50%); pointer-events: none; border: 2px dashed #006a85b3; border-radius: 50%; background: #ffffff16; }
 body:not(.twin-projection).analysis-open #diagnostics { left: auto; top: auto; right: 18px; bottom: 36px; width: 150px; }
 body:not(.twin-projection).analysis-open #diagnostics .video-frame { height: 90px; }
 body:not(.twin-projection).analysis-open .map-category-legend,

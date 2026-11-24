@@ -90,7 +90,7 @@ export function readSecurityResources(data, inside) {
   if (!Array.isArray(data)) throw new Error('No se pudo leer el catastro de seguridad.');
   const ids = new Set();
   return data.map(record => {
-    const { id, kind, title, address, lat, lng, status, note, source, simulated = false } = record ?? {};
+    const { id, kind, title, address, lat, lng, status, note, source, procurement, simulated = false } = record ?? {};
     if (typeof id !== 'string' || !/^[a-z0-9-]+$/.test(id) || ids.has(id) || !getAnalysisLayer(kind)?.resource
       || typeof simulated !== 'boolean' || ![title, address, status, note].every(text => typeof text === 'string' && text.trim())
       || !Number.isFinite(lat) || !Number.isFinite(lng) || !inside(lng, lat)) {
@@ -102,7 +102,8 @@ export function readSecurityResources(data, inside) {
     const url = simulated ? null : new URL(source.url);
     if (url && url.protocol !== 'https:') throw new Error('El catastro contiene una fuente no válida.');
     ids.add(id);
-    return { id, kind, title, address, lat, lng, status, note, simulated, source: url ? { label: source.label, url: url.href } : null };
+    return { id, kind, title, address, lat, lng, status, note, simulated, source: url ? { label: source.label, url: url.href } : null,
+      ...(procurement && typeof procurement === 'object' && !Array.isArray(procurement) ? { procurement: { ...procurement } } : {}) };
   });
 }
 
