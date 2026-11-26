@@ -1,10 +1,18 @@
-name: Publicar registro vehicular
+name: Publicar herramientas web
 
 on:
   push:
     branches: [main]
     paths:
       - "registroVehicularMLR/**"
+      - "mapaGestualMLR/src/**"
+      - "mapaGestualMLR/public/**"
+      - "mapaGestualMLR/assets/**"
+      - "mapaGestualMLR/scripts/**"
+      - "mapaGestualMLR/tests/**"
+      - "mapaGestualMLR/package*.json"
+      - "mapaGestualMLR/*.html"
+      - "mapaGestualMLR/vite.config.js"
       - ".github/workflows/publicar-registro-vehicular.yml"
   workflow_dispatch:
 
@@ -23,38 +31,46 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: registroVehicularMLR
     steps:
       - name: Bajar el proyecto
         uses: actions/checkout@v7
 
+      - name: Configurar Pages
+        id: pages
+        uses: actions/configure-pages@v6
+
       - name: Preparar Node
         uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
-          cache-dependency-path: registroVehicularMLR/package-lock.json
+          cache-dependency-path: |
+            registroVehicularMLR/package-lock.json
+            mapaGestualMLR/package-lock.json
 
-      - name: Instalar
-        run: npm ci
+      - name: Construir Registro Vehicular MLR
+        working-directory: registroVehicularMLR
+        run: |
+          npm ci
+          npm test
+          npm run build
 
-      - name: Probar
-        run: npm test
-
-      - name: Construir
-        run: npm run build
+      - name: Construir Mapa Gestual MLR
+        working-directory: mapaGestualMLR
+        env:
+          PAGES_BASE_PATH: ${{ steps.pages.outputs.base_path }}
+        run: |
+          npm ci
+          npm test
+          npm run build:web -- --base "${PAGES_BASE_PATH%/}/mapa-gestual/"
 
       - name: Preparar sitio
         run: |
-          mkdir -p ../publicacion/registroVehicularMLR
-          cp -R dist/. ../publicacion/registroVehicularMLR/
-          cp redirect.html ../publicacion/index.html
-          touch ../publicacion/.nojekyll
-
-      - name: Configurar Pages
-        uses: actions/configure-pages@v6
+          mkdir -p publicacion/registroVehicularMLR publicacion/mapa-gestual
+          cp -R registroVehicularMLR/dist/. publicacion/registroVehicularMLR/
+          cp -R mapaGestualMLR/dist-web/. publicacion/mapa-gestual/
+          cp registroVehicularMLR/redirect.html publicacion/index.html
+          touch publicacion/.nojekyll
 
       - name: Subir sitio
         uses: actions/upload-pages-artifact@v5

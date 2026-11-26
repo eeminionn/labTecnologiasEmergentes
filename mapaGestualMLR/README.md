@@ -10,6 +10,12 @@
 
 ---
 
+## Versión web
+
+**[Abrir Mapa Gestual MLR en el navegador](https://eeminionn.github.io/labTecnologiasEmergentes/mapa-gestual/)**
+
+Usa el mouse o el trackpad para explorar el mapa y los gráficos, filtrar en **Análisis**, comparar categorías y abrir la ficha complementaria. Es un prototipo académico. Algunas bases incluyen registros simulados y conservan su procedencia en los CSV y sus metadatos.
+
 ## Material del prototipo
 
 | Material | Qué muestra |

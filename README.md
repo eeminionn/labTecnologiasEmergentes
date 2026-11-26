@@ -10,6 +10,10 @@ Investigación sobre la adaptación del espacio público de La Reina a las neces
 
 Desarrollamos una aplicación de escritorio para recorrer el mapa de La Reina con las manos frente a una cámara frontal. Permite desplazarse, hacer zoom, seleccionar puntos y consultar gráficos. La sección **Análisis** suma mapas de calor de seguridad y cámaras, filtros combinables y cruce de información con paneles independientes.
 
+**[Abrir Mapa Gestual MLR en el navegador](https://eeminionn.github.io/labTecnologiasEmergentes/mapa-gestual/)**
+
+La versión web permite recorrer el mapa, usar **Análisis** y abrir la ficha complementaria con el mouse o el trackpad.
+
 **[Bitácora del Mapa Gestual MLR: proceso, decisiones e imágenes](./mapaGestualMLR/)**
 
 La bitácora reúne las decisiones de interacción y los avances de análisis territorial, con capturas de la aplicación. Las bases de demostración conservan su procedencia en los archivos.
