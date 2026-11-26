@@ -1,0 +1,1 @@
+https://services.arcgis.com/r7t1P5pnkoOLRdhr/arcgis/rest/services/Unidades_Vecinales___2024/FeatureServer/0/query?where=t_com%3D%2713113%27&outFields=%2A&outSR=4326&returnGeometry=true&f=geojson

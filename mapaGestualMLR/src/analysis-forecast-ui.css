@@ -1,0 +1,74 @@
+body:not(.twin-projection) .forecast-entry {
+  width: 100%; min-height: 40px; margin-top: 8px;
+  border-color: var(--municipal-petroleo); color: var(--municipal-petroleo);
+  background: #fff; box-shadow: none; font-weight: 700;
+}
+body:not(.twin-projection) .forecast-panel .analysis-heading { margin-bottom: 5px; }
+body:not(.twin-projection) #forecast-back {
+  padding: 0 4px; min-height: 34px; margin-bottom: 5px; color: var(--municipal-petroleo);
+  background: transparent; border: 0; box-shadow: none;
+}
+body:not(.twin-projection) .forecast-caption,
+body:not(.twin-projection) .forecast-message {
+  color: var(--ink-secondary); font-size: 11.5px; line-height: 1.45;
+}
+body:not(.twin-projection) .forecast-caption,
+body:not(.twin-projection) .forecast-message { margin: 5px 0 0; }
+body:not(.twin-projection) .forecast-message:empty { display: none; }
+body:not(.twin-projection) .forecast-controls { padding: 0 0 4px; }
+body:not(.twin-projection) .forecast-view-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px;
+}
+body:not(.twin-projection) .forecast-view-status { color: var(--ink-secondary); font-size: 12px; font-weight: 600; }
+body:not(.twin-projection) #forecast-view-toggle {
+  min-height: 40px; padding: 5px 12px; color: white; background: var(--municipal-petroleo);
+  border-color: var(--municipal-petroleo); font-weight: 700;
+}
+body:not(.twin-projection) .forecast-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+body:not(.twin-projection) .forecast-options button {
+  min-height: 40px; padding: 5px 4px; white-space: normal; font-size: 11px;
+  transition: none;
+}
+body:not(.twin-projection) .forecast-placement-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+body:not(.twin-projection) .forecast-placement-tools button { min-height: 36px; padding: 5px 8px; font-size: 11px; box-shadow: none; }
+body:not(.twin-projection) #forecast-aim-add { flex-basis: 100%; color: var(--municipal-petroleo); font-weight: 700; }
+body:not(.twin-projection) .forecast-scale {
+  display: flex; align-items: center; gap: 7px; margin: 7px 0 10px;
+  color: var(--ink-secondary); font-size: 10.5px;
+}
+body:not(.twin-projection) .forecast-gradient {
+  flex: 1; height: 6px; border-radius: 3px;
+  background: linear-gradient(90deg,#008d36,#afc439,#f5dd61,#ef8b3a,#d73027);
+}
+body:not(.twin-projection) .forecast-readout {
+  margin-top: 12px; padding-block: 10px;
+  border-top: 1px solid var(--border); color: var(--ink);
+}
+body:not(.twin-projection) .forecast-result-label { font-size: 13px; color: var(--municipal-petroleo); }
+body:not(.twin-projection) .forecast-readout dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 5px 0 2px; }
+body:not(.twin-projection) .forecast-readout dt,
+body:not(.twin-projection) .forecast-readout small { font-size: 11px; color: var(--ink-secondary); }
+body:not(.twin-projection) .forecast-readout dd { margin: 0; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+body:not(.twin-projection) .forecast-reticle {
+  position: absolute; left: 62%; top: 51%; width: 24px; height: 24px; transform: translate(-50%,-50%);
+  border: 2px solid var(--municipal-petroleo); border-radius: 50%; box-shadow: 0 0 0 2px #fff;
+  visibility: hidden; pointer-events: none;
+}
+body:not(.twin-projection) .analysis-experience:has(#forecast-aim-add:is(:hover,:focus-visible)) .forecast-reticle { visibility: visible; }
+body:not(.twin-projection) .forecast-reticle::before,
+body:not(.twin-projection) .forecast-reticle::after {
+  content: ''; position: absolute; top: 50%; left: 50%; background: var(--municipal-petroleo);
+  transform: translate(-50%, -50%); width: 12px; height: 2px;
+}
+body:not(.twin-projection) .forecast-reticle::after { width: 2px; height: 12px; }
+body:not(.twin-projection) #map.forecast-placing,
+body:not(.twin-projection) #map.forecast-placing .gm-style { cursor: var(--forecast-cursor); }
+body:not(.twin-projection) #map.forecast-placing .gm-style > div:first-child { cursor: var(--forecast-cursor) !important; }
+body:not(.twin-projection) #map.forecast-placing .analysis-resource-marker[data-scenario] { pointer-events: none; }
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-scenario] {
+  outline: 2px dashed white; outline-offset: 1px;
+}
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind="camera"] { background: var(--municipal-petroleo); }
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-scenario]:is(:hover,:focus-visible,.gesture-target) {
+  outline: 2px solid var(--ink); outline-offset: 2px;
+}

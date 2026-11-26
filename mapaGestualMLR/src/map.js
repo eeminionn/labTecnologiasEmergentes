@@ -1,6 +1,9 @@
 import L from 'leaflet';
 import boundaryText from '../assets/la-reina.geojson?raw';
 import { PointSequence } from './sequence.js';
+import { createAnalysisRasterTransition } from './analysis-transition.js';
+import { attachMapWheelZoom } from './map-wheel-zoom.js';
+import { MAP_TOPICS } from './map-topics.js';
 
 const boundary = JSON.parse(boundaryText);
 const boundaryStyle = { color: '#0f766e', weight: 3, opacity: .9, fillColor: '#0f766e', fillOpacity: .05 };
@@ -9,32 +12,39 @@ const circulationLegend = 'Autorizada su circulación por Resolución Nº50 del 
 const center = { lat: -33.442, lng: -70.536 };
 const markerSize = 88;
 const markerHeight = 112;
+const markerAnchor = [markerSize / 2, markerHeight];
+const markerNumberY = markerHeight * .292;
 const categoryLegend = [
   { id: 'territorio', label: 'Territorio, movilidad y entorno', color: '#afc439' },
   { id: 'gobernanza', label: 'Gobernanza y recursos municipales', color: '#00adb2' },
   { id: 'seguridad', label: 'Seguridad y riesgos', color: '#e82d81' }
 ];
-const samples = [
-  { id: 'point-0', number: 1, category: 'seguridad', lat: -33.4409, lng: -70.5550, title: 'Seguridad y riesgos' },
-  { id: 'point-1', number: 2, category: 'gobernanza', lat: -33.4519, lng: -70.5351, title: 'Gobernanza y recursos municipales' },
-  { id: 'point-2', number: 3, category: 'territorio', lat: -33.4375, lng: -70.5149, title: 'Territorio, movilidad y entorno' }
-];
+const samples = MAP_TOPICS;
 
 const popup = item => {
   const div = document.createElement('div'); div.className = 'demo-popup';
   const heading = document.createElement('strong'); heading.textContent = item.title;
-  const note = document.createElement('p'); note.textContent = 'Contenido en preparación.';
+  const note = document.createElement('p'); note.textContent = item.description;
   div.append(heading, note); return div;
 };
 
 function addLegend(container) {
   const legend = document.createElement('aside');
   legend.className = 'map-category-legend';
-  legend.setAttribute('aria-label', 'Temáticas del mapa');
-  for (const category of categoryLegend) {
+  legend.setAttribute('aria-label', 'Temas del mapa');
+  const isProjection = document.body.classList.contains('twin-projection');
+  const categories = isProjection ? categoryLegend : samples.map(item => categoryLegend.find(category => category.id === item.category));
+  for (const [index, category] of categories.entries()) {
     const row = document.createElement('div'); row.className = 'map-category-legend-row';
     row.style.setProperty('--category-color', category.color);
-    row.textContent = category.label; legend.append(row);
+    if (!isProjection) {
+      const number = document.createElement('span');
+      number.className = 'map-category-legend-number';
+      number.textContent = String(samples[index].number);
+      row.append(number);
+    }
+    row.append(category.label);
+    legend.append(row);
   }
   container.append(legend);
   return legend;
@@ -72,6 +82,11 @@ function markerElement(item, sequence) {
   return element;
 }
 
+function markerTarget(item, element, tip) {
+  return { id: item.id, x: tip.x, y: tip.y - markerHeight + markerNumberY,
+    width: markerSize, height: markerSize, element };
+}
+
 function diagnostics(sequence, featureCount) {
   return { sequence: sequence.snapshot(), boundaryLoaded: featureCount > 0, boundaryFeatureCount: featureCount };
 }
@@ -85,7 +100,18 @@ function analysisLayerSpec(value) {
     || bounds[0][0] < -85.051129 || bounds[1][0] > 85.051129 || bounds[0][1] < -180 || bounds[1][1] > 180)
     throw new Error('La capa de análisis necesita una imagen y límites geográficos válidos.');
   return { url: value.url, bounds: bounds.map(point => [...point]),
-    opacity: Number.isFinite(value.opacity) ? Math.max(0, Math.min(1, value.opacity)) : .62 };
+    opacity: Number.isFinite(value.opacity) ? Math.max(0, Math.min(1, value.opacity)) : .62,
+    transitionMs: Number.isFinite(value.transitionMs) ? Math.max(0, Math.min(3000, value.transitionMs)) : 0 };
+}
+
+function analysisFrameSpec(value) {
+  if (value === null || value === undefined) return null;
+  const opacity = Number.isFinite(value.opacity) ? Math.max(0, Math.min(1, value.opacity)) : .62;
+  const from = analysisLayerSpec({ ...value.from, opacity, transitionMs: 0 });
+  const to = analysisLayerSpec({ ...value.to, opacity, transitionMs: 0 });
+  if (!from || !to || JSON.stringify(from.bounds) !== JSON.stringify(to.bounds) || !Number.isFinite(value.progress))
+    throw new Error('La mezcla de análisis necesita dos imágenes sobre los mismos límites y una posición válida.');
+  return { from, to, opacity, progress: Math.max(0, Math.min(1, value.progress)) };
 }
 
 function cameraLayerSpec(value) {
@@ -104,16 +130,12 @@ function cameraLayerSpec(value) {
     opacity: Number.isFinite(value.opacity) ? Math.max(0, Math.min(1, value.opacity)) : .85 };
 }
 
-function cameraPointStyle() {
-  return { radius: 4.8, color: '#ffffff', weight: 1.8, opacity: 1, fillColor: '#16ceff', fillOpacity: 1 };
-}
-
 function analysisPadding(container) {
   const padding = { top: 80, right: 70, bottom: 70, left: container.clientWidth <= 1000 ? 280 : 318 };
   const outer = container.getBoundingClientRect();
   for (const side of ['left', 'right']) {
-    const panel = container.querySelector(`.analysis-panel[data-side="${side}"]`);
-    if (!panel || panel.hidden) continue;
+    const panel = container.querySelector(`.analysis-panel[data-side="${side}"]:not([hidden])`);
+    if (!panel) continue;
     const box = panel.getBoundingClientRect();
     if (!box.width || !box.height || box.right <= outer.left || box.left >= outer.right) continue;
     padding[side] = Math.ceil(side === 'left' ? box.right - outer.left + 12 : outer.right - box.left + 12);
@@ -141,13 +163,19 @@ function validLocation(point) {
 export async function createMap(container, config, notify, providerChanged = () => {}, onPointSelected = () => {}) {
   const sequence = new PointSequence(samples.map(item => item.id));
   if (config.provider === 'google' && config.googleKey) {
-    let current, savedAnalysisLayer = null, savedCameraLayer = null, savedAnalysisMode = false;
-    const viewSubscriptions = new Set();
-    const detachViewSubscriptions = () => {
-      for (const subscription of viewSubscriptions) { subscription.unsubscribe?.(); subscription.unsubscribe = null; }
+    let current, savedAnalysisLayer = null, savedAnalysisFrame = null, savedCameraLayer = null, savedAnalysisMode = false;
+    const mapSubscriptions = new Set();
+    const detachMapSubscriptions = () => {
+      for (const subscription of mapSubscriptions) { subscription.unsubscribe?.(); subscription.unsubscribe = null; }
     };
-    const bindViewSubscriptions = () => {
-      for (const subscription of viewSubscriptions) subscription.unsubscribe = current.onViewChange(subscription.callback);
+    const bindMapSubscriptions = () => {
+      for (const subscription of mapSubscriptions) subscription.unsubscribe = current[subscription.method](subscription.callback);
+    };
+    const subscribeTo = (method, callback) => {
+      if (typeof callback !== 'function') return () => {};
+      const subscription = { method, callback, unsubscribe: current[method](callback) };
+      mapSubscriptions.add(subscription);
+      return () => { if (mapSubscriptions.delete(subscription)) subscription.unsubscribe?.(); };
     };
     let initializationFailed = false;
     const failureMessage = 'Google Maps no está disponible. Revisa la API key, Maps JavaScript API y facturación. Se muestra OpenStreetMap.';
@@ -160,17 +188,20 @@ export async function createMap(container, config, notify, providerChanged = () 
         const content = container.querySelector('.content-viewer');
         const experience = container.querySelector('.traffic-experience');
         const analysis = container.querySelector('.analysis-experience');
-        detachViewSubscriptions(); current.destroy(); container.replaceChildren();
+        const analysisResources = container.querySelector(':scope > .analysis-resource-markers');
+        detachMapSubscriptions(); current.destroy(); container.replaceChildren();
         current = osmMap(container, notify, config.offline, sequence, onPointSelected);
-        bindViewSubscriptions();
+        bindMapSubscriptions();
         current.setAnalysisMode(savedAnalysisMode);
-        current.setAnalysisLayer(savedAnalysisLayer);
+        if (savedAnalysisFrame) current.setAnalysisFrame(savedAnalysisFrame);
+        else current.setAnalysisLayer(savedAnalysisLayer);
         current.setCameraAnalysisLayer(savedCameraLayer);
-        if (savedAnalysisMode) current.home();
         if (content) container.append(content);
         if (experience) container.append(experience);
         if (analysis) container.append(analysis);
-        for (const subscription of viewSubscriptions) subscription.callback();
+        if (analysisResources) container.append(analysisResources);
+        if (savedAnalysisMode) current.home();
+        for (const subscription of mapSubscriptions) subscription.callback();
         notify(failureMessage); providerChanged(current.provider);
       }, notify, sequence, onPointSelected);
       if (initializationFailed) { current.destroy(); throw new Error('Google authentication'); }
@@ -179,19 +210,18 @@ export async function createMap(container, config, notify, providerChanged = () 
         pan: (...args) => current.pan(...args), zoom: (...args) => current.zoom(...args),
         screenToLocation: (...args) => current.screenToLocation(...args),
         locationToScreen: (...args) => current.locationToScreen(...args),
-        onViewChange(callback) {
-          if (typeof callback !== 'function') return () => {};
-          const subscription = { callback, unsubscribe: current.onViewChange(callback) }; viewSubscriptions.add(subscription);
-          return () => { if (viewSubscriptions.delete(subscription)) subscription.unsubscribe?.(); };
-        },
+        onViewChange: callback => subscribeTo('onViewChange', callback),
+        onPositionChange: callback => subscribeTo('onPositionChange', callback),
         focus: (...args) => current.focus(...args),
         setAnalysisMode(value) { savedAnalysisMode = value === true; return current.setAnalysisMode(savedAnalysisMode); },
-        setAnalysisLayer(value) { savedAnalysisLayer = analysisLayerSpec(value); return current.setAnalysisLayer(savedAnalysisLayer); },
-        clearAnalysisLayer() { savedAnalysisLayer = null; return current.clearAnalysisLayer(); },
+        setAnalysisLayer(value) { savedAnalysisFrame = null; savedAnalysisLayer = analysisLayerSpec(value); return current.setAnalysisLayer(savedAnalysisLayer); },
+        setAnalysisFrame(value) { savedAnalysisLayer = null; savedAnalysisFrame = analysisFrameSpec(value); return current.setAnalysisFrame(savedAnalysisFrame); },
+        clearAnalysisLayer() { savedAnalysisLayer = null; savedAnalysisFrame = null; return current.clearAnalysisLayer(); },
         setAnalysisOpacity(value) {
-          if (!savedAnalysisLayer || !Number.isFinite(value)) return false;
-          savedAnalysisLayer.opacity = Math.max(0, Math.min(1, value));
-          return current.setAnalysisOpacity(savedAnalysisLayer.opacity);
+          const saved = savedAnalysisFrame || savedAnalysisLayer;
+          if (!saved || !Number.isFinite(value)) return false;
+          saved.opacity = Math.max(0, Math.min(1, value));
+          return current.setAnalysisOpacity(saved.opacity);
         },
         setCameraAnalysisLayer(value) { savedCameraLayer = cameraLayerSpec(value); return current.setCameraAnalysisLayer(savedCameraLayer); },
         clearCameraAnalysisLayer() { savedCameraLayer = null; return current.clearCameraAnalysisLayer(); },
@@ -201,7 +231,7 @@ export async function createMap(container, config, notify, providerChanged = () 
           return current.setCameraAnalysisOpacity(savedCameraLayer.opacity);
         },
         home: () => current.home(), resetSequence: () => current.resetSequence(),
-        destroy() { detachViewSubscriptions(); viewSubscriptions.clear(); current.destroy(); },
+        destroy() { detachMapSubscriptions(); mapSubscriptions.clear(); current.destroy(); },
         info: () => current.info(), targets: () => current.targets()
       };
     } catch { container.replaceChildren(); notify(failureMessage); }
@@ -210,23 +240,41 @@ export async function createMap(container, config, notify, providerChanged = () 
 }
 
 function osmMap(container, notify, offline = false, sequence, onPointSelected) {
-  const map = L.map(container, { zoomControl: false, zoomSnap: 0, zoomDelta: .5, zoomAnimation: false, fadeAnimation: false }).setView([center.lat, center.lng], 14);
-  let analysisMode = false, analysisOverlay = null, analysisSpec = null, analysisLoaded = false;
+  const minZoom = 3, maxZoom = 19;
+  const map = L.map(container, { zoomControl: false, scrollWheelZoom: false, zoomSnap: 0, zoomDelta: .5,
+    zoomAnimation: false, minZoom, maxZoom }).setView([center.lat, center.lng], 14);
+  const wheelZoom = attachMapWheelZoom(map, container);
+  let analysisMode = false;
+  const analysisRaster = createAnalysisRasterTransition({
+    createLayer(spec, onLoad, onError) {
+      const layer = L.imageOverlay(spec.url, spec.bounds, { pane: 'analysis-heatmap', opacity: 0,
+        interactive: false, alt: 'Concentración de incidentes de seguridad' });
+      layer.on('load', onLoad); layer.on('error', onError);
+      return {
+        setOpacity: value => layer.setOpacity(value),
+        show() { if (!map.hasLayer(layer)) layer.addTo(map); },
+        hide() { layer.remove(); },
+        // Keep Leaflet's remove listener until its own map listeners detach.
+        destroy() { layer.remove(); layer.off(); }
+      };
+    },
+    onError: () => notify('No se pudo mostrar el mapa de calor.')
+  });
   let cameraOverlay = null, cameraSpec = null, cameraLoaded = false;
   const analysisPane = map.createPane('analysis-heatmap');
   analysisPane.style.zIndex = '350'; analysisPane.style.pointerEvents = 'none';
   const cameraPane = map.createPane('analysis-cameras');
   cameraPane.style.zIndex = '360'; cameraPane.style.pointerEvents = 'none';
-  const cameraRenderer = L.canvas({ pane: 'analysis-cameras', padding: .25 });
   map.attributionControl.setPrefix(false);
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, minZoom: 3, updateWhenIdle: true, keepBuffer: 1,
+    maxZoom, minZoom, updateWhenIdle: true, keepBuffer: 2,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
   }).addTo(map).once('tileerror', () => notify('No se pudieron cargar algunas teselas. Comprueba la conexión a Internet.'));
   else container.style.background = 'repeating-linear-gradient(0deg,transparent 0 59px,#d1d9e0 60px),repeating-linear-gradient(90deg,#e9eef2 0 59px,#d1d9e0 60px)';
   map.attributionControl.addAttribution(`<span title="${circulationLegend}">${boundaryCredit}</span>`);
   const outline = L.geoJSON(boundary, { style: boundaryStyle, interactive: false }).addTo(map);
   const home = () => {
+    wheelZoom.finish();
     const padding = analysisPadding(container);
     return map.fitBounds(outline.getBounds(), analysisMode
       ? { paddingTopLeft: [padding.left, padding.top], paddingBottomRight: [padding.right, padding.bottom], animate: false }
@@ -236,7 +284,7 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   const markers = samples.map(item => {
     const marker = L.marker([item.lat, item.lng], {
       title: item.title,
-      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerHeight], iconAnchor: [markerSize / 2, markerHeight * .292] })
+      icon: L.divIcon({ className: 'demo-marker sequence-marker', html: markerElement(item, sequence).innerHTML, iconSize: [markerSize, markerHeight], iconAnchor: markerAnchor })
     }).addTo(map);
     // Automatic popup listeners would bypass identity checks, including Enter.
     marker.off('click');
@@ -263,10 +311,7 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     analysisMode = value === true;
     map.closePopup(); legend.style.display = analysisMode ? 'none' : '';
     refreshMarkers();
-    if (analysisOverlay) {
-      if (analysisMode && !map.hasLayer(analysisOverlay)) analysisOverlay.addTo(map);
-      else if (!analysisMode && map.hasLayer(analysisOverlay)) map.removeLayer(analysisOverlay);
-    }
+    analysisRaster.setVisible(analysisMode);
     if (cameraOverlay) {
       if (analysisMode && !map.hasLayer(cameraOverlay)) cameraOverlay.addTo(map);
       else if (!analysisMode && map.hasLayer(cameraOverlay)) map.removeLayer(cameraOverlay);
@@ -274,22 +319,11 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     return analysisMode;
   }
   function setAnalysisLayer(value) {
-    analysisSpec = analysisLayerSpec(value); analysisLoaded = false;
-    // Leaflet's remove event detaches its map listeners. Preserve that event
-    // until removal finishes, then clear this layer's own load/error handlers.
-    if (analysisOverlay) { analysisOverlay.remove(); analysisOverlay.off(); analysisOverlay = null; }
-    if (!analysisSpec) return;
-    const next = L.imageOverlay(analysisSpec.url, analysisSpec.bounds, { pane: 'analysis-heatmap',
-      opacity: analysisSpec.opacity, interactive: false, alt: 'Concentración de incidentes de seguridad' });
-    next.on('load', () => { if (analysisOverlay === next) analysisLoaded = true; });
-    next.on('error', () => { if (analysisOverlay === next) { analysisLoaded = false; notify('No se pudo mostrar el mapa de calor.'); } });
-    analysisOverlay = next;
-    if (analysisMode) next.addTo(map);
+    analysisRaster.set(analysisLayerSpec(value));
   }
+  function setAnalysisFrame(value) { analysisRaster.setFrame(analysisFrameSpec(value)); }
   function setAnalysisOpacity(value) {
-    if (!analysisSpec || !Number.isFinite(value)) return false;
-    analysisSpec.opacity = Math.max(0, Math.min(1, value));
-    analysisOverlay?.setOpacity(analysisSpec.opacity); return true;
+    return analysisRaster.setOpacity(value);
   }
   function clearCameraAnalysisLayer() {
     // Keep Leaflet's remove listener until it has detached the map listeners.
@@ -301,24 +335,15 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     clearCameraAnalysisLayer(); cameraSpec = nextSpec;
     if (!cameraSpec) return;
     cameraPane.style.opacity = String(cameraSpec.opacity);
-    if (cameraSpec.mode === 'heatmap') {
-      const next = L.imageOverlay(cameraSpec.url, cameraSpec.bounds, { pane: 'analysis-cameras',
-        opacity: 1, interactive: false, alt: 'Concentración de ubicaciones de cámaras de seguridad' });
-      next.on('load', () => { if (cameraOverlay === next) cameraLoaded = true; });
-      next.on('error', () => { if (cameraOverlay === next) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } });
-      cameraOverlay = next;
-    } else {
-      const group = L.layerGroup();
-      for (const point of cameraSpec.points) {
-        const style = cameraPointStyle(point);
-        L.circleMarker([point.lat, point.lng], { ...style, radius: style.radius + 3,
-          color: '#00aaff', opacity: .38, weight: 1.2, fillOpacity: .22,
-          renderer: cameraRenderer, pane: 'analysis-cameras', interactive: false }).addTo(group);
-        L.circleMarker([point.lat, point.lng], { ...style, renderer: cameraRenderer,
-          pane: 'analysis-cameras', interactive: false }).addTo(group);
-      }
-      cameraOverlay = group; cameraLoaded = true;
+    if (cameraSpec.mode === 'points') {
+      cameraLoaded = true;
+      return;
     }
+    const next = L.imageOverlay(cameraSpec.url, cameraSpec.bounds, { pane: 'analysis-cameras',
+      opacity: 1, interactive: false, alt: 'Concentración de ubicaciones de cámaras de seguridad' });
+    next.on('load', () => { if (cameraOverlay === next) cameraLoaded = true; });
+    next.on('error', () => { if (cameraOverlay === next) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } });
+    cameraOverlay = next;
     if (analysisMode) cameraOverlay.addTo(map);
   }
   function setCameraAnalysisOpacity(value) {
@@ -344,12 +369,25 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
     },
     onViewChange(callback) {
       if (typeof callback !== 'function') return () => {};
-      const handler = () => callback(); map.on('movestart zoomstart resize', handler);
-      return () => map.off('movestart zoomstart resize', handler);
+      const handler = () => callback(); map.on('movestart resize', handler);
+      return () => map.off('movestart resize', handler);
     },
-    pan(dx, dy) { map.panBy([-dx, -dy], { animate: false }); },
-    zoom(delta, x, y) { map.setZoomAround(L.point(x, y), Math.min(19, Math.max(3, map.getZoom() + delta)), { animate: false }); },
+    onPositionChange(callback) {
+      if (typeof callback !== 'function') return () => {};
+      const events = 'move zoom resize viewreset';
+      map.on(events, callback);
+      return () => map.off(events, callback);
+    },
+    pan(dx, dy) {
+      wheelZoom.finish();
+      map.panBy([-dx, -dy], { animate: false });
+    },
+    zoom(delta, x, y) {
+      wheelZoom.finish();
+      map.setZoomAround(L.point(x, y), Math.min(maxZoom, Math.max(minZoom, map.getZoom() + delta)), { animate: false });
+    },
     focus(point, zoom = 19, { animate = true } = {}) {
+      wheelZoom.finish();
       map.stop();
       if (!animate || matchMedia('(prefers-reduced-motion: reduce)').matches) {
         map.setView([point.lat, point.lng], zoom, { animate: false }); return Promise.resolve();
@@ -363,22 +401,23 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
       });
     },
     home,
-    setAnalysisMode, setAnalysisLayer, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
+    setAnalysisMode, setAnalysisLayer, setAnalysisFrame, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
     setCameraAnalysisLayer, clearCameraAnalysisLayer, setCameraAnalysisOpacity,
     resetSequence() { map.closePopup(); const state = sequence.reset(); refreshMarkers(); return state; },
-    destroy() { analysisOverlay?.remove(); analysisOverlay?.off(); clearCameraAnalysisLayer(); cameraRenderer.remove(); legend.remove(); map.remove(); container.style.background = ''; },
-    info() { return { zoom: map.getZoom(), center: map.getCenter(), analysisMode,
-      analysisLayerLoaded: analysisMode && analysisLoaded, analysisLayerVisible: analysisMode && !!analysisOverlay,
-      analysisBounds: analysisSpec?.bounds, analysisOpacity: analysisSpec?.opacity ?? null,
+    destroy() { wheelZoom.destroy(); analysisRaster.destroy(); clearCameraAnalysisLayer(); legend.remove(); map.remove(); container.style.background = ''; },
+    info() { return { zoom: map.getZoom(), center: map.getCenter(), analysisMode, wheelZooming: wheelZoom.active,
+      analysisLayerLoaded: analysisRaster.info().loaded, analysisLayerVisible: analysisRaster.info().visible,
+      analysisTransitioning: analysisRaster.info().transitioning,
+      analysisBounds: analysisRaster.info().spec?.bounds, analysisOpacity: analysisRaster.info().spec?.opacity ?? null,
       cameraAnalysisMode: cameraSpec?.mode ?? null, cameraAnalysisLoaded: analysisMode && cameraLoaded,
-      cameraAnalysisVisible: analysisMode && !!cameraOverlay, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
+      cameraAnalysisVisible: analysisMode && !!cameraSpec, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
       cameraAnalysisOpacity: cameraSpec?.opacity ?? null,
       ...diagnostics(sequence, outline.getLayers().length) }; },
     targets() {
       if (analysisMode) return [];
       return markers.map((marker, index) => {
-        const p = map.latLngToContainerPoint(marker.getLatLng());
-        return { id: samples[index].id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.getElement() };
+        const tip = map.latLngToContainerPoint(marker.getLatLng());
+        return markerTarget(samples[index], marker.getElement(), tip);
       });
     }
   };
@@ -396,9 +435,36 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
   });
   const { Map, InfoWindow, RenderingType, OverlayView, GroundOverlay } = await google.maps.importLibrary('maps');
   const map = new Map(container, { center, zoom: 14, disableDefaultUI: true, clickableIcons: true, renderingType: RenderingType.VECTOR, isFractionalZoomEnabled: true, gestureHandling: 'greedy', tilt: 0, heading: 0 });
-  const viewChangeCleanup = new Set();
-  let analysisMode = false, analysisSpec = null, analysisOverlay = null, analysisLoaded = false, analysisImage = null;
-  let cameraSpec = null, cameraOverlay = null, cameraLoaded = false, cameraImage = null;
+  const mapChangeCleanup = new Set();
+  function subscribe(events, callback) {
+    if (typeof callback !== 'function') return () => {};
+    const listeners = events.map(event => map.addListener(event, callback));
+    const observer = new ResizeObserver(() => callback()); observer.observe(container);
+    const cleanup = () => {
+      if (!mapChangeCleanup.delete(cleanup)) return;
+      listeners.forEach(listener => listener.remove());
+      observer.disconnect();
+    };
+    mapChangeCleanup.add(cleanup);
+    return cleanup;
+  }
+  let analysisMode = false;
+  const analysisRaster = createAnalysisRasterTransition({
+    createLayer(spec, onLoad, onError) {
+      const [[south, west], [north, east]] = spec.bounds;
+      const layer = new GroundOverlay(spec.url, { south, west, north, east }, { opacity: 0, clickable: false });
+      // GroundOverlay has no public load event; probe the same local image.
+      const image = new Image(); image.onload = onLoad; image.onerror = onError; image.src = spec.url;
+      return {
+        setOpacity: value => layer.setOpacity(value),
+        show() { layer.setMap(map); },
+        hide() { layer.setMap(null); },
+        destroy() { layer.setMap(null); image.onload = null; image.onerror = null; image.src = ''; }
+      };
+    },
+    onError: () => notify('No se pudo mostrar el mapa de calor.')
+  });
+  let cameraSpec = null, cameraGround = null, cameraLoaded = false, cameraImage = null;
   map.addListener('renderingtype_changed', () => { if (map.getRenderingType() === 'RASTER') notify('Este equipo usa Google Maps raster. El zoom puede tener menos fluidez que el mapa vectorial.'); });
   const features = map.data.addGeoJson(boundary);
   map.data.setStyle({ strokeColor: boundaryStyle.color, strokeWeight: boundaryStyle.weight, strokeOpacity: boundaryStyle.opacity, fillColor: boundaryStyle.fillColor, fillOpacity: boundaryStyle.fillOpacity, clickable: false });
@@ -441,52 +507,10 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       if (!this.element) return;
       const p = this.getProjection().fromLatLngToDivPixel(this.position);
       if (!p) return;
-      this.element.style.left = `${p.x - markerSize / 2}px`;
-      this.element.style.top = `${p.y - markerHeight * .292}px`;
+      this.element.style.left = `${p.x - markerAnchor[0]}px`;
+      this.element.style.top = `${p.y - markerAnchor[1]}px`;
     }
     onRemove() { this.element?.remove(); this.element = null; }
-  }
-  // A single pointer-transparent canvas keeps hundreds of camera locations
-  // aligned with the provider's own projection while the map pans or zooms.
-  class CameraPointsOverlay extends OverlayView {
-    constructor(points, opacity) { super(); this.points = points; this.opacity = opacity; this.canvas = null; this.observer = null; }
-    onAdd() {
-      this.canvas = document.createElement('canvas');
-      this.canvas.setAttribute('role', 'img');
-      this.canvas.setAttribute('aria-label', 'Ubicaciones de cámaras de seguridad');
-      Object.assign(this.canvas.style, { position: 'absolute', pointerEvents: 'none', zIndex: '360', opacity: String(this.opacity) });
-      this.getPanes().overlayLayer.append(this.canvas);
-      this.observer = new ResizeObserver(() => this.draw()); this.observer.observe(container);
-    }
-    draw() {
-      if (!this.canvas) return;
-      const projection = this.getProjection();
-      if (!projection || !container.clientWidth || !container.clientHeight) return;
-      const corner = projection.fromContainerPixelToLatLng(new google.maps.Point(0, 0));
-      if (!corner) return;
-      const origin = projection.fromLatLngToDivPixel(corner);
-      if (!origin) return;
-      const width = container.clientWidth, height = container.clientHeight;
-      const scale = Math.min(2, window.devicePixelRatio || 1);
-      this.canvas.width = Math.round(width * scale); this.canvas.height = Math.round(height * scale);
-      Object.assign(this.canvas.style, { left: `${origin.x}px`, top: `${origin.y}px`, width: `${width}px`, height: `${height}px` });
-      const context = this.canvas.getContext('2d'); context.setTransform(scale, 0, 0, scale, 0, 0);
-      for (const point of this.points) {
-        const position = projection.fromLatLngToDivPixel(new google.maps.LatLng(point.lat, point.lng));
-        if (!position) continue;
-        const x = position.x - origin.x, y = position.y - origin.y;
-        if (x < -10 || y < -10 || x > width + 10 || y > height + 10) continue;
-        const style = cameraPointStyle(point);
-        context.beginPath(); context.arc(x, y, style.radius + 3, 0, Math.PI * 2);
-        context.fillStyle = '#00aaff38'; context.fill();
-        context.strokeStyle = '#00aaff61'; context.lineWidth = 1.2; context.stroke();
-        context.beginPath(); context.arc(x, y, style.radius, 0, Math.PI * 2);
-        context.fillStyle = style.fillColor; context.fill();
-        context.strokeStyle = style.color; context.lineWidth = style.weight; context.stroke();
-      }
-    }
-    setOpacity(value) { this.opacity = value; if (this.canvas) this.canvas.style.opacity = String(value); }
-    onRemove() { this.observer?.disconnect(); this.observer = null; this.canvas?.remove(); this.canvas = null; }
   }
   const markers = samples.map(item => new SequenceMarker(item));
   const refreshMarkers = () => markers.forEach(marker => {
@@ -496,58 +520,45 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
   function setAnalysisMode(value) {
     analysisMode = value === true;
     info.close(); legend.style.display = analysisMode ? 'none' : '';
-    refreshMarkers(); analysisOverlay?.setMap(analysisMode ? map : null); cameraOverlay?.setMap(analysisMode ? map : null);
+    refreshMarkers(); analysisRaster.setVisible(analysisMode);
+    cameraGround?.setMap(analysisMode ? map : null);
     return analysisMode;
   }
-  function clearAnalysisImage() {
-    if (analysisImage) { analysisImage.onload = null; analysisImage.onerror = null; analysisImage.src = ''; analysisImage = null; }
-  }
   function setAnalysisLayer(value) {
-    analysisSpec = analysisLayerSpec(value); analysisLoaded = false;
-    analysisOverlay?.setMap(null); analysisOverlay = null; clearAnalysisImage();
-    if (!analysisSpec) return;
-    const [[south, west], [north, east]] = analysisSpec.bounds;
-    analysisOverlay = new GroundOverlay(analysisSpec.url, { south, west, north, east },
-      { opacity: analysisSpec.opacity, clickable: false });
-    // GroundOverlay has no public load event. Probe the same local raster before
-    // reporting it ready; the map still owns positioning, panning and zooming.
-    const image = new Image(); analysisImage = image;
-    image.onload = () => { if (analysisImage === image) analysisLoaded = true; };
-    image.onerror = () => { if (analysisImage === image) { analysisLoaded = false; notify('No se pudo mostrar el mapa de calor.'); } };
-    image.src = analysisSpec.url;
-    if (analysisMode) analysisOverlay.setMap(map);
+    analysisRaster.set(analysisLayerSpec(value));
   }
+  function setAnalysisFrame(value) { analysisRaster.setFrame(analysisFrameSpec(value)); }
   function setAnalysisOpacity(value) {
-    if (!analysisSpec || !Number.isFinite(value)) return false;
-    analysisSpec.opacity = Math.max(0, Math.min(1, value));
-    analysisOverlay?.setOpacity(analysisSpec.opacity); return true;
+    return analysisRaster.setOpacity(value);
   }
   function clearCameraAnalysisImage() {
     if (cameraImage) { cameraImage.onload = null; cameraImage.onerror = null; cameraImage.src = ''; cameraImage = null; }
   }
   function clearCameraAnalysisLayer() {
-    cameraOverlay?.setMap(null); cameraOverlay = null; clearCameraAnalysisImage(); cameraSpec = null; cameraLoaded = false;
+    cameraGround?.setMap(null); cameraGround = null;
+    clearCameraAnalysisImage(); cameraSpec = null; cameraLoaded = false;
   }
   function setCameraAnalysisLayer(value) {
     const nextSpec = cameraLayerSpec(value);
     clearCameraAnalysisLayer(); cameraSpec = nextSpec;
     if (!cameraSpec) return;
-    if (cameraSpec.mode === 'heatmap') {
+    const heatmap = cameraSpec.mode === 'heatmap';
+    if (heatmap) {
       const [[south, west], [north, east]] = cameraSpec.bounds;
-      cameraOverlay = new GroundOverlay(cameraSpec.url, { south, west, north, east }, { opacity: cameraSpec.opacity, clickable: false });
+      cameraGround = new GroundOverlay(cameraSpec.url, { south, west, north, east }, { opacity: cameraSpec.opacity, clickable: false });
       const image = new Image(); cameraImage = image;
       image.onload = () => { if (cameraImage === image) cameraLoaded = true; };
       image.onerror = () => { if (cameraImage === image) { cameraLoaded = false; notify('No se pudo mostrar el mapa de cámaras.'); } };
       image.src = cameraSpec.url;
-    } else {
-      cameraOverlay = new CameraPointsOverlay(cameraSpec.points, cameraSpec.opacity); cameraLoaded = true;
     }
-    if (analysisMode) cameraOverlay.setMap(map);
+    cameraLoaded = !heatmap;
+    if (analysisMode) cameraGround?.setMap(map);
   }
   function setCameraAnalysisOpacity(value) {
     if (!cameraSpec || !Number.isFinite(value)) return false;
     cameraSpec.opacity = Math.max(0, Math.min(1, value));
-    cameraOverlay?.setOpacity(cameraSpec.opacity); return true;
+    cameraGround?.setOpacity(cameraSpec.opacity);
+    return true;
   }
   markers.forEach(marker => marker.setMap(map)); home();
   return {
@@ -567,13 +578,8 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       const point = projection.fromLatLngToContainerPixel(new google.maps.LatLng(location.lat, location.lng));
       return point && Number.isFinite(point.x) && Number.isFinite(point.y) ? { x: point.x, y: point.y } : null;
     },
-    onViewChange(callback) {
-      if (typeof callback !== 'function') return () => {};
-      const handler = () => callback(), listener = map.addListener('bounds_changed', handler);
-      const observer = new ResizeObserver(handler); observer.observe(container);
-      const cleanup = () => { if (!viewChangeCleanup.delete(cleanup)) return; listener.remove(); observer.disconnect(); };
-      viewChangeCleanup.add(cleanup); return cleanup;
-    },
+    onViewChange: callback => subscribe(['bounds_changed'], callback),
+    onPositionChange: callback => subscribe(['bounds_changed', 'projection_changed', 'idle'], callback),
     pan(dx, dy) {
       const projection = map.getProjection(); if (!projection) return;
       const p = projection.fromLatLngToPoint(map.getCenter()), scale = 2 ** map.getZoom();
@@ -588,31 +594,32 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
       map.setCenter(projection.fromPointToLatLng(new google.maps.Point(anchor.x - offset.x / 2 ** actual, anchor.y - offset.y / 2 ** actual)));
     },
     home,
-    setAnalysisMode, setAnalysisLayer, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
+    setAnalysisMode, setAnalysisLayer, setAnalysisFrame, clearAnalysisLayer: () => setAnalysisLayer(null), setAnalysisOpacity,
     setCameraAnalysisLayer, clearCameraAnalysisLayer, setCameraAnalysisOpacity,
     resetSequence() { info.close(); const state = sequence.reset(); refreshMarkers(); return state; },
     focus(point, zoom = 19) { map.panTo(point); map.setZoom(zoom); return Promise.resolve(); },
     destroy() {
-      for (const cleanup of [...viewChangeCleanup]) cleanup();
-      analysisOverlay?.setMap(null); clearAnalysisImage(); clearCameraAnalysisLayer();
+      for (const cleanup of [...mapChangeCleanup]) cleanup();
+      analysisRaster.destroy(); clearCameraAnalysisLayer();
       info.close(); markers.forEach(marker => marker.setMap(null));
       features.forEach(feature => map.data.remove(feature));
       google.maps.event.clearInstanceListeners(map); window.gm_authFailure = () => {};
       attribution.remove(); legend.remove(); container.replaceChildren();
     },
     info() { return { zoom: map.getZoom(), center: map.getCenter()?.toJSON(), analysisMode,
-      analysisLayerLoaded: analysisMode && analysisLoaded, analysisLayerVisible: analysisMode && !!analysisOverlay,
-      analysisBounds: analysisSpec?.bounds, analysisOpacity: analysisSpec?.opacity ?? null,
+      analysisLayerLoaded: analysisRaster.info().loaded, analysisLayerVisible: analysisRaster.info().visible,
+      analysisTransitioning: analysisRaster.info().transitioning,
+      analysisBounds: analysisRaster.info().spec?.bounds, analysisOpacity: analysisRaster.info().spec?.opacity ?? null,
       cameraAnalysisMode: cameraSpec?.mode ?? null, cameraAnalysisLoaded: analysisMode && cameraLoaded,
-      cameraAnalysisVisible: analysisMode && !!cameraOverlay, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
+      cameraAnalysisVisible: analysisMode && !!cameraSpec, cameraAnalysisPointCount: cameraSpec?.points.length ?? 0,
       cameraAnalysisOpacity: cameraSpec?.opacity ?? null,
       ...diagnostics(sequence, features.length) }; },
     targets() {
       if (analysisMode) return [];
       return markers.flatMap(marker => {
         if (!marker.element) return [];
-        const p = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
-        return p ? [{ id: marker.item.id, x: p.x, y: p.y, width: markerSize, height: markerSize, element: marker.element }] : [];
+        const tip = marker.getProjection()?.fromLatLngToContainerPixel(marker.position);
+        return tip ? [markerTarget(marker.item, marker.element, tip)] : [];
       });
     }
   };

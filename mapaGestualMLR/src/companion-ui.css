@@ -1,0 +1,249 @@
+* { box-sizing: border-box; }
+body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #edf3f3; }
+.companion-app [hidden] { display: none !important; }
+.companion-app #companion-root { min-height: 100vh; }
+.companion-app p, .companion-app h1, .companion-app h2, .companion-app h3, .companion-app dl, .companion-app dd { margin: 0; }
+.companion-shell { min-height: 100vh; }
+.companion-topbar { height: 56px; padding: 0 32px; display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,.9); border-bottom: 1px solid var(--border); }
+.companion-topbar strong { color: var(--municipal-petroleo); font-size: 17px; }
+.companion-topbar span { color: var(--ink-secondary); font-size: 12px; }
+.companion-content { width: min(1180px, 100%); padding: 34px 40px 24px; margin: 0 auto; display: grid; gap: 22px; }
+.companion-heading { display: grid; gap: 5px; }
+.companion-heading h1 { max-width: 100%; font-size: clamp(25px, 2.8vw, 36px); letter-spacing: -.7px; line-height: 1.2; overflow-wrap: anywhere; }
+.companion-subtitle { color: var(--ink-secondary); font-size: 14px; line-height: 1.5; }
+.companion-metric { border-left: 1px solid rgba(255,255,255,.3); padding-left: 22px; }
+.companion-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; }
+.companion-metric { min-width: 0; }
+.companion-metric dt { color: var(--ink-secondary); font-size: 12px; margin-bottom: 3px; }
+.companion-metric dd { font-size: clamp(21px, 2.5vw, 29px); font-weight: 600; line-height: 1.3; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.companion-metric small { display: block; color: var(--ink-secondary); font-size: 11px; margin-top: 3px; line-height: 1.5; }
+.companion-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); align-items: start; gap: 22px; }
+.companion-column { display: grid; gap: 18px; }
+.companion-card { padding: 22px 24px; border: 1px solid var(--border); border-radius: 16px; background: rgba(255,255,255,.88); box-shadow: 0 8px 25px rgba(0,66,82,.04); min-width: 0; }
+.companion-card h2 { margin: 0 0 18px; font-size: 16px; font-weight: 600; }
+.companion-card h3 { margin: 0 0 7px; font-size: 19px; }
+.companion-card p { line-height: 1.65; font-size: 14px; }
+.companion-card .companion-secondary { font-size: 12px; margin-top: 12px; color: var(--ink-secondary); }
+.companion-cost-chart { display: grid; gap: 18px; }
+.companion-cost-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 14px; }
+.companion-cost-row dt { color: var(--ink-secondary); font-size: 12px; }
+.companion-cost-row dd { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+.companion-cost-track { grid-column: 1 / -1; height: 9px; border-radius: 3px; background: #e9eff0; overflow: hidden; }
+.companion-cost-track > span { display: block; height: 100%; background: var(--municipal-petroleo); border-radius: inherit; }
+.companion-cost-row[data-category="infrastructure"] .companion-cost-track > span { background: var(--municipal-turquesa); }
+.companion-cost-row[data-category="installation"] .companion-cost-track > span { background: var(--municipal-morado); }
+.companion-cost-row[data-category="integration"] .companion-cost-track > span { background: var(--municipal-verde); }
+.companion-cost-row[data-category="reserve"] .companion-cost-track > span { background: var(--municipal-lima); }
+.companion-fact dt { color: var(--ink-secondary); font-size: 11px; margin-bottom: 3px; }
+.companion-fact dd { font-size: 13px; font-weight: 500; overflow-wrap: anywhere; line-height: 1.5; }
+.companion-installation-areas .companion-fact { display: flex; justify-content: space-between; align-items: baseline; gap: 8px 16px; padding-block: 9px; }
+.companion-installation-areas .companion-fact + .companion-fact { border-top: 1px solid var(--border); }
+.companion-installation-areas .companion-fact dt { margin: 0; font-size: 12px; }
+.companion-installation-areas .companion-fact dd { text-align: right; font-variant-numeric: tabular-nums; }
+.companion-delivery { margin: 0; padding: 0; list-style: none; display: grid; gap: 12px; }
+.companion-delivery li { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 8px; font-size: 11px; }
+.companion-delivery strong { font-weight: 500; font-variant-numeric: tabular-nums; }
+.companion-footnote { text-align: right; font-size: 10px; color: var(--ink-secondary); }
+.companion-agenda-hero { display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 20px; padding: 22px 26px 0; background: var(--municipal-petroleo); color: #fff; border-radius: 16px; overflow: hidden; }
+.companion-agenda-position { display: grid; align-content: start; gap: 4px; }
+.companion-agenda-position > span { font-size: 12px; color: #e2f1f4; }
+.companion-agenda-position > strong { font-size: 28px; font-variant-numeric: tabular-nums; line-height: 1.3; }
+.companion-agenda-timer { display: grid; justify-items: end; gap: 2px; }
+.companion-timer-label, .companion-timer-state { font-size: 12px; color: #e2f1f4; }
+.companion-timer-value { font-size: clamp(38px, 5vw, 62px); font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -1px; line-height: 1.2; }
+.companion-agenda-timer[data-overtime="true"] .companion-timer-value { color: #fff; }
+.companion-timer-track { height: 5px; background: rgba(255,255,255,.25); grid-column: 1 / -1; margin: 0 -26px; }
+.companion-timer-track > span { display: block; height: 100%; background: #fff; transition: width .25s linear; }
+.companion-agenda-grid { grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); }
+.companion-agenda-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 6px; }
+.companion-agenda-list > li { display: grid; grid-template-columns: 48px minmax(0, 1fr) 72px; align-items: center; gap: 12px; min-height: 51px; padding: 10px; border: 1px solid transparent; border-radius: 8px; }
+.companion-agenda-list time { font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--municipal-petroleo); }
+.companion-agenda-name { font-size: 13px; line-height: 1.4; }
+.companion-agenda-priority { display: block; margin-top: 2px; font-size: 10px; color: var(--ink-secondary); font-weight: 500; }
+.companion-agenda-status { font-size: 10px; text-align: right; color: var(--ink-secondary); }
+.companion-agenda-list > li[data-status="current"] { background: #edf6f6; border-color: var(--border); }
+.companion-agenda-list > li[data-status="current"] .companion-agenda-name { font-weight: 600; }
+.companion-agenda-list > li[data-status="reviewed"] .companion-agenda-status { color: var(--municipal-verde); }
+.companion-map-themes { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.companion-map-theme { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: start; gap: 12px; padding: 12px 8px; border: 1px solid transparent; border-radius: 8px; }
+.companion-map-theme[data-selected="true"] { background: #edf6f6; border-color: var(--border); }
+.companion-theme-number { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; font-size: 14px; font-weight: 600; color: var(--municipal-petroleo); background: #edf3f3; }
+.companion-map-theme[data-category="seguridad"] .companion-theme-number { color: #fff; background: var(--municipal-fucsia); }
+.companion-map-theme[data-category="gobernanza"] .companion-theme-number { color: var(--ink); background: var(--municipal-turquesa); }
+.companion-map-theme[data-category="territorio"] .companion-theme-number { color: var(--ink); background: var(--municipal-lima); }
+.companion-map-theme h3 { font-size: 14px; line-height: 1.4; margin-bottom: 5px; }
+.companion-map-theme p { font-size: 12px; line-height: 1.5; color: var(--ink-secondary); }
+.companion-map-selected { display: block; color: var(--municipal-petroleo); font-size: 10px; margin-top: 7px; }
+.companion-graphic-name { color: var(--municipal-petroleo); font-weight: 600; }
+.companion-agenda-notice { position: fixed; z-index: 20; right: 28px; bottom: 26px; width: min(360px, calc(100% - 56px)); display: grid; gap: 5px; padding: 18px 20px; border: 1px solid var(--municipal-petroleo); border-radius: 12px; color: var(--ink); background: #fff; box-shadow: 0 8px 30px rgba(0,66,82,.15); }
+.companion-agenda-notice strong { font-size: 18px; color: var(--municipal-petroleo); }
+.companion-agenda-notice span { font-size: 12px; line-height: 1.5; }
+.companion-idle { min-height: 100vh; background: var(--municipal-petroleo); display: grid; place-items: center; position: relative; padding: 64px; }
+.companion-logo { display: block; width: min(65vw, 235px); max-height: 54vh; object-fit: contain; }
+.companion-idle-caption { position: absolute; bottom: 44px; left: 0; right: 0; text-align: center; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .3px; }
+@media (max-width: 900px) {
+  .companion-topbar { padding: 0 24px; }
+  .companion-content { padding: 26px 24px 22px; gap: 18px; }
+  .companion-card { padding: 20px; }
+  .companion-grid { gap: 18px; }
+  .companion-cost-row { column-gap: 8px; }
+  .companion-agenda-list > li { grid-template-columns: 42px minmax(0, 1fr); gap: 3px 9px; padding: 8px; }
+  .companion-agenda-status { grid-column: 2; text-align: left; }
+  .companion-agenda-name { font-size: 12px; }
+  .companion-map-theme { grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding-inline: 4px; }
+}
+@media (max-width: 680px) {
+  .companion-grid { grid-template-columns: 1fr; }
+}
+
+.previous-session-total .previous-session-plan-total { margin-top: 3px; color: var(--ink-secondary); font-size: 11px; }
+.previous-session-overview { grid-column: 1 / -1; color: var(--municipal-petroleo); font-size: 12px; font-weight: 600; }
+
+.companion-territorial .companion-content { width: min(1540px, 100%); }
+.companion-territorial-layout {
+  display: grid;
+  grid-template-columns: minmax(0, clamp(245px, 31vw, 420px)) minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+}
+.companion-territorial-aside,
+.companion-territorial-context { display: grid; align-content: start; min-width: 0; gap: 10px; }
+.companion-territorial-context:empty { display: none; }
+.companion-territorial-details { min-width: 0; }
+
+.companion-territory-card {
+  display: grid; gap: 7px; min-width: 0;
+  padding: 10px; border: 1px solid var(--border); border-radius: 12px; background: rgba(255,255,255,.9);
+}
+.companion-territory-area {
+  color: var(--municipal-petroleo); font-size: 13px; font-weight: 650; line-height: 1.3; overflow-wrap: anywhere;
+}
+.companion-territory-map-slot {
+  height: clamp(192px, 32vh, 315px); min-width: 0; overflow: hidden;
+  border: 1px solid var(--border); border-radius: 8px; background: #e7eeee;
+}
+.companion-territorial .companion-card,
+.companion-territorial .robbery-share { padding: 12px 14px; border-radius: 12px; }
+.companion-territorial .companion-card h2 { margin-bottom: 7px; font-size: 14px; }
+.companion-territorial .companion-analysis-note,
+.companion-territorial .companion-cross-context {
+  color: var(--ink-secondary); font-size: 11px; line-height: 1.4; overflow-wrap: anywhere;
+}
+.companion-territorial [data-kind="security"] { --companion-layer-color: var(--municipal-morado); }
+.companion-territorial [data-kind="cameras"] { --companion-layer-color: var(--municipal-petroleo); }
+.companion-territorial [data-kind="fixed"] { --companion-layer-color: var(--municipal-verde); }
+.companion-territorial [data-kind="alarms"] { --companion-layer-color: var(--municipal-fucsia); }
+
+.companion-layer-results { display: grid; align-items: start; gap: 12px; }
+.companion-layer-results[data-count="2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.companion-layer-results[data-count="2"] .companion-layer-result + .companion-layer-result {
+  border-inline-start: 1px solid var(--border); padding-inline-start: 12px;
+}
+.companion-layer-result-main { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
+.companion-territorial .companion-layer-result-main h3 {
+  display: flex; align-items: baseline; gap: 6px; font-size: 13px; font-weight: 600; line-height: 1.3;
+}
+.companion-layer-result-main h3::before {
+  content: ''; flex: none; width: .55em; height: .55em; border-radius: 2px; background: var(--companion-layer-color);
+}
+.companion-layer-result-main > strong {
+  color: var(--municipal-petroleo); font-size: clamp(22px, 2.5vw, 34px);
+  line-height: 1; font-weight: 650; font-variant-numeric: tabular-nums;
+}
+.companion-territorial .companion-layer-period { font-size: 11px; line-height: 1.4; }
+.companion-territorial .companion-analysis-status,
+.companion-territorial .companion-analysis-patterns {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 87px), 1fr));
+  gap: 4px 10px; margin-top: 7px;
+}
+.companion-territorial .companion-analysis-patterns {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+  margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border);
+}
+.companion-analysis-status dt, .companion-analysis-patterns dt { font-size: 10px; margin-bottom: 1px; line-height: 1.3; }
+.companion-analysis-status dd, .companion-analysis-patterns dd {
+  color: var(--municipal-petroleo); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.35;
+}
+.companion-local-detail > .companion-analysis-note { margin-top: 7px; }
+
+.companion-cross-summary, .companion-local-detail { margin-top: 11px; padding-top: 10px; border-top: 1px solid var(--border); }
+.companion-cross-context { margin-bottom: 4px !important; }
+.companion-card .companion-cross-finding { font-size: 13px; line-height: 1.4; }
+.companion-cross-finding strong { color: var(--municipal-petroleo); font-weight: 650; }
+.companion-cross-table {
+  width: 100%; margin-block: 6px 3px; border-collapse: separate; border-spacing: 6px 3px;
+  table-layout: fixed; font-size: 12px; text-align: left; font-variant-numeric: tabular-nums;
+}
+.companion-cross-table thead th { color: var(--ink-secondary); font-weight: 500; }
+.companion-cross-table th:first-child { width: 25%; }
+.companion-cross-value { position: relative; height: 22px; padding: 0 6px; background: #eff4f4; border-radius: 4px; text-align: right; }
+.companion-cross-value span { position: absolute; inset: 0 auto 0 0; border-radius: inherit; background: color-mix(in srgb, var(--companion-layer-color) 23%, transparent); }
+.companion-cross-value strong { position: relative; color: var(--ink); font-weight: 600; }
+.companion-cross-table tr[data-priority="true"] th { color: var(--municipal-morado); box-shadow: inset 2px 0 var(--municipal-morado); padding-left: 5px; }
+
+.companion-query-context .companion-layer-results[data-count="2"] { grid-template-columns: 1fr; gap: 8px; }
+.companion-query-context .companion-layer-results[data-count="2"] .companion-layer-result + .companion-layer-result {
+  border-inline-start: 0; border-top: 1px solid var(--border); padding: 7px 0 0;
+}
+.companion-query-context .companion-layer-result-main > strong { font-size: 20px; }
+.companion-query-context .companion-analysis-status {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 65px), 1fr));
+  gap: 3px 6px; margin-top: 4px;
+}
+.companion-query-context .companion-cross-summary { margin-top: 7px; padding-top: 6px; }
+.companion-query-context .companion-cross-summary h2 { font-size: 12px; margin-bottom: 4px; }
+.companion-query-context .companion-cross-finding { font-size: 11px; }
+
+.companion-territorial .robbery-share-heading { margin-bottom: 6px; column-gap: 8px; }
+.companion-territorial .robbery-share-heading h2 { font-size: 13px; }
+.companion-territorial .robbery-share-period { display: none; }
+.companion-territorial .robbery-share-visual { grid-template-columns: 58px minmax(0, 1fr); gap: 9px; }
+.companion-territorial .robbery-share-matrix { gap: 2px; }
+.companion-territorial .robbery-share-percentage { font-size: 23px; }
+.companion-territorial .robbery-share-caption { margin: 0 0 4px !important; font-size: 10px; }
+.companion-territorial .robbery-share-counts { gap: 12px; }
+.companion-territorial .robbery-share-counts dd { font-size: 12px; }
+.companion-territorial .robbery-share-note { display: none; }
+
+.companion-forecast-metrics, .companion-forecast-grid { display: grid; gap: 10px; }
+.companion-forecast-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 7px 0; }
+.companion-forecast-metrics .companion-metric dt { font-size: 10px; }
+.companion-forecast-metrics .companion-metric dd { color: var(--municipal-petroleo); font-size: clamp(16px, 2vw, 24px); }
+.companion-forecast-metrics .companion-metric small { margin-top: 0; }
+.companion-forecast-estimates, .companion-forecast-grid { border-top: 1px solid var(--border); margin-top: 5px; padding-top: 8px; }
+.companion-forecast-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; }
+.companion-territorial .companion-forecast-details h3 { font-size: 12px; margin-bottom: 5px; }
+.companion-forecast-details .companion-footnote { margin-top: 8px; }
+.companion-forecast-details .companion-cost-chart { gap: 5px; }
+.companion-forecast-details .companion-cost-row { gap: 2px 6px; }
+.companion-forecast-details .companion-cost-track { height: 4px; }
+.companion-forecast-details .companion-delivery { gap: 5px; margin-bottom: 7px; }
+.companion-territorial .companion-installation-areas .companion-fact { padding-block: 4px; }
+
+@media (max-height: 760px) {
+  .companion-app .companion-topbar { height: 40px; }
+  .companion-app .companion-content { padding: 12px 18px; gap: 11px; }
+  .companion-app .companion-heading h1 { font-size: 24px; }
+  .companion-app .companion-subtitle { font-size: 12px; }
+  .companion-agenda .companion-card { padding: 11px 13px; }
+  .companion-agenda .companion-card h2 { margin-bottom: 8px; font-size: 14px; }
+  .companion-agenda .companion-agenda-hero { padding: 8px 16px 0; gap: 6px 12px; }
+  .companion-agenda .companion-timer-track { height: 4px; margin-inline: -16px; }
+  .companion-agenda .companion-agenda-position > strong { font-size: 24px; }
+  .companion-agenda .companion-timer-value { font-size: 35px; }
+  .companion-agenda .companion-agenda-list { gap: 3px; }
+  .companion-agenda .companion-agenda-list > li {
+    grid-template-columns: 36px minmax(0, 1fr) 54px; gap: 7px; min-height: 38px; padding: 4px 5px;
+  }
+  .companion-agenda .companion-agenda-status { grid-column: auto; text-align: right; }
+  .companion-agenda .companion-map-themes { gap: 5px; }
+  .companion-agenda .companion-map-theme { padding: 5px 4px; }
+  .companion-agenda .companion-map-theme h3 { font-size: 12px; margin-bottom: 1px; }
+  .companion-agenda .companion-map-theme p { font-size: 11px; }
+  .companion-agenda .companion-map-selected { margin-top: 3px; }
+  .companion-agenda .companion-column { gap: 9px; }
+}
+
+@media (max-width: 740px) {
+  .companion-territorial-layout { grid-template-columns: 1fr; }
+}

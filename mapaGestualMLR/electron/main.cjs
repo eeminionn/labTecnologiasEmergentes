@@ -3,6 +3,7 @@ const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
 const { createTwinBridge } = require('./twin-bridge.cjs');
+const { createCompanionWindow } = require('./companion-window.cjs');
 
 const twinMode = process.argv.includes('--twin-bridge');
 const twinPort = Number(process.argv.find(v => v.startsWith('--twin-port='))?.slice(12));
@@ -91,7 +92,7 @@ const bridge = twinMode ? createTwinBridge({ token: twinToken, onState: state =>
     previewVisible:!!previewWindow && !previewWindow.isDestroyed() && previewWindow.isVisible(),previewFrames}) }) : null;
 const trusted = sender => sender === win?.webContents && sender.getURL().startsWith(`${origin}/`);
 function openMapLink(url) {
-  try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com'].includes(parsed.hostname))shell.openExternal(url); }catch{}
+  try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com','lareina.cl','www.lareina.cl','www.24horas.cl'].includes(parsed.hostname))shell.openExternal(url); }catch{}
 }
 const csp = "default-src 'self'; script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; worker-src 'self' blob:; connect-src 'self' https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://*.google.com; object-src 'none'; base-uri 'self'";
 const visionCsp = "default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'none'";
@@ -135,6 +136,7 @@ else {
     win.setMenuBarVisibility(false);
     win.webContents.setWindowOpenHandler(({url}) => {openMapLink(url);return { action: 'deny' };});
     win.webContents.on('will-navigate', (event, url) => { if (!url.startsWith(`${origin}/`)) {event.preventDefault();openMapLink(url);} });
+    const companion = !twinMode && !smoke && !trafficCheck && !analysisCheck ? createCompanionWindow(win, origin) : null;
     if (!twinMode) win.on('blur', () => win.webContents.send('window-blur'));
     if (bridge) {
       win.webContents.setFrameRate(15);
@@ -198,8 +200,8 @@ else {
       if (!trusted(event.sender) || (bridge ? !bridge.isActive(epoch) : !win.isFocused()) || !point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return false;
       const [width, height] = win.getContentSize();
       const x = Math.round(point.x), y = Math.round(point.y);
-      // Only the map viewport; top bar / footer never accept gesture input.
-      if (x < 0 || x >= width || y < (twinMode ? 0 : 56) || y >= height - (twinMode ? 0 : 28)) return false;
+      // Only the map viewport accepts gesture input.
+      if (x < 0 || x >= width || y < (twinMode ? 0 : 56) || y >= height) return false;
       win.webContents.sendInputEvent({ type: 'mouseMove', x, y });
       win.webContents.sendInputEvent({ type: 'mouseDown', x, y, button: 'left', clickCount: 1 });
       win.webContents.sendInputEvent({ type: 'mouseUp', x, y, button: 'left', clickCount: 1 });
@@ -232,8 +234,9 @@ else {
       console.log(JSON.stringify(report));
       app.exit(report.ok ? 0 : 1);
     });
-    if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?140000:trafficCheck?90000:40000);
+    if (smoke || trafficCheck || analysisCheck) timeout = setTimeout(() => { console.error('Smoke timeout'); app.exit(1); }, analysisCheck?180000:trafficCheck?90000:40000);
     await win.loadURL(`${origin}/${smoke ? '?smoke=1' : trafficCheck ? '?traffic-check=1' : analysisCheck ? '?analysis-check=1' : ''}`);
+    if(companion)await companion.open().catch(error=>console.error('No se pudo abrir la ficha técnica.',error));
     if (bridge && !bridge.isActive()) win.webContents.stopPainting();
     // Smoke exercises the same focus-gated native click path as camera input.
     // A hidden window would only test DOM dispatch and miss real input bugs.

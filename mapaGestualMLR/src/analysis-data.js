@@ -61,7 +61,7 @@ export const HEAT_COLOR_STOPS = Object.freeze([
   Object.freeze({ value: 1, color: Object.freeze([215, 48, 39]) })
 ]);
 
-function csvRows(text) {
+export function csvRows(text) {
   if (typeof text !== 'string') throw new TypeError('El archivo CSV debe contener texto.');
   text = text.replace(/^\uFEFF/, '');
   const rows = []; let row = [], field = '', quoted = false, closedQuote = false;
@@ -102,7 +102,7 @@ export function parseSecurityCSV(text) {
       || record.origen !== 'simulado' || !['sí', 'no'].includes(record.resuelto) || !validDate || !time
       || Number(time[1]) > 23 || Number(time[2]) > 59 || Number(time[3] || 0) > 59
       || !Number.isFinite(lng) || !Number.isFinite(lat) || lng < -180 || lng > 180 || lat <= -85 || lat >= 85) {
-      throw new Error(`La fila ${index + 2} del CSV contiene un incidente simulado no válido.`);
+      throw new Error(`La fila ${index + 2} del CSV contiene un incidente no válido.`);
     }
     ids.add(record.id);
     return { ...record, latitud: lat, longitud: lng, lat, lng, year: record.fecha.slice(0, 4), month: record.fecha.slice(5, 7), hour: Number(time[1]), resolved: record.resuelto === 'sí', robberyType: classifySecurityRobbery(record) };
@@ -164,6 +164,19 @@ function distanceMetres(lng1, lat1, lng2, lat2) {
 }
 
 const shortDate = value => value.split('-').reverse().join('/');
+
+export function summarizeSecurityArea(records, referenceDate) {
+  const end = isoDay(referenceDate);
+  const start = new Date(end - 6 * DAY_MS).toISOString().slice(0, 10);
+  const last7DaysRange = { start, end: referenceDate, label: `Del ${shortDate(start)} al ${shortDate(referenceDate)}` };
+  let last7Days = 0, lastIncident = null;
+  for (const record of records) {
+    if (record.fecha >= start && record.fecha <= referenceDate) last7Days++;
+    if (!lastIncident || record.fecha > lastIncident.fecha
+      || record.fecha === lastIncident.fecha && record.hora > lastIncident.hora) lastIncident = record;
+  }
+  return { total: records.length, last7Days, last7DaysRange, last7DaysLabel: last7DaysRange.label, referenceDate, lastIncident };
+}
 
 /** Build once per filter change. Pointer movement only inspects nearby buckets. */
 export function createSecuritySpatialIndex(records) {

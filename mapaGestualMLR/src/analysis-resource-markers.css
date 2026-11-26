@@ -1,0 +1,87 @@
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  width: 28px;
+  height: 28px;
+  min-height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: auto;
+  border: 1px solid white;
+  border-radius: 5px;
+  color: #fff;
+  background: var(--municipal-verde);
+  box-shadow: 0 1px 3px #14313f55;
+  transition: none;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind="alarms"] {
+  background: var(--municipal-fucsia);
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind="cameras"] {
+  background: #0874a3;
+}
+
+body:not(.twin-projection) .analysis-resource-marker > svg {
+  width: 17px;
+  height: 17px;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-group[data-kind="cameras"] {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  width: auto;
+  min-width: 39px;
+  padding: 0 5px;
+  color: #125575;
+  background: #fff;
+  border-color: #125575;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind][data-outside-area="true"] {
+  z-index: 0;
+  background: #66737a;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-group[data-kind][data-outside-area="true"] {
+  color: #425359;
+  background: #f0f2f2;
+  border-color: #849197;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-group[aria-expanded="true"] {
+  z-index: 0;
+}
+
+body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker:is([data-selected="true"], :hover, :focus-visible, .gesture-target) {
+  z-index: 2;
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: 2px;
+}
+
+body:not(.twin-projection) .analysis-resource-badge {
+  position: absolute;
+  bottom: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  width: 13px;
+  height: 12px;
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  color: var(--ink);
+  background: white;
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+  pointer-events: none;
+}

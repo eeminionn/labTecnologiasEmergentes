@@ -43,10 +43,8 @@
   font-display: swap;
 }
 
-/* Existing projection styling is preserved. Only the standalone additions
-   (mode selector and traffic help) are hidden when using the projection. */
 .twin-projection #experience-mode-switcher,
-.twin-projection .experience-guide { display: none; }
+#experience-mode-switcher [hidden] { display: none !important; }
 
 body:not(.twin-projection) {
   --municipal-petroleo: #006a85;
@@ -111,7 +109,7 @@ body:not(.twin-projection) .primary:hover {
   box-shadow: 0 3px 10px rgba(0, 106, 133, .17), inset 0 1px 0 rgba(255, 255, 255, .13);
 }
 
-/* The 56 px header and 28 px footer remain the native gesture input bounds. */
+/* The 56 px header sits outside the native gesture input area. */
 body:not(.twin-projection) .topbar {
   height: 56px;
   padding: 0 20px;
@@ -130,22 +128,13 @@ body:not(.twin-projection) .municipal-name {
   letter-spacing: -.45px;
   color: var(--municipal-petroleo);
 }
-body:not(.twin-projection) .location .separator { padding: 0 13px; color: #9eb7bd; }
-body:not(.twin-projection) .location #provider-label { color: var(--ink-secondary); font-size: 12px; }
-body:not(.twin-projection) #status { font-size: 11px; color: var(--ink-secondary); }
+body:not(.twin-projection) #status { display: flex; font-size: 11px; color: var(--ink-secondary); white-space: nowrap; }
 body:not(.twin-projection) #status i { background: #8da4a9; }
 body:not(.twin-projection) #status.active i { background: var(--municipal-verde); }
 body:not(.twin-projection) #status.paused i { background: var(--municipal-morado); }
-body:not(.twin-projection) #help-open { width: 34px; padding: 7px 0; font-weight: 700; }
-body:not(.twin-projection) #workspace { height: calc(100vh - 84px); background: #eaf1ef; }
-body:not(.twin-projection) footer {
-  height: 28px;
-  background: #f8fbfb;
-  color: var(--ink-secondary);
-  border-top: 1px solid rgba(0, 106, 133, .1);
-  font-size: 10px;
-  padding: 0 18px;
-}
+body:not(.twin-projection) .topbar button { min-height: 40px; }
+body:not(.twin-projection) #help-open { min-width: 64px; font-weight: 600; }
+body:not(.twin-projection) #workspace { background: #eaf1ef; }
 body:not(.twin-projection) .hint-pan { color: var(--municipal-morado); }
 body:not(.twin-projection) .hint-zoom { color: var(--municipal-petroleo); }
 
@@ -169,7 +158,7 @@ body:not(.twin-projection) #experience-mode-switcher {
 }
 body:not(.twin-projection) #experience-mode-switcher button {
   min-width: 96px;
-  min-height: 36px;
+  min-height: 42px;
   padding: 7px 18px;
   border: 1px solid transparent;
   border-radius: 12px;
@@ -189,7 +178,6 @@ body:not(.twin-projection).content-open #experience-mode-switcher { visibility: 
 body:not(.twin-projection) .panel,
 body:not(.twin-projection) .map-tools,
 body:not(.twin-projection) #notice,
-body:not(.twin-projection) .map-category-legend,
 body:not(.twin-projection) .traffic-toolbar,
 body:not(.twin-projection) .traffic-legend {
   background-color: var(--glass-surface);
@@ -201,6 +189,168 @@ body:not(.twin-projection) .traffic-legend {
   box-shadow: var(--glass-shadow), var(--glass-inset);
 }
 
+.map-intro { display: none; }
+body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+  position: absolute;
+  z-index: 470;
+  top: 18px;
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 308px;
+  max-height: calc(100% - 82px);
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: var(--glass-shadow);
+}
+body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro {
+  max-height: calc(100% - var(--council-camera-clearance, 264px));
+}
+body:not(.twin-projection) .council-agenda-heading { padding-top: 2px; }
+body:not(.twin-projection) .council-agenda-title-row { display: flex; align-items: center; gap: 6px; margin-top: 4px; }
+body:not(.twin-projection) .map-intro h1 { flex: 1; min-width: 0; margin: 0; font-size: 18px; letter-spacing: -.5px; line-height: 1.25; }
+body:not(.twin-projection) #council-previous-session {
+  flex: none;
+  min-height: 32px;
+  padding: 5px;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--municipal-petroleo);
+  box-shadow: none;
+  font-size: 10px;
+}
+body:not(.twin-projection) #council-previous-session[aria-pressed="true"] { background: var(--municipal-petroleo); color: #fff; }
+body:not(.twin-projection) #council-previous-session.gesture-target { outline: 2px solid var(--municipal-petroleo); outline-offset: 2px; }
+@media (max-width: 1050px) {
+  body:not(.twin-projection) .council-agenda-title-row { gap: 4px; }
+  body:not(.twin-projection) .map-intro h1 { font-size: 16px; }
+}
+body:not(.twin-projection) .map-intro p { margin: 0; color: var(--ink-secondary); font-size: 12px; line-height: 1.45; }
+body:not(.twin-projection) .map-intro .map-intro-label { color: var(--municipal-petroleo); font-size: 10px; font-weight: 600; }
+body:not(.twin-projection) .council-agenda-current {
+  flex: none;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #f5f8f9;
+}
+body:not(.twin-projection) .council-agenda-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-meta time,
+body:not(.twin-projection) .council-agenda-choice time,
+body:not(.twin-projection) .council-agenda-nav span { font-variant-numeric: tabular-nums; }
+body:not(.twin-projection) .council-agenda-priority {
+  padding: 1px 6px;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  font-size: 10px;
+}
+body:not(.twin-projection) .council-agenda-priority[data-priority="urgente"] { color: var(--municipal-morado); }
+body:not(.twin-projection) .council-agenda-priority[data-priority="programado"] { color: var(--ink-secondary); }
+body:not(.twin-projection) .council-agenda-topic {
+  margin: 5px 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+body:not(.twin-projection) #map-graphics-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 9px;
+  width: 100%;
+  min-height: 38px;
+  margin-top: 8px;
+  font-weight: 600;
+  text-align: left;
+  white-space: normal;
+}
+body:not(.twin-projection) .council-agenda-list {
+  display: grid;
+  gap: 3px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  list-style: none;
+}
+body:not(.twin-projection) .council-agenda-choice {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 36px;
+  padding: 5px 6px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: #fff;
+  box-shadow: none;
+  text-align: left;
+  white-space: normal;
+}
+body:not(.twin-projection) .council-agenda-choice:hover,
+body:not(.twin-projection) .council-agenda-choice[aria-current="true"] {
+  border-color: var(--border);
+  background: #edf6f6;
+  box-shadow: none;
+}
+body:not(.twin-projection) .council-agenda-choice time {
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-name { font-size: 12px; line-height: 1.35; }
+body:not(.twin-projection) .council-agenda-choice[aria-current="true"] .council-agenda-name { font-weight: 700; }
+body:not(.twin-projection) .council-agenda-choice-state {
+  color: var(--ink-secondary);
+  font-size: 10px;
+  white-space: nowrap;
+}
+body:not(.twin-projection) .council-agenda-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 6px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  color: var(--ink-secondary);
+  font-size: 11px;
+  white-space: nowrap;
+}
+body:not(.twin-projection) .council-agenda-nav button {
+  min-height: 34px;
+  padding: 4px 8px;
+  border-radius: 7px;
+  box-shadow: none;
+  color: var(--municipal-petroleo);
+  font-size: 11px;
+  font-weight: 600;
+}
+body:not(.twin-projection) .council-agenda-nav button[aria-disabled="true"] {
+  background: transparent;
+  color: var(--ink-secondary);
+  cursor: default;
+  opacity: .55;
+}
+body:not(.twin-projection) .council-agenda-choice:focus-visible,
+body:not(.twin-projection) .council-agenda-choice.gesture-target {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: -2px;
+}
+
 /* The preview stays available without covering mode or scenario controls. */
 body:not(.twin-projection) #diagnostics {
   left: 18px;
@@ -209,6 +359,7 @@ body:not(.twin-projection) #diagnostics {
   width: 200px;
   overflow: hidden;
 }
+body:not(.twin-projection).content-open #diagnostics { visibility: hidden; pointer-events: none; }
 body:not(.twin-projection) .panel-heading {
   background: transparent;
   border-bottom: 1px solid rgba(0, 106, 133, .1);
@@ -227,8 +378,8 @@ body:not(.twin-projection) .map-tools {
   border-radius: 15px;
 }
 body:not(.twin-projection) .map-tools button {
-  width: 38px;
-  height: 38px;
+  width: 42px;
+  height: 42px;
   border: 0;
   border-radius: 10px;
   background: transparent;
@@ -242,24 +393,52 @@ body:not(.twin-projection) .map-tools button + button { border-top: 0; }
 body:not(.twin-projection) .map-tools button:hover { background: rgba(0, 106, 133, .08); }
 body:not(.twin-projection) #notice { padding: 12px 18px; bottom: 20px; color: var(--ink); line-height: 1.5; }
 
-/* Preserve the three municipal categories while improving contrast on lime. */
+/* Keep the map key compact and separate from interactive controls. */
 body:not(.twin-projection) .map-category-legend {
-  width: min(340px, 42vw);
-  bottom: 18px;
-  padding: 10px;
-  gap: 5px;
-  border-radius: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  bottom: 26px;
+  gap: 6px;
+}
+body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-category-legend {
+  left: calc(50% + 108px);
+  max-width: calc(100% - 252px);
 }
 body:not(.twin-projection) .map-category-legend-row {
-  background: transparent;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px 4px 5px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--glass-surface);
+  box-shadow: 0 2px 8px rgba(20, 48, 50, .12);
+  backdrop-filter: var(--glass-blur);
   color: var(--ink);
   font-size: 11px;
   line-height: 1.4;
-  font-weight: 500;
-  padding: 4px 8px 4px 10px;
-  border-radius: 3px;
-  border-left: 3px solid var(--category-color);
+  font-weight: 600;
   clip-path: none;
+}
+body:not(.twin-projection) .map-category-legend-number {
+  display: grid;
+  flex: 0 0 17px;
+  place-items: center;
+  min-height: 17px;
+  border-left: 2px solid var(--category-color);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--category-color) 16%, white);
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 700;
+}
+body:not(.twin-projection) .sequence-marker:focus-visible {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: 2px;
+  border-radius: 12px;
 }
 body:not(.twin-projection) .leaflet-container { font-family: inherit; }
 body:not(.twin-projection) .leaflet-container a { color: var(--municipal-petroleo); }
@@ -286,11 +465,43 @@ body:not(.twin-projection) .demo-popup p { color: var(--ink-secondary); }
 
 /* Graphic pages keep their original white artwork; only navigation is glass. */
 body:not(.twin-projection) .content-viewer { background: #fff; }
+body:not(.twin-projection) .content-heading {
+  position: absolute;
+  inset: 0 0 auto;
+  padding: 17px 165px 13px 24px;
+  background: #f3f9f9;
+  border-bottom: 1px solid #dce7e8;
+  pointer-events: none;
+}
+body:not(.twin-projection) .content-heading h1 {
+  margin: 2px 0 3px;
+  color: var(--ink);
+  font-size: clamp(17px, 2vw, 22px);
+  line-height: 1.25;
+  letter-spacing: -.35px;
+}
+body:not(.twin-projection) .content-topic { margin: 0; color: var(--municipal-morado); font-size: 11px; font-weight: 600; }
+body:not(.twin-projection) .content-page-status {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  clip-path: none;
+  color: var(--ink-secondary);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+body:not(.twin-projection) .content-stage { inset: 116px 120px 70px; }
+body:not(.twin-projection) .content-stage:focus-visible {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: 3px;
+}
+body:not(.twin-projection) .content-unavailable { text-align: center; margin-top: 36px; color: var(--ink-secondary); }
+body:not(.twin-projection) .content-controls { z-index: 1; }
 body:not(.twin-projection) .content-control {
-  width: 64px;
-  height: 58px;
+  width: 88px;
+  height: 56px;
   padding: 0;
-  font-size: 32px;
   color: var(--municipal-petroleo);
   background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .72));
   border: 1px solid rgba(0, 106, 133, .15);
@@ -299,8 +510,42 @@ body:not(.twin-projection) .content-control {
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow), var(--glass-inset);
 }
+body:not(.twin-projection) .content-control-symbol { font-size: 23px; }
+body:not(.twin-projection) .content-control-caption { font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+body:not(.twin-projection) #content-previous { left: 18px; transform: translateY(-50%); }
+body:not(.twin-projection) #content-next { left: auto; right: 18px; transform: translateY(-50%); }
+body:not(.twin-projection) #content-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 132px;
+  height: 44px;
+  left: auto;
+  right: 18px;
+  top: 22px;
+  transform: none;
+}
+body:not(.twin-projection) #content-close .content-control-caption { margin: 0; }
+body:not(.twin-projection) .content-zoom {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 5px;
+  padding: 4px;
+  border: 1px solid #dce7e8;
+  border-radius: 13px;
+  background: #f3f9f9;
+}
+body:not(.twin-projection) .content-zoom .content-control { position: static; transform: none; width: 44px; height: 44px; border-radius: 9px; }
+body:not(.twin-projection) #content-fit { width: 74px; }
+body:not(.twin-projection) #content-fit .content-control-symbol { font-size: 11px; font-weight: 600; }
 body:not(.twin-projection) .content-control:hover { background: #f2f9f9; }
 body:not(.twin-projection) .content-control.gesture-target,
+body:not(.twin-projection) #map-graphics-shortcut.gesture-target,
+body:not(.twin-projection) .council-agenda-nav button.gesture-target,
 body:not(.twin-projection) .map-tools button.gesture-target,
 body:not(.twin-projection) #experience-mode-switcher button.gesture-target,
 body:not(.twin-projection) .traffic-experience button.gesture-target {
@@ -340,8 +585,8 @@ body:not(.twin-projection) dialog::backdrop { background: rgba(10, 47, 56, .3); 
 body:not(.twin-projection) .dialog-heading { margin-bottom: 18px; }
 body:not(.twin-projection) .dialog-heading h1 { color: var(--municipal-petroleo); font-size: 20px; font-weight: 700; }
 body:not(.twin-projection) .dialog-heading button {
-  width: 32px;
-  height: 32px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -363,6 +608,22 @@ body:not(.twin-projection) label input[type="range"] { min-height: 22px; accent-
 body:not(.twin-projection) input[type="checkbox"] { accent-color: var(--municipal-petroleo); }
 body:not(.twin-projection) .field-note { color: var(--ink-secondary); font-size: 11px; line-height: 1.65; }
 body:not(.twin-projection) .field-note a { color: var(--municipal-petroleo); }
+body:not(.twin-projection) #camera-device-note:empty { display: none; }
+body:not(.twin-projection) .dialog-actions button { min-height: 42px; }
+body:not(.twin-projection) .settings-details {
+  margin: 10px 0;
+  border: 1px solid rgba(0, 106, 133, .14);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, .7);
+}
+body:not(.twin-projection) .settings-details > summary {
+  padding: 12px 14px;
+  color: var(--municipal-petroleo);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+body:not(.twin-projection) .settings-details-body { padding: 0 14px 12px; }
 body:not(.twin-projection) .tracking-details {
   border: 1px solid rgba(0, 106, 133, .14);
   border-radius: 12px;
@@ -480,7 +741,6 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection) .traffic-toolbar { width: 285px; padding: 16px; }
   body:not(.twin-projection) .traffic-title { font-size: 16px; }
   body:not(.twin-projection) .traffic-scenario { min-height: 38px; }
-  body:not(.twin-projection) .map-category-legend { width: 315px; }
 }
 @media (max-width: 1050px) {
   body:not(.twin-projection) .traffic-toolbar { width: 262px; }
@@ -488,13 +748,29 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection) footer { font-size: 9px; padding: 0 12px; gap: 8px; }
   body:not(.twin-projection) #experience-mode-switcher { top: 14px; }
   body:not(.twin-projection) #experience-mode-switcher button { min-width: 86px; padding: 7px 12px; }
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro { width: 278px; }
   body:not(.twin-projection) .traffic-legend { max-width: calc(100% - 225px); }
 }
 @media (max-height: 780px) {
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+    --council-camera-clearance: 228px;
+    gap: 7px;
+    padding: 10px;
+  }
+  body:not(.twin-projection) .council-agenda-current { padding-block: 8px; }
   body:not(.twin-projection) #diagnostics { width: 165px; bottom: 14px; }
   body:not(.twin-projection) .traffic-toolbar { max-height: calc(100% - 205px); }
   body:not(.twin-projection) .traffic-subtitle { margin-bottom: 10px; }
   body:not(.twin-projection) .traffic-note { margin-top: 10px; }
+}
+@media (max-width: 760px) {
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+    top: 76px;
+    max-height: calc(100% - 142px);
+  }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro {
+    max-height: calc(100% - var(--council-camera-clearance, 264px) - 58px);
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   body:not(.twin-projection) button { transition: none; }

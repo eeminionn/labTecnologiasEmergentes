@@ -1,0 +1,115 @@
+body:not(.twin-projection) .council-topic-timer {
+  display: grid;
+  flex: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
+  color: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .council-timer-reading {
+  display: grid;
+  gap: 1px;
+}
+body:not(.twin-projection) #council-timer-label {
+  color: var(--ink-secondary);
+  font-size: 10px;
+  line-height: 1.2;
+}
+body:not(.twin-projection) #council-timer-value {
+  font-size: 26px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+body:not(.twin-projection) .council-timer-controls { display: flex; gap: 5px; }
+body:not(.twin-projection) .council-timer-controls button {
+  min-height: 36px;
+  padding: 5px 8px;
+  border-radius: 7px;
+  background: #fff;
+  color: var(--municipal-petroleo);
+  box-shadow: none;
+  font-size: 11px;
+}
+body:not(.twin-projection) #council-timer-reset { min-width: 36px; font-size: 22px; }
+body:not(.twin-projection) .council-timer-controls button.gesture-target {
+  outline: 2px solid var(--municipal-petroleo);
+  outline-offset: -2px;
+}
+body:not(.twin-projection) .council-timer-track {
+  position: relative;
+  height: 3px;
+  grid-column: 1 / -1;
+  background: #e1ebed;
+}
+body:not(.twin-projection) #council-timer-seek {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  transform: translateY(-50%);
+  appearance: none;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  cursor: ew-resize;
+  touch-action: none;
+}
+body:not(.twin-projection) #council-timer-seek::-webkit-slider-runnable-track { height: 3px; background: transparent; }
+body:not(.twin-projection) #council-timer-seek::-webkit-slider-thumb {
+  width: 10px;
+  height: 10px;
+  margin-top: -3.5px;
+  -webkit-appearance: none;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+}
+body:not(.twin-projection) #council-timer-seek:hover::-webkit-slider-thumb,
+body:not(.twin-projection) #council-timer-seek:focus-visible::-webkit-slider-thumb { background: var(--municipal-petroleo); }
+body:not(.twin-projection) #council-timer-fill {
+  display: block;
+  height: 100%;
+  background: var(--municipal-petroleo);
+}
+body:not(.twin-projection) .council-topic-timer[data-overtime="true"] #council-timer-value {
+  color: var(--municipal-morado);
+}
+body:not(.twin-projection) .council-timer-notice {
+  position: absolute;
+  z-index: 680;
+  right: 18px;
+  bottom: 60px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: min(390px, calc(100% - 36px));
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: var(--glass-shadow);
+}
+body:not(.twin-projection) .council-timer-notice > div { display: grid; gap: 3px; }
+body:not(.twin-projection) .council-timer-notice strong { color: var(--municipal-petroleo); font-size: 15px; }
+body:not(.twin-projection) .council-timer-notice span { color: var(--ink-secondary); font-size: 12px; line-height: 1.4; }
+body:not(.twin-projection) #council-timer-notice-close { flex: none; min-width: 34px; min-height: 34px; padding: 0; background: #fff; font-size: 22px; }
+
+@media (max-height: 780px) {
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-description,
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro-label { display: none; }
+  body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open):has(#diagnostics:not([hidden])) .map-intro {
+    gap: 4px;
+  }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-current { padding-block: 6px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-topic { font-size: 17px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-agenda-nav { padding-top: 4px; }
+  body:not(.twin-projection):has(#diagnostics:not([hidden])) .council-topic-timer { padding-top: 5px; }
+}

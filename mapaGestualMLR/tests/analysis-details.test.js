@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSecurityCSV, filterSecurityRecords, createSecuritySpatialIndex, getSecurityDateRange } from '../src/analysis-data.js';
+import { parseSecurityCSV, filterSecurityRecords, createSecuritySpatialIndex, getSecurityDateRange, summarizeSecurityArea } from '../src/analysis-data.js';
 
 const header = 'id,categoria,tipo_incidente,direccion,latitud,longitud,fecha,hora,dia_semana,resuelto,origen';
 const csv = header + '\n'
@@ -8,6 +8,16 @@ const csv = header + '\n'
   + '2,Seguridad,Robo,Calle B,-33.45,-70.55,2024-01-31,18:00,miércoles,no,simulado\n'
   + '3,Seguridad,Robo,Calle C,-33.45,-70.55,2024-02-29,23:59,jueves,no,simulado\n'
   + '4,Seguridad,Robo,Calle D,-33.45,-70.55,2025-02-28,06:00,viernes,sí,simulado\n';
+
+test('La consulta de cuadrantes resume un conjunto sin duplicar el conteo ni cambiar el corte temporal', () => {
+  const records = filterSecurityRecords(parseSecurityCSV(csv), { year: '2024' });
+  const selection = summarizeSecurityArea(records, '2024-02-29');
+  assert.equal(selection.total, 2);
+  assert.equal(selection.last7Days, 1);
+  assert.equal(selection.last7DaysRange.start, '2024-02-23');
+  assert.equal(selection.lastIncident.id, '3');
+  assert.equal(summarizeSecurityArea([], '2024-02-29').lastIncident, null);
+});
 
 test('El mes se acumula con año, resolución y horario sin incluir otro año por accidente', () => {
   const records = parseSecurityCSV(csv);

@@ -1,0 +1,40 @@
+# Simulación de robos y cobertura de seguridad
+
+Este documento registra la primera versión del simulador, 0.10.0. El funcionamiento y los resultados de la versión actual están en [Red neuronal de robos](./18-red-neuronal-robos.md).
+
+La herramienta compara una proyección base de robos con un escenario que incorpora cámaras y casetas con personal y capacidad de respuesta. La base usa los registros sintéticos de 2023 a 2025 para explorar años posteriores. La reducción del escenario depende de supuestos explícitos. La opción **Sin efecto** representa el 0 % y permite comprobar qué cambiaría al mantener la misma cantidad proyectada. La escala de color se conserva entre la base y el escenario para que un cambio de color corresponda a un cambio de intensidad. [Datos del prototipo](./11-analisis-seguridad.md) · [Procedencia de los recursos](./15-fuentes-recursos-seguridad.md)
+
+## Evidencia y precedentes
+
+| Fuente | Resultado y aplicación al prototipo |
+|---|---|
+| **Cámaras en distintos contextos.** Piza, Welsh, Farrington y Thomas (2019) | El informe técnico de los autores reunió 76 evaluaciones en el metaanálisis y estimó una reducción media cercana al 13 % frente a controles. El efecto fue mayor en estacionamientos. Los sistemas con monitoreo activo se asociaron con reducciones más consistentes y el efecto agrupado sobre delitos violentos fue estadísticamente incierto. La cifra global combina contextos y tipos de delito. [Artículo](https://doi.org/10.1111/1745-9133.12419) · [Informe técnico, pp. 18, 26–28](https://www.crim.cam.ac.uk/sites/default/files/cctv18.pdf#page=18) |
+| **Instalación de cámaras en Medellín.** Gómez, Mejía y Tobón (2021) | Las fechas de instalación permitieron comparar sectores con cámaras y sectores similares que aún esperaban instalación. El estudio estimó una reducción de 0,0114 delitos denunciados al mes por cuadrícula en la zona de hasta 120 m, equivalente al 18,7 % respecto del promedio de su muestra. Para delitos contra la propiedad fue 17,3 %. El resultado corresponde a ese despliegue y esa definición de cobertura. [Artículo, tabla 2](https://onlinelibrary.wiley.com/doi/10.1002/pam.22280) |
+| **Presencia en puntos de concentración.** Braga et al. (2019) y Weinborn et al. (2026) | La revisión de Braga reunió 65 estudios y encontró reducciones pequeñas en los lugares con intervenciones policiales focalizadas. En Santiago, un ensayo con 49 segmentos asignados a visitas a pie y 110 de control obtuvo un efecto general estadísticamente incierto sobre la frecuencia y el daño del delito. Estas intervenciones evaluaron actividad y personal. Para una caseta, su dotación, sus turnos y su respuesta son parte del supuesto de la herramienta. [Revisión de Braga et al.](https://doi.org/10.1002/cl2.1046) · [Ensayo de Santiago](https://link.springer.com/article/10.1007/s11292-026-09768-y) |
+| **Patrullaje Municipal Inteligente en Chile y focalización en La Reina.** | La Subsecretaría de Prevención del Delito desarrolló modelos para sugerir zonas de patrullaje municipal. La Dirección de Presupuestos señaló que la comparación del piloto con territorios similares tenía controles incompletos para variables relevantes. La Municipalidad de La Reina también informó que focalizó su piloto de observadores preventivos en el cuadrante 101, que concentró el 44 % de los delitos comunales en 2023 según los datos que citó de Carabineros. Son antecedentes de priorización territorial. [Gobierno de Chile](https://www.gob.cl/noticias/patrullaje-municipal-inteligente-preventivo-equipos-seguridad-comunas-mejorar-seguridad/) · [Evaluación de la Dirección de Presupuestos, p. 44](https://www.dipres.gob.cl/597/articles-383585_informe_final.pdf#page=44) · [Municipalidad de La Reina](https://lareina.cl/opv/) |
+
+Los resultados publicados orientan qué supuestos vale la pena comparar. El mapa aplica esos supuestos como escenarios hipotéticos y conserva la opción de efecto cero. El rendimiento del pronóstico base y el efecto de una intervención se deben evaluar por separado.
+
+## Validación del pronóstico base
+
+Entrenar con los períodos más antiguos y reservar los más recientes para una prueba cronológica que conserve el orden de los datos. Comparar el error con una regla sencilla que repite el período anterior. Al incorporar datos municipales, repetir la prueba con varios cortes temporales y horizontes. Para evaluar el desempeño en sectores sin historial de entrenamiento, reservar bloques geográficos completos y separar sus bordes cuando la proximidad permita compartir información. Registrar el error por sector y el error total. Los resultados de esta entrega cuantifican el desempeño sobre datos sintéticos. [Validación temporal de Hyndman y Athanasopoulos](https://otexts.com/fpp3/tscv.html) · [Validación por bloques de Roberts et al.](https://doi.org/10.1111/ecog.02881)
+
+### Resultados del prototipo
+
+Se agruparon los robos en 412 celdas de aproximadamente 250 m por lado. Los modelos usaron 2023 y 2024 para el ajuste y 2025 como prueba cronológica. La red neuronal local se entrenó con el conteo de cada celda y los promedios de sus vecindarios de 3 × 3 y 5 × 5 celdas.
+
+| Método | Error absoluto medio por celda | Error absoluto como proporción del total | Recuperación del 10 % de celdas con mayor conteo |
+|---|---:|---:|---:|
+| Repetir el último año | 46,41 | 95,96 % | 23,81 % |
+| Promedio de dos años | **43,89** | **90,76 %** | **23,81 %** |
+| Red neuronal local | 44,98 | 93,01 % | 16,67 % |
+
+El simulador usa el promedio porque obtuvo el menor error por celda en esta prueba. Para 2026–2030, la distribución usa 2024 y 2025 y ajusta el total según la variación observada entre 2023 y 2024, acotada a ±3 % anual. El error de la prueba sigue siendo alto. Las cifras sirven para comparar escenarios dentro de la demostración. El ajuste se puede reproducir con `node scripts/train-analysis-forecast.mjs`. [Código de entrenamiento](../scripts/train-analysis-forecast.mjs) · [Proyección y métricas](../public/analysis/pronostico-robos.json)
+
+Los supuestos de efecto bajo y alto aplican máximos locales de 12 % y 30 % por cámara monitoreada, y de 10 % y 38 % por caseta con personal. La influencia cae con la distancia hasta 350 m para una cámara y 550 m para una caseta. Las medidas cercanas tienen rendimientos decrecientes y un tope conjunto de 25 % o 62 %, según el supuesto. Son parámetros de exploración elegidos para el prototipo. El modo **Sin efecto** deja la proyección base intacta con cualquier cantidad de medidas.
+
+## Evaluación del efecto de las intervenciones
+
+1. Reunir denuncias agregadas por período, tipo de robo y zona. Registrar fechas de instalación y de entrada en servicio, campo visual, interrupciones, turnos de monitoreo, dotación y tiempos de respuesta. Separar las denuncias de las detecciones iniciadas por el personal cuando sea posible. Una cámara también puede cambiar la probabilidad de detectar y registrar un hecho. [Ensign et al., 2018](https://proceedings.mlr.press/v81/ensign18a.html)
+2. Comparar un despliegue gradual con zonas equivalentes que reciban la medida más adelante. Si la asignación se puede sortear entre sectores elegibles, hacerlo antes del despliegue. Para un diseño observacional, verificar las tendencias previas y documentar patrullajes u obras simultáneas antes de aplicar diferencias en diferencias por cohorte de implementación. Estimar por separado la cámara con operación, la caseta con dotación y el despliegue conjunto si los datos lo permiten. [Callaway y Sant’Anna, 2021](https://doi.org/10.1016/j.jeconom.2020.12.001)
+3. Medir cambios dentro de la cobertura, en zonas colindantes y en zonas de comparación externas para detectar desplazamiento o difusión de beneficios. Informar la incertidumbre, los cambios de registro y el grado de implementación. Actualizar los supuestos de la herramienta cuando exista evidencia local sobre esas condiciones. [Diseño por fechas de instalación en Medellín](https://onlinelibrary.wiley.com/doi/10.1002/pam.22280) · [Evaluación territorial con efectos en calles vecinas en Bogotá](https://doi.org/10.1093/jeea/jvab002)
