@@ -16,6 +16,8 @@
 
 Usa el mouse o el trackpad para explorar el mapa y los gráficos, filtrar en **Análisis**, comparar categorías y abrir la ficha complementaria. Es un prototipo académico. Algunas bases incluyen registros simulados y conservan su procedencia en los CSV y sus metadatos.
 
+Pulsa **Ficha técnica** para ver el detalle de la consulta en la misma página. Usa **Volver al mapa** para retomar la selección. Si quieres ver ambas pantallas a la vez, elige **Abrir en otra pestaña** en la ficha.
+
 ## Material del prototipo
 
 | Material | Qué muestra |
