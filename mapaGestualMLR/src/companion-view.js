@@ -1,5 +1,6 @@
 import './glass-ui.css';
 import './companion-ui.css';
+import { assetUrl } from './asset-url.js';
 import { buildInvestmentSummary, UF_REFERENCE } from './investment-data.js';
 import { renderPreviousSession } from './previous-session-view.js';
 import { createRobberyShare } from './robbery-share-view.js';
@@ -53,7 +54,7 @@ function card(title) {
 
 function brand() {
   const logo = element('img', 'companion-logo');
-  logo.src = '/brand/la-reina-logo.png';
+  logo.src = assetUrl('/brand/la-reina-logo.png');
   logo.alt = 'Municipalidad de La Reina';
   return logo;
 }
@@ -533,11 +534,16 @@ function disposeTerritorialView(root) {
 }
 const isTerritorialMode = mode => ['forecast', 'resource', 'sector', 'summary'].includes(mode);
 
-function idleView(root) {
+function idleView(root, showMapLink = false) {
   const idle = element('div', 'companion-idle');
   idle.append(brand());
   const caption = element('div', 'companion-idle-caption');
   caption.append(element('p', null, 'Concejo en perspectiva'));
+  if (showMapLink) {
+    const link = element('a', 'companion-map-link', 'Ir al mapa');
+    link.href = assetUrl('/');
+    caption.append(link);
+  }
   idle.append(caption);
   root.replaceChildren(idle);
 }
@@ -597,12 +603,19 @@ if (root) {
     });
   } else {
     const session = new URLSearchParams(location.search).get('session');
-    if (!session) throw new Error('La ficha debe abrirse desde el mapa principal.');
-    channel = new BroadcastChannel(`mlr-council-companion-${session}`);
-    channel.addEventListener('message', event => {
-      if (event.data?.type === 'state') update(event.data.state);
-    });
-    channel.postMessage({ type: 'ready' });
-    window.addEventListener('pagehide', () => channel.close(), { once: true });
+    if (!session || typeof BroadcastChannel !== 'function') idleView(root, true);
+    else {
+      channel = new BroadcastChannel(`mlr-council-companion-${session}`);
+      channel.addEventListener('message', event => {
+        if (event.data?.type === 'state') update(event.data.state);
+      });
+      channel.postMessage({ type: 'ready' });
+      window.addEventListener('pagehide', event => {
+        if (!event.persisted) channel.close();
+      });
+      window.addEventListener('pageshow', event => {
+        if (event.persisted) channel.postMessage({ type: 'ready' });
+      });
+    }
   }
 }

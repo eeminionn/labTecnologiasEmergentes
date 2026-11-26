@@ -14,6 +14,7 @@ import { createAnalysisQuadrantSelector } from './analysis-quadrant-selector.js'
 import { createAnalysisInspector } from './analysis-inspector.js';
 import { buildCompanionAnalysis } from './companion-analysis-data.js';
 import { analysisBlendOpacity } from './analysis-transition.js';
+import { assetUrl } from './asset-url.js';
 
 const boundary=JSON.parse(boundaryText),number=value=>new Intl.NumberFormat('es-CL').format(value);
 const defaults={security:{year:'all',month:'all',period:'all',robbery:'all'},cameras:{year:'all',month:'all',state:'all',type:'all'}};
@@ -302,7 +303,7 @@ export async function createAnalysisView(container,{map,notify=()=>{},onChange=(
   document.addEventListener('visibilitychange',visibilityChange);
   const unsubscribeView=map.onViewChange?.(()=>{clearHover({keepPinned:true});closeAllPickers();catalog.close();});map.setAnalysisMode(true);updatePanels();map.home();
   const ready=(async()=>{
-    const resource=async(url,format)=>{const r=await fetch(url,{signal:abort.signal});if(!r.ok)throw new Error('No se pudo cargar la base de análisis.');return format==='json'?r.json():r.text();};
+    const resource=async(url,format)=>{const r=await fetch(assetUrl(url),{signal:abort.signal});if(!r.ok)throw new Error('No se pudo cargar la base de análisis.');return format==='json'?r.json():r.text();};
     const [securityCSV,securityMeta,cameraCSV,cameraMeta,usageByYear,fixedHistory,resources]=await Promise.all([resource('/analysis/seguridad-simulada.csv'),resource('/analysis/metadata.json','json'),resource('/analysis/camaras-seguridad.csv'),resource('/analysis/camaras-metadata.json','json'),
       resource('/analysis/pulsaciones-botones.csv').then(parseAlarmUsage).catch(()=>new Map()),
       resource('/analysis/estado-puntos-fijos.csv').then(parseFixedPointHistory).catch(()=>new Map()),

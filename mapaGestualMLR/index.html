@@ -1,6 +1,11 @@
 <!doctype html>
 <html lang="es">
-  <head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><title>Mapa Gestual MLR</title></head>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/png" href="./assets/icon.png" />
+    <title>Mapa Gestual MLR</title>
+  </head>
   <body>
     <header class="topbar">
       <div class="location"><span class="municipal-name">La Reina</span></div>
@@ -117,7 +122,16 @@
     </dialog>
     <dialog id="help" aria-labelledby="help-title">
       <div class="dialog-heading"><h1 id="help-title">Ayuda</h1><button id="help-close" type="button" aria-label="Cerrar ayuda">×</button></div>
-      <details class="settings-details">
+      <section id="help-web" hidden aria-labelledby="help-web-title">
+        <h2 id="help-web-title">Navegar con mouse o teclado</h2>
+        <ul class="gesture-guide">
+          <li><strong>Mapa</strong><p>Arrastra para recorrer La Reina. Usa + y − para cambiar la escala y selecciona un pin para revisar su tema.</p></li>
+          <li><strong>Análisis</strong><p>Elige una categoría y filtra por período o unidad vecinal. Puedes comparar consultas y simular una inversión.</p></li>
+          <li><strong>Ficha técnica</strong><p>Ábrela en otra pestaña para ver el detalle de la selección mientras navegas.</p></li>
+        </ul>
+        <p class="field-note"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Créditos de OpenStreetMap</a></p>
+      </section>
+      <details class="settings-details" id="help-gestures">
         <summary>Control con las manos</summary>
         <div class="settings-details-body">
           <p class="field-note">Pulsa Activar gestos y muestra la mano completa a la cámara, con buena luz.</p>
@@ -129,7 +143,7 @@
           <p class="field-note">Con el foco libre, Espacio pausa o reanuda los gestos. Esc cancela el gesto en curso.</p>
         </div>
       </details>
-      <details class="settings-details">
+      <details class="settings-details" id="help-native-sources">
         <summary>Fuentes y privacidad</summary>
         <div class="settings-details-body">
           <p class="field-note">Los puntos del concejo son de referencia y los gráficos pertenecen al material del equipo. La cámara se procesa en este equipo. El mapa base necesita Internet.</p>

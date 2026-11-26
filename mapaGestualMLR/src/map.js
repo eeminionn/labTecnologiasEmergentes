@@ -4,6 +4,7 @@ import { PointSequence } from './sequence.js';
 import { createAnalysisRasterTransition } from './analysis-transition.js';
 import { attachMapWheelZoom } from './map-wheel-zoom.js';
 import { MAP_TOPICS } from './map-topics.js';
+import { assetUrl } from './asset-url.js';
 
 const boundary = JSON.parse(boundaryText);
 const boundaryStyle = { color: '#0f766e', weight: 3, opacity: .9, fillColor: '#0f766e', fillOpacity: .05 };
@@ -75,7 +76,7 @@ function markerElement(item, sequence) {
   // The hit area remains fixed while only pin 1's artwork gently changes size.
   Object.assign(element.style, { width: `${markerSize}px`, height: `${markerHeight}px` });
   const dot = document.createElement('span'); dot.className = 'demo-dot category-pin';
-  const image = document.createElement('img'); image.src = `/content/pins/${item.category}.svg`;
+  const image = document.createElement('img'); image.src = assetUrl(`/content/pins/${item.category}.svg`);
   image.alt = ''; image.draggable = false;
   const number = document.createElement('span'); number.className = 'pin-number'; number.textContent = String(item.number);
   dot.append(image, number); element.append(dot); updateMarker(element, item, sequence);

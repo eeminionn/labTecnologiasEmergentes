@@ -11,6 +11,7 @@ import { FrameQualityGate, analyzeFrameQuality } from './frame-quality.js';
 import { getCameraControls, applyCameraControls } from './camera-quality.js';
 import { createMap } from './map.js';
 import { createContentViewer } from './content-viewer.js';
+import { assetUrl } from './asset-url.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
 import { createCouncilAgenda } from './council-agenda.js';
 import { createCompanionPublisher } from './companion-channel.js';
@@ -19,15 +20,17 @@ import { PREVIOUS_COUNCIL_SESSION } from './previous-council-session.js';
 
 const $ = id => document.getElementById(id);
 const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
-const smoke = new URLSearchParams(location.search).has('smoke');
-const trafficCheck = new URLSearchParams(location.search).has('traffic-check');
-const analysisCheck = new URLSearchParams(location.search).has('analysis-check');
-const twinProjection = window.desktop?.twinBridge === true;
+const browserBuild = import.meta.env.MODE === 'web';
+const parameters = new URLSearchParams(location.search);
+const smoke = !browserBuild && parameters.has('smoke');
+const trafficCheck = !browserBuild && parameters.has('traffic-check');
+const analysisCheck = !browserBuild && parameters.has('analysis-check');
+const twinProjection = !browserBuild && window.desktop?.twinBridge === true;
 const companionEnabled = !twinProjection && !smoke && !trafficCheck && !analysisCheck;
 const companion = createCompanionPublisher({ enabled: companionEnabled, onCurrentSession: showCurrentSession });
 const previousSession = {mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION};
-let awaitingCurrentSession=companionEnabled;
-let previousSessionVisible=companionEnabled;
+let awaitingCurrentSession=companionEnabled&&!browserBuild;
+let previousSessionVisible=awaitingCurrentSession;
 let currentCompanionState={mode:'idle'};
 setPreviousSessionVisible(previousSessionVisible);
 if(previousSessionVisible)companion.publish(previousSession);
@@ -44,20 +47,37 @@ $('council-previous-session').onclick=()=>{
   else {
     setPreviousSessionVisible(true);
     publishMapAgenda();
+    if(browserBuild)openCompanion();
   }
 };
 $('companion-open').hidden = twinProjection;
-$('companion-open').onclick = () => {
-  Promise.resolve(companion.open()).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
-};
+$('companion-open').onclick = openCompanion;
+function openCompanion() {
+  Promise.resolve(companion.open()).then(opened=>{
+    if(opened!==false)return;
+    notify('No se pudo abrir la ficha técnica.');
+    if(browserBuild && companion.href){
+      const link = document.createElement('a');
+      link.href = companion.href;
+      link.target = companion.target;
+      link.rel = 'noreferrer';
+      link.textContent = 'Abrir ficha en otra pestaña';
+      $('notice').append(' ',link);
+    }
+  }).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
+}
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
+if(browserBuild){
+  for(const id of ['status','camera-toggle','settings-open','help-gestures','help-native-sources'])$(id).hidden=true;
+  $('help-web').hidden=false;
+}
 if(trafficCheck && !twinProjection)$('mode-experiences').hidden=false;
 const defaults = { cameraId:'', cameraLabel:'', mirror:true, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
 let config;
 try { config = { ...defaults, ...JSON.parse(localStorage.getItem('mlr-config') || '{}') }; } catch { config={...defaults}; }
 if(twinProjection)config={...defaults,...await window.desktop.loadTwinConfig()};
-if (smoke) config={...defaults};
+if (smoke || browserBuild) config={...defaults};
 // Each launch starts mirrored; adjustments remain editable for this session.
 config.mirror=true;
 // Full-frame mapping replaces saved table calibration in every session.
@@ -196,7 +216,7 @@ async function enterExperience({ animate = true } = {}) {
   $('mode-experiences').disabled=true;
   let instance;
   try {
-    const [module, response]=await Promise.all([import('./traffic-experience.js'),fetch('/traffic/scene.json')]);
+    const [module, response]=await Promise.all([import('./traffic-experience.js'),fetch(assetUrl('/traffic/scene.json'))]);
     if(!response.ok)throw new Error('No se pudo cargar el sector de muestra.');
     const scene=await response.json();
     if(generation!==experienceGeneration)return;
@@ -314,7 +334,7 @@ async function smokeFrame() {
 }
 async function smokePositive() {
   try {
-    const response=await fetch('/fixtures/thumbs-up.png');const source=await createImageBitmap(await response.blob());
+    const response=await fetch(assetUrl('/fixtures/thumbs-up.png'));const source=await createImageBitmap(await response.blob());
     smokeFixtureDimensions={width:source.width,height:source.height};
     // Static PNG has transparency; a camera supplies opaque RGB. Composite
     // only this smoke fixture on a matte background before passing it through
@@ -364,7 +384,7 @@ async function finishSmoke(data) {
 }
 async function verifySelectionRecoveryFeedback(){
   map.resetSequence();map.home();cancelGesture();
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json(),saved=engine;
+  const fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json(),saved=engine;
   const rect=$('map').getBoundingClientRect(),target=map.targets()[0];
   const hand=(pose,id='recovery',dx=0,dy=0)=>({id,landmarks:fixture.poses[pose].map(p=>({...p,
     x:p.x+target.x/rect.width-fixture.poses[pose][8].x+dx,
@@ -394,7 +414,7 @@ async function verifySelectionRecoveryFeedback(){
 }
 async function verifySelectionToleranceFeedback(){
   map.resetSequence();map.home();cancelGesture();
-  const saved=engine,fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const saved=engine,fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   const rect=$('map').getBoundingClientRect(),target=map.targets()[0];
   const hand=(pose,x=target.x,y=target.y)=>({id:'tolerance',landmarks:fixture.poses[pose].map(p=>({...p,x:p.x+x/rect.width-fixture.poses[pose][8].x,y:p.y+y/rect.height-fixture.poses[pose][8].y}))});
   const tick=async(h,t)=>{const result=engine.update([h],t,selectionContext(engine));await renderGesture(result,1);return result;};
@@ -433,7 +453,7 @@ async function verifySelectionToleranceFeedback(){
 }
 async function verifyNativeSelection() {
   contentViewer.close();map.resetSequence();map.home();map.pan(180,90);cancelGesture();
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   let trustedClicks=0;
   const observe=event=>{if(event.isTrusted)trustedClicks++;};$('map').addEventListener('click',observe,true);
   const holds=[];
@@ -613,7 +633,7 @@ async function verifyQualityFeedback() {
   return {normalAllows:initial.allowActions,darkCancels:!rejected.allowActions&&rejected.cancelInteraction,heldBlocks:held.state==='blocked',recoveryWaits:!recovery.allowActions,recovered:recovered.allowActions,noBlockedInput,warningAfterGap,conditionalCameraControls:unavailableHidden&&availableVisible};
 }
 async function startCamera({ startPaused = false } = {}) {
-  if(active || cameraStarting || (twinProjection && !twinLeaseActive)) return;
+  if(browserBuild || active || cameraStarting || (twinProjection && !twinLeaseActive)) return;
   const generation=++cameraGeneration;
   cameraStarting=true;updateStatus();
   try {
@@ -873,7 +893,7 @@ function verifyPointerFeedback() {
 }
 function sameMapView(a,b) {return a.zoom===b.zoom && Math.abs(a.center.lat-b.center.lat)<1e-8 && Math.abs(a.center.lng-b.center.lng)<1e-8;}
 async function verifyIndexTrackingFeedback(data) {
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   const clone=points=>points.map(p=>({...p}));
   const open=clone(fixture.poses.point);
   for(const mcp of [9,13,17])for(let offset=1;offset<4;offset++)for(const axis of ['x','y','z'])
@@ -934,7 +954,7 @@ async function verifyFistViewsFeedback(data) {
   const detected=classifyHand({landmarks:data.landmarks[0],worldLandmarks:data.worldLandmarks?.[0]},
     {aspectRatio:smokeFixtureDimensions.width/smokeFixtureDimensions.height});
   const worldGeometryUsed=detected?.fistGeometrySource==='world';
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   if(!Array.isArray(fixture.handViews) || fixture.handViews.length<3)throw new Error('Smoke: faltan vistas 3D del puño');
   const feedback={worldLandmarksLoaded,worldGeometryUsed};
   for(const view of fixture.handViews) {
@@ -965,7 +985,7 @@ async function verifyFistViewsFeedback(data) {
   map.home();cancelGesture();return feedback;
 }
 async function verifyNavigationFeedback() {
-  const fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   const hand=(pose,id,x,y)=>{
     const shape=classifyHand({landmarks:fixture.poses[pose]});
     if(!shape || (pose==='fist'&&!shape.fist) || (pose==='ok'&&!shape.ok))throw new Error(`Smoke: pose ${pose} inválida`);
@@ -1160,7 +1180,7 @@ document.addEventListener('keydown',event=>{
   if(event.defaultPrevented)return;
   if(event.key==='Escape')cancelGesture();
   if(event.target.closest?.('button,[role="button"],a[href],summary,input,select,textarea,[contenteditable="true"]'))return;
-  if(event.code==='Space' && !$('settings').open && !$('help').open) {
+  if(event.code==='Space' && (active || trafficExperience?.isOpen) && !$('settings').open && !$('help').open) {
     event.preventDefault();
     if(trafficExperience?.isOpen)trafficExperience.setPaused(!trafficExperience.info().paused);
     else setGesturePause(!paused);
@@ -1191,9 +1211,9 @@ if(trafficCheck)verifyTrafficExperience().catch(error=>window.desktop.reportSmok
 if(analysisCheck)verifyAnalysis().catch(error=>window.desktop.reportSmoke({version:appVersion,ok:false,error:error.stack || error.message}));
 
 async function verifyAnalysis() {
-  const checks={},snapshots={},holds=[],fixture=await(await fetch('/fixtures/selection-poses.json')).json();
+  const checks={},snapshots={},holds=[],fixture=await(await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   const [{parseSecurityCSV},{parseCameraCSV}]=await Promise.all([import('./analysis-data.js'),import('./camera-analysis-data.js')]);
-  const [securityCSV,cameraCSV]=await Promise.all([fetch('/analysis/seguridad-simulada.csv').then(r=>r.text()),fetch('/analysis/camaras-seguridad.csv').then(r=>r.text())]);
+  const [securityCSV,cameraCSV]=await Promise.all([fetch(assetUrl('/analysis/seguridad-simulada.csv')).then(r=>r.text()),fetch(assetUrl('/analysis/camaras-seguridad.csv')).then(r=>r.text())]);
   const sourceIncidents=parseSecurityCSV(securityCSV),sourceCameras=parseCameraCSV(cameraCSV);
   const expectedCameraAt=date=>sourceCameras.filter(record=>record.fecha_instalacion<=date).length;
   const expectedCameras2024=expectedCameraAt('2024-12-31'),expectedCamerasJuly2024=expectedCameraAt('2024-07-31');
@@ -1527,7 +1547,7 @@ async function verifyAnalysis() {
 }
 
 async function verifyTrafficExperience() {
-  const checks={}, snapshots={}, holds=[], fixture=await (await fetch('/fixtures/selection-poses.json')).json();
+  const checks={}, snapshots={}, holds=[], fixture=await (await fetch(assetUrl('/fixtures/selection-poses.json'))).json();
   let trustedClicks=0;
   const observe=event=>{if(event.isTrusted)trustedClicks++;};
   $('workspace').addEventListener('click',observe,true);

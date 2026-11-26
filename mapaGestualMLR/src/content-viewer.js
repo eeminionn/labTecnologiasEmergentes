@@ -1,4 +1,5 @@
 import { fitContentViewport, panContentViewport, zoomContentViewport } from './content-viewport.js';
+import { assetUrl } from './asset-url.js';
 
 export function createContentViewer(container, { onChange = () => {}, manifestUrl = '/content/manifest.json' } = {}) {
   const standalone = !document.body.classList.contains('twin-projection');
@@ -71,7 +72,7 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   else overlay.append(stage, controls, status);
   container.append(overlay);
 
-  const ready = fetch(manifestUrl).then(response => {
+  const ready = fetch(assetUrl(manifestUrl)).then(response => {
     if (!response.ok) throw new Error('No se pudo cargar el contenido gráfico.');
     return response.json();
   }).then(data => {
@@ -129,7 +130,7 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
       image.hidden = true;
       unavailable.hidden = false;
     };
-    image.src = page.src; paint();
+    image.src = assetUrl(page.src); paint();
     const focused = document.activeElement;
     previous.disabled = slideIndex === 0; next.disabled = slideIndex === slides.length - 1;
     if (standalone && ((focused === previous && previous.disabled) || (focused === next && next.disabled))) {

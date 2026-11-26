@@ -6,6 +6,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { disposal } from './traffic-geometry.js';
 import { curvatureAt, localToLngLat, lngLatToLocal } from './traffic-map-coordinates.js';
 import { createTrafficVehiclePool } from './traffic-vehicles.js';
+import { assetUrl } from './asset-url.js';
 
 // Vite emits the worker locally. Map data is the same OSM raster as Leaflet.
 setWorkerUrl(mapWorkerUrl); setWorkerCount(1);
@@ -140,7 +141,7 @@ export async function createTrafficScene(host, data, manifest) {
   const loader = new GLTFLoader(), modelDefinitions = manifest.models || [], modelPromises = new Map();
   const getModel = async definition => {
     if (!definition?.url) throw new Error('Falta un modelo tridimensional del sector.');
-    if (!modelPromises.has(definition.url)) modelPromises.set(definition.url, loader.loadAsync(definition.url).then(gltf => {
+    if (!modelPromises.has(definition.url)) modelPromises.set(definition.url, loader.loadAsync(assetUrl(definition.url)).then(gltf => {
       const model = gltf.scene;
       if (disposed) { disposal(model); throw new Error('La experiencia ya está cerrada.'); }
       model.updateMatrixWorld(true); originalModels.push(model); return model;

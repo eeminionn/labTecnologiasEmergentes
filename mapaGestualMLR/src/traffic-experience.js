@@ -1,6 +1,7 @@
 import { createTrafficScene } from './traffic-scene.js';
 import { TrafficSimulation, TRAFFIC_SCENARIOS } from './traffic-simulation.js';
 import { DEFAULT_TRAFFIC_VEHICLES, MAX_TRAFFIC_VEHICLES, normalizeVehicleCount } from './traffic-vehicle-count.js';
+import { assetUrl } from './asset-url.js';
 
 const vehicleCountPreference = 'mlr.traffic.vehicle-count';
 
@@ -98,7 +99,7 @@ export async function createTrafficExperience(container, { notify = () => {}, on
   overlay.append(stage, context, toolbar, credit); container.append(overlay);
 
   const fetchJSON = async url => {
-    const response = await fetch(url, { signal: abort.signal });
+    const response = await fetch(assetUrl(url), { signal: abort.signal });
     if (!response.ok) throw new Error('No se pudieron cargar los recursos de la experiencia.');
     return response.json();
   };

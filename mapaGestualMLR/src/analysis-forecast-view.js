@@ -1,5 +1,6 @@
 import './analysis-forecast-ui.css';
 import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt } from './analysis-forecast.js';
+import { assetUrl } from './asset-url.js';
 
 const counts = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
 const percentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
@@ -233,7 +234,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
       if (loading) return;
       loadStatus.hidden = false;
       loadStatus.textContent = 'Cargando la proyección…';
-      loading = fetch('/analysis/pronostico-robos.json', { signal })
+      loading = fetch(assetUrl('/analysis/pronostico-robos.json'), { signal })
         .then(response => {
           if (!response.ok) throw new Error('Archivo de proyección no disponible.');
           return response.json();

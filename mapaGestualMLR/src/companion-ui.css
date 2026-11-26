@@ -81,6 +81,7 @@ body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #e
 .companion-idle { min-height: 100vh; background: var(--municipal-petroleo); display: grid; place-items: center; position: relative; padding: 64px; }
 .companion-logo { display: block; width: min(65vw, 235px); max-height: 54vh; object-fit: contain; }
 .companion-idle-caption { position: absolute; bottom: 44px; left: 0; right: 0; text-align: center; color: #fff; font-size: 14px; font-weight: 500; letter-spacing: .3px; }
+.companion-map-link { display: inline-block; margin-top: 10px; color: inherit; }
 @media (max-width: 900px) {
   .companion-topbar { padding: 0 24px; }
   .companion-content { padding: 26px 24px 22px; gap: 18px; }

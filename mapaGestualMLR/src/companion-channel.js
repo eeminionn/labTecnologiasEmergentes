@@ -1,3 +1,5 @@
+import { assetUrl } from './asset-url.js';
+
 export function createCompanionPublisher({ enabled = true, onCurrentSession = () => {} } = {}) {
   let latest = { mode: 'idle' };
   let popup = null;
@@ -6,6 +8,7 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
   const native = typeof window.desktop?.publishCompanionState === 'function';
   const session = crypto.randomUUID();
   const channelName = `mlr-council-companion-${session}`;
+  const href = `${assetUrl('/companion.html')}?session=${session}`;
 
   if (enabled && native) {
     window.desktop.onCompanionCurrentSession?.(onCurrentSession);
@@ -28,10 +31,12 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
   }
 
   function open() {
-    if (!enabled) return;
+    if (!enabled) return false;
     if (native) return window.desktop.openCompanionWindow();
-    if (popup && !popup.closed) { popup.focus(); return; }
-    popup = window.open(`/companion.html?session=${session}`, channelName, 'popup,width=1280,height=850');
+    if (!channel) return false;
+    if (popup && !popup.closed) { popup.focus(); return true; }
+    popup = window.open(href, channelName);
+    return Boolean(popup);
   }
 
   window.addEventListener('pagehide', event => {
@@ -43,6 +48,5 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
     if(event.persisted)channel?.postMessage({type:'state',state:latest});
   });
 
-  if(enabled && !native)queueMicrotask(open);
-  return { publish, open };
+  return { publish, open, href: channel ? href : null, target: channelName };
 }
