@@ -15,6 +15,7 @@ import { assetUrl } from './asset-url.js';
 import { SelectionFeedback, hoverTarget } from './selection.js';
 import { createCouncilAgenda } from './council-agenda.js';
 import { createCompanionPublisher } from './companion-channel.js';
+import { createWebCompanionView } from './companion-web-view.js';
 import { MAP_TOPICS } from './map-topics.js';
 import { PREVIOUS_COUNCIL_SESSION } from './previous-council-session.js';
 
@@ -28,6 +29,7 @@ const analysisCheck = !browserBuild && parameters.has('analysis-check');
 const twinProjection = !browserBuild && window.desktop?.twinBridge === true;
 const companionEnabled = !twinProjection && !smoke && !trafficCheck && !analysisCheck;
 const companion = createCompanionPublisher({ enabled: companionEnabled, onCurrentSession: showCurrentSession });
+const webCompanion = browserBuild ? createWebCompanionView(companion, $('companion-open')) : null;
 const previousSession = {mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION};
 let awaitingCurrentSession=companionEnabled&&!browserBuild;
 let previousSessionVisible=awaitingCurrentSession;
@@ -53,17 +55,12 @@ $('council-previous-session').onclick=()=>{
 $('companion-open').hidden = twinProjection;
 $('companion-open').onclick = openCompanion;
 function openCompanion() {
+  if (webCompanion) {
+    webCompanion.open();
+    return;
+  }
   Promise.resolve(companion.open()).then(opened=>{
-    if(opened!==false)return;
-    notify('No se pudo abrir la ficha técnica.');
-    if(browserBuild && companion.href){
-      const link = document.createElement('a');
-      link.href = companion.href;
-      link.target = companion.target;
-      link.rel = 'noreferrer';
-      link.textContent = 'Abrir ficha en otra pestaña';
-      $('notice').append(' ',link);
-    }
+    if(opened===false)notify('No se pudo abrir la ficha técnica.');
   }).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
 }
 let twinLeaseActive = false, twinError = '';

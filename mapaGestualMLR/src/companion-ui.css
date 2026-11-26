@@ -1,5 +1,7 @@
 * { box-sizing: border-box; }
 body.companion-app { margin: 0; min-width: 640px; overflow: auto; background: #edf3f3; }
+.companion-app.companion-embedded { min-width: 0; }
+.companion-embedded .companion-topbar { display: none; }
 .companion-app [hidden] { display: none !important; }
 .companion-app #companion-root { min-height: 100vh; }
 .companion-app p, .companion-app h1, .companion-app h2, .companion-app h3, .companion-app dl, .companion-app dd { margin: 0; }

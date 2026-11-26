@@ -1,3 +1,4 @@
+import { connectCompanionViewer } from './companion-channel.js';
 import './glass-ui.css';
 import './companion-ui.css';
 import { assetUrl } from './asset-url.js';
@@ -566,12 +567,12 @@ export function renderCompanion(root, state = {}, { onCurrentSession } = {}) {
 const root = document.getElementById('companion-root');
 if (root) {
   let last = '';
-  let channel;
+  let connection;
   let focusCurrentSession = false;
   const onCurrentSession = () => {
     focusCurrentSession = true;
     if (window.desktop?.showCurrentSession) window.desktop.showCurrentSession();
-    else channel?.postMessage({ type: 'current-session' });
+    else connection?.requestCurrentSession();
   };
   const update = state => {
     const fingerprint = isTerritorialMode(state?.mode) ? null : JSON.stringify(state || {});
@@ -602,20 +603,8 @@ if (root) {
       if (state && !eventReceived) update(state);
     });
   } else {
-    const session = new URLSearchParams(location.search).get('session');
-    if (!session || typeof BroadcastChannel !== 'function') idleView(root, true);
-    else {
-      channel = new BroadcastChannel(`mlr-council-companion-${session}`);
-      channel.addEventListener('message', event => {
-        if (event.data?.type === 'state') update(event.data.state);
-      });
-      channel.postMessage({ type: 'ready' });
-      window.addEventListener('pagehide', event => {
-        if (!event.persisted) channel.close();
-      });
-      window.addEventListener('pageshow', event => {
-        if (event.persisted) channel.postMessage({ type: 'ready' });
-      });
-    }
+    connection = connectCompanionViewer(update);
+    if (connection?.embedded) document.body.classList.add('companion-embedded');
+    if (!connection) idleView(root, true);
   }
 }
