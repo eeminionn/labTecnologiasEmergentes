@@ -14,9 +14,11 @@
 
 **[Abrir Mapa Gestual MLR en el navegador](https://eeminionn.github.io/labTecnologiasEmergentes/mapa-gestual/)**
 
-Usa el mouse o el trackpad para explorar el mapa y los gráficos, filtrar en **Análisis**, comparar categorías y abrir la ficha complementaria. Es un prototipo académico. Algunas bases incluyen registros simulados y conservan su procedencia en los CSV y sus metadatos.
+Al abrir, revisa **Sesión pasada**. En **Apertura de la sesión** puedes registrar la asistencia y revisar la tabla del día. Pulsa **Comenzar la tabla** para entrar al mapa y a **Análisis**. Es un prototipo académico. Algunas bases incluyen registros simulados y conservan su procedencia en los CSV y sus metadatos.
 
 Pulsa **Información complementaria** en el encabezado para ver el detalle de la consulta. Elige **Abrir en otra pestaña** para mostrar el detalle en un segundo monitor. Deja abierto el mapa para que ambas pestañas se mantengan sincronizadas.
+
+En **Análisis → Orden de la información** se eligen el agrupamiento, el orden y las filas que se proyectan. **Simular inversión** permite acotar el escenario a cuadrantes y proyecta juntos los mapas **Antes** y **Con inversión**.
 
 ## Material del prototipo
 
