@@ -49,7 +49,7 @@
   padding: 5px 8px;
 }
 
-.companion-territory-unavailable { inset: 8px auto auto 8px; padding: 5px 8px; }
+.companion-territory-unavailable { inset: 8px auto auto 8px; max-width: calc(100% - 94px); padding: 5px 8px; }
 .companion-territory-key-item { display: inline-flex; align-items: center; gap: 5px; }
 .companion-territory-legend .companion-territory-sample { flex: 0 0 auto; width: 9px; height: 9px; border-radius: 2px; background: var(--companion-map-color); }
 .companion-territory-legend .companion-territory-sample[data-heat] { width: 24px; height: 6px; }
@@ -79,6 +79,11 @@
 .companion-territory-marker[data-outside=true] { background: var(--tinta-suave); }
 .companion-territory-marker[data-group][data-outside=true] { color: var(--tinta-suave); background: var(--azul-10); border-color: var(--azul-50); }
 .companion-territory-marker[data-scenario=true] { outline: 1px dashed var(--tinta); outline-offset: 2px; }
+.companion-territory-marker[data-selected="true"] {
+  outline: 2px solid var(--companion-map-color);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--superficie);
+}
 .companion-territory-marker[data-highlighted=true] { outline: 2px solid var(--tinta); outline-offset: 2px; }
 .companion-territory-count { font-size: 11px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 
@@ -96,7 +101,7 @@
 .companion-territory-map .analysis-commune-boundary { stroke-width: 1.25px; }
 .companion-territory-map .analysis-subdivision-underlay { stroke-width: 1.6px; }
 .companion-territory-map .analysis-subdivision-boundaries { stroke-width: .85px; }
-.companion-territory-map .analysis-unit-name { font-size: 11px; stroke-width: 2.6px; }
+.companion-territory-map .analysis-unit-name { font-size: 12px; stroke-width: 4px; }
 
 @media (max-width: 1100px) {
   .companion-territory-legend { bottom: 32px; }

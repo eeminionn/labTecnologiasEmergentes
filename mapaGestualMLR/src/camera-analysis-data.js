@@ -5,7 +5,7 @@ import { getSecurityDateRange, projectSecurityPoint } from './analysis-data.js';
 const FIELDS = ['id', 'categoria', 'tipo_camara', 'direccion', 'latitud', 'longitud',
   'fecha_instalacion', 'estado', 'origen_ubicacion', 'precision_ubicacion', 'fuente_url',
   'fuente_fecha', 'datos_operativos', 'observacion'];
-const STATES = Object.freeze({ operational: 'Operativa', maintenance: 'Mantención', inactive: 'Inactiva' });
+export const CAMERA_STATUS_LABELS = Object.freeze({ operational: 'Operativa', maintenance: 'Mantención', inactive: 'Inactiva' });
 const TYPES = Object.freeze({ domo: 'Domo', fija: 'Fija', lectora: 'Lectora de patentes' });
 const EARTH_RADIUS = 6371008.8;
 
@@ -64,7 +64,7 @@ export function parseCameraCSV(text) {
     const record = Object.fromEntries(headers.map((name, column) => [name, cells[column].trim()]));
     const lat = Number(record.latitud), lng = Number(record.longitud), published = record.origen_ubicacion === 'publicada';
     if (!record.id || ids.has(record.id) || record.categoria !== 'Cámaras' || !record.direccion
-      || !Object.values(TYPES).includes(record.tipo_camara) || !Object.values(STATES).includes(record.estado)
+      || !Object.values(TYPES).includes(record.tipo_camara) || !Object.values(CAMERA_STATUS_LABELS).includes(record.estado)
       || !validDate(record.fecha_instalacion) || record.datos_operativos !== 'simulados'
       || !['publicada', 'simulada'].includes(record.origen_ubicacion)
       || !(published ? ['aproximada', 'exacta'] : ['simulada']).includes(record.precision_ubicacion)
@@ -77,8 +77,8 @@ export function parseCameraCSV(text) {
     ids.add(record.id);
     return { ...record, latitud: lat, longitud: lng, lat, lng,
       year: record.fecha_instalacion.slice(0, 4), month: record.fecha_instalacion.slice(5, 7),
-      operational: record.estado === STATES.operational,
-      state: Object.keys(STATES).find(key => STATES[key] === record.estado),
+      operational: record.estado === CAMERA_STATUS_LABELS.operational,
+      state: Object.keys(CAMERA_STATUS_LABELS).find(key => CAMERA_STATUS_LABELS[key] === record.estado),
       type: Object.keys(TYPES).find(key => TYPES[key] === record.tipo_camara), published };
   });
 }
@@ -112,7 +112,7 @@ export function toggleCameraType(current, value) {
 export function filterCameraRecords(records, { year = 'all', month = 'all', state = 'all', type = 'all', origin = 'all' } = {}, metadata = {}) {
   year = String(year); month = String(month);
   if (month !== 'all' && year === 'all') throw new Error('Elige un año para consultar el inventario al cierre de un mes.');
-  const stateLabel = filterValue(state, STATES, 'estado'), typeLabels = normalizeCameraTypes(type);
+  const stateLabel = filterValue(state, CAMERA_STATUS_LABELS, 'estado'), typeLabels = normalizeCameraTypes(type);
   if (!['all', 'publicada', 'simulada'].includes(origin)) throw new Error('El origen de ubicación seleccionado no es válido.');
   const { end } = getSecurityDateRange({ year, month }, metadata);
   return records.filter(record => record.fecha_instalacion <= end
@@ -123,9 +123,9 @@ export function filterCameraRecords(records, { year = 'all', month = 'all', stat
 export function summarizeCameraRecords(records) {
   let operational = 0, maintenance = 0, inactive = 0, published = 0, simulated = 0;
   for (const record of records) {
-    if (record.estado === STATES.operational) operational++;
-    else if (record.estado === STATES.maintenance) maintenance++;
-    else if (record.estado === STATES.inactive) inactive++;
+    if (record.estado === CAMERA_STATUS_LABELS.operational) operational++;
+    else if (record.estado === CAMERA_STATUS_LABELS.maintenance) maintenance++;
+    else if (record.estado === CAMERA_STATUS_LABELS.inactive) inactive++;
     else throw new Error('La cámara contiene un estado operativo no válido.');
     if (record.origen_ubicacion === 'publicada') published++;
     else if (record.origen_ubicacion === 'simulada') simulated++;

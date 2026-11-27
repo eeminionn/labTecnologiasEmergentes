@@ -170,15 +170,20 @@ body:not(.twin-projection) .analysis-actions .analysis-compare:hover { backgroun
 body:not(.twin-projection) .analysis-actions .forecast-entry { width: 100%; min-height: 32px; margin: 0; padding: 4px 8px; border-color: transparent; border-radius: 7px; color: var(--municipal-petroleo); background: transparent; box-shadow: none; font-size: 11px; font-weight: 500; }
 body:not(.twin-projection) .analysis-actions .forecast-entry { align-self: stretch; }
 body:not(.twin-projection) .analysis-actions .forecast-entry:hover { background: var(--azul-10); }
-body:not(.twin-projection) .analysis-actions .analysis-companion-trigger {
-  grid-column: 1 / -1;
+body:not(.twin-projection) .analysis-query-filters .analysis-companion-trigger {
   min-height: 30px;
+  margin-top: 6px;
+  max-width: 100%;
   padding: 4px 8px;
   border: 0;
+  border-radius: 8px;
   background: var(--azul-10);
   box-shadow: none;
   color: var(--azul-100);
   font-size: 11px;
+  line-height: 1.3;
+  text-align: left;
+  white-space: normal;
 }
 body:not(.twin-projection) .analysis-companion-trigger[aria-expanded="true"] { font-weight: 700; }
 body:not(.twin-projection) .analysis-companion-trigger::after { content: ' ▾'; }

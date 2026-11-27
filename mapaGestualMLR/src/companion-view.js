@@ -10,7 +10,7 @@ import { COUNCIL_THEME_LABELS } from './map-topics.js';
 import { createRobberyShare } from './robbery-share-view.js';
 import { createCompanionTerritoryMap } from './companion-territory-map.js';
 import { HEAT_COLOR_STOPS } from './analysis-data.js';
-import { renderCompanionResource } from './companion-resource-view.js';
+import { renderCompanionResource, renderCompanionResourceSelection } from './companion-resource-view.js';
 import { chartTint } from './companion-chart-tint.js';
 import { resolveCompanionRanking, sortCompanionQuadrants } from './companion-analysis-data.js';
 import './companion-analysis-ui.css';
@@ -680,6 +680,17 @@ function territorialView(root, state) {
     details.append(forecastDetails(state));
     const areas = installationAreas(state.forecast?.placements || []);
     if (areas) context.append(areas);
+  } else if (state.selectedResources?.length) {
+    const periods = state.resourcePeriods ?? Object.fromEntries(
+      (state.layers ?? []).map(layer => [layer.kind, layer.period])
+    );
+    if (state.selectedResources.length === 1) {
+      const [resource] = state.selectedResources;
+      const sheet = renderCompanionResource({ ...state, resource, period: periods[resource.kind] || state.period });
+      if (sheet) details.append(sheet);
+    } else {
+      details.append(renderCompanionResourceSelection(state.selectedResources, periods));
+    }
   } else {
     const resource = state.resource ? renderCompanionResource(state) : null;
     const results = state.layers?.length ? resultsCard(state.layers, { compact: Boolean(resource) }) : null;

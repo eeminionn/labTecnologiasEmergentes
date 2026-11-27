@@ -51,7 +51,7 @@ body:not(.twin-projection) .map-intro :is(#council-review-title, #council-openin
 .council-opening-pending > span { color: var(--tinta-suave); font-size: 11px; font-weight: 600; }
 .council-opening-pending > strong { overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
 .council-session-review > button { justify-self: end; }
-.council-session-review button > span, .council-opening-actions button > span { margin-left: 8px; }
+.council-session-review button > [aria-hidden="true"], #council-start-agenda > [aria-hidden="true"] { margin-left: 8px; }
 .council-opening-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
 .council-opening-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr); gap: 16px; }
 .council-opening-grid > section { min-width: 0; }

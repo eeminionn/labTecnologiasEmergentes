@@ -257,7 +257,7 @@ body:not(.twin-projection) .council-agenda-meta {
 }
 body:not(.twin-projection) .council-agenda-meta time,
 body:not(.twin-projection) .council-agenda-choice time,
-body:not(.twin-projection) .council-agenda-nav span { font-variant-numeric: tabular-nums; }
+body:not(.twin-projection) #council-agenda-progress { font-variant-numeric: tabular-nums; }
 body:not(.twin-projection) .council-agenda-priority {
   padding: 1px 6px;
   border: 1px solid currentColor;

@@ -43,7 +43,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
   container.append(layer);
 
   const markers = new Map(), groups = new Map();
-  let selected = null, expandedGroupId = null;
+  let selected = new Set(), expandedGroupId = null;
   let frame = null;
   let destroyed = false;
 
@@ -159,7 +159,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     for (const entry of markers.values()) {
       entry.groupId = null;
       const { record } = entry;
-      if (record.kind !== 'cameras') continue;
+      if (record.kind !== 'cameras' || selected.has(entry.element.id)) continue;
       const unit = record.quadrantId?.split('-')[0];
       const location = unit ?? [record.lat, record.lng].map(value => Math.floor(value / .004)).join('-');
       const key = record.outsideArea ? location + '-outside' : location;
@@ -246,7 +246,7 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}${detail}${scope}`);
       entry.badge.textContent = record.rank || (monitoring ? (record.monitoringStatus === 'monitoreando' ? '✓' : '–') : '');
       entry.badge.hidden = !entry.badge.textContent;
-      entry.element.dataset.selected = String(id === selected);
+      markSelection(entry.element);
       setScope(entry.element, record);
     }
     for (const [id, { element }] of markers) {
@@ -290,15 +290,22 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
     return button && layer.contains(button) ? markers.get(button.id)?.record ?? null : null;
   }
 
-  function select(record) {
-    const next = record ? markerId(record) : null;
-    if (selected === next) return;
-    const previousMarker = markers.get(selected);
-    if (previousMarker) previousMarker.element.dataset.selected = 'false';
+  function markSelection(element) {
+    const pressed = String(selected.has(element.id));
+    element.dataset.selected = pressed;
+    if (element.hasAttribute('data-scenario')) return;
+    element.setAttribute('aria-pressed', pressed);
+  }
+
+  function select(records) {
+    const next = new Set(records.map(markerId));
+    if (next.size === selected.size && [...next].every(id => selected.has(id))) return;
     selected = next;
-    const selectedMarker = markers.get(next);
-    if (selectedMarker) selectedMarker.element.dataset.selected = 'true';
+    layer.dataset.hasSelection = String(Boolean(next.size));
+    for (const { element } of markers.values()) markSelection(element);
+    updateGroups();
     position();
+    onLayout();
   }
 
   return {

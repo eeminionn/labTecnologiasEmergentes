@@ -1,11 +1,17 @@
 import { buildResourceSheet } from './investment-data.js';
 import { ufAmount, ufFootnote } from './uf-reference.js';
+import { summarizeSelectedResources } from './analysis-resource-selection.js';
 import './companion-resource-ui.css';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
 const shortDate = value => value.split('-').reverse().join('/');
 const days = value => `${number.format(value)} ${value === 1 ? 'día' : 'días'}`;
+const groupLabels = {
+  cameras: ['cámara', 'cámaras', 'cámaras seleccionadas'],
+  fixed: ['caseta', 'casetas', 'casetas seleccionadas'],
+  alarms: ['botón', 'botones', 'botones seleccionados'],
+};
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -96,10 +102,12 @@ function procurementSection(procurement) {
 }
 
 export function renderCompanionResource(state) {
-  const sheet = buildResourceSheet(state.kind || state.resource?.kind, state.resource, state);
+  const kind = state.resource?.kind || state.kind;
+  const sheet = buildResourceSheet(kind, state.resource, state);
   if (!sheet) return null;
   const section = element('section', 'companion-resource-details');
   section.dataset.theme = 'seguridad';
+  section.dataset.kind = kind;
   const heading = element('header', 'companion-resource-heading');
   const title = element('h2', null, sheet.name);
   title.id = 'companion-resource-title';
@@ -108,7 +116,7 @@ export function renderCompanionResource(state) {
   const headerLine = element('div', 'companion-resource-title-row');
   headerLine.append(title);
   if (status) headerLine.append(element('span', 'companion-resource-status', status));
-  const quadrantIds = state.sector?.quadrantIds;
+  const quadrantIds = state.resource?.quadrantId ? [state.resource.quadrantId] : state.sector?.quadrantIds;
   const location = element('p', 'companion-resource-address', sheet.address);
   const locationFacts = [
     quadrantIds?.length ? `${quadrantIds.length === 1 ? 'Cuadrante' : 'Cuadrantes'} ${quadrantIds.join(', ')}` : '',
@@ -118,12 +126,70 @@ export function renderCompanionResource(state) {
   heading.append(headerLine, location);
   if (locationFacts.length) heading.append(element('p', 'companion-resource-location-facts', locationFacts.join(' · ')));
 
+  section.append(heading);
+  if (kind === 'alarms') {
+    const usage = [alarmPeriod(sheet.period), sheet.rank ? `Puesto ${number.format(sheet.rank)} por uso` : ''].filter(Boolean).join(' · ');
+    section.append(activationMetric(sheet.activations, usage));
+  }
   const metrics = element('dl', 'companion-resource-metrics');
   metrics.append(price('Costo inicial estimado', sheet.budget.initial), price('Operación anual estimada', sheet.budget.annualOperation));
-  if (sheet.activations !== null) {
-    const usage = [sheet.period, sheet.rank ? `Puesto ${number.format(sheet.rank)}` : ''].filter(Boolean).join(' · ');
-    metrics.append(fact('Pulsaciones', number.format(sheet.activations), null, usage));
+  section.append(metrics, procurementSection(sheet.procurement), ufFootnote());
+  return section;
+}
+
+const alarmPeriod = period => period?.replace(/^Pulsaciones de /, '');
+
+function activationMetric(value, note) {
+  const metric = element('div', 'companion-resource-activations');
+  if (value === null) {
+    metric.append(element('strong', null, 'Sin registro de pulsaciones'));
+  } else {
+    const count = element('strong', 'companion-resource-activation-count', number.format(value));
+    metric.append(count, element('span', null, 'Pulsaciones'));
   }
-  section.append(heading, metrics, procurementSection(sheet.procurement), ufFootnote());
+  if (note) metric.append(element('p', 'companion-resource-metric-note', note));
+  return metric;
+}
+
+export function renderCompanionResourceSelection(records, periods = {}) {
+  const { total, groups } = summarizeSelectedResources(records);
+  const section = element('section', 'companion-resource-details companion-resource-selection');
+  section.dataset.theme = 'seguridad';
+  const single = groups.length === 1 ? groups[0] : null;
+  const label = single ? groupLabels[single.kind][2] : 'equipos seleccionados';
+  const title = element('h2', 'companion-resource-selection-title',
+    `${number.format(total)} ${label}`);
+  title.id = 'companion-resource-selection-title';
+  section.setAttribute('aria-labelledby', title.id);
+  section.append(title);
+
+  const list = element('div', 'companion-selected-resources');
+  for (const { kind, count, activations, withActivationCount, statuses } of groups) {
+    const group = element('section', 'companion-selected-resource-group');
+    group.dataset.kind = kind;
+    if (!single) group.append(element('h3', null, `${number.format(count)} ${groupLabels[kind][count === 1 ? 0 : 1]}`));
+    const period = periods[kind];
+    if (kind === 'alarms') {
+      const coverage = withActivationCount > 0 && withActivationCount < count
+        ? `${number.format(withActivationCount)} de ${number.format(count)} con registro` : '';
+      group.append(activationMetric(activations, [alarmPeriod(period), coverage].filter(Boolean).join(' · ')));
+    } else {
+      if (period) group.append(element('p', 'companion-resource-metric-note', period));
+      const chart = element('dl', 'companion-selected-resource-chart');
+      for (const status of statuses) {
+        const row = fact(status.label, number.format(status.count));
+        const track = element('span', 'companion-selected-resource-track');
+        const bar = element('span');
+        bar.style.inlineSize = `${status.count / count * 100}%`;
+        track.setAttribute('aria-hidden', 'true');
+        track.append(bar);
+        row.lastElementChild.prepend(track);
+        chart.append(row);
+      }
+      group.append(chart);
+    }
+    list.append(group);
+  }
+  section.append(list);
   return section;
 }

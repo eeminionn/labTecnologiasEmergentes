@@ -1,5 +1,6 @@
 import { STREET_DETAIL_ZOOM, unitNeighborhoodColor } from './analysis-quadrants.js';
 import { pointInsideBoundary, projectSecurityPoint } from './analysis-data.js';
+import { placeCompanionUnitNumber } from './companion-unit-labels.js';
 import './analysis-quadrant-selector.css';
 
 const svgNamespace = 'http://www.w3.org/2000/svg';
@@ -72,7 +73,9 @@ function labelCandidates(unit, polygons, box, commune) {
  * Passive territorial overlay. The map and the accessible panel own selection
  * events, so neither its polygons nor its number badges intercept map input.
  */
-export function createAnalysisQuadrantSelector(container, { map, quadrants: definition, resourceAnchors = () => [] } = {}) {
+export function createAnalysisQuadrantSelector(container, {
+  map, quadrants: definition, resourceAnchors = () => [], projectionNumbers = false, labelChrome = () => []
+} = {}) {
   if (!container || typeof map?.locationToScreen !== 'function') throw new Error('El selector necesita el contenedor y la proyección del mapa.');
   if (!Array.isArray(definition?.quadrants) || !Array.isArray(definition.units) || !Array.isArray(definition.boundaryPolygons)) {
     throw new Error('El selector necesita las unidades vecinales, sus subdivisiones y el límite comunal.');
@@ -156,9 +159,9 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     const territoryName = svgElement('text', {
       class: 'analysis-unit-name', 'text-anchor': 'middle', 'dominant-baseline': 'central'
     });
-    const number = String(unit.label ?? unit.id);
+    const number = String(projectionNumbers ? unit.id : unit.label ?? unit.id);
     const name = 'Unidad ' + number;
-    territoryName.textContent = name;
+    territoryName.textContent = projectionNumbers ? number : name;
     label.append(territoryName);
     labels.append(label);
     const box = geographicBounds(polygons);
@@ -228,10 +231,10 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     attribute(svg, 'viewBox', `0 0 ${width} ${height}`);
     attribute(layer, 'data-scale', atStreet ? 'street' : 'overview');
     svg.style.visibility = '';
-    display(labels, !atStreet);
+    display(labels, projectionNumbers || !atStreet);
 
     const labelHalfHeight = 8;
-    const obstacles = atStreet ? [] : resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
+    const obstacles = atStreet && !projectionNumbers ? [] : resourceAnchors().flatMap(({ location, halfWidth, halfHeight }) => {
       const point = project(location);
       return point ? [{ ...point, halfWidth, halfHeight }] : [];
     });
@@ -251,7 +254,7 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
 
     // Trackpad frames share the same Mercator projection. Transform the existing
     // paths and clips together, then rebuild them once at the settled view.
-    if (wheelZooming && projectedAnchors) {
+    if (!projectionNumbers && wheelZooming && projectedAnchors) {
       const [baseWest, baseNorth, baseEast] = projectedAnchors;
       const [west, north, east] = anchors;
       const scaleX = (east.x - west.x) / (baseEast.x - baseWest.x);
@@ -291,7 +294,20 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
     }
     attribute(parentUnderlay, 'd', parentPaths.join(''));
     paintSelection();
-    if (!atStreet) {
+    if (projectionNumbers) {
+      const chrome = labelChrome();
+      for (const parent of orderedParents) {
+        const preferred = parent.candidates.map(project);
+        const rings = () => parent.polygons.map(([ring]) => ring.map(([lng, lat]) => project({ lng, lat })).filter(Boolean));
+        const inside = point => {
+          const location = map.screenToLocation?.(point.x, point.y);
+          return location && pointInsideBoundary(location.lng, location.lat, parent.geometry);
+        };
+        showLabel(parent, placeCompanionUnitNumber(preferred, rings, {
+          width, height, halfWidth: parent.number.length === 1 ? 5 : 9, placed, resources: obstacles, chrome, inside
+        }));
+      }
+    } else if (!atStreet) {
       const [westWorld, southWorld] = projectSecurityPoint(bounds.west, bounds.south);
       const [eastWorld, northWorld] = projectSecurityPoint(bounds.east, bounds.north);
       const pixelsPerMetre = Math.min(
@@ -342,7 +358,9 @@ export function createAnalysisQuadrantSelector(container, { map, quadrants: defi
       attribute(entry.group, 'data-selected', selected?.has(id) ?? false);
       attribute(entry.group, 'data-preview', preview === id);
     }
-    const hierarchy = 'El rótulo y el color de los límites identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los rótulos se ocultan al acercarse a las calles. Las subdivisiones seleccionadas muestran un contorno común en el color de su unidad.';
+    const hierarchy = projectionNumbers
+      ? 'El número y el color de los límites identifican cada unidad vecinal visible. Las líneas discontinuas separan sus subdivisiones.'
+      : 'El rótulo y el color de los límites identifican cada unidad vecinal. Las líneas continuas separan las unidades y las discontinuas sus subdivisiones. Los rótulos se ocultan al acercarse a las calles. Las subdivisiones seleccionadas muestran un contorno común en el color de su unidad.';
     const text = selected === null
       ? `Se muestran todas las unidades vecinales y sus subdivisiones. ${hierarchy}`
       : selected.size ? `Subdivisiones seleccionadas: ${[...selected].join(', ')}. ${hierarchy}`

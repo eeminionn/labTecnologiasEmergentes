@@ -143,6 +143,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     callbacks.reset();
     modeButtons[0].focus({preventScroll:true});
   },'analysis-reset'):null;
+  const companionTrigger=button(filters,`${prefix}-companion-options`,'Orden de la información',()=>openPicker('companion'),'analysis-companion-trigger');
+  companionTrigger.hidden=true;
+  companionTrigger.setAttribute('aria-haspopup','dialog');companionTrigger.setAttribute('aria-expanded','false');
   const cameraFilters=el('div','analysis-camera-filters'),cameraTriggers={};
   if(camera) {
     for(const [key,label] of [['type','Tipo de cámara'],['state','Estado']]) {
@@ -172,9 +175,6 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const actions=el('div','analysis-actions');
   const compare=button(actions,`${prefix}-cross`,'Comparar con…',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
   const forecast=button(actions,`${prefix}-forecast`,'Simular inversión',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
-  const companionTrigger=button(actions,`${prefix}-companion-options`,'Orden de la información',()=>openPicker('companion'),'analysis-companion-trigger');
-  companionTrigger.hidden=true;
-  companionTrigger.setAttribute('aria-haspopup','dialog');companionTrigger.setAttribute('aria-expanded','false');
   compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
   compare.setAttribute('aria-controls','analysis-layer-picker');
   const opacityRow=el('div','analysis-opacity'),opacityLabel=el('label',null,'Visibilidad'),opacityValue=el('output',null,'100%');

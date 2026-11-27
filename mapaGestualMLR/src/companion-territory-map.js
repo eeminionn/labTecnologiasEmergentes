@@ -40,6 +40,7 @@ function pointIcon(kind, point) {
   symbol.dataset.outside = String(point.inArea === false);
   symbol.dataset.scenario = String(Boolean(point.scenario));
   symbol.dataset.highlighted = String(Boolean(point.highlighted));
+  symbol.dataset.selected = String(Boolean(point.selected));
   if (point.count) symbol.dataset.group = '';
   const svg = document.createElementNS(svgNamespace, 'svg');
   svg.setAttribute('viewBox', '0 0 24 24');
@@ -55,7 +56,7 @@ function pointIcon(kind, point) {
 function cameraGroups(points) {
   const groups = new Map(), markers = [];
   for (const point of points) {
-    if (point.scenario || point.highlighted) { markers.push(point); continue; }
+    if (point.scenario || point.highlighted || point.selected) { markers.push(point); continue; }
     const area = point.quadrantId?.split('-')[0] ?? `${Math.floor(point.lat / .004)}-${Math.floor(point.lng / .004)}`;
     const key = `${area}:${point.inArea !== false}`;
     const group = groups.get(key) ?? [];
@@ -116,7 +117,19 @@ export function createCompanionTerritoryMap() {
     markers = L.layerGroup().addTo(map);
     quadrantOverlay = createAnalysisQuadrantSelector(viewport, {
       quadrants: district,
+      projectionNumbers: true,
       resourceAnchors: () => anchors,
+      labelChrome() {
+        const origin = viewport.getBoundingClientRect();
+        return [...element.querySelectorAll('.leaflet-control-attribution, .leaflet-control-scale, .companion-territory-legend, .companion-territory-unavailable')]
+          .flatMap(control => {
+            const rect = control.getBoundingClientRect();
+            return rect.width && rect.height ? [{
+              x: rect.left - origin.left + rect.width / 2, y: rect.top - origin.top + rect.height / 2,
+              halfWidth: rect.width / 2, halfHeight: rect.height / 2
+            }] : [];
+          });
+      },
       map: {
         locationToScreen: location => map.latLngToContainerPoint(location),
         screenToLocation: (x, y) => map.containerPointToLatLng([x, y]),
@@ -129,20 +142,26 @@ export function createCompanionTerritoryMap() {
     });
   }
 
+  function showNoTiles(show) {
+    if (unavailable.hidden === !show) return;
+    unavailable.hidden = !show;
+    quadrantOverlay.refreshLabels();
+  }
+
   function syncTiles(offline) {
     if (offline) {
       tiles?.remove();
       tiles = null;
-      unavailable.hidden = false;
+      showNoTiles(true);
       return;
     }
     if (tiles) return;
-    unavailable.hidden = true;
+    showNoTiles(false);
     let loaded = false;
     tiles = L.tileLayer(tileUrl, { minZoom: 11, maxZoom: 19, keepBuffer: 1, attribution: tileCredit });
-    tiles.on('tileload', () => { loaded = true; unavailable.hidden = true; });
+    tiles.on('tileload', () => { loaded = true; showNoTiles(false); });
     tiles.on('loading', () => { loaded = false; });
-    tiles.on('load', () => { unavailable.hidden = loaded || Boolean(viewport.querySelector('.leaflet-tile-loaded')); });
+    tiles.on('load', () => { showNoTiles(!loaded && !viewport.querySelector('.leaflet-tile-loaded')); });
     tiles.addTo(map);
   }
 
@@ -208,7 +227,7 @@ export function createCompanionTerritoryMap() {
         markers.addLayer(L.marker(point, {
           icon: pointIcon(layer.kind, point), interactive: false, keyboard: false,
           title: point.label ?? layerNames[layer.kind], alt: '',
-          opacity: layer.opacity, zIndexOffset: point.inArea === false ? 0 : 500
+          opacity: layer.opacity, zIndexOffset: point.highlighted ? 1500 : point.selected ? 1000 : point.inArea === false ? 0 : 500
         }));
         anchors.push({ location: point, halfWidth: point.count ? 19 : 9, halfHeight: 9 });
       }
@@ -238,6 +257,7 @@ export function createCompanionTerritoryMap() {
       row.append(sample, node('span', '', layer.label || label));
       legend.append(row);
     }
+    quadrantOverlay.refreshLabels();
   }
 
   function render() {

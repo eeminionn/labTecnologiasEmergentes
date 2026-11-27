@@ -44,7 +44,7 @@
         </section>
         <section id="council-opening" class="council-session-opening" hidden aria-labelledby="council-opening-title">
           <header class="council-opening-heading">
-            <div><p class="map-intro-label">Concejo en perspectiva · 2 de 3</p><h1 id="council-opening-title" tabindex="-1">Apertura de la sesión</h1><p id="council-opening-date"></p></div>
+            <div><p class="map-intro-label">Concejo en perspectiva<span id="council-opening-step"> · 2 de 3</span></p><h1 id="council-opening-title" tabindex="-1">Apertura de la sesión</h1><p id="council-opening-date"></p></div>
             <button id="council-opening-back" type="button">← Sesión pasada</button>
           </header>
           <div class="council-opening-grid">
@@ -64,7 +64,7 @@
             </section>
           </div>
         </section>
-        <div id="council-opening-actions" class="council-opening-actions" hidden><button id="council-start-agenda" class="primary" type="button">Comenzar la tabla <span aria-hidden="true">→</span></button></div>
+        <div id="council-opening-actions" class="council-opening-actions" hidden><button id="council-start-agenda" class="primary" type="button"><span id="council-start-agenda-label">Comenzar la tabla</span><span aria-hidden="true">→</span></button></div>
         <div class="council-agenda-heading">
           <p class="map-intro-label">Concejo en perspectiva</p>
           <div class="council-agenda-title-row">
@@ -77,6 +77,7 @@
             <span>Tema en curso</span>
             <time id="council-current-time"></time>
             <span id="council-current-priority" class="council-agenda-priority"></span>
+            <span id="council-agenda-progress"></span>
           </div>
           <h2 id="council-current-topic" class="council-agenda-topic" tabindex="-1"></h2>
           <p id="council-current-description" class="council-agenda-description"></p>
@@ -86,7 +87,7 @@
         <ol id="council-agenda-list" class="council-agenda-list" aria-label="Horario de la sesión"></ol>
         <div class="council-agenda-nav" role="group" aria-label="Navegación de la agenda">
           <button id="council-agenda-prev" type="button">Anterior</button>
-          <span id="council-agenda-progress"></span>
+          <button id="council-edit-attendance" type="button" aria-controls="council-opening" title="Volver a la apertura de la sesión">Editar asistencia</button>
           <button id="council-agenda-next" type="button">Siguiente</button>
         </div>
         <section class="council-topic-timer" aria-label="Tiempo del tema en curso">

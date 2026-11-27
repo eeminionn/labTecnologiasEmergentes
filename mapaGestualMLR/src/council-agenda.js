@@ -78,6 +78,9 @@ export function createCouncilAgenda(panel, { startup = true, onChange = () => {}
   const reviewPanel = $('council-review');
   const openingPanel = $('council-opening');
   const openingActions = $('council-opening-actions');
+  const openingStep = $('council-opening-step');
+  const startLabel = $('council-start-agenda-label');
+  const editAttendance = $('council-edit-attendance');
   const agendaPanels = [panel.querySelector('.council-agenda-heading'), currentTopic, list, panel.querySelector('.council-agenda-nav')];
   const durations = topics.map((topic, index) => {
     const following = topics[index + 1];
@@ -202,6 +205,8 @@ export function createCouncilAgenda(panel, { startup = true, onChange = () => {}
     reviewPanel.hidden = phase !== 'previous';
     openingPanel.hidden = phase !== 'opening';
     openingActions.hidden = phase !== 'opening';
+    openingStep.hidden = current >= 0;
+    startLabel.textContent = current >= 0 ? 'Retomar la tabla' : 'Comenzar la tabla';
     if (phase === 'opening') openingActions.prepend(timer);
     else panel.append(timer);
     agendaPanels.forEach(part => { part.hidden = phase !== 'agenda'; });
@@ -222,7 +227,8 @@ export function createCouncilAgenda(panel, { startup = true, onChange = () => {}
   }
 
   function openSession() {
-    if (phase !== 'previous') return;
+    if (!opening || phase === 'opening') return;
+    if (phase === 'agenda') stopClock(clocks[current]);
     setPhase('opening');
     resumeClock(openingClock);
     $('council-opening-title').focus({ preventScroll: true });
@@ -233,7 +239,12 @@ export function createCouncilAgenda(panel, { startup = true, onChange = () => {}
     if (phase !== 'opening') return;
     stopClock(openingClock);
     setPhase('agenda');
-    select(0);
+    if (current < 0) select(0);
+    else {
+      resumeClock(clocks[current]);
+      revealCurrent();
+      announceChange();
+    }
     title.focus({ preventScroll: true });
   }
 
@@ -301,6 +312,8 @@ export function createCouncilAgenda(panel, { startup = true, onChange = () => {}
 
   previous.addEventListener('click', () => select(current - 1));
   next.addEventListener('click', () => select(current + 1));
+  editAttendance.hidden = !opening;
+  editAttendance.addEventListener('click', openSession);
   timerToggle.addEventListener('click', () => {
     const clock = activeClock();
     if (!clock) return;

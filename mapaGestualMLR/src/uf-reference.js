@@ -134,7 +134,7 @@ export function updateUfReadouts(root, quote) {
   }
   for (const node of root.querySelectorAll('[data-uf-footnote]')) {
     const reference = quote
-      ? `UF del ${quote.date.split('-').reverse().join('/')} · $${decimals.format(quote.pesos)} · ${quote.source}`
+      ? `UF del ${quote.date.split('-').reverse().join('/')} · $${decimals.format(quote.pesos)}`
       : 'Valor de UF no disponible';
     const label = [node.dataset.ufFootnote, reference, quote?.stale ? 'Último valor disponible' : ''].filter(Boolean).join(' · ');
     if (node.firstElementChild.textContent !== label) node.firstElementChild.textContent = label;
