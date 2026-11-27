@@ -93,16 +93,34 @@
   background: var(--azul-10);
 }
 .companion-territorial .companion-layer-result-main {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) fit-content(65%);
+  display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
+  justify-content: flex-start;
+  gap: 3px 12px;
+  margin-bottom: 4px;
 }
-.companion-territorial .companion-layer-result-main h3 { min-width: 0; overflow-wrap: anywhere; }
+.companion-territorial .companion-layer-result-main h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: clamp(19px, 2vw, 27px);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
 .companion-territorial .companion-layer-result-main > strong {
   min-width: 0;
-  font-size: clamp(20px, 2.25vw, 32px);
-  text-align: right;
+  font-size: clamp(23px, 2.4vw, 32px);
+  text-align: left;
   overflow-wrap: anywhere;
+}
+.companion-territorial .companion-query-context .companion-layer-result-main {
+  gap: 2px 8px;
+}
+.companion-territorial .companion-query-context .companion-layer-result-main h3 {
+  font-size: clamp(16px, 1.6vw, 20px);
+}
+.companion-territorial .companion-query-context .companion-layer-result-main > strong {
+  font-size: clamp(19px, 1.9vw, 24px);
 }
 .companion-territorial :is([data-kind="security"], [data-kind="alarms"]) { --projection-series-ink: #c5266e; }
 .companion-territorial [data-kind="cameras"] { --projection-series-ink: var(--azul-100); }

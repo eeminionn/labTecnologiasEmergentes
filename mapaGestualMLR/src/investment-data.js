@@ -1,8 +1,5 @@
 // Illustrative planning allowances in Chilean pesos, including VAT.
 // These are demonstration assumptions, not municipal contracts or market quotes.
-// SII Circular 43/2026. A dated reference keeps the offline budget reproducible.
-export const UF_REFERENCE = Object.freeze({ pesos: 41371.05, date: '2026-11-20' });
-
 const investmentProfiles = Object.freeze({
   camera: Object.freeze({
     label: 'Cámara de seguridad', plural: 'cámaras',

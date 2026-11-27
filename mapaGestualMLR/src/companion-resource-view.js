@@ -1,9 +1,9 @@
-import { buildResourceSheet, UF_REFERENCE } from './investment-data.js';
+import { buildResourceSheet } from './investment-data.js';
+import { ufAmount, ufFootnote } from './uf-reference.js';
 import './companion-resource-ui.css';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-const uf = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const shortDate = value => value.split('-').reverse().join('/');
 const days = value => `${number.format(value)} ${value === 1 ? 'día' : 'días'}`;
 
@@ -19,13 +19,13 @@ function fact(label, value, className, note) {
   const detail = element('dd');
   if (typeof value === 'string') detail.textContent = value;
   else detail.append(value);
-  if (note) detail.append(element('small', null, note));
+  if (note) detail.append(typeof note === 'string' ? element('small', null, note) : note);
   node.append(element('dt', null, label), detail);
   return node;
 }
 
 function price(label, pesos) {
-  return fact(label, money.format(pesos), 'companion-resource-price', `${uf.format(pesos / UF_REFERENCE.pesos)} UF`);
+  return fact(label, money.format(pesos), 'companion-resource-price', ufAmount(pesos));
 }
 
 function datedFact(label, value, elapsed, className, comparison) {
@@ -124,6 +124,6 @@ export function renderCompanionResource(state) {
     const usage = [sheet.period, sheet.rank ? `Puesto ${number.format(sheet.rank)}` : ''].filter(Boolean).join(' · ');
     metrics.append(fact('Pulsaciones', number.format(sheet.activations), null, usage));
   }
-  section.append(heading, metrics, procurementSection(sheet.procurement));
+  section.append(heading, metrics, procurementSection(sheet.procurement), ufFootnote());
   return section;
 }

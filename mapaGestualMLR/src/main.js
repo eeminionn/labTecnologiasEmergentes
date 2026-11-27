@@ -20,7 +20,6 @@ import { MAP_TOPICS } from './map-topics.js';
 import { PREVIOUS_COUNCIL_SESSION } from './previous-council-session.js';
 
 const $ = id => document.getElementById(id);
-const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'));
 const browserBuild = import.meta.env.MODE === 'web';
 const parameters = new URLSearchParams(location.search);
 const smoke = !browserBuild && parameters.has('smoke');
@@ -28,22 +27,31 @@ const trafficCheck = !browserBuild && parameters.has('traffic-check');
 const analysisCheck = !browserBuild && parameters.has('analysis-check');
 const twinProjection = !browserBuild && window.desktop?.twinBridge === true;
 const companionEnabled = !twinProjection && !smoke && !trafficCheck && !analysisCheck;
+const councilAgenda = createCouncilAgenda(document.querySelector('.map-intro'), { startup: companionEnabled });
 const companion = createCompanionPublisher({ enabled: companionEnabled });
 const webCompanion = browserBuild ? createWebCompanionView(companion, $('companion-open')) : null;
 const previousSession = {mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION};
-let awaitingCurrentSession=companionEnabled&&!browserBuild;
-let previousSessionVisible=awaitingCurrentSession;
+let previousSessionVisible=false;
 let currentCompanionState={mode:'idle'};
 setPreviousSessionVisible(previousSessionVisible);
-if(previousSessionVisible)companion.publish(previousSession);
+syncCouncilStage();
+if(councilAgenda.phase==='previous')companion.publish(previousSession);
 let lastAgendaIndex=councilAgenda.getState().index;
+let lastCouncilPhase=councilAgenda.phase;
 document.addEventListener('council-agenda-change', event => {
-  if(event.detail.index!==lastAgendaIndex){
+  if(event.detail.phase!==lastCouncilPhase || event.detail.index!==lastAgendaIndex){
     lastAgendaIndex=event.detail.index;
+    lastCouncilPhase=event.detail.phase;
+    syncCouncilStage();
     setPreviousSessionVisible(false);
   }
   if(!document.body.classList.contains('analysis-open')&&!document.body.classList.contains('experience-open'))publishMapAgenda();
 });
+function syncCouncilStage() {
+  const phase=councilAgenda.phase;
+  document.body.dataset.councilPhase=phase;
+  $('map').inert=phase!=='agenda';
+}
 $('council-previous-session').onclick=()=>{
   if(previousSessionVisible)showCurrentSession();
   else {
@@ -160,7 +168,7 @@ async function loadMap() {
   }
 }
 function openPointContent(item) {
-  if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
+  if(councilAgenda.phase!=='agenda' || trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
   setPreviousSessionVisible(false);
   councilAgenda.selectPoint(item.id);
   publishMapAgenda();
@@ -171,26 +179,24 @@ function openPointContent(item) {
 }
 function currentSurface(){return analysisView?.isOpen?analysisView:trafficExperience?.isOpen?trafficExperience:contentViewer?.isOpen?contentViewer:map;}
 function setPreviousSessionVisible(visible) {
-  if(!visible&&awaitingCurrentSession)return;
   previousSessionVisible=visible;
   const button=$('council-previous-session');
   button.setAttribute('aria-pressed',String(visible));
   button.textContent=visible?'Sesión actual':'Sesión pasada';
 }
 function showCurrentSession() {
-  awaitingCurrentSession=false;
   setPreviousSessionVisible(false);
   companion.publish(currentCompanionState);
 }
 function publishCurrentState(state) {
   currentCompanionState=state;
-  companion.publish(previousSessionVisible?previousSession:state);
+  companion.publish(councilAgenda.phase==='previous'||previousSessionVisible?previousSession:state);
 }
 function publishMapAgenda() {
   const agenda=councilAgenda.getState();
   const page=contentViewer?.info();
   const graphic=page?.isOpen?{title:page.title,index:page.slideIndex,total:page.slideCount,takeaway:page.reading}:null;
-  publishCurrentState({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic.pointId ?? null,graphic});
+  publishCurrentState({mode:'agenda',agenda,points:MAP_TOPICS,selectedPointId:agenda.topic?.pointId ?? null,graphic});
 }
 function showSurfaceMode(mode) {
   if(mode!=='map')setPreviousSessionVisible(false);
@@ -246,8 +252,8 @@ function leaveAnalysis() {
   $('mode-analysis').removeAttribute('aria-busy');
   $('mode-analysis').disabled=false; showSurfaceMode('map'); cancelGesture(); map?.home();
 }
-async function enterAnalysis({ focusFilters = false } = {}) {
-  if(!map || twinProjection || analysisLoading || analysisView?.isOpen)return;
+async function enterAnalysis({ focusFilters = false, category = 'security' } = {}) {
+  if(councilAgenda.phase!=='agenda' || !map || twinProjection || analysisLoading || analysisView?.isOpen)return;
   if(trafficExperience || experienceLoading)leaveExperience();
   const generation=++analysisGeneration;
   analysisLoading=true; contentViewer?.close(); cancelGesture(); showSurfaceMode('analysis');
@@ -264,9 +270,10 @@ async function enterAnalysis({ focusFilters = false } = {}) {
     if(generation!==analysisGeneration){instance.destroy();return;}
     analysisView=instance; await instance.ready;
     if(generation!==analysisGeneration){instance.destroy();return;}
+    if(category!=='security')instance.setCategory(category);
     cancelGesture();
-    if(focusFilters&&[document.body,$('mode-analysis')].includes(document.activeElement)){
-      $('analysis-category-security')?.focus({preventScroll:true});
+    if(focusFilters&&[document.body,$('mode-analysis'),$('map-analysis-shortcut')].includes(document.activeElement)){
+      document.querySelector('.analysis-panel:not([hidden]) .analysis-category-choice[aria-pressed="true"]')?.focus({preventScroll:true});
     }
   } catch(error) {
     instance?.destroy();
@@ -842,13 +849,13 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
         else{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';}
         return ok;
       }).catch(error=>{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';if(smoke)throw error;console.error('No se pudo seleccionar con gestos.',error);notify('No se pudo seleccionar. Retira el índice y vuelve a apuntar.');return false;}));
-    } else if(event.type==='pan' && navigation==='pan' && (detectedHands===1 || detectedHands===2) && result.cursor
+    } else if(councilAgenda.phase==='agenda' && event.type==='pan' && navigation==='pan' && (detectedHands===1 || detectedHands===2) && result.cursor
       && result.navigationHandIds?.length && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       // The visual halo can ease from index to knuckles independently of the
       // navigation baseline. Only physical movement supplied by the engine pans.
       const current=mapPoint(result.cursor),old=mapPoint({x:result.cursor.x-event.dx,y:result.cursor.y-event.dy});
       if(within(current) && within(old)){currentSurface().pan((current.x-old.x)*rect.width,(current.y-old.y)*rect.height);counters.panEvents++;}
-    } else if(event.type==='zoom' && navigation==='zoom' && detectedHands===2 && result.navigationHandIds?.length===2
+    } else if(councilAgenda.phase==='agenda' && event.type==='zoom' && navigation==='zoom' && detectedHands===2 && result.navigationHandIds?.length===2
       && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       const at=mapPoint(event);if(!within(at))continue;
       currentSurface().zoom(event.delta,at.x*rect.width,at.y*rect.height);counters.zoomEvents++;
@@ -1173,6 +1180,7 @@ $('mode-map').onclick=event=>{
 };
 $('mode-experiences').onclick=()=>enterExperience();
 $('mode-analysis').onclick=event=>enterAnalysis({focusFilters:event.detail===0});
+$('map-analysis-shortcut').onclick=event=>enterAnalysis({focusFilters:event.detail===0,category:councilAgenda.getState().topic?.analysisLayer});
 $('map-graphics-shortcut').onclick=()=>{
   const marker=$('map').querySelector('.sequence-marker[data-marker-id="point-0"]');
   if(marker)marker.click();

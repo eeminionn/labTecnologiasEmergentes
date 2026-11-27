@@ -150,7 +150,8 @@ export function resolveCompanionRanking(source, settings = {}) {
   ]);
   if (hasDensity) options.push(['density:desc', 'Más robos por km²'], ['density:asc', 'Menos robos por km²']);
   options.push(['id:asc', 'Por número']);
-  const defaultOrder = `${(robberyAxis === 'secondary' ? secondary : primary).kind}:desc`;
+  const defaultLayer = !source.contextual && robberyAxis === 'secondary' ? secondary : primary;
+  const defaultOrder = `${defaultLayer.kind}:desc`;
   const order = options.some(([value]) => value === settings.order) ? settings.order : defaultOrder;
   const [orderKind, direction] = order.split(':');
   const metric = axes.find(([, layer]) => layer.kind === orderKind)?.[0] ?? orderKind;

@@ -1,3 +1,7 @@
+export const COUNCIL_THEME_LABELS = {
+  seguridad: 'Seguridad', gobernanza: 'Gobernanza', territorio: 'Territorio'
+};
+
 export const MAP_TOPICS = [
   {
     id: 'point-0', number: 1, category: 'seguridad',

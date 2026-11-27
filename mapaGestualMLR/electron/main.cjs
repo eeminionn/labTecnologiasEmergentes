@@ -95,6 +95,7 @@ function openMapLink(url) {
   try {const parsed=new URL(url);if(parsed.protocol==='https:' && ['www.openstreetmap.org','maps.google.com','www.google.com','policies.google.com','lareina.cl','www.lareina.cl','www.24horas.cl'].includes(parsed.hostname))shell.openExternal(url); }catch{}
 }
 const csp = "default-src 'self'; script-src 'self' 'unsafe-eval' https://maps.googleapis.com https://maps.gstatic.com; worker-src 'self' blob:; connect-src 'self' https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com; img-src 'self' data: blob: https://tile.openstreetmap.org https://*.googleapis.com https://*.gstatic.com https://*.google.com https://*.googleusercontent.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; frame-src https://*.google.com; object-src 'none'; base-uri 'self'";
+const companionCsp = csp.replace("connect-src 'self'", "connect-src 'self' https://valor-uf.cl/api/v1/uf/hoy.json");
 const visionCsp = "default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'self'; img-src 'self' blob: data:; worker-src 'none'";
 
 if (!app.requestSingleInstanceLock()) app.quit();
@@ -114,7 +115,8 @@ else {
       if (!file.startsWith(root + path.sep)) { res.writeHead(403); return res.end(); }
       fs.readFile(file, (error, bytes) => {
         if (error) { res.writeHead(404); return res.end(); }
-        res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Content-Security-Policy': path.basename(file).startsWith('vision.worker-') ? visionCsp : csp, 'X-Content-Type-Options': 'nosniff' });
+        const policy = path.basename(file).startsWith('vision.worker-') ? visionCsp : pathname === '/companion.html' ? companionCsp : csp;
+        res.writeHead(200, { 'Content-Type': types[path.extname(file)] || 'application/octet-stream', 'Content-Security-Policy': policy, 'X-Content-Type-Options': 'nosniff' });
         res.end(bytes);
       });
     });

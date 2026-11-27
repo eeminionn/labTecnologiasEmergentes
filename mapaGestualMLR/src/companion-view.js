@@ -2,10 +2,14 @@ import { connectCompanionViewer } from './companion-channel.js';
 import './glass-ui.css';
 import './companion-ui.css';
 import { assetUrl } from './asset-url.js';
-import { buildInvestmentSummary, UF_REFERENCE } from './investment-data.js';
+import { buildInvestmentSummary } from './investment-data.js';
+import { createUfReference, ufAmount, ufFootnote, updateUfReadouts } from './uf-reference.js';
 import { renderPreviousSession } from './previous-session-view.js';
+import { attendanceSummary, councilDateLabel } from './council-attendance.js';
+import { COUNCIL_THEME_LABELS } from './map-topics.js';
 import { createRobberyShare } from './robbery-share-view.js';
 import { createCompanionTerritoryMap } from './companion-territory-map.js';
+import { HEAT_COLOR_STOPS } from './analysis-data.js';
 import { renderCompanionResource } from './companion-resource-view.js';
 import { chartTint } from './companion-chart-tint.js';
 import { resolveCompanionRanking, sortCompanionQuadrants } from './companion-analysis-data.js';
@@ -13,8 +17,7 @@ import './companion-analysis-ui.css';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
-const decimals = new Intl.NumberFormat('es-CL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-const inUF = pesos => `${decimals.format(pesos / UF_REFERENCE.pesos)} UF`;
+const ufReference = createUfReference();
 const date = value => value ? new Intl.DateTimeFormat('es-CL', { timeZone: 'UTC' }).format(new Date(`${value.slice(0, 10)}T12:00:00Z`)) : 'Por definir';
 const agendaViews = new WeakMap();
 const territorialViews = new WeakMap();
@@ -56,7 +59,7 @@ function chartNumber(tag, value, format = number) {
 function metric(label, value, note, { emphasized = false } = {}) {
   const node = element('div', 'companion-metric');
   node.append(element('dt', null, label), element('dd', null, value));
-  if (note) node.append(element('small', null, note));
+  if (note) node.append(note);
   if (emphasized) node.dataset.emphasized = '';
   return node;
 }
@@ -129,11 +132,6 @@ function delivery(budget) {
   return section;
 }
 
-function budgetFooter() {
-  return element('p', 'companion-footnote',
-    `IVA incluido · UF al ${date(UF_REFERENCE.date)} (SII)`);
-}
-
 function quadrantsLabel(ids = []) {
   return ids.length ? (ids.length === 1 ? 'Cuadrante ' : 'Cuadrantes ') + ids.join(', ') : '';
 }
@@ -174,10 +172,11 @@ function updateAgendaClock(view, agenda) {
 function agendaView(root, state) {
   const agenda = state.agenda || {};
   const topics = agenda.topics || [];
+  const opening = agenda.phase === 'opening' ? agenda.opening : null;
   const current = agenda.topic || topics[agenda.index] || {};
   const points = state.points || [];
   const { graphic } = state;
-  const key = JSON.stringify({ index: agenda.index, topic: current, topics, points, graphic, selectedPointId: state.selectedPointId });
+  const key = JSON.stringify({ index: agenda.index, topic: current, topics, points, graphic, opening, selectedPointId: state.selectedPointId });
   const previous = agendaViews.get(root);
   if (previous?.key === key && previous.main.isConnected) {
     updateAgendaClock(previous, agenda);
@@ -187,18 +186,19 @@ function agendaView(root, state) {
 
   const view = shell();
   view.main.classList.add('companion-agenda');
+  view.main.classList.toggle('companion-council-opening', Boolean(opening));
   view.title.textContent = current.title || 'Temas del concejo';
-  view.subtitle.textContent = current.description || '';
+  view.subtitle.textContent = opening?.date ? councilDateLabel(opening.date) : current.description || '';
   const hero = element('section', 'companion-agenda-hero');
   const currentTopic = element('div', 'companion-agenda-position');
   const hasTopic = Number.isInteger(agenda.index) && agenda.index >= 0 && agenda.index < topics.length;
-  currentTopic.append(element('span', null, hasTopic ? `Tema ${agenda.index + 1} de ${topics.length}` : 'Sin tema en curso'),
-    element('strong', null, current.time || '—'));
+  currentTopic.append(element('span', null, opening ? 'Tiempo previsto' : hasTopic ? `Tema ${agenda.index + 1} de ${topics.length}` : 'Sin tema en curso'),
+    element('strong', null, opening ? `${agenda.durationSeconds / 60} min` : current.time || '—'));
   const timer = element('div', 'companion-agenda-timer');
   const timerLabel = element('span', 'companion-timer-label');
   const timerValue = element('output', 'companion-timer-value');
   timerValue.setAttribute('aria-live', 'off');
-  timerValue.setAttribute('aria-label', 'Cuenta regresiva del tema actual');
+  timerValue.setAttribute('aria-label', opening ? 'Cuenta regresiva de la apertura' : 'Cuenta regresiva del tema actual');
   const timerState = element('span', 'companion-timer-state');
   timer.append(timerLabel, timerValue, timerState);
   const timerTrack = element('div', 'companion-timer-track');
@@ -208,10 +208,11 @@ function agendaView(root, state) {
   hero.append(currentTopic, timer, timerTrack);
 
   const grid = element('div', 'companion-grid companion-agenda-grid');
-  const schedule = card('Horario de la sesión');
+  const schedule = card(opening ? 'Tabla de hoy' : 'Horario de la sesión');
   const list = element('ol', 'companion-agenda-list');
   topics.forEach((topic, index) => {
     const row = element('li');
+    row.dataset.theme = topic.theme || '';
     const originalStatus = topic.status || (index === agenda.index ? 'current' : index < agenda.index ? 'reviewed' : 'pending');
     const status = originalStatus === 'pending' && hasTopic && index === agenda.index + 1 ? 'next' : originalStatus;
     row.dataset.status = status;
@@ -220,12 +221,13 @@ function agendaView(root, state) {
     const time = element('time', null, topic.time);
     time.dateTime = topic.time || '';
     const name = element('span', 'companion-agenda-name', topic.title);
-    if (topic.priority !== 'programado' && agendaPriorities[topic.priority]) {
+    if (!opening && topic.priority !== 'programado' && agendaPriorities[topic.priority]) {
       const priority = element('small', 'companion-agenda-priority', agendaPriorities[topic.priority]);
       if (topic.priority === 'urgente') priority.dataset.theme = 'seguridad';
       name.append(priority);
     }
-    row.append(time, name, element('small', 'companion-agenda-status', agendaStatusLabels[status] || status));
+    const contextLabel = opening ? COUNCIL_THEME_LABELS[topic.theme] || '' : agendaStatusLabels[status] || status;
+    row.append(time, name, element('small', 'companion-agenda-status', contextLabel));
     list.append(row);
   });
   schedule.append(topics.length ? list : element('p', 'companion-secondary', 'No hay temas programados.'));
@@ -251,7 +253,8 @@ function agendaView(root, state) {
     if (graphic.takeaway) section.append(element('p', 'companion-secondary', graphic.takeaway));
     context.append(section);
   }
-  if (points.length) context.append(themes);
+  if (opening) context.append(companionOpeningAttendance(opening));
+  else if (points.length) context.append(themes);
   grid.append(schedule, context);
   const notice = element('aside', 'companion-agenda-notice');
   notice.dataset.theme = 'seguridad';
@@ -266,6 +269,29 @@ function agendaView(root, state) {
   const refs = { ...view, key, timer, timerValue, timerLabel, timerState, timerFill, notice, noticeTitle, noticeTopic };
   agendaViews.set(root, refs);
   updateAgendaClock(refs, agenda);
+}
+
+function companionOpeningAttendance(opening) {
+  const roster = Array.isArray(opening.attendance) ? opening.attendance : [];
+  const card = element('section', 'companion-card companion-opening-attendance');
+  if (opening.pending) {
+    const pending = element('div', 'companion-opening-pending');
+    pending.append(element('small', null, 'Pendiente de la sesión pasada'), element('strong', null, opening.pending));
+    card.append(pending);
+  }
+  const heading = element('h2', null, 'Asistencia');
+  const summary = element('p', 'companion-secondary', attendanceSummary(roster));
+  const names = element('ul', 'companion-opening-roster');
+  names.setAttribute('aria-label', 'Asistencia de integrantes');
+  for (const person of roster) {
+    const row = element('li');
+    row.dataset.attendance = person.status;
+    const label = person.status === 'present' ? 'Presente' : person.status === 'absent' ? 'Ausente' : 'Sin marcar';
+    row.append(element('strong', null, person.name), element('span', null, label));
+    names.append(row);
+  }
+  card.append(heading, summary, names);
+  return card;
 }
 
 function installationAreas(placements) {
@@ -296,8 +322,8 @@ function installationAreas(placements) {
 function forecastEstimates(forecast) {
   const section = element('section', 'companion-forecast-estimates');
   section.dataset.theme = 'seguridad';
-  const title = element('h3', null, 'Robos estimados en la comuna');
-  const { baselineTotal: before, scenarioTotal: after, showAfter } = forecast;
+  const title = element('h3', null, 'Robos estimados en el área');
+  const { baselineTotal: before, scenarioTotal: after } = forecast;
   if (![before, after].every(value => Number.isFinite(value) && value >= 0)) {
     section.append(title, element('p', 'companion-analysis-note', forecast.error ? 'Estimación no disponible.'
       : forecast.ready === false ? 'Preparando la estimación…' : 'Sin resultados disponibles.'));
@@ -320,12 +346,12 @@ function forecastEstimates(forecast) {
   if (delta) changeLabel.append(element('span', null, delta < 0 ? 'Disminución estimada' : 'Aumento estimado'));
   heading.append(title, changeLabel);
   section.append(heading, forecastBars([
-    { label: showAfter ? 'Antes' : 'Antes · En el mapa', value: before, formatted: number.format(Math.round(before)), emphasized: !showAfter },
-    { label: showAfter ? 'Con inversión · En el mapa' : 'Con inversión', value: after, formatted: number.format(Math.round(after)), emphasized: showAfter },
+    { label: 'Antes', value: before, formatted: number.format(Math.round(before)) },
+    { label: 'Con inversión', value: after, formatted: number.format(Math.round(after)), emphasized: delta !== 0 },
   ]));
   if (forecast.local?.id && [forecast.local.baseline, forecast.local.scenario].every(Number.isFinite)) {
     section.append(element('p', 'companion-analysis-note companion-forecast-local',
-      `${quadrantsLabel([forecast.local.id])} · ${number.format(Math.round(forecast.local.baseline))} antes y ${number.format(Math.round(forecast.local.scenario))} con inversión`));
+      `Punto consultado · ${quadrantsLabel([forecast.local.id])}. ${number.format(Math.round(forecast.local.baseline))} antes y ${number.format(Math.round(forecast.local.scenario))} con inversión.`));
   }
   return section;
 }
@@ -338,17 +364,18 @@ function forecastDetails(state) {
   content.classList.add('companion-forecast-details');
   content.dataset.theme = 'gobernanza';
   const metrics = element('dl', 'companion-forecast-metrics');
-  metrics.append(metric('Inversión inicial', money.format(budget.initial), inUF(budget.initial)),
-    metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
-    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear), { emphasized: true }));
+  metrics.append(metric('Inversión inicial', money.format(budget.initial), ufAmount(budget.initial)),
+    metric('Operación anual', money.format(budget.annualOperation), ufAmount(budget.annualOperation)),
+    metric('Total del primer año', money.format(budget.firstYear), ufAmount(budget.firstYear), { emphasized: true }));
   content.append(element('p', 'companion-analysis-note',
     `${formatCount(budget.counts.camera, 'cameras')} · ${formatCount(budget.counts.fixed, 'fixed')}`), metrics);
   content.append(forecastEstimates(forecast));
   if (budget.quantity) {
     const grid = element('div', 'companion-forecast-grid');
     grid.append(budgetChart(budget), delivery(budget));
-    content.append(grid, budgetFooter());
+    content.append(grid);
   }
+  content.append(ufFootnote('IVA incluido'));
   return content;
 }
 
@@ -556,6 +583,45 @@ function sectorCard(sector, isPreview) {
   return section;
 }
 
+function createForecastMapPair() {
+  const pair = element('div', 'companion-forecast-map-pair');
+  const grid = element('div', 'companion-forecast-map-grid');
+  const maps = Object.fromEntries([
+    ['before', 'Antes'], ['after', 'Con inversión']
+  ].map(([key, label]) => {
+    const figure = element('figure');
+    figure.dataset.scenario = key;
+    const caption = element('figcaption', null, label);
+    const map = createCompanionTerritoryMap();
+    const slot = element('div', 'companion-territory-map-slot');
+    slot.append(map.element);
+    figure.append(caption, slot);
+    grid.append(figure);
+    return [key, map];
+  }));
+  const legend = element('div', 'companion-forecast-map-legend');
+  legend.setAttribute('role', 'img');
+  legend.setAttribute('aria-label', 'Escala de concentración local común a ambos mapas, de baja a alta');
+  const ramp = element('span', 'companion-forecast-map-ramp');
+  ramp.style.background = `linear-gradient(90deg, ${HEAT_COLOR_STOPS.map(({ color, value }) =>
+    `rgb(${color.join(',')}) ${value * 100}%`).join(', ')})`;
+  legend.append(element('strong', null, 'Escala común'), element('span', null, 'Baja'), ramp, element('span', null, 'Alta'));
+  pair.append(grid, legend);
+  return {
+    element: pair,
+    update(territory) {
+      const { before, after, ...scope } = territory ?? {};
+      maps.before.update({ ...scope, layers: before ?? [] });
+      maps.after.update({ ...scope, layers: after ?? [] });
+      legend.hidden = !before?.length;
+    },
+    destroy() {
+      for (const map of Object.values(maps)) map.destroy();
+      pair.remove();
+    }
+  };
+}
+
 function territorialView(root, state) {
   let view = territorialViews.get(root);
   if (!view) {
@@ -569,10 +635,11 @@ function territorialView(root, state) {
     view.area = element('h2', 'companion-territory-area');
     view.area.id = 'companion-territory-title';
     view.area.setAttribute('aria-live', 'polite');
-    const mapSlot = element('div', 'companion-territory-map-slot');
+    view.mapCard = mapCard;
+    view.mapSlot = element('div', 'companion-territory-map-slot');
     view.map = createCompanionTerritoryMap();
-    mapSlot.append(view.map.element);
-    mapCard.append(view.area, mapSlot);
+    view.mapSlot.append(view.map.element);
+    mapCard.append(view.area, view.mapSlot);
     view.context = element('div', 'companion-territorial-context');
     aside.append(mapCard, view.context);
     view.details = element('div', 'companion-territorial-details');
@@ -587,12 +654,23 @@ function territorialView(root, state) {
   const { territory, insights, sector, overview } = state;
   const isForecast = state.mode === 'forecast';
   const ids = territory?.quadrantIds;
-  const areaLabel = ids?.length && ids.length <= 4 ? quadrantsLabel(ids)
+  const areaLabel = !isForecast && ids?.length && ids.length <= 4 ? quadrantsLabel(ids)
     : territory?.areaLabel || (ids === null ? 'Toda la comuna' : 'Sin cuadrantes seleccionados');
   if (view.area.textContent !== areaLabel) view.area.textContent = areaLabel;
   view.title.textContent = isForecast ? `Simular inversión · ${state.forecast?.year || 2027}` : 'Análisis territorial';
   view.main.dataset.mode = state.mode;
-  view.map.update(territory || { quadrantIds: null, layers: [] });
+  view.mapSlot.hidden = isForecast;
+  if (isForecast) {
+    if (!view.forecastMaps) {
+      view.forecastMaps = createForecastMapPair();
+      view.mapCard.append(view.forecastMaps.element);
+    }
+    view.forecastMaps.update(territory);
+  } else {
+    view.forecastMaps?.destroy();
+    view.forecastMaps = null;
+    view.map.update(territory || { quadrantIds: null, layers: [] });
+  }
   const { territory: mapData, ...detailsState } = state;
   const key = JSON.stringify([areaLabel, detailsState]);
   if (view.key === key) return;
@@ -636,7 +714,9 @@ function territorialView(root, state) {
 }
 
 function disposeTerritorialView(root) {
-  territorialViews.get(root)?.map.destroy();
+  const view = territorialViews.get(root);
+  view?.map.destroy();
+  view?.forecastMaps?.destroy();
   territorialViews.delete(root);
 }
 const isTerritorialMode = mode => ['forecast', 'resource', 'sector', 'summary'].includes(mode);
@@ -664,6 +744,7 @@ export function renderCompanion(root, state = {}) {
   else if (state.mode === 'agenda') agendaView(root, state);
   else if (state.mode === 'previous-session') renderPreviousSession(root, state.session);
   else idleView(root);
+  updateUfReadouts(root, ufReference.current());
 }
 
 const root = document.getElementById('companion-root');
@@ -676,8 +757,22 @@ if (root) {
     renderCompanion(root, state);
   };
   update({ mode: 'idle' });
+  const refreshUf = (retry = false) => {
+    updateUfReadouts(root, ufReference.current());
+    void ufReference.refresh({ retry }).then(quote => updateUfReadouts(root, quote));
+  };
+  refreshUf();
+  const ufTimer = setInterval(refreshUf, 60_000);
+  window.addEventListener('online', () => refreshUf(true));
+  window.addEventListener('pageshow', () => refreshUf());
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshUf();
+  });
   window.addEventListener('pagehide', event => {
-    if (!event.persisted) disposeTerritorialView(root);
+    if (!event.persisted) {
+      clearInterval(ufTimer);
+      disposeTerritorialView(root);
+    }
   });
   window.addEventListener('mlr-companion-state', event => update(event.detail));
   if (window.desktop?.onCompanionState) {

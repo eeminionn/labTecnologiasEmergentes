@@ -172,7 +172,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const actions=el('div','analysis-actions');
   const compare=button(actions,`${prefix}-cross`,'Comparar con…',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
   const forecast=button(actions,`${prefix}-forecast`,'Simular inversión',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
-  const companionTrigger=button(actions,`${prefix}-companion-options`,'Tabla complementaria',()=>openPicker('companion'),'analysis-companion-trigger');
+  const companionTrigger=button(actions,`${prefix}-companion-options`,'Orden de la información',()=>openPicker('companion'),'analysis-companion-trigger');
   companionTrigger.hidden=true;
   companionTrigger.setAttribute('aria-haspopup','dialog');companionTrigger.setAttribute('aria-expanded','false');
   compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
@@ -365,29 +365,26 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   }
   const companionPicker=el('div','analysis-companion-options');
   grids.companion=companionPicker;
+  const companionHint=el('p','analysis-companion-hint','Los cambios se muestran en la pantalla complementaria.');
   const levelOptions=el('fieldset','analysis-companion-choice');
   const levelChoices=el('div','analysis-options');
   const levelButtons=new Map([
-    ['','Según el área'],['unit','Unidades'],['part','Subcuadrantes']
+    ['unit','Unidades vecinales'],['part','Subcuadrantes']
   ].map(([level,label])=>[level,button(levelChoices,`${prefix}-companion-level-${level||'auto'}`,label,()=>{
     callbacks.companionRanking({level,page:0});
   })]));
-  levelOptions.append(el('legend',null,'Nivel territorial'),levelChoices);
+  levelOptions.append(el('legend',null,'Agrupar por'),levelChoices);
   const sortOptions=el('fieldset','analysis-companion-choice');
   const sortChoices=el('div','analysis-options');
-  sortOptions.append(el('legend',null,'Orden'),sortChoices);
+  sortOptions.append(el('legend',null,'Ordenar por'),sortChoices);
   let sortButtons=new Map(),sortSignature='';
-  const pages=el('div','analysis-companion-pages');
-  pages.setAttribute('role','group');pages.setAttribute('aria-label','Página de la tabla complementaria');
-  const previousPage=button(pages,`${prefix}-companion-page-previous`,'Anterior',()=>{
-    callbacks.companionRanking({page:companionState.page-1});
-  });
-  const pagePosition=el('output');pagePosition.setAttribute('aria-live','polite');
-  pages.append(pagePosition);
-  const nextPage=button(pages,`${prefix}-companion-page-next`,'Siguiente',()=>{
-    callbacks.companionRanking({page:companionState.page+1});
-  });
-  companionPicker.append(levelOptions,sortOptions,pages);
+  const pages=el('fieldset','analysis-companion-choice analysis-companion-pages');
+  const pageChoices=el('div','analysis-options');
+  pages.append(el('legend',null,'Filas en proyección'),pageChoices);
+  const pagePosition=el('output','analysis-companion-position');
+  pagePosition.setAttribute('aria-live','polite');
+  let pageButtons=[],pageSignature='';
+  companionPicker.append(companionHint,levelOptions,sortOptions,pages,pagePosition);
   popover.append(companionPicker);
 
   function setCompanionRanking(next){
@@ -407,11 +404,27 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
         callbacks.companionRanking({order,page:0});
       })]));
     }
-    for(const [level,control] of levelButtons)control.setAttribute('aria-pressed',String(level===(next.automatic?'':next.level)));
+    for(const [level,control] of levelButtons)control.setAttribute('aria-pressed',String(level===next.level));
     for(const [order,control] of sortButtons)control.setAttribute('aria-pressed',String(order===next.order));
-    previousPage.setAttribute('aria-disabled',String(next.page===0));
-    nextPage.setAttribute('aria-disabled',String(next.page+1>=next.pageCount));
-    const position=`${number(next.first)}–${number(next.last)} de ${number(next.total)}`;
+    const range=(start,end)=>`${number(start)}–${number(end)}`;
+    const signaturePages=`${next.pageSize}:${next.total}`;
+    pages.hidden=next.pageCount<=1;
+    if(signaturePages!==pageSignature){
+      pageSignature=signaturePages;
+      for(const control of pageButtons)controls.splice(controls.indexOf(control),1);
+      pageChoices.replaceChildren();
+      pageButtons=[];
+      if(next.pageCount>1)for(let page=0;page<next.pageCount;page++){
+        const label=range(page*next.pageSize+1,Math.min((page+1)*next.pageSize,next.total));
+        const choice=button(pageChoices,`${prefix}-companion-page-${page+1}`,label,()=>callbacks.companionRanking({page}));
+        choice.setAttribute('aria-label',`Mostrar filas ${label}`);
+        pageButtons.push(choice);
+      }
+    }
+    pageButtons.forEach((choice,index)=>choice.setAttribute('aria-pressed',String(index===next.page)));
+    const position=next.total===1?'Se muestra la única fila.'
+      :next.pageCount===1?`Se muestran las ${number(next.total)} filas.`
+        :`En proyección · filas ${range(next.first,next.last)} de ${number(next.total)}`;
     if(pagePosition.textContent!==position)pagePosition.textContent=position;
   }
   for(const [key,items] of resource?[]:[['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
@@ -454,7 +467,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     callbacks.clearHover(key);picker=key;popover.dataset.picker=key;popover.hidden=false;
     for(const e of [areaTrigger,monthPicker,companionTrigger,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
     for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
-    popoverTitle.textContent={area:'Unidades vecinales',companion:'Tabla complementaria',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
+    popoverTitle.textContent={area:'Unidades vecinales',companion:'Orden de la información',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
     if(key==='area')showAreaUnit(null,false);
     const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
     positionPicker(anchor);

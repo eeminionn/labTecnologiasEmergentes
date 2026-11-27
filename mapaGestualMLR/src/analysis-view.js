@@ -120,7 +120,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
   let pinned=false,displayedAnchor=null,restoreFocus=null,dismissedAnchor=null,resourceError='',resourcesReady=false;
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
   let forecastTrigger=null, forecastPointerDown=null, forecastViewport=null;
-  let forecastRaster=null, companionContext=null, companionAnalysis=null;
+  let forecastRasters=null, companionContext=null, companionAnalysis=null;
   let rankingSettings={}, rankingSource=null, rankingView=null;
   let quadrantIds=null, mapPointerStart=null;
   const quadrantCache=new WeakMap();
@@ -177,7 +177,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     resourceAnchors:()=>resourceMarkers.labelObstacles()});
   const resourceMarkers=createResourceMarkers(container,{map,onLayout:()=>quadrantSelector.refreshLabels(),onSelect:(record,event)=>{
       if(forecast.active){
-        if(forecast.isPlacing)return;
+        if(forecast.isPlacing||forecast.isSelectingScope)return;
         forecast.remove(record.id);
         if(event.detail===0)forecast.panel.querySelector(`#forecast-add-${record.kind}`)?.focus({preventScroll:true});
       }else showResource(record,{pin:true,anchor:event.currentTarget});
@@ -204,13 +204,29 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
       if(!pinned)showResource(record,{anchor});
     }});
   const forecastImages=new WeakMap();
+  function forecastLayer(surface, ids){
+    if(ids?.length===0)return null;
+    let images=forecastImages.get(surface);
+    if(!images){images=new Map();forecastImages.set(surface,images);}
+    const key=ids===null?'commune':ids.join(',');
+    if(!images.has(key)){
+      if(images.size>=8)images.delete(images.keys().next().value);
+      images.set(key,{url:densityImage(surface,false,ids),bounds:surface.bounds,opacity:.66});
+    }
+    return images.get(key);
+  }
+  function forecastAreaLabel(ids){
+    const title=ids?.length?areaTitle(ids):'';
+    return title&&title!=='Subcuadrantes seleccionados'?title:spatialLabel(ids);
+  }
   const forecast=createForecastView(overlay,container,{
-    map,signal:abort.signal,inside,quadrantOf:recordQuadrant,onExit:closeForecast,
-    onChange:publishForecastCompanion,
-    renderSurface:surface=>{
-      if(!forecastImages.has(surface))forecastImages.set(surface,densityImage(surface));
-      forecastRaster={url:forecastImages.get(surface),bounds:surface.bounds,opacity:.66};
-      map.setAnalysisLayer({...forecastRaster,transitionMs:200});
+    map,signal:abort.signal,inside,quadrantOf:recordQuadrant,units:district.units,
+    normalizeArea:ids=>normalizeAnalysisQuadrants(ids,district),areaLabel:forecastAreaLabel,
+    onExit:closeForecast,onScopeChange:()=>paintQuadrants(),onChange:publishForecastCompanion,
+    renderSurface:(before,after,ids,showAfter)=>{
+      forecastRasters={before:forecastLayer(before,ids),after:forecastLayer(after,ids)};
+      const raster=showAfter?forecastRasters.after:forecastRasters.before;
+      map.setAnalysisLayer(raster&&{...raster,transitionMs:200});
     },
     renderPlacements:points=>resourceMarkers.render(points)
   });
@@ -231,8 +247,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     return unit&&Number.isFinite(count)?`Unidad ${unit} · ${number(count)} ${count===1?'robo':'robos'}`:'';
   }
   function paintQuadrants(preview=null){
-    quadrantSelector.update({selected:forecast.active?null:quadrantIds,visible:loaded,
-      preview:forecast.active?null:preview});
+    quadrantSelector.update({selected:forecast.active?forecast.scopeIds:quadrantIds,visible:loaded,preview});
   }
   function updatePanels(){
     const robberyUnits=visibleUnitRobberies(),security=datasets.security;
@@ -260,8 +275,9 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     const {center,zoom}=map.info();
     if(center&&Number.isFinite(zoom))forecastViewport={center,zoom};
     playback.pause();clearHover();closeAllPickers();catalog.close();
-    forecastRaster=null;map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();resourceMarkers.render([]);
-    forecast.open();updatePanels();map.home();
+    forecastRasters=null;map.setAnalysisLayer(null);map.clearCameraAnalysisLayer();resourceMarkers.render([]);
+    forecast.open(quadrantIds);updatePanels();
+    if(quadrantIds===null)map.home();
     forecast.panel.querySelector('h1').focus({preventScroll:true});
   }
   function closeForecast(){
@@ -284,13 +300,16 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     const b=container.getBoundingClientRect();
     setHoverPoint({x:event.clientX-b.left,y:event.clientY-b.top,source:'mouse'});
   };
-  const pointerLeave=cancelPendingHover,outsidePicker=event=>{
+  const pointerLeave=()=>{
+    cancelPendingHover();
+    if(forecast.active){paintQuadrants();forecast.inspect(null);}
+  },outsidePicker=event=>{
     const target=event.target;
     if(!target.closest?.('.analysis-layer-picker,.analysis-layer-trigger,.analysis-compare'))catalog.close(false);
     if(!target.closest?.('.analysis-date-popover,.analysis-quadrant-filter,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter,.analysis-companion-trigger'))closeAllPickers();
   },keyDown=event=>{
     if(event.key!=='Escape')return;
-    if(forecast.active){forecast.stopPlacing();return;}
+    if(forecast.active){forecast.cancel();paintQuadrants();return;}
     if(catalog.close())return;
     closeAllPickers();dismissDetails();
   };
@@ -440,23 +459,22 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
   }
   function publishForecastCompanion(state){
     if(destroyed)return;
-    const placements=state.showAfter?state.placements:[];
     const infrastructure=Object.entries({camera:'cámaras',fixed:'casetas'}).flatMap(([kind,label])=>{
-      const points=companionPoints(placements.filter(point=>point.kind===kind)
+      const points=companionPoints(state.placements.filter(point=>point.kind===kind)
         .map(point=>({...point,scenario:true,title:label})));
       return points.length?[{kind:kind==='camera'?'cameras':kind,mode:'points',points}]:[];
     });
-    const territory={quadrantIds:null,areaLabel:'Toda la comuna',layers:[
-      {kind:'security',mode:'heatmap',rasters:forecastRaster?[forecastRaster]:[]},
-      ...infrastructure
-    ],focusQuadrantId:state.local?.id};
+    const heat=raster=>raster?[{kind:'security',mode:'heatmap',rasters:[raster]}]:[];
+    const territory={quadrantIds:forecast.scopeIds,areaLabel:state.areaLabel,
+      before:heat(forecastRasters?.before),after:[...heat(forecastRasters?.after),...infrastructure],
+      focusQuadrantId:state.local?.id};
     onCompanion({mode:'forecast',forecast:state,territory});
   }
   function resolveRanking(){
-    const resolved=resolveCompanionRanking(rankingSource,rankingSettings);
-    rankingView=resolved?{...resolved,automatic:!rankingSettings.level}:null;
+    rankingView=resolveCompanionRanking(rankingSource,rankingSettings);
   }
   function setCompanionRanking(change){
+    clearHover({keepCompanion:true});
     rankingSettings={...rankingSettings,...change};
     resolveRanking();
     publishCompanion();
@@ -751,7 +769,9 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     if(!Number.isFinite(x)||!Number.isFinite(y)||x<0||y<0||x>b.width||y>b.height){clearHover({keepCompanion:true});return false;}
     const top=document.elementFromPoint(b.left+x,b.top+y);
     if(forecast.active){
-      if(top&&container.contains(top)&&!isMapControl(top))forecast.inspect(map.screenToLocation(x,y));
+      const point=top&&container.contains(top)&&!isMapControl(top)?map.screenToLocation(x,y):null;
+      if(forecast.isSelectingScope)paintQuadrants(point&&recordQuadrant(point));
+      else forecast.inspect(point);
       return false;
     }
     if(dismissedAnchor){

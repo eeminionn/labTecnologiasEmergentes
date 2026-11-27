@@ -118,5 +118,7 @@ test('resuelve la página enviada por Análisis sin cambiar los totales y conser
   assert.equal(cross.primary.locatedTotal, 3);
   const reversed = buildCompanionAnalysis(input([cameras,security])).cross;
   assert.equal(resolveCompanionRanking(reversed,{order:'security:desc'}).visibleRows[0].id,'7');
+  const contextual = buildCompanionAnalysis(input([cameras,{...security, context:true}])).cross;
+  assert.equal(resolveCompanionRanking(contextual).order,'cameras:desc');
   assert.equal(resolveCompanionRanking({ rows:[] }),null);
 });

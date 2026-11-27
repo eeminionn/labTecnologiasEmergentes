@@ -1,5 +1,7 @@
 import './analysis-forecast-ui.css';
-import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt } from './analysis-forecast.js';
+import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt,
+  indexForecastAreas, summarizeForecastArea } from './analysis-forecast.js';
+import { toggleAnalysisArea } from './analysis-quadrants.js';
 import { assetUrl } from './asset-url.js';
 import { HEAT_COLOR_STOPS } from './analysis-data.js';
 
@@ -22,9 +24,13 @@ function placementCursor(kind) {
   return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 7 23, crosshair';
 }
 
-export function createForecastView(overlay, container, { map, signal, inside, quadrantOf, onExit, renderSurface, renderPlacements, onChange = () => {} }) {
-  let model, loading, baselineSurface, surface, selectedPoint, localReadout, placing, serial = 0;
-  let showAfter = true, placements = [];
+export function createForecastView(overlay, container, {
+  map, signal, inside, quadrantOf, units, normalizeArea, areaLabel,
+  onExit, onScopeChange, renderSurface, renderPlacements, onChange = () => {}
+}) {
+  let model, loading, baselineSurface, surface, cellAreas, totals, selectedPoint, localReadout, placing, serial = 0;
+  let showAfter = true, placements = [], includedPlacements = [];
+  let scopeIds = null, scope = null, selectingScope = false;
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -58,6 +64,48 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   loadStatus.setAttribute('role', 'status');
   const controls = element('div', 'forecast-controls');
   controls.hidden = true;
+  const area = element('fieldset', 'analysis-filter forecast-area');
+  const scopeLabel = element('p', 'analysis-spatial-context');
+  scopeLabel.setAttribute('role', 'status');
+  const scopeTrigger = button('area-edit', 'Elegir cuadrantes', () => setScopeEditing(!selectingScope), 'analysis-area-trigger');
+  scopeTrigger.setAttribute('aria-expanded', 'false');
+  const areaTools = element('div', 'forecast-area-tools');
+  areaTools.id = 'forecast-area-tools';
+  areaTools.hidden = true;
+  scopeTrigger.setAttribute('aria-controls', areaTools.id);
+  const scopeActions = element('div', 'analysis-area-actions');
+  const whole = button('area-all', 'Toda la comuna', () => setScope(null), 'analysis-quadrant-reset');
+  const empty = button('area-empty', 'Quitar selección', () => setScope([]), 'analysis-quadrant-reset');
+  scopeActions.append(whole, empty);
+  const scopeSelect = element('select');
+  scopeSelect.id = 'forecast-area-select';
+  scopeSelect.append(new Option('Elegir por código…', ''));
+  const unitIDs = new Map();
+  for (const unit of units) {
+    const group = element('optgroup');
+    group.label = `Unidad ${unit.label}`;
+    unitIDs.set(unit.id, unit.children.map(child => child.id));
+    group.append(new Option(`Toda la unidad ${unit.label}`, unit.id),
+      ...unit.children.map(child => new Option(`Subcuadrante ${child.label}`, child.id)));
+    scopeSelect.append(group);
+  }
+  const scopeField = element('label', 'forecast-scope-select');
+  scopeField.append(element('span', null, 'Unidad o subcuadrante'), scopeSelect);
+  const scopeToggle = button('area-toggle', 'Incluir', () => {
+    const id = scopeSelect.value;
+    if (id) toggleScope(unitIDs.get(id) ?? [id]);
+  }, 'analysis-quadrant-reset');
+  scopeToggle.disabled = true;
+  scopeSelect.onchange = updateScopeChoice;
+  const areaChoice = element('div', 'forecast-scope-choice');
+  areaChoice.append(scopeField, scopeToggle);
+  const areaAim = button('area-aim', 'Seleccionar cuadrante en la mira', () => {
+    const point = map.screenToLocation(reticle.offsetLeft, reticle.offsetTop);
+    const id = point && quadrantOf(point);
+    if (id) toggleScope([id]);
+  }, 'analysis-quadrant-reset');
+  areaTools.append(scopeActions, areaChoice, areaAim);
+  area.append(element('legend', null, 'Área de inversión'), scopeLabel, scopeTrigger, areaTools);
   const viewStatus = element('span', 'forecast-view-status');
   viewStatus.setAttribute('role', 'status');
   const viewToggle = button('view-toggle', 'Ver antes', () => {
@@ -69,6 +117,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   const devices = element('fieldset', 'analysis-filter');
   const deviceRow = element('div', 'analysis-options forecast-options');
   const deviceButtons = new Map(Object.entries(measures).map(([kind, label]) => [kind, button(`add-${kind}`, label, () => {
+    if (selectingScope) setScopeEditing(false);
     placing = placing === kind ? null : kind;
     message.textContent = '';
     updatePlacementTools();
@@ -84,14 +133,15 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   const finish = button('finish', 'Dejar de agregar', stopPlacing);
   finish.hidden = true;
   const undo = button('undo', 'Deshacer última', () => {
-    placements = placements.slice(0, -1);
-    message.textContent = 'Se retiró la última medida.';
+    const last = includedPlacements.at(-1);
+    if (last) placements = placements.filter(item => item !== last);
+    message.textContent = 'Se retiró la última medida del área.';
     redraw();
     if (undo.disabled) deviceButtons.get(placing ?? 'camera').focus({ preventScroll: true });
   });
   const clear = button('clear', 'Quitar todas', () => {
-    placements = [];
-    message.textContent = 'Se quitaron las medidas del escenario.';
+    placements = placements.filter(point => !inScope(point.quadrantId));
+    message.textContent = 'Se quitaron las medidas del área.';
     redraw();
     deviceButtons.get(placing ?? 'camera').focus({ preventScroll: true });
   });
@@ -105,7 +155,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   gradient.style.background = `linear-gradient(90deg, ${HEAT_COLOR_STOPS.map(({ value, color }) => `rgb(${color.join(',')}) ${value * 100}%`).join(', ')})`;
   legend.append(element('span', null, 'Menor'), gradient, element('span', null, 'Mayor'));
 
-  controls.append(viewRow, legend, devices, placementTools, message);
+  controls.append(area, viewRow, legend, devices, placementTools, message);
   body.append(loadStatus, controls);
   panel.append(header, body);
 
@@ -122,7 +172,9 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     return value;
   });
   const resultNote = element('small');
-  readout.append(resultLabel, metrics, resultNote);
+  const outsideNote = element('small', 'forecast-outside-note');
+  outsideNote.hidden = true;
+  readout.append(resultLabel, metrics, resultNote, outsideNote);
   body.append(readout);
   const reticle = element('div', 'forecast-reticle');
   reticle.hidden = true;
@@ -132,10 +184,56 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     panel.addEventListener(event, input => input.stopPropagation());
   }
 
+  const inScope = id => scope === null || scope.has(id);
+  function updateScopeChoice() {
+    const id = scopeSelect.value;
+    scopeToggle.disabled = !id;
+    const ids = unitIDs.get(id) ?? [id];
+    scopeToggle.textContent = scope && ids.every(item => scope.has(item)) ? 'Quitar' : 'Incluir';
+  }
+  function updateScopeTools() {
+    updateScopeChoice();
+    scopeLabel.textContent = areaLabel(scopeIds);
+    scopeTrigger.textContent = selectingScope ? 'Terminar selección' : 'Elegir cuadrantes';
+    scopeTrigger.setAttribute('aria-expanded', String(selectingScope));
+    areaTools.hidden = !selectingScope;
+    whole.setAttribute('aria-pressed', String(scopeIds === null));
+    empty.setAttribute('aria-pressed', String(scopeIds?.length === 0));
+    container.classList.toggle('forecast-selecting', !panel.hidden && selectingScope);
+    reticle.hidden = !selectingScope && !placing;
+  }
+  function setScopeEditing(value) {
+    if (value && placing) stopPlacing();
+    selectingScope = value;
+    message.textContent = value ? 'Haz clic en el mapa para incluir o quitar cuadrantes.' : '';
+    updateScopeTools();
+    if (!panel.hidden) {
+      if (value) {
+        selectedPoint = null;
+        if (updateReadout()) onChange(info());
+      }
+      onScopeChange();
+    }
+  }
+  function setScope(ids) {
+    const next = normalizeArea(ids);
+    if (next === scopeIds || (next && scopeIds && next.join() === scopeIds.join())) return;
+    scopeIds = next;
+    scope = next && new Set(next);
+    if (scope?.size === 0 && placing) stopPlacing();
+    if (selectedPoint && !inScope(quadrantOf(selectedPoint))) selectedPoint = null;
+    updateScopeTools();
+    onScopeChange();
+    redraw();
+  }
+  function toggleScope(ids) {
+    setScope(toggleAnalysisArea(scopeIds, ids));
+  }
   function updatePlacementTools() {
     const armed = Boolean(placing);
     for (const [kind, choice] of deviceButtons) choice.setAttribute('aria-pressed', String(kind === placing));
-    reticle.hidden = aimButton.hidden = finish.hidden = !armed;
+    aimButton.hidden = finish.hidden = !armed;
+    reticle.hidden = !armed && !selectingScope;
     container.classList.toggle('forecast-placing', !panel.hidden && armed);
     if (!panel.hidden && armed) container.style.setProperty('--forecast-cursor', placementCursor(placing));
     else container.style.removeProperty('--forecast-cursor');
@@ -157,31 +255,40 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
       message.textContent = 'Elige un punto dentro de La Reina.';
       return;
     }
+    const id = quadrantOf(point);
+    if (!id || !inScope(id)) {
+      message.textContent = 'Elige un punto dentro del área seleccionada.';
+      return;
+    }
     if (placements.some(item => Math.hypot(item.lat - point.lat, (item.lng - point.lng) * .83) < .00012)) {
       message.textContent = 'Ya hay una medida en ese punto.';
       return;
     }
-    placements.push({ id: String(++serial), kind: placing, lat: point.lat, lng: point.lng, quadrantId: quadrantOf(point) });
+    placements.push({ id: String(++serial), kind: placing, lat: point.lat, lng: point.lng, quadrantId: id });
     selectedPoint = point;
     showAfter = true;
-    const plural = placements.length === 1 ? 'medida agregada' : 'medidas agregadas';
-    message.textContent = `${counts.format(placements.length)} ${plural}. Puedes seguir colocando ${placing === 'camera' ? 'cámaras' : 'casetas'}.`;
+    const quantity = includedPlacements.length + 1;
+    const plural = quantity === 1 ? 'medida en el área' : 'medidas en el área';
+    message.textContent = `${counts.format(quantity)} ${plural}. Puedes seguir colocando ${placing === 'camera' ? 'cámaras' : 'casetas'}.`;
     redraw();
   }
   function updateReadout() {
     if (!surface) return false;
     const local = selectedPoint && forecastAt(surface, selectedPoint);
-    const baseline = local?.baseline ?? surface.baselineTotal;
-    const scenario = local?.scenario ?? surface.scenarioTotal;
-    const reduction = local?.reduction ?? surface.reduction;
-    const label = local ? `Sector consultado · ${year}` : `La Reina · ${year}`;
+    const { baselineTotal, scenarioTotal, reduction } = totals ?? {};
+    const label = `${areaLabel(scopeIds)} · ${year}`;
     if (resultLabel.textContent !== label) resultLabel.textContent = label;
     const variation = reduction > 0 ? `−${percentage.format(reduction)}` : '0 %';
-    for (const [index, value] of [counts.format(baseline), counts.format(scenario), variation].entries()) {
+    const values = totals ? [counts.format(baselineTotal), counts.format(scenarioTotal), variation] : ['—', '—', '—'];
+    for (const [index, value] of values.entries()) {
       if (metricValues[index].textContent !== value) metricValues[index].textContent = value;
     }
-    const note = local ? 'Robos estimados en el sector por año' : 'Robos estimados en la comuna por año';
+    const note = totals ? 'Robos estimados en el área por año' : 'Selecciona al menos un subcuadrante.';
     if (resultNote.textContent !== note) resultNote.textContent = note;
+    const outsideCount = placements.length - includedPlacements.length;
+    outsideNote.hidden = !outsideCount;
+    if (outsideCount) outsideNote.textContent = outsideCount === 1 ? '1 medida fuera del área se conserva.'
+      : `${counts.format(outsideCount)} medidas fuera del área se conservan.`;
     const next = local ? { ...local, id: quadrantOf(selectedPoint) } : null;
     if (next && localReadout && Object.keys(next).every(key => next[key] === localReadout[key])) return false;
     const changed = Boolean(next || localReadout);
@@ -189,8 +296,8 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     return changed;
   }
   function renderMap() {
-    renderSurface(showAfter ? surface : baselineSurface);
-    const visiblePlacements = showAfter ? placements : [];
+    renderSurface(baselineSurface, surface, scopeIds, showAfter);
+    const visiblePlacements = showAfter ? includedPlacements : [];
     renderPlacements(visiblePlacements.map(({ kind, ...point }) => ({
       ...point, id: `escenario-${point.id}`, kind, scenario: true,
       title: `Quitar ${measures[kind].toLowerCase()}`,
@@ -203,25 +310,32 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   }
   function redraw() {
     if (!model || panel.hidden) return;
-    surface = placements.length ? buildForecastSurface(model, { year, placements, assumption: 'illustrative' }) : baselineSurface;
+    includedPlacements = placements.filter(point => inScope(point.quadrantId));
+    surface = includedPlacements.length
+      ? buildForecastSurface(model, { year, placements: includedPlacements, assumption: 'illustrative' }) : baselineSurface;
+    totals = scope?.size === 0 ? null : summarizeForecastArea(surface, scope, cellAreas);
     renderMap();
     updatePlacementTools();
-    undo.disabled = clear.disabled = placements.length === 0;
+    for (const choice of deviceButtons.values()) choice.disabled = scope?.size === 0;
+    undo.disabled = clear.disabled = includedPlacements.length === 0;
+    clear.textContent = scope === null ? 'Quitar todas' : 'Quitar del área';
     readout.hidden = false;
   }
 
   function inspect(point) {
-    if (!surface || !point || !inside(point.lng, point.lat)) return;
-    selectedPoint = point;
+    if (!surface || selectingScope) return;
+    selectedPoint = point && inScope(quadrantOf(point)) && inside(point.lng, point.lat) ? point : null;
     if (updateReadout()) onChange(info());
   }
 
   function info() {
     return {
-      year, showAfter, placements: placements.map(point => ({ ...point })),
-      baselineTotal: surface?.baselineTotal ?? null,
-      scenarioTotal: surface?.scenarioTotal ?? null,
-      reduction: surface?.reduction ?? null,
+      year, showAfter, placements: includedPlacements.map(point => ({ ...point })),
+      outsideCount: placements.length - includedPlacements.length,
+      areaLabel: areaLabel(scopeIds),
+      baselineTotal: totals?.baselineTotal ?? null,
+      scenarioTotal: totals?.scenarioTotal ?? null,
+      reduction: totals?.reduction ?? null,
       local: localReadout ?? null,
       ready: Boolean(model), error: loading ? '' : loadStatus.hidden ? '' : loadStatus.textContent
     };
@@ -232,8 +346,14 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     info,
     get active() { return !panel.hidden; },
     get isPlacing() { return Boolean(placing); },
-    open() {
+    get isSelectingScope() { return selectingScope; },
+    get scopeIds() { return scopeIds; },
+    open(ids) {
       panel.hidden = false;
+      scopeIds = ids;
+      scope = ids && new Set(ids);
+      selectedPoint = localReadout = null;
+      updateScopeTools();
       if (model) { redraw(); return; }
       if (loading) return;
       loadStatus.hidden = false;
@@ -246,6 +366,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
         .then(payload => {
           const checkedModel = readForecastArtifact(payload);
           baselineSurface = buildForecastSurface(checkedModel, { year, assumption: 'none' });
+          cellAreas = indexForecastAreas(checkedModel, quadrantOf);
           model = checkedModel;
           loadStatus.hidden = true;
           controls.hidden = false;
@@ -264,18 +385,28 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     close() {
       panel.hidden = readout.hidden = true;
       placing = null;
-      message.textContent = '';
+      setScopeEditing(false);
       updatePlacementTools();
     },
-    stopPlacing,
+    cancel() {
+      if (selectingScope) {
+        setScopeEditing(false);
+        scopeTrigger.focus({ preventScroll: true });
+        return;
+      }
+      stopPlacing();
+    },
     inspect,
     click(point) {
       if (!surface || !point) return;
-      if (placing) addPlacement(point);
+      if (selectingScope) {
+        const id = quadrantOf(point);
+        if (id) toggleScope([id]);
+      } else if (placing) addPlacement(point);
       else inspect(point);
     },
     remove(id) {
-      const remaining = placements.filter(item => `escenario-${item.id}` !== id);
+      const remaining = placements.filter(item => !inScope(item.quadrantId) || `escenario-${item.id}` !== id);
       if (remaining.length === placements.length) return;
       placements = remaining;
       message.textContent = 'Medida retirada del escenario.';

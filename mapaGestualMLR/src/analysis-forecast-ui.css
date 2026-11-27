@@ -77,3 +77,17 @@ body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[
 @media (max-width: 760px) {
   body:not(.twin-projection) .forecast-reticle { top: 30%; left: 50%; }
 }
+
+body:not(.twin-projection) .forecast-area-tools {
+  display: grid; gap: 7px; padding-bottom: 7px; border-bottom: 1px solid var(--border);
+}
+body:not(.twin-projection) .forecast-scope-choice {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 5px;
+}
+body:not(.twin-projection) .forecast-scope-select { margin: 0; font-size: 11px; font-weight: 600; }
+body:not(.twin-projection) .forecast-scope-select select { margin-top: 4px; min-width: 0; font-size: 11px; padding: 6px; }
+body:not(.twin-projection) .forecast-outside-note { display: block; margin-top: 4px; }
+body:not(.twin-projection) .forecast-outside-note[hidden] { display: none; }
+body:not(.twin-projection) .analysis-experience:has(#forecast-area-aim:is(:hover,:focus-visible)) .forecast-reticle { visibility: visible; }
+body:not(.twin-projection) #map.forecast-selecting .analysis-resource-marker[data-scenario] { pointer-events: none; }
+body:not(.twin-projection) #map.forecast-selecting :is(.leaflet-grab,.gm-style) { cursor: crosshair; }

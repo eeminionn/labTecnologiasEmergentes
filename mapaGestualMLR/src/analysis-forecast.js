@@ -117,6 +117,34 @@ export function buildForecastSurface(model, { year, placements = [], assumption 
   };
 }
 
+/** Assign forecast cells by their centre in the same Web Mercator grid used by the model. */
+export function indexForecastAreas({ width, height, mask, projectedBounds }, areaOf) {
+  const [west, south, east, north] = projectedBounds;
+  const stepX = (east - west) / width, stepY = (north - south) / height;
+  const radius = 6378137;
+  const degrees = 180 / Math.PI;
+  return mask.map((inside, index) => {
+    if (!inside) return null;
+    const x = west + (index % width + .5) * stepX;
+    const y = north - (Math.floor(index / width) + .5) * stepY;
+    return areaOf({ lng: x / radius * degrees, lat: Math.atan(Math.sinh(y / radius)) * degrees });
+  });
+}
+
+export function summarizeForecastArea(surface, scope, cellAreas) {
+  if (scope === null) {
+    const { baselineTotal, scenarioTotal, reduction } = surface;
+    return { baselineTotal, scenarioTotal, reduction };
+  }
+  let baselineTotal = 0, scenarioTotal = 0;
+  for (const [index, area] of cellAreas.entries()) {
+    if (!scope.has(area)) continue;
+    baselineTotal += surface.baseline[index];
+    scenarioTotal += surface.scenario[index];
+  }
+  return { baselineTotal, scenarioTotal, reduction: baselineTotal ? (baselineTotal - scenarioTotal) / baselineTotal : 0 };
+}
+
 export function forecastAt(surface, point) {
   const coordinate = projectedPoint(point);
   if (!coordinate) return null;

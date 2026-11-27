@@ -1,0 +1,155 @@
+body[data-council-phase]:not([data-council-phase="agenda"]) :is(#experience-mode-switcher, .map-tools, .map-category-legend) {
+  visibility: hidden;
+}
+
+body[data-council-phase]:not([data-council-phase="agenda"]) #map::after {
+  content: '';
+  position: absolute;
+  z-index: 460;
+  inset: 0;
+  background: rgb(230 240 243 / 56%);
+}
+
+body[data-council-phase]:not([data-council-phase="agenda"]):not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
+  top: 18px;
+  left: 50%;
+  width: min(790px, calc(100% - 32px));
+  max-height: calc(100% - 36px);
+  padding: clamp(14px, 2vw, 24px);
+  transform: translateX(-50%);
+  overflow: auto;
+}
+
+.council-session-review,
+.council-session-opening { display: grid; gap: 13px; }
+.council-session-review header,
+.council-opening-heading > div { display: grid; gap: 5px; }
+body:not(.twin-projection) .map-intro :is(#council-review-title, #council-opening-title) {
+  color: var(--tinta);
+  font-size: clamp(24px, 3.4vw, 33px);
+}
+.council-review-facts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1px 0 0;
+  padding: 10px 0;
+  border-block: 1px solid var(--azul-20);
+}
+.council-review-facts > div { padding: 3px 10px; }
+.council-review-facts > div + div { border-inline-start: 1px solid var(--azul-20); }
+.council-review-facts dt { color: var(--tinta-suave); font-size: 12px; }
+.council-review-facts dd { margin: 3px 0 0; color: var(--azul-100); font-size: 20px; font-weight: 700; }
+.council-opening-pending {
+  display: grid;
+  gap: 3px;
+  padding: 9px 12px;
+  border-inline-start: 3px solid var(--celeste-100);
+  border-radius: 6px;
+  background: var(--celeste-10);
+  color: var(--tinta);
+}
+.council-opening-pending > span { color: var(--tinta-suave); font-size: 11px; font-weight: 600; }
+.council-opening-pending > strong { overflow-wrap: anywhere; font-size: 14px; line-height: 1.35; }
+.council-session-review > button { justify-self: end; }
+.council-session-review button > span, .council-opening-actions button > span { margin-left: 8px; }
+.council-opening-heading { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.council-opening-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.06fr); gap: 16px; }
+.council-opening-grid > section { min-width: 0; }
+.council-opening-grid h2 { margin: 0; color: var(--tinta); font-size: 16px; }
+.council-opening-preview > h2 { margin: 11px 0 5px; }
+.council-opening-topics, .council-attendance-roster { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+.council-category-row {
+  display: grid;
+  grid-template-columns: 39px minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  min-height: 36px;
+  padding: 4px 6px;
+  border-inline-start: 3px solid var(--tema-100, var(--azul-100));
+  border-radius: 3px;
+  font-size: 12px;
+}
+.council-category-row > time { color: var(--azul-100); font-weight: 600; font-variant-numeric: tabular-nums; }
+.council-category-row > span { overflow-wrap: anywhere; }
+.council-category-row > small { color: var(--tema-texto, var(--azul-100)); font-size: 11px; }
+
+.council-opening-attendance { display: grid; align-content: start; gap: 7px; }
+.council-opening-attendance header { display: grid; gap: 2px; }
+.council-attendance-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 5px;
+  min-height: 31px;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--azul-10);
+}
+.council-attendance-name { min-width: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+.council-attendance-name > small { display: block; color: var(--tinta-suave); font-size: 11px; font-weight: 400; }
+.council-attendance-options { display: flex; flex: 0 0 auto; gap: 3px; }
+.council-attendance-mark { display: inline-block; width: 11px; visibility: hidden; font-weight: 700; }
+.council-attendance-options [aria-pressed="true"] .council-attendance-mark { visibility: visible; }
+body:not(.twin-projection) .council-attendance-options > button {
+  min-height: 31px;
+  padding: 3px 6px;
+  border-radius: 5px;
+  font-size: 11px;
+  box-shadow: none;
+}
+body:not(.twin-projection) .council-attendance-options > [aria-pressed="true"][data-status="present"] {
+  border-color: var(--verde-80);
+  background: var(--verde-10);
+  color: var(--tinta);
+  font-weight: 700;
+}
+body:not(.twin-projection) .council-attendance-options > [aria-pressed="true"][data-status="absent"] {
+  border-color: var(--morado-80);
+  background: var(--morado-10);
+  color: var(--morado-100);
+  font-weight: 700;
+}
+.council-guest-form { display: grid; gap: 3px; }
+.council-guest-form > label { margin: 0; color: var(--tinta-suave); font-size: 11px; }
+.council-guest-form > div { display: flex; gap: 5px; }
+.council-guest-form input { flex: 1; min-width: 0; padding: 5px 8px; border: 1px solid var(--azul-20); border-radius: 6px; font-size: 13px; }
+.council-opening-actions {
+  position: sticky;
+  z-index: 1;
+  bottom: 0;
+  display: flex;
+  flex: none;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 0 3px;
+  border-top: 1px solid var(--azul-20);
+  background: var(--superficie);
+}
+body:not(.twin-projection) .council-opening-actions .council-topic-timer {
+  flex: 0 1 270px;
+  min-width: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+body:not(.twin-projection) #map-analysis-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  margin-top: 8px;
+  text-align: left;
+  white-space: normal;
+}
+body:not(.twin-projection) .council-agenda-list .council-agenda-choice[data-theme] {
+  border-inline-start: 3px solid var(--tema-100);
+}
+
+@media (max-width: 660px) {
+  .council-opening-grid { grid-template-columns: minmax(0, 1fr); gap: 11px; }
+  .council-opening-heading { flex-wrap: wrap; }
+  .council-opening-grid > .council-opening-attendance { grid-row: 1; }
+  .council-opening-actions { flex-wrap: wrap; }
+  body:not(.twin-projection) .council-opening-actions .council-topic-timer { flex: 1 1 170px; }
+}

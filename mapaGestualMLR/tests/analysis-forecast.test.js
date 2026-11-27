@@ -2,7 +2,8 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import {
-  FORECAST_ASSUMPTIONS, FORECAST_YEARS, buildForecastSurface, forecastAt, readForecastArtifact
+  FORECAST_ASSUMPTIONS, FORECAST_YEARS, buildForecastSurface, forecastAt, readForecastArtifact,
+  indexForecastAreas, summarizeForecastArea
 } from '../src/analysis-forecast.js';
 
 const source = JSON.parse(readFileSync(new URL('../public/analysis/pronostico-robos.json', import.meta.url), 'utf8'));
@@ -52,4 +53,28 @@ test('la intervención actúa localmente y varias instalaciones respetan el lím
   assert.ok(Math.abs(forecastAt(many, point).reduction - FORECAST_ASSUMPTIONS.illustrative.cap) < 1e-9);
   assert.ok(many.scenario.every((value, index) => value >= 0 && value <= baseline.baseline[index]));
   assert.ok(baseline.baseline.some((value, index) => value > 0 && many.scenario[index] === value));
+});
+
+
+test('los totales de inversión se limitan a las celdas del área elegida', () => {
+  const baseline = buildForecastSurface(model, { year });
+  const peak = baseline.baseline.indexOf(Math.max(...baseline.baseline));
+  const point = cellCenter(peak);
+  const areas = indexForecastAreas(model, ({ lng }) => lng <= point.lng + 1e-10 ? 'Oeste' : 'Este');
+  assert.equal(areas[peak], 'Oeste');
+  assert.equal(areas.length, model.mask.length);
+  assert.equal(areas.filter(Boolean).length, model.mask.filter(Boolean).length);
+
+  const scenario = buildForecastSurface(model, { year, placements: [{ ...point, kind: 'camera' }] });
+  const west = summarizeForecastArea(scenario, new Set(['Oeste']), areas);
+  const east = summarizeForecastArea(scenario, new Set(['Este']), areas);
+  const full = summarizeForecastArea(scenario, null, areas);
+  assert(west.baselineTotal > west.scenarioTotal);
+  assert(west.baselineTotal < full.baselineTotal);
+  assert(Math.abs(west.baselineTotal + east.baselineTotal - full.baselineTotal) < 1e-7);
+  assert(Math.abs(west.scenarioTotal + east.scenarioTotal - full.scenarioTotal) < 1e-7);
+  assert.equal(scenario.max, baseline.max);
+  assert.deepEqual(summarizeForecastArea(scenario, new Set(), areas), {
+    baselineTotal: 0, scenarioTotal: 0, reduction: 0
+  });
 });

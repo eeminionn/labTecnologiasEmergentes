@@ -25,6 +25,46 @@
         <button id="mode-analysis" type="button" aria-pressed="false" disabled>Análisis</button>
       </aside>
       <section class="map-intro" aria-labelledby="map-intro-title">
+        <section id="council-review" class="council-session-review" hidden aria-labelledby="council-review-title">
+          <header>
+            <p class="map-intro-label">Concejo en perspectiva · 1 de 3</p>
+            <h1 id="council-review-title" tabindex="-1">Sesión pasada</h1>
+            <p id="council-review-date"></p>
+          </header>
+          <dl class="council-review-facts">
+            <div><dt>Duración</dt><dd id="council-review-duration"></dd></div>
+            <div><dt>Temas de la tabla</dt><dd id="council-review-count"></dd></div>
+            <div><dt>Asistencia</dt><dd id="council-review-attendance"></dd></div>
+          </dl>
+          <div class="council-opening-pending">
+            <span>Retomar con prioridad</span>
+            <strong id="council-review-pending"></strong>
+          </div>
+          <button id="council-open-session" class="primary" type="button">Ir a la apertura <span aria-hidden="true">→</span></button>
+        </section>
+        <section id="council-opening" class="council-session-opening" hidden aria-labelledby="council-opening-title">
+          <header class="council-opening-heading">
+            <div><p class="map-intro-label">Concejo en perspectiva · 2 de 3</p><h1 id="council-opening-title" tabindex="-1">Apertura de la sesión</h1><p id="council-opening-date"></p></div>
+            <button id="council-opening-back" type="button">← Sesión pasada</button>
+          </header>
+          <div class="council-opening-grid">
+            <section class="council-opening-preview" aria-labelledby="council-opening-table-title">
+              <div class="council-opening-pending"><span>Pendiente de la sesión pasada</span><strong id="council-opening-pending"></strong></div>
+              <h2 id="council-opening-table-title">Tabla de hoy</h2>
+              <ol id="council-opening-topics" class="council-opening-topics"></ol>
+            </section>
+            <section class="council-opening-attendance" aria-labelledby="council-attendance-title">
+              <header><h2 id="council-attendance-title">Asistencia</h2><p id="council-attendance-status" aria-live="polite"></p></header>
+              <ul id="council-attendance-roster" class="council-attendance-roster" aria-label="Integrantes e invitados"></ul>
+              <form class="council-guest-form" id="council-guest-form">
+                <label for="council-guest-name">Invitados · registro local</label>
+                <div><input id="council-guest-name" name="name" maxlength="80" autocomplete="off" placeholder="Nombre" required /><button type="submit">Agregar</button></div>
+                <p id="council-attendance-message" role="status" hidden></p>
+              </form>
+            </section>
+          </div>
+        </section>
+        <div id="council-opening-actions" class="council-opening-actions" hidden><button id="council-start-agenda" class="primary" type="button">Comenzar la tabla <span aria-hidden="true">→</span></button></div>
         <div class="council-agenda-heading">
           <p class="map-intro-label">Concejo en perspectiva</p>
           <div class="council-agenda-title-row">
@@ -38,9 +78,10 @@
             <time id="council-current-time"></time>
             <span id="council-current-priority" class="council-agenda-priority"></span>
           </div>
-          <h2 id="council-current-topic" class="council-agenda-topic"></h2>
+          <h2 id="council-current-topic" class="council-agenda-topic" tabindex="-1"></h2>
           <p id="council-current-description" class="council-agenda-description"></p>
           <button id="map-graphics-shortcut" class="primary" type="button" disabled>Ver gráficos de inundación <span aria-hidden="true">→</span></button>
+          <button id="map-analysis-shortcut" class="primary" type="button" hidden><span>Ver análisis</span><span aria-hidden="true">→</span></button>
         </div>
         <ol id="council-agenda-list" class="council-agenda-list" aria-label="Horario de la sesión"></ol>
         <div class="council-agenda-nav" role="group" aria-label="Navegación de la agenda">
