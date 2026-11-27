@@ -9,6 +9,7 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   const mapElements = new Set();
   const overlay = document.createElement('section');
   overlay.className = 'content-viewer'; overlay.hidden = true;
+  overlay.dataset.theme = 'seguridad';
   overlay.setAttribute('aria-label', 'Gráficos del tema seleccionado');
   const stage = document.createElement('div'); stage.className = 'content-stage';
   if (standalone) {
@@ -121,7 +122,8 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
     // over from the previous page, including a slow image decode.
     viewport = fitContentViewport({ width: stage.clientWidth || 1, height: stage.clientHeight || 1,
       imageWidth: page.width || 1, imageHeight: page.height || 1 });
-    image.alt = page.title || `Gráfico ${slideIndex + 1}`;
+    const pageTitle = page.title || `Gráfico ${slideIndex + 1}`;
+    image.alt = page.description || pageTitle;
     unavailable.hidden = true;
     image.hidden = false;
     image.onload = () => { if (!destroyed && generation === imageGeneration) resize(true); };
@@ -137,8 +139,8 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
       const destination = previous.disabled ? (next.disabled ? closeButton : next) : previous;
       destination.focus({ preventScroll: true });
     }
-    title.textContent = image.alt;
-    status.textContent = standalone ? `Gráfico ${slideIndex + 1} de ${slides.length}` : `${slideIndex + 1} de ${slides.length}: ${image.alt}`;
+    title.textContent = pageTitle;
+    status.textContent = standalone ? `Gráfico ${slideIndex + 1} de ${slides.length}` : `${slideIndex + 1} de ${slides.length}: ${pageTitle}`;
   }
   function open(pages = manifest?.slides, index = 0) {
     if (destroyed) return false;

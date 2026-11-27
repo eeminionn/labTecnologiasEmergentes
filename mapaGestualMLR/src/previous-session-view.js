@@ -1,4 +1,5 @@
 import './previous-session-ui.css';
+import { chartTint } from './companion-chart-tint.js';
 
 const renderedSessions = new WeakMap();
 const number = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
@@ -40,6 +41,7 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
     : topics.reduce((sum, topic) => sum + minutes(topic.actualMinutes), 0);
   const maximum = Math.max(40, ...topics.map(topic => Math.ceil(Math.max(minutes(topic.actualMinutes), minutes(topic.plannedMinutes)) / 10) * 10));
   const planned = [...new Set(topics.map(topic => minutes(topic.plannedMinutes)))];
+  const longest = Math.max(1, ...topics.map(topic => minutes(topic.actualMinutes)));
   const scale = value => value / maximum * 100 + '%';
 
   const main = element('div', 'companion-shell previous-session-view');
@@ -61,6 +63,7 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
 
   const layout = element('div', 'previous-session-layout');
   const figure = element('figure', 'companion-card previous-session-chart');
+  figure.dataset.theme = 'seguridad';
   figure.setAttribute('aria-labelledby', 'previous-session-chart-title');
   const caption = element('figcaption', 'previous-session-chart-heading');
   const chartTitle = element('h2', null, 'Tiempo por tema');
@@ -94,6 +97,7 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   axis.append(ticks, element('span', 'previous-session-axis-unit', 'Usados'));
 
   const list = element('ol', 'previous-session-rows');
+  list.setAttribute('aria-label', 'Minutos usados y previstos por tema');
   topics.forEach(topic => {
     const actual = minutes(topic.actualMinutes);
     const expected = minutes(topic.plannedMinutes);
@@ -110,6 +114,7 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
     track.setAttribute('aria-hidden', 'true');
     const actualBar = element('span', 'previous-session-actual');
     actualBar.style.width = scale(overrun ? expected : actual);
+    actualBar.style.setProperty('--chart-fill', chartTint(actual, longest, 'azul'));
     track.append(actualBar);
     if (overrun || pending) {
       const segment = element('span', overrun ? 'previous-session-overrun' : 'previous-session-pending');
@@ -122,7 +127,8 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
     track.append(marker);
     const value = element('div', 'previous-session-value');
     value.append(element('strong', null, `${number.format(actual)} min`));
-    if (planned.length > 1) value.append(element('small', null, `${number.format(expected)} min previstos`));
+    const plannedValue = element('small', planned.length > 1 ? null : 'previous-session-visually-hidden', `${number.format(expected)} min previstos`);
+    value.append(plannedValue);
     if (overrun) value.append(element('small', 'previous-session-delta', `+${number.format(actual - expected)} min`));
     if (pending) value.append(element('small', 'previous-session-delta', `${number.format(expected - actual)} min pendientes`));
     row.append(topicTitle, track, value);

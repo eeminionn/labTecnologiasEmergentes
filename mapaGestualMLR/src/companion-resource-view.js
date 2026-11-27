@@ -79,13 +79,15 @@ export function renderCompanionResource(state) {
   const sheet = buildResourceSheet(state.kind || state.resource?.kind, state.resource, state);
   if (!sheet) return null;
   const section = element('section', 'companion-resource-details');
+  section.dataset.theme = 'seguridad';
   const heading = element('header', 'companion-resource-heading');
   const title = element('h2', null, sheet.name);
   title.id = 'companion-resource-title';
   section.setAttribute('aria-labelledby', title.id);
   const status = sheet.state === 'Referencia territorial' ? 'En inventario' : sheet.state;
   const headerLine = element('div', 'companion-resource-title-row');
-  headerLine.append(title, element('span', 'companion-resource-status', status));
+  headerLine.append(title);
+  if (status) headerLine.append(element('span', 'companion-resource-status', status));
   const quadrantIds = state.sector?.quadrantIds;
   const location = element('p', 'companion-resource-address', sheet.address);
   const locationFacts = [

@@ -1,6 +1,7 @@
 import './analysis-forecast-ui.css';
 import { FORECAST_YEARS, readForecastArtifact, buildForecastSurface, forecastAt } from './analysis-forecast.js';
 import { assetUrl } from './asset-url.js';
+import { HEAT_COLOR_STOPS } from './analysis-data.js';
 
 const counts = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
 const percentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
@@ -12,11 +13,12 @@ const toolIcons = {
 const [year] = FORECAST_YEARS;
 
 function placementCursor(kind) {
+  const color = kind === 'camera' ? '#006a85' : '#6e2663';
   const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="34" height="30" viewBox="0 0 34 30">'
-    + '<rect x="9" y="2" width="23" height="22" rx="5" fill="#00647c" stroke="white" stroke-width="1.5"/>'
+    + '<rect x="9" y="2" width="23" height="22" rx="5" fill="' + color + '" stroke="white" stroke-width="1.5"/>'
     + '<path transform="translate(12 4) scale(.73)" d="' + toolIcons[kind] + '" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>'
-    + '<circle cx="7" cy="23" r="5.5" fill="white" stroke="#00647c" stroke-width="1.5"/>'
-    + '<path d="M4.5 23h5M7 20.5v5" stroke="#00647c" stroke-width="1.4" stroke-linecap="round"/></svg>';
+    + '<circle cx="7" cy="23" r="5.5" fill="white" stroke="' + color + '" stroke-width="1.5"/>'
+    + '<path d="M4.5 23h5M7 20.5v5" stroke="' + color + '" stroke-width="1.4" stroke-linecap="round"/></svg>';
   return 'url("data:image/svg+xml,' + encodeURIComponent(svg) + '") 7 23, crosshair';
 }
 
@@ -39,6 +41,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   }
   const panel = element('section', 'analysis-panel forecast-panel');
   panel.dataset.side = 'left';
+  panel.dataset.theme = 'seguridad';
   panel.setAttribute('aria-labelledby', 'forecast-title');
   panel.hidden = true;
   const title = element('h1', null, 'Simular inversión');
@@ -78,7 +81,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     if (point) addPlacement(point);
   });
   aimButton.hidden = true;
-  const finish = button('finish', 'Terminar', stopPlacing);
+  const finish = button('finish', 'Dejar de agregar', stopPlacing);
   finish.hidden = true;
   const undo = button('undo', 'Deshacer última', () => {
     placements = placements.slice(0, -1);
@@ -99,6 +102,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
   legend.setAttribute('aria-label', 'Escala fija de intensidad estimada');
   const gradient = element('span', 'forecast-gradient');
   gradient.setAttribute('aria-hidden', 'true');
+  gradient.style.background = `linear-gradient(90deg, ${HEAT_COLOR_STOPS.map(({ value, color }) => `rgb(${color.join(',')}) ${value * 100}%`).join(', ')})`;
   legend.append(element('span', null, 'Menor'), gradient, element('span', null, 'Mayor'));
 
   controls.append(viewRow, legend, devices, placementTools, message);
@@ -193,7 +197,7 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
       address: `Medida ${point.id} del escenario`
     })));
     viewStatus.textContent = showAfter ? 'Con inversión' : 'Antes · sin medidas';
-    viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver después';
+    viewToggle.textContent = showAfter ? 'Ver antes' : 'Ver con inversión';
     updateReadout();
     onChange(info());
   }
@@ -247,7 +251,11 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
           controls.hidden = false;
           redraw();
         })
-        .catch(() => { if (!signal.aborted) loadStatus.textContent = 'No se pudo cargar la proyección. Vuelve al histórico para reintentar.'; })
+        .catch(error => {
+          if (signal.aborted) return;
+          console.error('No se pudo cargar la proyección.',error);
+          loadStatus.textContent = 'No se pudo cargar la proyección. Vuelve a Análisis e inténtalo otra vez.';
+        })
         .finally(() => {
           loading = null;
           if(!signal.aborted&&!panel.hidden)onChange(info());
@@ -276,11 +284,13 @@ export function createForecastView(overlay, container, { map, signal, inside, qu
     targets() {
       if (panel.hidden) return [];
       const outer = container.getBoundingClientRect();
+      const panelBounds = panel.getBoundingClientRect();
       const scroll = body.getBoundingClientRect();
       return [...panel.querySelectorAll('button')].flatMap(node => {
         if (node.disabled || !node.getClientRects().length) return [];
         const rect = node.getBoundingClientRect();
-        if (body.contains(node) && (rect.top < scroll.top || rect.bottom > scroll.bottom)) return [];
+        if (rect.top < panelBounds.top || rect.bottom > panelBounds.bottom
+          || body.contains(node) && (rect.top < scroll.top || rect.bottom > scroll.bottom)) return [];
         return [{ id: node.id, x: rect.left + rect.width / 2 - outer.left, y: rect.top + rect.height / 2 - outer.top,
           width: rect.width, height: rect.height, element: node, priority: 25 }];
       });

@@ -36,6 +36,7 @@ function node(tag, className, label) {
 function pointIcon(kind, point) {
   const symbol = node('span', 'companion-territory-marker');
   symbol.dataset.kind = kind;
+  if (kind === 'alarms') symbol.dataset.theme = 'seguridad';
   symbol.dataset.outside = String(point.inArea === false);
   symbol.dataset.scenario = String(Boolean(point.scenario));
   symbol.dataset.highlighted = String(Boolean(point.highlighted));

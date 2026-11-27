@@ -26,6 +26,7 @@ export function createRobberyShare({ count, total, period, area } = {}) {
 
   const section = element('section', 'robbery-share');
   section.dataset.state = comparable ? 'ready' : 'empty';
+  section.dataset.theme = 'seguridad';
   section.setAttribute('aria-label', 'Proporción de robos del área consultada respecto de La Reina');
   const heading = element('header', 'robbery-share-heading');
   heading.append(element('h2', null, area ? 'Robos en el área consultada' : 'Robos en este sector'));

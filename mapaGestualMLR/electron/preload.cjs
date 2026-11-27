@@ -6,7 +6,7 @@ contextBridge.exposeInMainWorld('desktop', {
   onCompanionCurrentSession: callback => {
     if (!twinBridge && typeof callback === 'function') ipcRenderer.on('companion-current-session', () => callback());
   },
-  openCompanionWindow: () => twinBridge ? Promise.resolve(false) : ipcRenderer.invoke('companion-open'),
+  openCompanionWindow: focus => twinBridge ? Promise.resolve(false) : ipcRenderer.invoke('companion-open', focus !== false),
   click: point => ipcRenderer.invoke('map-click', point, leaseEpoch),
   reportSmoke: report => ipcRenderer.send('smoke-result', report),
   twinBridge,

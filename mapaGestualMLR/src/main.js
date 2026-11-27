@@ -49,25 +49,26 @@ $('council-previous-session').onclick=()=>{
   else {
     setPreviousSessionVisible(true);
     publishMapAgenda();
-    if(browserBuild)openCompanion();
+    if(companionEnabled)openCompanion({focus:false});
   }
 };
 $('companion-open').hidden = twinProjection;
-$('companion-open').onclick = openCompanion;
-function openCompanion() {
+$('companion-open').onclick = () => openCompanion();
+function openCompanion({ focus = true } = {}) {
   if (webCompanion) {
     webCompanion.open();
     return;
   }
-  Promise.resolve(companion.open()).then(opened=>{
-    if(opened===false)notify('No se pudo abrir la ficha técnica.');
-  }).catch(()=>notify('No se pudo abrir la ficha técnica. Vuelve a intentarlo.'));
+  const message = 'No se pudo abrir la información complementaria. Vuelve a intentarlo.';
+  Promise.resolve(companion.open({focus})).then(opened=>{
+    if(opened===false)notify(message);
+  }).catch(()=>notify(message));
 }
 let twinLeaseActive = false, twinError = '';
 if(twinProjection)document.body.classList.add('twin-projection');
 if(browserBuild){
-  for(const id of ['status','camera-toggle','settings-open','help-gestures','help-native-sources'])$(id).hidden=true;
-  $('help-web').hidden=false;
+  for(const id of ['status','camera-toggle','settings-open','help-gestures','help-camera-privacy','help-google-sources'])$(id).hidden=true;
+  $('help-companion').textContent='Consulta el detalle aquí o pulsa «Abrir en otra pestaña» para verlo en paralelo con el mapa.';
 }
 if(trafficCheck && !twinProjection)$('mode-experiences').hidden=false;
 const defaults = { cameraId:'', cameraLabel:'', mirror:true, rotation:0, provider:'osm', googleKey:'', confidence:.7, cameraAuto:true, cameraControls:{} };
@@ -153,7 +154,10 @@ async function loadMap() {
   try {
     await contentViewer.ready;
     $('map-graphics-shortcut').disabled=false;
-  } catch(error) {notify(error.message);}
+  } catch(error) {
+    console.error('No se pudieron cargar los gráficos.',error);
+    notify('No se pudieron cargar los gráficos. El mapa sigue disponible.');
+  }
 }
 function openPointContent(item) {
   if(trafficExperience?.isOpen || experienceLoading || analysisView?.isOpen || analysisLoading)return;
@@ -239,6 +243,7 @@ async function enterExperience({ animate = true } = {}) {
 function leaveAnalysis() {
   analysisGeneration++; analysisLoading=false;
   analysisView?.destroy(); analysisView=null; map?.setAnalysisLayer(null); map?.setAnalysisMode(false);
+  $('mode-analysis').removeAttribute('aria-busy');
   $('mode-analysis').disabled=false; showSurfaceMode('map'); cancelGesture(); map?.home();
 }
 async function enterAnalysis({ focusFilters = false } = {}) {
@@ -247,11 +252,12 @@ async function enterAnalysis({ focusFilters = false } = {}) {
   const generation=++analysisGeneration;
   analysisLoading=true; contentViewer?.close(); cancelGesture(); showSurfaceMode('analysis');
   map.setAnalysisMode(true); $('mode-analysis').disabled=true;
+  $('mode-analysis').setAttribute('aria-busy','true');
   let instance;
   try {
     const module=await import('./analysis-view.js');
     if(generation!==analysisGeneration)return;
-    instance=await module.createAnalysisView($('map'),{map,notify,
+    instance=await module.createAnalysisView($('map'),{map,
       onChange:({automatic=false}={})=>{if(!automatic)cancelGesture();},
       onCompanion:state=>{if(generation===analysisGeneration)publishCurrentState(state);}
     });
@@ -264,10 +270,18 @@ async function enterAnalysis({ focusFilters = false } = {}) {
     }
   } catch(error) {
     instance?.destroy();
-    if(generation===analysisGeneration){leaveAnalysis();notify(error.message || 'No se pudo abrir Análisis.');}
+    if(generation===analysisGeneration){
+      leaveAnalysis();
+      console.error('No se pudo abrir Análisis.',error);
+      notify('No se pudo abrir Análisis. Vuelve a intentarlo desde el mapa.');
+    }
     if(analysisCheck)throw error;
   } finally {
-    if(generation===analysisGeneration){analysisLoading=false;$('mode-analysis').disabled=false;}
+    if(generation===analysisGeneration){
+      analysisLoading=false;
+      $('mode-analysis').disabled=false;
+      $('mode-analysis').removeAttribute('aria-busy');
+    }
     else if(focusFilters&&document.activeElement===document.body&&$('mode-map').getAttribute('aria-pressed')==='true'){
       $('mode-analysis').focus({preventScroll:true});
     }
@@ -281,7 +295,11 @@ function initializeWorker() {
     if(!smoke && workerGeneration!==cameraGeneration)return;
     const data=event.data;
     if(data.type==='ready') { workerReady=true; telemetryBlocked=data.telemetryBlocked; if(smoke) smokeFrame();else updateStatus(); }
-    else if(data.type==='error') { busy=false; if(twinProjection)twinError=`Detector: ${data.message}`;notify(`Detector: ${data.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:data.message}); else stopCamera(); }
+    else if(data.type==='error') {
+      busy=false;
+      reportGestureFailure(data.message);
+      if(!smoke)stopCamera();
+    }
     else if(data.type==='result') {
       busy=false;
       if(smoke) {
@@ -320,8 +338,18 @@ function initializeWorker() {
       renderGesture(result,latestHands.length,{blocked});
     }
   };
-  worker.onerror=event=>{if(!smoke && workerGeneration!==cameraGeneration)return;if(twinProjection)twinError=`No se pudo iniciar el detector: ${event.message}`;notify(`No se pudo iniciar el detector: ${event.message}`); if(smoke) window.desktop.reportSmoke({ok:false,error:event.message}); stopCamera(); };
+  worker.onerror=event=>{
+    if(!smoke && workerGeneration!==cameraGeneration)return;
+    reportGestureFailure(event.message);
+    stopCamera();
+  };
   worker.postMessage({type:'init',origin:location.origin,confidence:+config.confidence,probe:smoke});
+}
+function reportGestureFailure(error) {
+  if(twinProjection)twinError=`Detector: ${error}`;
+  if(smoke)window.desktop.reportSmoke({ok:false,error});
+  console.error('Falló la detección de gestos.',error);
+  notify('No se pudieron activar los gestos. Reintenta o usa el mouse.','camera');
 }
 async function smokeFrame() {
   const canvas=document.createElement('canvas'); canvas.width=640;canvas.height=480;
@@ -657,7 +685,7 @@ async function startCamera({ startPaused = false } = {}) {
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
     const controls=cameraControlReport=await applyCameraControls(stream.getVideoTracks()[0],config.cameraControls,{continuous:config.cameraAuto});
     if(generation!==cameraGeneration){acquired.getTracks().forEach(track=>track.stop());return;}
-    if(['failed','invalid','mismatch'].includes(controls.status))notify('La cámara no confirmó los ajustes solicitados. Revisa el diagnóstico.','camera');
+    if(['failed','invalid','mismatch'].includes(controls.status))notify('No se aplicaron todos los ajustes de imagen. Revisa la vista de cámara.','camera');
     const aspect=$('video').videoWidth/$('video').videoHeight;
     $('video').parentElement.style.aspectRatio=String(aspect);
     engine=new GestureEngine({aspectRatio:aspect});
@@ -813,7 +841,7 @@ function renderGesture(result,detectedHands=latestHands.length,{blocked=false}={
         if(ok){counters.clicks++;if(smoke || (active && !isBlocked()))pulse(x,y);}
         else{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';}
         return ok;
-      }).catch(error=>{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';if(smoke)throw error;notify(`No se pudo seleccionar: ${error.message}`);return false;}));
+      }).catch(error=>{engine.cancelClick();selection.reset();for(const cursor of [$('cursor'),$('cursor-secondary')])cursor.dataset.state='idle';if(smoke)throw error;console.error('No se pudo seleccionar con gestos.',error);notify('No se pudo seleccionar. Retira el índice y vuelve a apuntar.');return false;}));
     } else if(event.type==='pan' && navigation==='pan' && (detectedHands===1 || detectedHands===2) && result.cursor
       && result.navigationHandIds?.length && result.navigationHandIds.every(id=>pointers.some(pointer=>pointer.id===id))) {
       // The visual halo can ease from index to knuckles independently of the
@@ -835,7 +863,7 @@ function showQuality(analysis,state) {
   metric.textContent=!state.allowActions?(state.state==='recovering'?'Imagen: recuperando':dark?'Imagen: demasiado oscura':'Imagen: revisar exposición'):
     warnings.includes('dark')?'Imagen: poca luz':warnings.includes('bright')?'Imagen: mucho brillo':warnings.includes('low-contrast')?'Imagen: contraste bajo':
       analysis?.metrics?`Luz ${Math.round(analysis.metrics.meanLuma)} · contraste ${Math.round(analysis.metrics.contrast)}`:'Imagen: —';
-  if(state.showWarning && !qualityWarningShown){qualityWarningShown=true;notify('La imagen no permite controlar el mapa. Revisa la luz o la exposición.','quality');}
+  if(state.showWarning && !qualityWarningShown){qualityWarningShown=true;notify('Gestos en pausa. Revisa la vista de cámara y la iluminación para continuar.','quality');}
   if(state.allowActions)qualityWarningShown=false;
   if(state.allowActions && noticeKind==='quality'){$('notice').hidden=true;clearTimeout(noticeTimer);noticeKind=null;}
 }
@@ -1104,8 +1132,7 @@ function openSettings() {
   cancelGesture();
   const settings=$('settings');
   settings.returnValue='';
-  $('settings-framing').open=false;$('settings-advanced').open=false;
-  settings.querySelector('.tracking-details').open=false;
+  settings.querySelectorAll('details').forEach(detail=>{detail.open=false;});
   const select=$('camera-select');
   if(config.cameraId&&![...select.options].some(option=>option.value===config.cameraId))select.add(new Option('Cámara guardada',config.cameraId));
   select.value=config.cameraId;
@@ -1133,7 +1160,7 @@ $('settings').addEventListener('close',async()=>{
   // Reload clears Google SDK and credentials when switching/changing key.
   if(oldKey!==config.googleKey || oldProvider!==config.provider) { location.reload();return; }
   if(wasActive)startCamera({startPaused:wasPaused});
-  else notify('Ajustes guardados.');
+  else notify('Cambios guardados.');
 });
 $('zoom-in').onclick=()=>currentSurface().zoom(.5,$('map').clientWidth/2,$('map').clientHeight/2);
 $('zoom-out').onclick=()=>currentSurface().zoom(-.5,$('map').clientWidth/2,$('map').clientHeight/2);

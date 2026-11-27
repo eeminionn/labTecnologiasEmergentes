@@ -65,11 +65,11 @@ test('Web Mercator usa metros y la fila superior corresponde al norte', () => {
   assert.ok(Math.floor(highest / 64) < 32);
   assert.throws(() => projectSecurityPoint(0, 90));
 });
-test('El degradé continuo comienza verde y termina rojo con valores RGB opacos finitos', () => {
-  assert.deepEqual(heatColor(0), [0, 141, 54]); assert.deepEqual(heatColor(1), [215, 48, 39]);
+test('El degradé usa tintes institucionales de rosado con valores RGB válidos', () => {
+  assert.deepEqual(heatColor(0), [253, 234, 242]); assert.deepEqual(heatColor(1), [232, 45, 129]);
   assert.deepEqual(heatColor(-2), heatColor(0)); assert.deepEqual(heatColor(2), heatColor(1));
   for (let i = 0; i < 100; i++) assert.ok(heatColor(i / 100).every(channel => Number.isInteger(channel) && channel >= 0 && channel <= 255));
-  assert.deepEqual(heatColor(.5), [245, 221, 97]);
+  assert.deepEqual(heatColor(.5), [244, 150, 192]);
 });
 test('Los 60.000 registros del archivo entregado se pueden filtrar y quedan dentro de La Reina', () => {
   const rows = parseSecurityCSV(readFileSync(new URL('../public/analysis/seguridad-simulada.csv', import.meta.url), 'utf8'));

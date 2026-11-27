@@ -8,6 +8,7 @@ export function createLayerPicker(overlay, container, { selection, onSelect }) {
     return node;
   };
   const picker = el('section', 'analysis-date-popover analysis-layer-picker');
+  picker.id = 'analysis-layer-picker';
   picker.hidden = true;
   picker.setAttribute('role', 'dialog');
   picker.setAttribute('aria-labelledby', 'analysis-layer-picker-title');

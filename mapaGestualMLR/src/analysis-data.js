@@ -53,12 +53,13 @@ export function toggleSecurityRobberyType(current, value) {
   return normalizeSecurityRobberyTypes(selected);
 }
 
+// Tintes de Seguridad y riesgos del Manual gráfico de La Reina.
 export const HEAT_COLOR_STOPS = Object.freeze([
-  Object.freeze({ value: 0, color: Object.freeze([0, 141, 54]) }),
-  Object.freeze({ value: .25, color: Object.freeze([175, 196, 57]) }),
-  Object.freeze({ value: .5, color: Object.freeze([245, 221, 97]) }),
-  Object.freeze({ value: .75, color: Object.freeze([239, 139, 58]) }),
-  Object.freeze({ value: 1, color: Object.freeze([215, 48, 39]) })
+  Object.freeze({ value: 0, color: Object.freeze([253, 234, 242]) }),
+  Object.freeze({ value: .25, color: Object.freeze([248, 192, 217]) }),
+  Object.freeze({ value: .5, color: Object.freeze([244, 150, 192]) }),
+  Object.freeze({ value: .75, color: Object.freeze([239, 108, 167]) }),
+  Object.freeze({ value: 1, color: Object.freeze([232, 45, 129]) })
 ]);
 
 export function csvRows(text) {

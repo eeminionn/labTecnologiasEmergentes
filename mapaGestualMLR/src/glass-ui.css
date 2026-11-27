@@ -1,3 +1,5 @@
+@import './municipal-theme.css';
+
 /* Poppins is bundled from its official OFL distribution. Neulis Sans takes
    precedence when installed locally; no Adobe font files are distributed. */
 @font-face {
@@ -37,6 +39,13 @@
 }
 @font-face {
   font-family: "Neulis Sans";
+  src: local("Neulis Sans Medium"), local("NeulisSans-Medium");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Neulis Sans";
   src: local("Neulis Sans Bold"), local("NeulisSans-Bold");
   font-style: normal;
   font-weight: 600 800;
@@ -47,25 +56,20 @@
 #experience-mode-switcher [hidden] { display: none !important; }
 
 body:not(.twin-projection) {
-  --municipal-petroleo: #006a85;
-  --municipal-turquesa: #00adb2;
-  --municipal-morado: #6e2663;
-  --municipal-verde: #008d36;
-  --municipal-lima: #afc439;
-  --municipal-fucsia: #e82d81;
-  --glass-surface: rgba(255, 255, 255, .78);
-  --glass-sheen: linear-gradient(135deg, rgba(255, 255, 255, .34), rgba(255, 255, 255, .035) 55%, rgba(255, 255, 255, .16));
-  --glass-border: rgba(255, 255, 255, .9);
+  --glass-surface: var(--superficie);
+  --glass-sheen: none;
+  --glass-border: var(--azul-20);
   --glass-shadow: 0 10px 30px rgba(0, 66, 82, .12), 0 1px 3px rgba(0, 66, 82, .06), 0 0 0 .5px rgba(0, 106, 133, .07);
   --glass-inset: inset 0 1px 0 rgba(255, 255, 255, .98), inset 0 -1px 0 rgba(255, 255, 255, .35);
   --glass-blur: blur(20px) saturate(140%);
-  --ink: #183a43;
-  --ink-secondary: #47636a;
-  --border: rgba(0, 106, 133, .17);
+  --ink: var(--tinta);
+  --ink-secondary: var(--tinta-suave);
+  --border: var(--azul-20);
   --blue: var(--municipal-petroleo);
-  font-family: "Neulis Sans", "Poppins", sans-serif;
+  font-family: var(--municipal-font);
+  font-variant-numeric: tabular-nums;
   color: var(--ink);
-  background: #edf3f3;
+  background: var(--superficie);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -76,7 +80,7 @@ body:not(.twin-projection) select { font: inherit; }
 body:not(.twin-projection) button {
   border: 1px solid var(--border);
   border-radius: 12px;
-  background: linear-gradient(160deg, rgba(255, 255, 255, .84), rgba(255, 255, 255, .48));
+  background: var(--superficie);
   color: var(--ink);
   padding: 8px 13px;
   box-shadow: var(--glass-inset);
@@ -85,8 +89,8 @@ body:not(.twin-projection) button {
   transition: background .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 body:not(.twin-projection) button:hover {
-  background: rgba(255, 255, 255, .97);
-  border-color: rgba(0, 106, 133, .35);
+  background: var(--azul-10);
+  border-color: var(--azul-40);
   box-shadow: 0 3px 10px rgba(0, 106, 133, .09), var(--glass-inset);
 }
 body:not(.twin-projection) button:disabled {
@@ -108,13 +112,14 @@ body:not(.twin-projection) .primary:hover {
   color: white;
   box-shadow: 0 3px 10px rgba(0, 106, 133, .17), inset 0 1px 0 rgba(255, 255, 255, .13);
 }
+body:not(.twin-projection) .primary:hover { background: var(--azul-90); }
 
 /* The 56 px header sits outside the native gesture input area. */
 body:not(.twin-projection) .topbar {
   height: 56px;
   padding: 0 20px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .77));
-  border-bottom: 1px solid rgba(255, 255, 255, .95);
+  background: var(--superficie);
+  border-bottom: 1px solid var(--azul-20);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: 0 2px 16px rgba(0, 66, 82, .07);
@@ -123,18 +128,21 @@ body:not(.twin-projection) .topbar {
 }
 body:not(.twin-projection) .location { display: flex; align-items: center; }
 body:not(.twin-projection) .municipal-name {
-  font-size: 17px;
-  font-weight: 700;
-  letter-spacing: -.45px;
-  color: var(--municipal-petroleo);
+  display: block;
+  width: clamp(66px, 14vw, 106px);
+  aspect-ratio: 235 / 80;
+  background: var(--azul-100);
+  mask: url("/brand/la-reina-logo.png") center / contain no-repeat;
+  font-size: 0;
 }
 body:not(.twin-projection) #status { display: flex; font-size: 11px; color: var(--ink-secondary); white-space: nowrap; }
-body:not(.twin-projection) #status i { background: #8da4a9; }
+body:not(.twin-projection) #status i { background: var(--azul-50); }
 body:not(.twin-projection) #status.active i { background: var(--municipal-verde); }
 body:not(.twin-projection) #status.paused i { background: var(--municipal-morado); }
 body:not(.twin-projection) .topbar button { min-height: 40px; }
+body:not(.twin-projection) #companion-open { font-weight: 700; color: var(--azul-100); }
 body:not(.twin-projection) #help-open { min-width: 64px; font-weight: 600; }
-body:not(.twin-projection) #workspace { background: #eaf1ef; }
+body:not(.twin-projection) #workspace { background: var(--azul-10); }
 body:not(.twin-projection) .hint-pan { color: var(--municipal-morado); }
 body:not(.twin-projection) .hint-zoom { color: var(--municipal-petroleo); }
 
@@ -172,7 +180,7 @@ body:not(.twin-projection) #experience-mode-switcher button[aria-pressed="true"]
   color: white;
   box-shadow: 0 2px 7px rgba(0, 106, 133, .15);
 }
-body:not(.twin-projection) #experience-mode-switcher button[aria-pressed="false"]:hover { background: rgba(0, 106, 133, .07); }
+body:not(.twin-projection) #experience-mode-switcher button[aria-pressed="false"]:hover { background: var(--azul-10); }
 body:not(.twin-projection).content-open #experience-mode-switcher { visibility: hidden; pointer-events: none; }
 
 body:not(.twin-projection) .panel,
@@ -220,7 +228,7 @@ body:not(.twin-projection) #council-previous-session {
   background: #fff;
   color: var(--municipal-petroleo);
   box-shadow: none;
-  font-size: 10px;
+  font-size: 11px;
 }
 body:not(.twin-projection) #council-previous-session[aria-pressed="true"] { background: var(--municipal-petroleo); color: #fff; }
 body:not(.twin-projection) #council-previous-session.gesture-target { outline: 2px solid var(--municipal-petroleo); outline-offset: 2px; }
@@ -229,13 +237,14 @@ body:not(.twin-projection) #council-previous-session.gesture-target { outline: 2
   body:not(.twin-projection) .map-intro h1 { font-size: 16px; }
 }
 body:not(.twin-projection) .map-intro p { margin: 0; color: var(--ink-secondary); font-size: 12px; line-height: 1.45; }
-body:not(.twin-projection) .map-intro .map-intro-label { color: var(--municipal-petroleo); font-size: 10px; font-weight: 600; }
+body:not(.twin-projection) .map-intro .map-intro-label { color: var(--municipal-petroleo); font-size: 11px; font-weight: 600; }
 body:not(.twin-projection) .council-agenda-current {
   flex: none;
   padding: 10px 11px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--tema-20, var(--border));
+  border-inline-start: 3px solid var(--tema-100, var(--azul-100));
   border-radius: 8px;
-  background: #f5f8f9;
+  background: var(--tema-10, var(--azul-10));
 }
 body:not(.twin-projection) .council-agenda-meta {
   display: flex;
@@ -253,9 +262,9 @@ body:not(.twin-projection) .council-agenda-priority {
   padding: 1px 6px;
   border: 1px solid currentColor;
   border-radius: 4px;
-  font-size: 10px;
+  font-size: 11px;
 }
-body:not(.twin-projection) .council-agenda-priority[data-priority="urgente"] { color: var(--municipal-morado); }
+body:not(.twin-projection) .council-agenda-priority[data-priority="urgente"] { color: var(--morado-100); }
 body:not(.twin-projection) .council-agenda-priority[data-priority="programado"] { color: var(--ink-secondary); }
 body:not(.twin-projection) .council-agenda-topic {
   margin: 5px 0 4px;
@@ -304,7 +313,7 @@ body:not(.twin-projection) .council-agenda-choice {
 body:not(.twin-projection) .council-agenda-choice:hover,
 body:not(.twin-projection) .council-agenda-choice[aria-current="true"] {
   border-color: var(--border);
-  background: #edf6f6;
+  background: var(--tema-10, var(--azul-10));
   box-shadow: none;
 }
 body:not(.twin-projection) .council-agenda-choice time {
@@ -316,7 +325,7 @@ body:not(.twin-projection) .council-agenda-name { font-size: 12px; line-height: 
 body:not(.twin-projection) .council-agenda-choice[aria-current="true"] .council-agenda-name { font-weight: 700; }
 body:not(.twin-projection) .council-agenda-choice-state {
   color: var(--ink-secondary);
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 body:not(.twin-projection) .council-agenda-nav {
@@ -368,8 +377,8 @@ body:not(.twin-projection) .panel-heading {
   font-weight: 600;
   padding: 9px 12px;
 }
-body:not(.twin-projection) .video-frame { background: #163d46; }
-body:not(.twin-projection) .preview-state { background: #edf3f3; color: var(--ink-secondary); }
+body:not(.twin-projection) .video-frame { background: var(--azul-100); }
+body:not(.twin-projection) .preview-state { background: var(--azul-10); color: var(--ink-secondary); }
 body:not(.twin-projection) .preview-footer { color: var(--ink-secondary); font-size: 10px; padding: 6px 12px; }
 body:not(.twin-projection) .map-tools {
   top: 18px;
@@ -390,7 +399,7 @@ body:not(.twin-projection) .map-tools button {
   padding: 0;
 }
 body:not(.twin-projection) .map-tools button + button { border-top: 0; }
-body:not(.twin-projection) .map-tools button:hover { background: rgba(0, 106, 133, .08); }
+body:not(.twin-projection) .map-tools button:hover { background: var(--azul-10); }
 body:not(.twin-projection) #notice { padding: 12px 18px; bottom: 20px; color: var(--ink); line-height: 1.5; }
 
 /* Keep the map key compact and separate from interactive controls. */
@@ -430,9 +439,9 @@ body:not(.twin-projection) .map-category-legend-number {
   min-height: 17px;
   border-left: 2px solid var(--category-color);
   border-radius: 3px;
-  background: color-mix(in srgb, var(--category-color) 16%, white);
+  background: var(--tema-20);
   color: var(--ink);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 700;
 }
 body:not(.twin-projection) .sequence-marker:focus-visible {
@@ -444,23 +453,23 @@ body:not(.twin-projection) .leaflet-container { font-family: inherit; }
 body:not(.twin-projection) .leaflet-container a { color: var(--municipal-petroleo); }
 body:not(.twin-projection) .leaflet-control-attribution {
   color: var(--ink-secondary);
-  background: linear-gradient(135deg, rgba(255, 255, 255, .94), rgba(255, 255, 255, .88));
+  background: var(--superficie);
   border-radius: 7px 0 0 0;
   padding: 3px 7px;
-  font-size: 9px !important;
+  font-size: 11px !important;
 }
 body:not(.twin-projection) .leaflet-popup-content-wrapper {
-  background: rgba(255, 255, 255, .94);
+  background: var(--superficie);
   color: var(--ink);
-  border: 1px solid rgba(255, 255, 255, .9);
+  border: 1px solid var(--azul-20);
   border-radius: 16px;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
 }
-body:not(.twin-projection) .leaflet-popup-tip { background: rgba(255, 255, 255, .96); box-shadow: none; }
+body:not(.twin-projection) .leaflet-popup-tip { background: var(--superficie); box-shadow: none; }
 body:not(.twin-projection) .leaflet-popup-content { margin: 16px 20px; line-height: 1.6; }
-body:not(.twin-projection) .demo-popup strong { font-size: 14px; color: var(--municipal-petroleo); }
+body:not(.twin-projection) .demo-popup strong { font-size: 14px; color: var(--tema-texto, var(--azul-100)); }
 body:not(.twin-projection) .demo-popup p { color: var(--ink-secondary); }
 
 /* Graphic pages keep their original white artwork; only navigation is glass. */
@@ -469,8 +478,8 @@ body:not(.twin-projection) .content-heading {
   position: absolute;
   inset: 0 0 auto;
   padding: 17px 165px 13px 24px;
-  background: #f3f9f9;
-  border-bottom: 1px solid #dce7e8;
+  background: var(--tema-10);
+  border-bottom: 1px solid var(--tema-20);
   pointer-events: none;
 }
 body:not(.twin-projection) .content-heading h1 {
@@ -480,7 +489,7 @@ body:not(.twin-projection) .content-heading h1 {
   line-height: 1.25;
   letter-spacing: -.35px;
 }
-body:not(.twin-projection) .content-topic { margin: 0; color: var(--municipal-morado); font-size: 11px; font-weight: 600; }
+body:not(.twin-projection) .content-topic { margin: 0; color: var(--tema-texto); font-size: 11px; font-weight: 600; }
 body:not(.twin-projection) .content-page-status {
   position: static;
   width: auto;
@@ -503,8 +512,8 @@ body:not(.twin-projection) .content-control {
   height: 56px;
   padding: 0;
   color: var(--municipal-petroleo);
-  background: linear-gradient(145deg, rgba(255, 255, 255, .92), rgba(255, 255, 255, .72));
-  border: 1px solid rgba(0, 106, 133, .15);
+  background: var(--superficie);
+  border: 1px solid var(--azul-20);
   border-radius: 17px;
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
@@ -535,14 +544,14 @@ body:not(.twin-projection) .content-zoom {
   display: flex;
   gap: 5px;
   padding: 4px;
-  border: 1px solid #dce7e8;
+  border: 1px solid var(--azul-20);
   border-radius: 13px;
-  background: #f3f9f9;
+  background: var(--azul-10);
 }
 body:not(.twin-projection) .content-zoom .content-control { position: static; transform: none; width: 44px; height: 44px; border-radius: 9px; }
 body:not(.twin-projection) #content-fit { width: 74px; }
 body:not(.twin-projection) #content-fit .content-control-symbol { font-size: 11px; font-weight: 600; }
-body:not(.twin-projection) .content-control:hover { background: #f2f9f9; }
+body:not(.twin-projection) .content-control:hover { background: var(--azul-10); }
 body:not(.twin-projection) .content-control.gesture-target,
 body:not(.twin-projection) #map-graphics-shortcut.gesture-target,
 body:not(.twin-projection) .council-agenda-nav button.gesture-target,
@@ -575,7 +584,7 @@ body:not(.twin-projection) dialog {
   padding: 25px;
   border: 1px solid var(--glass-border);
   border-radius: 24px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, .95), rgba(245, 251, 251, .89));
+  background: var(--superficie);
   color: var(--ink);
   -webkit-backdrop-filter: var(--glass-blur);
   backdrop-filter: var(--glass-blur);
@@ -764,6 +773,14 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection) .traffic-note { margin-top: 10px; }
 }
 @media (max-width: 760px) {
+  body:not(.twin-projection) .topbar { gap: 8px; }
+  body:not(.twin-projection) .topbar nav { gap: 5px; }
+  body:not(.twin-projection) #companion-open { max-width: 170px; padding-inline: 8px; white-space: normal; line-height: 1.25; }
+  body:not(.twin-projection) .content-stage { inset: 125px 70px 70px; }
+  body:not(.twin-projection) #content-previous,
+  body:not(.twin-projection) #content-next { width: 58px; }
+  body:not(.twin-projection) #content-previous { left: 6px; }
+  body:not(.twin-projection) #content-next { right: 6px; }
   body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
     top: 76px;
     max-height: calc(100% - 142px);

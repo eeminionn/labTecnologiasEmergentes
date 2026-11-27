@@ -13,13 +13,13 @@
         <span id="status" role="status"><i></i> Gestos desactivados</span>
         <button id="pause-gestures" type="button" hidden>Pausar gestos</button>
         <button id="camera-toggle" class="primary" type="button">Activar gestos</button>
-        <button id="companion-open" type="button" title="Abrir ficha técnica en otra ventana">Ficha técnica ↗</button>
-        <button id="settings-open">Ajustes</button>
+        <button id="companion-open" type="button" title="Abrir información complementaria en otra ventana">Información complementaria <span aria-hidden="true">↗</span></button>
+        <button id="settings-open" type="button" title="Ajustes de cámara y mapa">Ajustes</button>
         <button id="help-open" type="button">Ayuda</button>
       </nav>
     </header>
     <main id="workspace">
-      <aside id="experience-mode-switcher" aria-label="Modo de visualización">
+      <aside id="experience-mode-switcher" aria-label="Vistas del mapa">
         <button id="mode-map" type="button" aria-pressed="true">Mapa</button>
         <button id="mode-experiences" type="button" aria-pressed="false" hidden>Experiencias</button>
         <button id="mode-analysis" type="button" aria-pressed="false" disabled>Análisis</button>
@@ -34,7 +34,7 @@
         </div>
         <div class="council-agenda-current" aria-live="polite" aria-atomic="true">
           <div class="council-agenda-meta">
-            <span>En curso</span>
+            <span>Tema en curso</span>
             <time id="council-current-time"></time>
             <span id="council-current-priority" class="council-agenda-priority"></span>
           </div>
@@ -85,14 +85,14 @@
         <label>Cámara para gestos<select id="camera-select" aria-describedby="camera-device-note" autofocus><option value="">Cámara predeterminada</option></select></label>
         <p id="camera-device-note" class="field-note" role="status"></p>
         <details class="settings-details" id="settings-framing">
-          <summary>Ajustar encuadre</summary>
+          <summary>Encuadre de cámara</summary>
           <div class="settings-details-body">
             <p class="field-note">Si el puntero se mueve al revés, cambia el reflejo. Si la imagen se ve de lado, gírala.</p>
             <div class="row"><label><input id="mirror" type="checkbox" /> Reflejar imagen</label><label>Giro de la imagen<select id="rotation"><option value="0">0°</option><option value="90">90°</option><option value="180">180°</option><option value="270">270°</option></select></label></div>
           </div>
         </details>
         <details class="settings-details" id="settings-advanced">
-          <summary>Opciones avanzadas</summary>
+          <summary>Imagen y gestos</summary>
           <div class="settings-details-body">
             <label><input id="camera-auto" type="checkbox" /> Preferir exposición y enfoque continuos</label>
             <div id="camera-controls">
@@ -102,18 +102,24 @@
             </div>
             <p id="camera-controls-note" class="field-note"></p>
             <label>Sensibilidad de los gestos<select id="confidence"><option value="0.7">Equilibrada</option><option value="0.8">Menos sensible</option><option value="0.6">Más sensible</option></select></label>
-            <label>Proveedor del mapa<select id="provider"><option value="osm">OpenStreetMap</option><option value="google">Google Maps</option></select></label>
-            <p class="field-note">Cambiar de proveedor recarga la aplicación.</p>
-            <div id="google-options" hidden>
-              <label id="key-label">Clave de Google Maps<input id="google-key" type="password" autocomplete="off" /></label>
-              <p class="field-note">Google Maps requiere Maps JavaScript API y facturación. La clave se guarda en este equipo. El origen permitido es http://127.0.0.1:47831/*.</p>
-            </div>
             <details class="tracking-details"><summary>Diagnóstico de gestos</summary>
               <div class="metrics"><span id="latency-metric">— ms</span><span id="fps-metric">— FPS</span></div>
               <div class="metrics"><span id="quality-metric">Iluminación: —</span></div>
-              <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics" type="button">Exportar sesión</button></div>
-              <div class="metrics"><button id="mark-false-click" type="button">Marcar falso clic</button><span id="false-click-count">0 marcados</span></div>
+              <div class="metrics"><span id="gesture-metric">En reposo</span><button id="export-metrics" type="button">Guardar informe de gestos</button></div>
+              <div class="metrics"><button id="mark-false-click" type="button">Registrar clic involuntario</button><span id="false-click-count">0 marcados</span></div>
             </details>
+          </div>
+        </details>
+        <details class="settings-details" id="settings-map">
+          <summary>Mapa base</summary>
+          <div class="settings-details-body">
+            <label>Proveedor<select id="provider"><option value="osm">OpenStreetMap</option><option value="google">Google Maps</option></select></label>
+            <p class="field-note">El mapa se vuelve a abrir al guardar el cambio de proveedor.</p>
+            <div id="google-options" hidden>
+              <label id="key-label">Clave de Google Maps<input id="google-key" type="password" autocomplete="off" /></label>
+              <p class="field-note">La clave queda guardada en este equipo.</p>
+              <details><summary>Requisitos de la clave</summary><p class="field-note">Activa Maps JavaScript API y facturación. Autoriza el origen <code>http://127.0.0.1:47831/*</code>.</p></details>
+            </div>
             <button id="reset-sequence" type="button">Reiniciar recorrido por los puntos</button>
           </div>
         </details>
@@ -122,14 +128,14 @@
     </dialog>
     <dialog id="help" aria-labelledby="help-title">
       <div class="dialog-heading"><h1 id="help-title">Ayuda</h1><button id="help-close" type="button" aria-label="Cerrar ayuda">×</button></div>
-      <section id="help-web" hidden aria-labelledby="help-web-title">
-        <h2 id="help-web-title">Navegar con mouse o teclado</h2>
+      <section aria-labelledby="help-controls-title">
+        <h2 id="help-controls-title">Usar el mapa</h2>
         <ul class="gesture-guide">
-          <li><strong>Mapa</strong><p>Arrastra para recorrer La Reina. Usa + y − para cambiar la escala y selecciona un pin para revisar su tema.</p></li>
-          <li><strong>Análisis</strong><p>Elige una categoría y filtra por período o unidad vecinal. Puedes comparar consultas y simular una inversión.</p></li>
-          <li><strong>Ficha técnica</strong><p>Consulta el detalle en esta página y vuelve al mapa con tu selección intacta. Para verla mientras navegas, usa «Abrir en otra pestaña».</p></li>
+          <li><strong>Mapa</strong><p>Arrastra para moverte, usa + y − para acercar o alejar y selecciona un pin para ver su tema.</p></li>
+          <li><strong>Análisis</strong><p>Elige qué ver y ajusta el período o el área. Señala un sector o marcador para consultar su detalle.</p></li>
+          <li><strong>Información complementaria</strong><p id="help-companion">Se abre en otra ventana y se actualiza con lo que seleccionas en el mapa.</p></li>
         </ul>
-        <p class="field-note"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Créditos de OpenStreetMap</a></p>
+        <p class="field-note">Con el teclado, usa Tab para recorrer los controles y Enter para seleccionarlos. Pulsa Esc para cerrar las opciones abiertas.</p>
       </section>
       <details class="settings-details" id="help-gestures">
         <summary>Control con las manos</summary>
@@ -146,8 +152,8 @@
       <details class="settings-details" id="help-native-sources">
         <summary>Fuentes y privacidad</summary>
         <div class="settings-details-body">
-          <p class="field-note">Los puntos del concejo son de referencia y los gráficos pertenecen al material del equipo. La cámara se procesa en este equipo. El mapa base necesita Internet.</p>
-          <p class="field-note"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> · <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noreferrer">Términos de Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Privacidad de Google</a></p>
+          <p class="field-note">El mapa base necesita Internet. <span id="help-camera-privacy">La imagen de la cámara se procesa en este equipo.</span></p>
+          <p class="field-note"><a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">Créditos de OpenStreetMap</a><span id="help-google-sources"> · <a href="https://maps.google.com/help/terms_maps/" target="_blank" rel="noreferrer">Términos de Google Maps</a> · <a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Privacidad de Google</a></span></p>
         </div>
       </details>
     </dialog>

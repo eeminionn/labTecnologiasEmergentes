@@ -7,7 +7,7 @@ import { MAP_TOPICS } from './map-topics.js';
 import { assetUrl } from './asset-url.js';
 
 const boundary = JSON.parse(boundaryText);
-const boundaryStyle = { color: '#0f766e', weight: 3, opacity: .9, fillColor: '#0f766e', fillOpacity: .05 };
+const boundaryStyle = { color: '#006a85', weight: 1.8, opacity: .9, fillColor: '#006a85', fillOpacity: .04 };
 const boundaryCredit = 'Límite: SUBDERE · IDE Chile · DPA 2023';
 const circulationLegend = 'Autorizada su circulación por Resolución Nº50 del 2019 de la Dirección Nacional de Fronteras y Límites del Estado';
 const center = { lat: -33.442, lng: -70.536 };
@@ -24,6 +24,7 @@ const samples = MAP_TOPICS;
 
 const popup = item => {
   const div = document.createElement('div'); div.className = 'demo-popup';
+  div.dataset.theme = item.category;
   const heading = document.createElement('strong'); heading.textContent = item.title;
   const note = document.createElement('p'); note.textContent = item.description;
   div.append(heading, note); return div;
@@ -37,6 +38,7 @@ function addLegend(container) {
   const categories = isProjection ? categoryLegend : samples.map(item => categoryLegend.find(category => category.id === item.category));
   for (const [index, category] of categories.entries()) {
     const row = document.createElement('div'); row.className = 'map-category-legend-row';
+    row.dataset.theme = category.id;
     row.style.setProperty('--category-color', category.color);
     if (!isProjection) {
       const number = document.createElement('span');
@@ -134,6 +136,11 @@ function cameraLayerSpec(value) {
 function analysisPadding(container) {
   const padding = { top: 80, right: 70, bottom: 70, left: container.clientWidth <= 1000 ? 280 : 318 };
   const outer = container.getBoundingClientRect();
+  if (outer.width <= 760) {
+    const panels = [...container.querySelectorAll('.analysis-panel:not([hidden])')];
+    const topOfPanels = Math.min(outer.bottom, ...panels.map(panel => panel.getBoundingClientRect().top));
+    return { top: 68, right: 50, bottom: outer.bottom - topOfPanels + 8, left: 12 };
+  }
   for (const side of ['left', 'right']) {
     const panel = container.querySelector(`.analysis-panel[data-side="${side}"]:not([hidden])`);
     if (!panel) continue;
@@ -179,7 +186,7 @@ export async function createMap(container, config, notify, providerChanged = () 
       return () => { if (mapSubscriptions.delete(subscription)) subscription.unsubscribe?.(); };
     };
     let initializationFailed = false;
-    const failureMessage = 'Google Maps no está disponible. Revisa la API key, Maps JavaScript API y facturación. Se muestra OpenStreetMap.';
+    const failureMessage = 'Google Maps no está disponible. Puedes seguir usando el mapa con OpenStreetMap.';
     try {
       current = await googleMap(container, config.googleKey, () => {
         initializationFailed = true;
@@ -236,7 +243,7 @@ export async function createMap(container, config, notify, providerChanged = () 
         info: () => current.info(), targets: () => current.targets()
       };
     } catch { container.replaceChildren(); notify(failureMessage); }
-  } else if (config.provider === 'google') notify('Configura una API key para usar Google Maps. Se muestra OpenStreetMap.');
+  } else if (config.provider === 'google') notify('Para usar Google Maps, añade una clave en Ajustes. Mientras tanto, se muestra OpenStreetMap.');
   return osmMap(container, notify, config.offline, sequence, onPointSelected);
 }
 
@@ -270,7 +277,7 @@ function osmMap(container, notify, offline = false, sequence, onPointSelected) {
   if (!offline) L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom, minZoom, updateWhenIdle: true, keepBuffer: 2,
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-  }).addTo(map).once('tileerror', () => notify('No se pudieron cargar algunas teselas. Comprueba la conexión a Internet.'));
+  }).addTo(map).once('tileerror', () => notify('Parte del mapa no se pudo cargar. Revisa la conexión a Internet.'));
   else container.style.background = 'repeating-linear-gradient(0deg,transparent 0 59px,#d1d9e0 60px),repeating-linear-gradient(90deg,#e9eef2 0 59px,#d1d9e0 60px)';
   map.attributionControl.addAttribution(`<span title="${circulationLegend}">${boundaryCredit}</span>`);
   const outline = L.geoJSON(boundary, { style: boundaryStyle, interactive: false }).addTo(map);
@@ -466,7 +473,6 @@ async function googleMap(container, key, onFatal, notify, sequence, onPointSelec
     onError: () => notify('No se pudo mostrar el mapa de calor.')
   });
   let cameraSpec = null, cameraGround = null, cameraLoaded = false, cameraImage = null;
-  map.addListener('renderingtype_changed', () => { if (map.getRenderingType() === 'RASTER') notify('Este equipo usa Google Maps raster. El zoom puede tener menos fluidez que el mapa vectorial.'); });
   const features = map.data.addGeoJson(boundary);
   map.data.setStyle({ strokeColor: boundaryStyle.color, strokeWeight: boundaryStyle.weight, strokeOpacity: boundaryStyle.opacity, fillColor: boundaryStyle.fillColor, fillOpacity: boundaryStyle.fillOpacity, clickable: false });
   const bounds = new google.maps.LatLngBounds(

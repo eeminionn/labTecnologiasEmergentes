@@ -31,7 +31,7 @@ function createCompanionWindow(parent, origin) {
   }
 
   async function open({ focus = false } = {}) {
-    if (parent.isDestroyed()) return;
+    if (parent.isDestroyed()) return false;
     if (opening) {
       try { await opening; }
       catch { return false; }
@@ -40,11 +40,11 @@ function createCompanionWindow(parent, origin) {
       if (window.isMinimized()) window.restore();
       if (focus) { window.show(); window.focus(); }
       else if (parent.isVisible()) window.showInactive();
-      return;
+      return true;
     }
     const next = new BrowserWindow({
       ...bounds(), minWidth: 900, minHeight: 650, useContentSize: true, show: false,
-      title: 'Ficha técnica · La Reina', backgroundColor: '#006a85',
+      title: 'Información complementaria · La Reina', backgroundColor: '#006a85',
       webPreferences: {
         preload: path.join(__dirname, 'companion-preload.cjs'),
         contextIsolation: true, nodeIntegration: false, sandbox: true
@@ -61,7 +61,7 @@ function createCompanionWindow(parent, origin) {
     opening = next.loadURL(origin + '/companion.html');
     try {
       await opening;
-      if (next.isDestroyed()) return;
+      if (next.isDestroyed()) return false;
       if (focus) { next.show(); next.focus(); }
       else if (parent.isVisible()) next.showInactive();
       return true;
@@ -84,10 +84,9 @@ function createCompanionWindow(parent, origin) {
   };
   ipcMain.on('companion-current-session', showCurrentSession);
   ipcMain.handle('companion-state-request', event => fromCompanion(event.sender) ? state : null);
-  ipcMain.handle('companion-open', async event => {
+  ipcMain.handle('companion-open', (event, focus) => {
     if (!fromMap(event.sender)) return false;
-    await open({ focus: true });
-    return true;
+    return open({ focus: focus !== false });
   });
   parent.webContents.on('did-start-navigation', (_event, _url, _inPlace, isMainFrame) => {
     if (isMainFrame) { state = { mode: 'idle' }; sendState(); }

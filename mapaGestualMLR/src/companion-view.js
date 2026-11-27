@@ -7,6 +7,7 @@ import { renderPreviousSession } from './previous-session-view.js';
 import { createRobberyShare } from './robbery-share-view.js';
 import { createCompanionTerritoryMap } from './companion-territory-map.js';
 import { renderCompanionResource } from './companion-resource-view.js';
+import { chartTint } from './companion-chart-tint.js';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
@@ -16,6 +17,7 @@ const date = value => value ? new Intl.DateTimeFormat('es-CL', { timeZone: 'UTC'
 const agendaViews = new WeakMap();
 const territorialViews = new WeakMap();
 const percentages = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 1 });
+const forecastPercentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
 const names = {
   security: ['robo', 'robos', 'Robos'],
   cameras: ['cámara', 'cámaras', 'Cámaras'],
@@ -34,10 +36,11 @@ function element(tag, className, text) {
   return node;
 }
 
-function metric(label, value, note) {
+function metric(label, value, note, { emphasized = false } = {}) {
   const node = element('div', 'companion-metric');
   node.append(element('dt', null, label), element('dd', null, value));
   if (note) node.append(element('small', null, note));
+  if (emphasized) node.dataset.emphasized = '';
   return node;
 }
 
@@ -78,18 +81,19 @@ function shell() {
 
 function budgetChart(budget) {
   const section = element('section', 'companion-forecast-breakdown');
+  section.dataset.theme = 'gobernanza';
   section.append(element('h3', null, 'Distribución de la inversión'));
   const list = element('dl', 'companion-cost-chart');
   const largest = Math.max(1, ...budget.breakdown.map(item => item.value));
   for (const item of budget.breakdown) {
     const row = element('div', 'companion-cost-row');
-    row.dataset.category = item.key;
     const label = element('dt', null, item.label);
     const value = element('dd', null, money.format(item.value));
     const track = element('div', 'companion-cost-track');
     track.setAttribute('aria-hidden', 'true');
     const fill = element('span');
     fill.style.width = `${item.value / largest * 100}%`;
+    fill.style.setProperty('--chart-fill', chartTint(item.value, largest));
     track.append(fill);
     row.append(label, value, track);
     list.append(row);
@@ -195,6 +199,7 @@ function agendaView(root, state) {
     const row = element('li');
     const status = topic.status || (index === agenda.index ? 'current' : index < agenda.index ? 'reviewed' : 'pending');
     row.dataset.status = status;
+    if (agendaPriorities[topic.priority]) row.dataset.priority = topic.priority;
     if (index === agenda.index) row.setAttribute('aria-current', 'step');
     const time = element('time', null, topic.time);
     time.dateTime = topic.time || '';
@@ -209,7 +214,7 @@ function agendaView(root, state) {
   const pointList = element('ol', 'companion-map-themes');
   points.forEach(point => {
     const row = element('li', 'companion-map-theme');
-    row.dataset.category = point.category || '';
+    row.dataset.theme = point.category || '';
     if (point.id === state.selectedPointId) row.dataset.selected = 'true';
     const content = element('div');
     content.append(element('h3', null, point.title), element('p', null, point.description || ''));
@@ -273,6 +278,7 @@ function forecastDetails(state) {
   const budget = buildInvestmentSummary(placements);
   const content = card('Presupuesto del escenario');
   content.classList.add('companion-forecast-details');
+  content.dataset.theme = 'gobernanza';
   if (forecast.error || forecast.ready === false) {
     content.append(element('p', null, forecast.error ? 'Proyección no disponible' : 'Preparando la estimación…'));
     return content;
@@ -280,16 +286,17 @@ function forecastDetails(state) {
   const metrics = element('dl', 'companion-forecast-metrics');
   metrics.append(metric('Inversión inicial', money.format(budget.initial), inUF(budget.initial)),
     metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
-    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear)));
+    metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear), { emphasized: true }));
   content.append(element('p', 'companion-analysis-note',
     `${formatCount(budget.counts.camera, 'cameras')} · ${formatCount(budget.counts.fixed, 'fixed')}`), metrics);
   if (Number.isFinite(forecast.baselineTotal) && Number.isFinite(forecast.scenarioTotal)) {
     const comparison = element('section', 'companion-forecast-estimates');
+    comparison.dataset.theme = 'seguridad';
     comparison.append(element('h3', null, 'Robos estimados en la comuna'));
     const totals = element('dl', 'companion-forecast-metrics');
-    totals.append(metric(forecast.showAfter ? 'Antes' : 'Antes · En el mapa', number.format(Math.round(forecast.baselineTotal))),
-      metric(forecast.showAfter ? 'Con inversión · En el mapa' : 'Con inversión', number.format(Math.round(forecast.scenarioTotal))),
-      metric('Variación', percentages.format(forecast.reduction ? -forecast.reduction : 0)));
+    totals.append(metric(forecast.showAfter ? 'Antes' : 'Antes · En el mapa', number.format(Math.round(forecast.baselineTotal)), null, { emphasized: !forecast.showAfter }),
+      metric(forecast.showAfter ? 'Con inversión · En el mapa' : 'Con inversión', number.format(Math.round(forecast.scenarioTotal)), null, { emphasized: forecast.showAfter }),
+      metric('Variación', forecastPercentage.format(forecast.reduction ? -forecast.reduction : 0)));
     comparison.append(totals);
     if (forecast.local?.id && Number.isFinite(forecast.local.baseline) && Number.isFinite(forecast.local.scenario)) {
       comparison.append(element('p', 'companion-analysis-note',
@@ -313,6 +320,7 @@ function resultsCard(layers, { compact = false } = {}) {
   for (const { kind, title, summary = {}, ready, error, period, filterLabels = [], display, opacity } of layers) {
     const result = element('div', 'companion-layer-result');
     result.dataset.kind = kind;
+    result.dataset.theme = 'seguridad';
     const main = element('div', 'companion-layer-result-main');
     const category = compact ? names[kind]?.[2] || title : title || names[kind]?.[2];
     main.append(element('h3', null, category || 'Registros'),
@@ -346,6 +354,7 @@ function crossCard(cross, scopeCount, { compact = false } = {}) {
   const rows = selectedRows.slice(0, 3);
   if (withoutEquipment && !rows.some(row => row.id === withoutEquipment.id)) rows[rows.length - 1] = withoutEquipment;
   const section = element('section', 'companion-cross-summary');
+  section.dataset.theme = 'seguridad';
   section.append(element('h2', null, 'Cruce por cuadrante'));
   const label = layer => names[layer.kind]?.[2] || layer.kind;
   if (cross.contextual) section.append(element('p', 'companion-cross-context',
@@ -381,17 +390,24 @@ function crossCard(cross, scopeCount, { compact = false } = {}) {
     const maxima = axes.map(([key]) => Math.max(1, ...rows.map(row => row[key])));
     for (const row of rows) {
       const tr = element('tr');
-      if (row.id === withoutEquipment?.id) tr.dataset.priority = 'true';
+      const isPriority = row.id === withoutEquipment?.id;
+      if (isPriority) tr.dataset.priority = 'true';
       const heading = element('th', null, row.id);
+      if (isPriority) heading.append(element('span', 'companion-cross-priority', 'Sin equipamiento'));
       heading.scope = 'row';
       tr.append(heading);
       axes.forEach(([key, kind], index) => {
         const cell = element('td', 'companion-cross-value');
         cell.dataset.kind = kind;
+        const values = element('div', 'companion-cross-cell-content');
+        const track = element('span', 'companion-cross-track');
+        track.setAttribute('aria-hidden', 'true');
         const fill = element('span');
-        fill.setAttribute('aria-hidden', 'true');
         fill.style.width = `${100 * row[key] / maxima[index]}%`;
-        cell.append(fill, element('strong', null, number.format(row[key])));
+        fill.style.setProperty('--chart-fill', chartTint(row[key], maxima[index]));
+        track.append(fill);
+        values.append(track, element('strong', null, number.format(row[key])));
+        cell.append(values);
         tr.append(cell);
       });
       body.append(tr);

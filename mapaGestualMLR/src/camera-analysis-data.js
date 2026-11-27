@@ -9,10 +9,11 @@ const STATES = Object.freeze({ operational: 'Operativa', maintenance: 'Mantenci√
 const TYPES = Object.freeze({ domo: 'Domo', fija: 'Fija', lectora: 'Lectora de patentes' });
 const EARTH_RADIUS = 6371008.8;
 
+// Escala institucional en azul y celeste para distinguir c√°maras al cruzar mapas de calor.
 export const CAMERA_HEAT_COLOR_STOPS = Object.freeze([
-  Object.freeze({ value: 0, color: Object.freeze([67, 217, 255]) }),
-  Object.freeze({ value: .55, color: Object.freeze([22, 174, 255]) }),
-  Object.freeze({ value: 1, color: Object.freeze([0, 102, 255]) })
+  Object.freeze({ value: 0, color: Object.freeze([230, 247, 247]) }),
+  Object.freeze({ value: .55, color: Object.freeze([0, 173, 178]) }),
+  Object.freeze({ value: 1, color: Object.freeze([0, 106, 133]) })
 ]);
 
 function csvRows(text) {

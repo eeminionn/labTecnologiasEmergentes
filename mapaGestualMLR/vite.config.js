@@ -17,6 +17,9 @@ export default defineConfig(({ mode }) => {
     },
     plugins: web ? [{
       name: 'mlr-web-public-assets',
+      transformIndexHtml() {
+        return [{ tag: 'link', attrs: { rel: 'stylesheet', href: 'https://use.typekit.net/mwn3efg.css' }, injectTo: 'head' }];
+      },
       async writeBundle({ dir }) {
         const assets = webPublicFolders.map(folder =>
           cp(fileURLToPath(new URL(`./public/${folder}`, import.meta.url)), resolve(dir, folder), { recursive: true }));

@@ -1,0 +1,124 @@
+/* Valores del Manual gráfico · Visualización Municipal, noviembre de 2026. */
+:root {
+  --azul-100: #006a85;
+  --azul-90: #197991;
+  --azul-80: #33889d;
+  --azul-70: #4d97aa;
+  --azul-60: #66a6b6;
+  --azul-50: #80b4c2;
+  --azul-40: #99c3ce;
+  --azul-30: #b2d2da;
+  --azul-20: #cce1e7;
+  --azul-10: #e6f0f3;
+
+  --celeste-100: #00adb2;
+  --celeste-90: #19b5ba;
+  --celeste-80: #33bdc1;
+  --celeste-70: #4dc6c9;
+  --celeste-60: #66ced1;
+  --celeste-50: #80d6d8;
+  --celeste-40: #99dee0;
+  --celeste-30: #b2e6e8;
+  --celeste-20: #cceff0;
+  --celeste-10: #e6f7f7;
+
+  --morado-100: #6e2663;
+  --morado-90: #7c3c73;
+  --morado-80: #8b5182;
+  --morado-70: #9a6792;
+  --morado-60: #a87da1;
+  --morado-50: #b692b1;
+  --morado-40: #c5a8c1;
+  --morado-30: #d4bed0;
+  --morado-20: #e2d4e0;
+  --morado-10: #f0e9ef;
+
+  --rosado-100: #e82d81;
+  --rosado-90: #ea428e;
+  --rosado-80: #ed579a;
+  --rosado-70: #ef6ca7;
+  --rosado-60: #f181b3;
+  --rosado-50: #f496c0;
+  --rosado-40: #f6abcd;
+  --rosado-30: #f8c0d9;
+  --rosado-20: #fad5e6;
+  --rosado-10: #fdeaf2;
+
+  --verde-100: #008d36;
+  --verde-90: #19984a;
+  --verde-80: #33a45e;
+  --verde-70: #4daf72;
+  --verde-60: #66bb86;
+  --verde-50: #80c69a;
+  --verde-40: #99d1af;
+  --verde-30: #b2ddc3;
+  --verde-20: #cce8d7;
+  --verde-10: #e6f4eb;
+
+  --verde-claro-100: #afc439;
+  --verde-claro-90: #b7ca4d;
+  --verde-claro-80: #bfd061;
+  --verde-claro-70: #c7d674;
+  --verde-claro-60: #cfdc88;
+  --verde-claro-50: #d7e29c;
+  --verde-claro-40: #dfe7b0;
+  --verde-claro-30: #e7edc4;
+  --verde-claro-20: #eff3d7;
+  --verde-claro-10: #f7f9eb;
+
+  --superficie: #fff;
+  --tinta: #1f1f1f;
+  --tinta-suave: #5c6168;
+  --municipal-font: "neulis-sans", "Neulis Sans", "Poppins", system-ui, sans-serif;
+  --municipal-petroleo: var(--azul-100);
+  --municipal-turquesa: var(--celeste-100);
+  --municipal-morado: var(--morado-100);
+  --municipal-verde: var(--verde-100);
+  --municipal-lima: var(--verde-claro-100);
+  --municipal-fucsia: var(--rosado-100);
+}
+
+[data-theme="seguridad"] {
+  --tema-100: var(--rosado-100);
+  --tema-90: var(--rosado-90);
+  --tema-80: var(--rosado-80);
+  --tema-70: var(--rosado-70);
+  --tema-60: var(--rosado-60);
+  --tema-50: var(--rosado-50);
+  --tema-40: var(--rosado-40);
+  --tema-30: var(--rosado-30);
+  --tema-20: var(--rosado-20);
+  --tema-10: var(--rosado-10);
+  --tema-texto: #c5266e;
+  --tema-letra: var(--superficie);
+}
+
+[data-theme="gobernanza"] {
+  --tema-100: var(--celeste-100);
+  --tema-90: var(--celeste-90);
+  --tema-80: var(--celeste-80);
+  --tema-70: var(--celeste-70);
+  --tema-60: var(--celeste-60);
+  --tema-50: var(--celeste-50);
+  --tema-40: var(--celeste-40);
+  --tema-30: var(--celeste-30);
+  --tema-20: var(--celeste-20);
+  --tema-10: var(--celeste-10);
+  --tema-texto: #00797d;
+  --tema-letra: var(--tinta);
+}
+
+[data-theme="territorio"] {
+  --tema-100: var(--verde-claro-100);
+  --tema-90: var(--verde-claro-90);
+  --tema-80: var(--verde-claro-80);
+  --tema-70: var(--verde-claro-70);
+  --tema-60: var(--verde-claro-60);
+  --tema-50: var(--verde-claro-50);
+  --tema-40: var(--verde-claro-40);
+  --tema-30: var(--verde-claro-30);
+  --tema-20: var(--verde-claro-20);
+  --tema-10: var(--verde-claro-10);
+  --tema-texto: #697622;
+  --tema-letra: var(--tinta);
+}

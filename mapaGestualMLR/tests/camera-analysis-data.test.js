@@ -110,10 +110,10 @@ test('La consulta vacía no sugiere una cámara y las coordenadas no se conviert
   assert.throws(() => index.query({ lng: NaN, lat: -33.45 }));
 });
 
-test('La rampa mantiene un azul eléctrico continuo y funciona con la superficie geográfica existente', () => {
-  assert.deepEqual(cameraHeatColor(0), [67, 217, 255]);
-  assert.deepEqual(cameraHeatColor(.55), [22, 174, 255]);
-  assert.deepEqual(cameraHeatColor(1), [0, 102, 255]);
+test('La rampa institucional azul y celeste es continua sobre la superficie geográfica', () => {
+  assert.deepEqual(cameraHeatColor(0), [230, 247, 247]);
+  assert.deepEqual(cameraHeatColor(.55), [0, 173, 178]);
+  assert.deepEqual(cameraHeatColor(1), [0, 106, 133]);
   assert.deepEqual(cameraHeatColor(-1), cameraHeatColor(0));
   assert.deepEqual(cameraHeatColor(2), cameraHeatColor(1));
   assert.deepEqual(cameraHeatColor(NaN), cameraHeatColor(0));

@@ -14,7 +14,7 @@ body:not(.twin-projection) .council-timer-reading {
 }
 body:not(.twin-projection) #council-timer-label {
   color: var(--ink-secondary);
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.2;
 }
 body:not(.twin-projection) #council-timer-value {
@@ -42,7 +42,7 @@ body:not(.twin-projection) .council-timer-track {
   position: relative;
   height: 3px;
   grid-column: 1 / -1;
-  background: #e1ebed;
+  background: var(--azul-20);
 }
 body:not(.twin-projection) #council-timer-seek {
   position: absolute;
@@ -79,7 +79,10 @@ body:not(.twin-projection) #council-timer-fill {
   background: var(--municipal-petroleo);
 }
 body:not(.twin-projection) .council-topic-timer[data-overtime="true"] #council-timer-value {
-  color: var(--municipal-morado);
+  color: var(--morado-100);
+}
+body:not(.twin-projection) .council-topic-timer[data-overtime="true"] #council-timer-fill {
+  background: var(--rosado-100);
 }
 body:not(.twin-projection) .council-timer-notice {
   position: absolute;

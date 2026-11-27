@@ -239,12 +239,12 @@ export function createResourceMarkers(container, { map, onSelect = () => {}, onH
       const entry = markers.get(id) || addMarker(id, record);
       entry.record = record;
       const count = record.activations;
-      const usage = Number.isInteger(count) ? ` · ${count} ${count === 1 ? 'pulsación' : 'pulsaciones'} de referencia` : '';
+      const usage = Number.isInteger(count) ? ` · ${count} ${count === 1 ? 'pulsación' : 'pulsaciones'}` : '';
       const monitoring = MONITORING_STATUS_LABELS[record.monitoringStatus];
       const detail = record.rank ? ` · Puesto ${record.rank}` : monitoring ? ` · ${monitoring}` : '';
       const scope = record.outsideArea ? ' · Fuera del área seleccionada' : '';
       entry.element.setAttribute('aria-label', `${record.title} · ${record.address}${usage}${detail}${scope}`);
-      entry.badge.textContent = monitoring ? record.monitoringStatus === 'monitoreando' ? '✓' : '–' : '';
+      entry.badge.textContent = record.rank || (monitoring ? (record.monitoringStatus === 'monitoreando' ? '✓' : '–') : '');
       entry.badge.hidden = !entry.badge.textContent;
       entry.element.dataset.selected = String(id === selected);
       setScope(entry.element, record);

@@ -4,32 +4,32 @@ const priorities = { urgente: 'Urgente', prioritario: 'Prioritario', programado:
 
 const topics = [
   {
-    time: '09:00', priority: 'urgente', pointId: 'point-0',
+    time: '09:00', priority: 'urgente', theme: 'seguridad', pointId: 'point-0',
     title: 'Anegamientos y drenaje',
     description: 'Sectores afectados, desvíos y limpieza de sumideros.'
   },
   {
-    time: '09:20', priority: 'urgente',
+    time: '09:20', priority: 'urgente', theme: 'seguridad',
     title: 'Cámaras y casetas de seguridad',
     description: 'Cobertura actual y sectores que requieren refuerzo.'
   },
   {
-    time: '09:40', priority: 'prioritario', pointId: 'point-2',
+    time: '09:40', priority: 'prioritario', theme: 'territorio', pointId: 'point-2',
     title: 'Congestión en hora punta',
     description: 'Cruces con demoras y alternativas de circulación.'
   },
   {
-    time: '10:00', priority: 'prioritario',
+    time: '10:00', priority: 'prioritario', theme: 'territorio',
     title: 'Iluminación en cruces peatonales',
     description: 'Cruces con baja visibilidad y luminarias por renovar.'
   },
   {
-    time: '10:20', priority: 'programado',
+    time: '10:20', priority: 'programado', theme: 'territorio',
     title: 'Sombra en recorridos peatonales',
     description: 'Tramos expuestos y ubicaciones para incorporar arbolado.'
   },
   {
-    time: '10:40', priority: 'programado', pointId: 'point-1',
+    time: '10:40', priority: 'programado', theme: 'gobernanza', pointId: 'point-1',
     title: 'Presupuesto y seguimiento de acuerdos',
     description: 'Recursos disponibles, compromisos y próximos plazos.'
   }
@@ -37,6 +37,7 @@ const topics = [
 
 export function createCouncilAgenda(panel, { onChange = () => {} } = {}) {
   const list = panel.querySelector('#council-agenda-list');
+  const currentTopic = panel.querySelector('.council-agenda-current');
   const time = panel.querySelector('#council-current-time');
   const priority = panel.querySelector('#council-current-priority');
   const title = panel.querySelector('#council-current-topic');
@@ -155,6 +156,7 @@ export function createCouncilAgenda(panel, { onChange = () => {} } = {}) {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'council-agenda-choice';
+    button.dataset.theme = topic.theme;
     const scheduledTime = document.createElement('time');
     scheduledTime.dateTime = topic.time;
     scheduledTime.textContent = topic.time;
@@ -193,6 +195,7 @@ export function createCouncilAgenda(panel, { onChange = () => {} } = {}) {
     notice = null;
     if (!clocks[current].paused) clocks[current].startedAt = Date.now();
     choices[index].button.setAttribute('aria-current', 'true');
+    currentTopic.dataset.theme = topic.theme;
     choices[index].state.textContent = 'En curso';
     time.dateTime = topic.time;
     time.textContent = topic.time;

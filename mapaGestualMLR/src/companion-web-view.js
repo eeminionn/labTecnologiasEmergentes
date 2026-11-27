@@ -9,7 +9,7 @@ export function createWebCompanionView(companion, trigger) {
   toolbar.className = 'web-companion-toolbar';
   const title = document.createElement('strong');
   title.id = 'web-companion-title';
-  title.textContent = 'Ficha técnica';
+  title.textContent = 'Información complementaria';
 
   const close = document.createElement('button');
   close.id = 'web-companion-close';
@@ -34,7 +34,7 @@ export function createWebCompanionView(companion, trigger) {
   dialog.append(toolbar, notice, frame);
   document.body.append(dialog);
 
-  trigger.textContent = 'Ficha técnica';
+  trigger.textContent = 'Información complementaria';
   trigger.title = 'Mostrar información complementaria';
   trigger.setAttribute('aria-haspopup', 'dialog');
   trigger.setAttribute('aria-controls', dialog.id);
@@ -52,10 +52,10 @@ export function createWebCompanionView(companion, trigger) {
       link.href = companion.href;
       link.target = companion.target;
       link.rel = 'opener';
-      link.textContent = 'Abrir ficha mediante enlace';
+      link.textContent = 'Abrir información complementaria';
       notice.append(link);
     } else {
-      notice.append('Puedes seguir consultando la ficha aquí.');
+      notice.append('Puedes seguir consultando la información aquí.');
     }
     notice.hidden = false;
   };

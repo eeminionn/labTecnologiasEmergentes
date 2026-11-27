@@ -23,15 +23,19 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const panel=el('section',`analysis-panel analysis-${tone}-panel`);
   panel.setAttribute('aria-label',label);
   panel.dataset.kind=kind;
+  panel.dataset.theme='seguridad';
   function button(parent,id,label,callback,cls='') {
     const e=el('button',cls,label);e.id=id;e.type='button';e.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(e.getAttribute('aria-disabled')!=='true')callback(event,e);});parent.append(e);controls.push(e);return e;
   }
   const header=el('header','analysis-heading');
   const titleRow=el('div','analysis-title-row'),title=el('h1',null,'Análisis');
+  title.id=`${prefix}-title`;
+  panel.setAttribute('aria-labelledby',title.id);
   const comparisonSlot=el('div','analysis-comparison-slot');
   titleRow.append(title,comparisonSlot);
   const category=button(header,`${prefix}-layers`,label,(_,anchor)=>callbacks.catalog(state.side==='right'?'compare':'primary',anchor),'analysis-layer-trigger');
   category.dataset.tone=tone;category.setAttribute('aria-haspopup','dialog');category.setAttribute('aria-expanded','false');
+  category.setAttribute('aria-controls','analysis-layer-picker');
   const categoryOptions=el('div','analysis-category-choices');
   categoryOptions.setAttribute('role','group');
   categoryOptions.setAttribute('aria-label','Datos de análisis');
@@ -164,6 +168,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const compare=button(actions,`${prefix}-cross`,'Comparar con…',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
   const forecast=button(actions,`${prefix}-forecast`,'Simular inversión',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
   compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
+  compare.setAttribute('aria-controls','analysis-layer-picker');
   const opacityRow=el('div','analysis-opacity'),opacityLabel=el('label',null,'Visibilidad'),opacityValue=el('output',null,'100%');
   const slider=document.createElement('input');slider.type='range';slider.min='10';slider.max='100';slider.step='5';slider.id=`${prefix}-opacity`;slider.setAttribute('aria-label',`Visibilidad: ${label}`);opacityLabel.htmlFor=slider.id;
   slider.addEventListener('input',()=>callbacks.opacity(Number(slider.value)/100));
@@ -196,11 +201,11 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       tick.setAttribute('aria-label',hour===24?'Ir al final del día':`Ir a las ${String(hour).padStart(2,'0')}:00`);
     }
     timeline.append(timelineHeading,timelineSlider,ticks);
-    filters.append(timeline);
+    stats.after(timeline);
     for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])timeline.addEventListener(type,event=>event.stopPropagation());
   }
   const popover=el('section','analysis-date-popover');popover.id=`${prefix}-filter-popover`;popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-labelledby',`${prefix}-picker-title`);
-  areaTrigger.setAttribute('aria-controls',popover.id);
+  for(const control of [areaTrigger,monthPicker,...Object.values(cameraTriggers)])control.setAttribute('aria-controls',popover.id);
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverTitle.id=`${prefix}-picker-title`;popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar opciones');
   const grids={};
@@ -267,7 +272,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       if(hasTotal)control.dataset.robberyTotal=String(robberyTotal);else delete control.dataset.robberyTotal;
       control.disabled=!state?.canChoose;
       control.dataset.selection=count===0?'none':count===unit.children.length?'all':'partial';
-      const description=`Unidad vecinal ${unit.label}${hasTotal?`, ${number(robberyTotal)} robos`:''}${highlighted.has(unit.id)?', entre las de mayor cantidad':''}, ${count} de ${unit.children.length} subcuadrantes seleccionados`;
+      const scope=state?.quadrantIds===null?'incluida en toda la comuna':`${count} de ${unit.children.length} subcuadrantes seleccionados`;
+      const description=`Unidad vecinal ${unit.label}${hasTotal?`, ${number(robberyTotal)} robos`:''}${highlighted.has(unit.id)?', entre las de mayor cantidad':''}, ${scope}`;
       control.setAttribute('aria-label',description);control.title=description;
       control.querySelector('.analysis-unit-count').textContent=count?`${count}/${unit.children.length}`:'';
     }
@@ -380,8 +386,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
     const context=next.error?'No se pudieron cargar los datos.':!next.loaded?'Cargando datos…'
-      :kind==='alarms'?(f.year?`Pulsaciones de referencia · ${f.year}`:'Sin datos de pulsaciones')
-        :resource?(f.year?`Estado de referencia al cierre de ${f.year}`:'Sin historial de estado')
+      :kind==='alarms'?(f.year?`Pulsaciones en ${f.year}`:'Sin datos de pulsaciones')
+        :resource?(f.year?`Estado al cierre de ${f.year}`:'Sin historial de estado')
         :camera?`Inventario al ${cutoff||date}`:`${date} · ${hour?.[2]?`${hour[1]} (${hour[2]})`:hour?.[1]||'Todo el día'}`;
     if(selectedPeriod.textContent!==context)selectedPeriod.textContent=context;
     selectedPeriod.dataset.error=String(Boolean(next.error));empty.hidden=!next.loaded||Boolean(next.error)||next.summary.total!==0;
@@ -421,6 +427,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     const playing=playback?.playing===true,position=Math.max(0,Math.min(1,Number(playback?.position)||0)),minutes=Math.round(position*24*60);
     const clock=`${String(Math.floor(minutes/60)).padStart(2,'0')}:${String(minutes%60).padStart(2,'0')}`;
     const allDay=state?.filters.period==='all'&&!playing;
+    stats.setAttribute('aria-busy',String(playing));
     playIcon.toggleAttribute('hidden',playing);pauseIcon.toggleAttribute('hidden',!playing);playbackButton.setAttribute('aria-pressed',String(playing));
     playbackButton.setAttribute('aria-label',playing?'Pausar recorrido del día':'Reproducir recorrido del día');
     playbackButton.title=playing?'Pausar el recorrido':'Reproducir el recorrido del día';
@@ -430,7 +437,13 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   function targets(){
     if(panel.hidden)return[];
     const outer=container.getBoundingClientRect(),p=panel.getBoundingClientRect(),b=body.getBoundingClientRect();
-    return controls.filter(e=>{if(e.disabled||e.getAttribute('aria-disabled')==='true'||!e.getClientRects().length)return false;const r=e.getBoundingClientRect(),c=popover.contains(e)?popover.getBoundingClientRect():body.contains(e)?b:p;return r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;})
+    return controls.filter(e=>{
+      if(e.disabled||e.getAttribute('aria-disabled')==='true'||!e.getClientRects().length)return false;
+      const r=e.getBoundingClientRect();
+      const inside=c=>r.top>=c.top-1&&r.bottom<=c.bottom+1&&r.left>=c.left-1&&r.right<=c.right+1;
+      if(popover.contains(e))return inside(popover.getBoundingClientRect());
+      return inside(p)&&(!body.contains(e)||inside(b));
+    })
       .map(e=>{const r=e.getBoundingClientRect();return{id:e.id,x:r.left+r.width/2-outer.left,y:r.top+r.height/2-outer.top,width:r.width,height:r.height,element:e,priority:25};});
   }
   return {element:panel,body,popover,timeline,inspectorSlot,comparisonSlot,controls,update,updatePlayback,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};

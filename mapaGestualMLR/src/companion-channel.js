@@ -100,9 +100,9 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
     return true;
   }
 
-  function open() {
+  function open({ focus = true } = {}) {
     if (!enabled) return false;
-    if (native) return window.desktop.openCompanionWindow();
+    if (native) return window.desktop.openCompanionWindow(focus);
     if (popup && !popup.closed) { popup.focus(); return true; }
     popupReady = false;
     popup = window.open(href, channelName);

@@ -9,7 +9,7 @@ body:not(.twin-projection) #web-companion {
   padding: 0;
   border: 0;
   border-radius: 0;
-  background: #edf3f3;
+  background: var(--superficie);
   overflow: hidden;
 }
 
@@ -25,18 +25,25 @@ body:not(.twin-projection) #web-companion {
   gap: 8px 16px;
   padding: 8px clamp(12px, 2.3vw, 32px);
   border-bottom: 1px solid var(--border);
-  background: #fff;
+  background: var(--superficie);
 }
 
 .web-companion-toolbar strong { color: var(--municipal-petroleo); font-size: 15px; }
 .web-companion-toolbar button { min-height: 34px; white-space: normal; }
 #web-companion-close { justify-self: start; color: var(--municipal-petroleo); }
-#web-companion-tab { justify-self: end; }
+body:not(.twin-projection) #web-companion-tab {
+  justify-self: end;
+  background: var(--azul-100);
+  border-color: var(--azul-100);
+  color: var(--superficie);
+  font-weight: 700;
+}
+body:not(.twin-projection) #web-companion-tab:hover { background: var(--azul-90); }
 
 .web-companion-notice {
   margin: 0;
   padding: 8px 16px;
-  background: #fff;
+  background: var(--azul-10);
   color: var(--ink);
   font-size: 13px;
 }

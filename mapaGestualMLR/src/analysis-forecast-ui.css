@@ -1,7 +1,7 @@
 body:not(.twin-projection) .forecast-entry {
   width: 100%; min-height: 40px; margin-top: 8px;
   border-color: var(--municipal-petroleo); color: var(--municipal-petroleo);
-  background: #fff; box-shadow: none; font-weight: 700;
+  background: var(--superficie); box-shadow: none; font-weight: 700;
 }
 body:not(.twin-projection) .forecast-panel .analysis-heading { margin-bottom: 5px; }
 body:not(.twin-projection) #forecast-back {
@@ -34,24 +34,25 @@ body:not(.twin-projection) .forecast-placement-tools button { min-height: 36px; 
 body:not(.twin-projection) #forecast-aim-add { flex-basis: 100%; color: var(--municipal-petroleo); font-weight: 700; }
 body:not(.twin-projection) .forecast-scale {
   display: flex; align-items: center; gap: 7px; margin: 7px 0 10px;
-  color: var(--ink-secondary); font-size: 10.5px;
+  color: var(--ink-secondary); font-size: 11px;
 }
 body:not(.twin-projection) .forecast-gradient {
-  flex: 1; height: 6px; border-radius: 3px;
-  background: linear-gradient(90deg,#008d36,#afc439,#f5dd61,#ef8b3a,#d73027);
+  flex: 1; height: 7px; border: 1px solid var(--tema-30); border-radius: 4px;
 }
 body:not(.twin-projection) .forecast-readout {
-  margin-top: 12px; padding-block: 10px;
-  border-top: 1px solid var(--border); color: var(--ink);
+  margin-top: 12px; padding: 9px 10px;
+  border: 1px solid var(--tema-20); border-radius: 10px; background: var(--tema-10);
+  color: var(--ink);
 }
-body:not(.twin-projection) .forecast-result-label { font-size: 13px; color: var(--municipal-petroleo); }
-body:not(.twin-projection) .forecast-readout dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 5px 0 2px; }
+body:not(.twin-projection) .forecast-result-label { font-size: 13px; color: var(--tema-texto); }
+body:not(.twin-projection) .forecast-readout dl { display: flex; flex-wrap: wrap; gap: 6px 12px; margin: 5px 0 2px; }
 body:not(.twin-projection) .forecast-readout dt,
 body:not(.twin-projection) .forecast-readout small { font-size: 11px; color: var(--ink-secondary); }
+body:not(.twin-projection) .forecast-readout dl > div { flex: 1 1 auto; }
 body:not(.twin-projection) .forecast-readout dd { margin: 0; font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
 body:not(.twin-projection) .forecast-reticle {
   position: absolute; left: 62%; top: 51%; width: 24px; height: 24px; transform: translate(-50%,-50%);
-  border: 2px solid var(--municipal-petroleo); border-radius: 50%; box-shadow: 0 0 0 2px #fff;
+  border: 2px solid var(--municipal-petroleo); border-radius: 50%; box-shadow: 0 0 0 2px var(--superficie);
   visibility: hidden; pointer-events: none;
 }
 body:not(.twin-projection) .analysis-experience:has(#forecast-aim-add:is(:hover,:focus-visible)) .forecast-reticle { visibility: visible; }
@@ -71,4 +72,8 @@ body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[
 body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-kind="camera"] { background: var(--municipal-petroleo); }
 body:not(.twin-projection) .analysis-resource-markers .analysis-resource-marker[data-scenario]:is(:hover,:focus-visible,.gesture-target) {
   outline: 2px solid var(--ink); outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  body:not(.twin-projection) .forecast-reticle { top: 30%; left: 50%; }
 }
