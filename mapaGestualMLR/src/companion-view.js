@@ -8,6 +8,8 @@ import { createRobberyShare } from './robbery-share-view.js';
 import { createCompanionTerritoryMap } from './companion-territory-map.js';
 import { renderCompanionResource } from './companion-resource-view.js';
 import { chartTint } from './companion-chart-tint.js';
+import { resolveCompanionRanking, sortCompanionQuadrants } from './companion-analysis-data.js';
+import './companion-analysis-ui.css';
 
 const number = new Intl.NumberFormat('es-CL');
 const money = new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 });
@@ -18,13 +20,15 @@ const agendaViews = new WeakMap();
 const territorialViews = new WeakMap();
 const percentages = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 1 });
 const forecastPercentage = new Intl.NumberFormat('es-CL', { style: 'percent', maximumFractionDigits: 2 });
+const densityNumber = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
+const compactCount = new Intl.NumberFormat('es-CL', { notation: 'compact', maximumFractionDigits: 1 });
 const names = {
   security: ['robo', 'robos', 'Robos'],
   cameras: ['cámara', 'cámaras', 'Cámaras'],
   fixed: ['caseta', 'casetas', 'Casetas'],
   alarms: ['botón', 'botones', 'Botones de emergencia']
 };
-const agendaStatusLabels = { current: 'En curso', reviewed: 'Revisado', pending: 'Pendiente' };
+const agendaStatusLabels = { current: 'En curso', next: 'Siguiente', reviewed: 'Revisado', pending: 'Pendiente' };
 const agendaPriorities = { urgente: 'Urgente', prioritario: 'Prioritario', programado: 'Programado' };
 const countName = (count, kind) => names[kind]?.[count === 1 ? 0 : 1] || 'registros';
 const formatCount = (count, kind) => `${number.format(count)} ${countName(count, kind)}`;
@@ -34,6 +38,19 @@ function element(tag, className, text) {
   if (className) node.className = className;
   if (text !== undefined && text !== null) node.textContent = String(text);
   return node;
+}
+
+function chartNumber(tag, value, format = number) {
+  if (!Number.isFinite(value)) return element(tag, null, '—');
+  const full = format.format(value);
+  const label = value >= 1_000_000_000 ? compactCount.format(value)
+    : format === densityNumber && value > 0 && value < .1 ? '< 0,1' : full;
+  const result = element(tag, null, label);
+  if (label !== full && value >= 1_000_000_000) {
+    result.title = full;
+    result.setAttribute('aria-label', full);
+  }
+  return result;
 }
 
 function metric(label, value, note, { emphasized = false } = {}) {
@@ -79,39 +96,36 @@ function shell() {
   return { main, content, title, subtitle };
 }
 
-function budgetChart(budget) {
-  const section = element('section', 'companion-forecast-breakdown');
-  section.dataset.theme = 'gobernanza';
-  section.append(element('h3', null, 'Distribución de la inversión'));
+function forecastBars(rows) {
   const list = element('dl', 'companion-cost-chart');
-  const largest = Math.max(1, ...budget.breakdown.map(item => item.value));
-  for (const item of budget.breakdown) {
+  const largest = Math.max(1, ...rows.map(item => item.value));
+  for (const { label, value, formatted, emphasized } of rows) {
     const row = element('div', 'companion-cost-row');
-    const label = element('dt', null, item.label);
-    const value = element('dd', null, money.format(item.value));
-    const track = element('div', 'companion-cost-track');
+    if (emphasized) row.dataset.emphasized = '';
+    const track = element('dd', 'companion-cost-track');
     track.setAttribute('aria-hidden', 'true');
     const fill = element('span');
-    fill.style.width = `${item.value / largest * 100}%`;
-    fill.style.setProperty('--chart-fill', chartTint(item.value, largest));
+    fill.style.width = `${value / largest * 100}%`;
+    fill.style.setProperty('--chart-fill', chartTint(value, largest));
     track.append(fill);
-    row.append(label, value, track);
+    row.append(element('dt', null, label), element('dd', null, formatted), track);
     list.append(row);
   }
-  section.append(list);
+  return list;
+}
+
+function budgetChart(budget) {
+  const section = element('section', 'companion-forecast-breakdown');
+  section.append(element('h3', null, 'Distribución de la inversión'), forecastBars([...budget.breakdown]
+    .sort((a, b) => b.value - a.value).map(item => ({ ...item, formatted: money.format(item.value) }))));
   return section;
 }
 
 function delivery(budget) {
   const section = element('section', 'companion-forecast-delivery');
-  section.append(element('h3', null, `Plazo estimado · ${number.format(budget.totalDays)} días hábiles`));
-  const list = element('ol', 'companion-delivery');
-  budget.timeline.forEach(step => {
-    const row = element('li');
-    row.append(element('span', null, step.label), element('strong', null, `${number.format(step.days)} días`));
-    list.append(row);
-  });
-  section.append(list, element('p', 'companion-analysis-note', `${budget.lead} · ${budget.unit}`));
+  section.append(element('h3', null, `Plazo estimado · ${number.format(budget.totalDays)} días hábiles`),
+    forecastBars(budget.timeline.map(({ label, days }) => ({ label, value: days, formatted: number.format(days) }))),
+    element('p', 'companion-analysis-note companion-delivery-owner', `${budget.lead} · ${budget.unit}`));
   return section;
 }
 
@@ -129,13 +143,14 @@ function robberyShare(security, area = security.areaLabel) {
 }
 
 function updateAgendaClock(view, agenda) {
-  const remaining = Number.isFinite(agenda.remainingSeconds) ? agenda.remainingSeconds : 0;
+  const known = Number.isFinite(agenda.remainingSeconds);
+  const remaining = known ? agenda.remainingSeconds : 0;
   const seconds = Math.abs(Math.trunc(remaining));
   const value = `${remaining < 0 ? '−' : ''}${String(Math.floor(seconds / 60)).padStart(2, '0')}:${String(seconds % 60).padStart(2, '0')}`;
   const overtime = agenda.overtime || remaining < 0;
-  view.timerValue.textContent = value;
-  view.timerLabel.textContent = overtime ? 'Tiempo excedido' : 'Tiempo restante';
-  view.timerState.textContent = agenda.running ? 'En curso' : 'En pausa';
+  view.timerValue.textContent = known ? value : '—';
+  view.timerLabel.textContent = known && overtime ? 'Tiempo excedido' : 'Tiempo restante';
+  view.timerState.textContent = known ? agenda.running ? 'En curso' : 'En pausa' : 'Sin registro';
   view.timer.dataset.overtime = String(Boolean(overtime));
   const duration = Number(agenda.durationSeconds);
   const proportion = duration > 0 ? Math.max(0, Math.min(1, remaining / duration)) : 0;
@@ -176,9 +191,9 @@ function agendaView(root, state) {
   view.subtitle.textContent = current.description || '';
   const hero = element('section', 'companion-agenda-hero');
   const currentTopic = element('div', 'companion-agenda-position');
-  currentTopic.append(element('span', null, 'Tema en curso'), element('strong', null, current.time || '—'));
-  const schedulePosition = Number.isInteger(agenda.index) && topics.length ? `${agenda.index + 1} de ${topics.length}` : '';
-  currentTopic.append(element('span', null, schedulePosition));
+  const hasTopic = Number.isInteger(agenda.index) && agenda.index >= 0 && agenda.index < topics.length;
+  currentTopic.append(element('span', null, hasTopic ? `Tema ${agenda.index + 1} de ${topics.length}` : 'Sin tema en curso'),
+    element('strong', null, current.time || '—'));
   const timer = element('div', 'companion-agenda-timer');
   const timerLabel = element('span', 'companion-timer-label');
   const timerValue = element('output', 'companion-timer-value');
@@ -197,18 +212,23 @@ function agendaView(root, state) {
   const list = element('ol', 'companion-agenda-list');
   topics.forEach((topic, index) => {
     const row = element('li');
-    const status = topic.status || (index === agenda.index ? 'current' : index < agenda.index ? 'reviewed' : 'pending');
+    const originalStatus = topic.status || (index === agenda.index ? 'current' : index < agenda.index ? 'reviewed' : 'pending');
+    const status = originalStatus === 'pending' && hasTopic && index === agenda.index + 1 ? 'next' : originalStatus;
     row.dataset.status = status;
     if (agendaPriorities[topic.priority]) row.dataset.priority = topic.priority;
     if (index === agenda.index) row.setAttribute('aria-current', 'step');
     const time = element('time', null, topic.time);
     time.dateTime = topic.time || '';
     const name = element('span', 'companion-agenda-name', topic.title);
-    if (agendaPriorities[topic.priority]) name.append(element('small', 'companion-agenda-priority', agendaPriorities[topic.priority]));
+    if (topic.priority !== 'programado' && agendaPriorities[topic.priority]) {
+      const priority = element('small', 'companion-agenda-priority', agendaPriorities[topic.priority]);
+      if (topic.priority === 'urgente') priority.dataset.theme = 'seguridad';
+      name.append(priority);
+    }
     row.append(time, name, element('small', 'companion-agenda-status', agendaStatusLabels[status] || status));
     list.append(row);
   });
-  schedule.append(list);
+  schedule.append(topics.length ? list : element('p', 'companion-secondary', 'No hay temas programados.'));
 
   const themes = card('Temas en el mapa');
   const pointList = element('ol', 'companion-map-themes');
@@ -222,7 +242,7 @@ function agendaView(root, state) {
     row.append(element('span', 'companion-theme-number', point.number), content);
     pointList.append(row);
   });
-  themes.append(pointList);
+  if (points.length) themes.append(pointList);
   const context = element('div', 'companion-column');
   if (graphic?.title) {
     const section = card('Gráfico en pantalla');
@@ -231,9 +251,10 @@ function agendaView(root, state) {
     if (graphic.takeaway) section.append(element('p', 'companion-secondary', graphic.takeaway));
     context.append(section);
   }
-  context.append(themes);
+  if (points.length) context.append(themes);
   grid.append(schedule, context);
   const notice = element('aside', 'companion-agenda-notice');
+  notice.dataset.theme = 'seguridad';
   notice.setAttribute('role', 'status');
   notice.hidden = true;
   const noticeTitle = element('strong');
@@ -272,6 +293,43 @@ function installationAreas(placements) {
   return section;
 }
 
+function forecastEstimates(forecast) {
+  const section = element('section', 'companion-forecast-estimates');
+  section.dataset.theme = 'seguridad';
+  const title = element('h3', null, 'Robos estimados en la comuna');
+  const { baselineTotal: before, scenarioTotal: after, showAfter } = forecast;
+  if (![before, after].every(value => Number.isFinite(value) && value >= 0)) {
+    section.append(title, element('p', 'companion-analysis-note', forecast.error ? 'Estimación no disponible.'
+      : forecast.ready === false ? 'Preparando la estimación…' : 'Sin resultados disponibles.'));
+    return section;
+  }
+  const delta = after - before;
+  const change = before > 0 ? delta / before : null;
+  const direction = delta < 0 ? '−' : '+';
+  let variation = 'Sin variación';
+  if (delta && !Number.isFinite(change)) {
+    const count = Math.round(Math.abs(delta));
+    variation = Math.abs(delta) < 1 ? 'Menos de 1 robo' : `${direction}${formatCount(count, 'security')}`;
+  } else if (delta) {
+    variation = Math.abs(change) < .0001 ? 'Menos de 0,01 %' : `${direction}${forecastPercentage.format(Math.abs(change))}`;
+  }
+  const heading = element('header', 'companion-forecast-estimates-header');
+  const changeLabel = element('p', 'companion-forecast-variation');
+  changeLabel.dataset.trend = delta > 0 ? 'increase' : delta < 0 ? 'decrease' : 'unchanged';
+  changeLabel.append(element('strong', null, variation));
+  if (delta) changeLabel.append(element('span', null, delta < 0 ? 'Disminución estimada' : 'Aumento estimado'));
+  heading.append(title, changeLabel);
+  section.append(heading, forecastBars([
+    { label: showAfter ? 'Antes' : 'Antes · En el mapa', value: before, formatted: number.format(Math.round(before)), emphasized: !showAfter },
+    { label: showAfter ? 'Con inversión · En el mapa' : 'Con inversión', value: after, formatted: number.format(Math.round(after)), emphasized: showAfter },
+  ]));
+  if (forecast.local?.id && [forecast.local.baseline, forecast.local.scenario].every(Number.isFinite)) {
+    section.append(element('p', 'companion-analysis-note companion-forecast-local',
+      `${quadrantsLabel([forecast.local.id])} · ${number.format(Math.round(forecast.local.baseline))} antes y ${number.format(Math.round(forecast.local.scenario))} con inversión`));
+  }
+  return section;
+}
+
 function forecastDetails(state) {
   const forecast = state.forecast || {};
   const placements = forecast.placements || [];
@@ -279,31 +337,13 @@ function forecastDetails(state) {
   const content = card('Presupuesto del escenario');
   content.classList.add('companion-forecast-details');
   content.dataset.theme = 'gobernanza';
-  if (forecast.error || forecast.ready === false) {
-    content.append(element('p', null, forecast.error ? 'Proyección no disponible' : 'Preparando la estimación…'));
-    return content;
-  }
   const metrics = element('dl', 'companion-forecast-metrics');
   metrics.append(metric('Inversión inicial', money.format(budget.initial), inUF(budget.initial)),
     metric('Operación anual', money.format(budget.annualOperation), inUF(budget.annualOperation)),
     metric('Total del primer año', money.format(budget.firstYear), inUF(budget.firstYear), { emphasized: true }));
   content.append(element('p', 'companion-analysis-note',
     `${formatCount(budget.counts.camera, 'cameras')} · ${formatCount(budget.counts.fixed, 'fixed')}`), metrics);
-  if (Number.isFinite(forecast.baselineTotal) && Number.isFinite(forecast.scenarioTotal)) {
-    const comparison = element('section', 'companion-forecast-estimates');
-    comparison.dataset.theme = 'seguridad';
-    comparison.append(element('h3', null, 'Robos estimados en la comuna'));
-    const totals = element('dl', 'companion-forecast-metrics');
-    totals.append(metric(forecast.showAfter ? 'Antes' : 'Antes · En el mapa', number.format(Math.round(forecast.baselineTotal)), null, { emphasized: !forecast.showAfter }),
-      metric(forecast.showAfter ? 'Con inversión · En el mapa' : 'Con inversión', number.format(Math.round(forecast.scenarioTotal)), null, { emphasized: forecast.showAfter }),
-      metric('Variación', forecastPercentage.format(forecast.reduction ? -forecast.reduction : 0)));
-    comparison.append(totals);
-    if (forecast.local?.id && Number.isFinite(forecast.local.baseline) && Number.isFinite(forecast.local.scenario)) {
-      comparison.append(element('p', 'companion-analysis-note',
-        `Consulta local en ${forecast.local.id} · ${number.format(Math.round(forecast.local.baseline))} antes y ${number.format(Math.round(forecast.local.scenario))} con inversión`));
-    }
-    content.append(comparison);
-  }
+  content.append(forecastEstimates(forecast));
   if (budget.quantity) {
     const grid = element('div', 'companion-forecast-grid');
     grid.append(budgetChart(budget), delivery(budget));
@@ -317,22 +357,19 @@ function resultsCard(layers, { compact = false } = {}) {
   section.setAttribute('aria-label', 'Resultados de la consulta');
   const results = element('div', 'companion-layer-results');
   results.dataset.count = String(layers.length);
-  for (const { kind, title, summary = {}, ready, error, period, filterLabels = [], display, opacity } of layers) {
+  for (const { kind, title, summary = {}, ready, error, period, filterLabels = [] } of layers) {
     const result = element('div', 'companion-layer-result');
     result.dataset.kind = kind;
     result.dataset.theme = 'seguridad';
     const main = element('div', 'companion-layer-result-main');
     const category = compact ? names[kind]?.[2] || title : title || names[kind]?.[2];
     main.append(element('h3', null, category || 'Registros'),
-      element('strong', null, Number.isFinite(summary.total) && ready !== false && !error ? number.format(summary.total) : '—'));
+      chartNumber('strong', ready !== false && !error ? summary.total : null));
     result.append(main);
     if (error || ready === false) result.append(element('p', 'companion-analysis-note', error || 'Cargando datos…'));
     else {
       if (period) result.append(element('p', 'companion-layer-period', period));
-      const filters = [...filterLabels];
-      if (display && !compact) filters.push(display);
-      if (!compact && layers.length > 1 && Number.isFinite(opacity)) filters.push(`Visibilidad ${percentages.format(opacity)}`);
-      if (filters.length) result.append(element('p', 'companion-analysis-note', filters.join(' · ')));
+      if (filterLabels.length) result.append(element('p', 'companion-analysis-note', filterLabels.join(' · ')));
       const status = element('dl', 'companion-analysis-status');
       for (const [key, label] of [
         ['operational', 'Operativas'], ['maintenance', 'En mantención'], ['inactive', 'Inactivas'],
@@ -348,101 +385,148 @@ function resultsCard(layers, { compact = false } = {}) {
   return section;
 }
 
-function crossCard(cross, scopeCount, { compact = false } = {}) {
+function crossFinding(cross, scopeCount) {
   if (!cross || !scopeCount) return null;
-  const { primary, secondary, rows: selectedRows, withoutEquipment } = cross;
-  const rows = selectedRows.slice(0, 3);
-  if (withoutEquipment && !rows.some(row => row.id === withoutEquipment.id)) rows[rows.length - 1] = withoutEquipment;
-  const section = element('section', 'companion-cross-summary');
-  section.dataset.theme = 'seguridad';
-  section.append(element('h2', null, 'Cruce por cuadrante'));
-  const label = layer => names[layer.kind]?.[2] || layer.kind;
-  if (cross.contextual) section.append(element('p', 'companion-cross-context',
-    [label(secondary), secondary.period].filter(Boolean).join(' · ')));
+  const { primary, secondary } = cross;
   const robbery = primary.kind === 'security' ? primary : secondary.kind === 'security' ? secondary : null;
   const related = robbery === primary ? secondary : primary;
   const unmatched = robbery === primary ? cross.primaryUnmatched : cross.secondaryUnmatched;
   const located = robbery === primary ? cross.primaryLocated : cross.secondaryLocated;
   const text = element('p', 'companion-cross-finding');
   if (robbery && unmatched > 0 && located > 0) {
-    text.append(element('strong', null, formatCount(unmatched, 'security')),
-      ` (${percentages.format(unmatched / located)}) se ubican en cuadrantes sin ${countName(0, related.kind)} en la consulta.`);
+    const share = unmatched / located;
+    const portion = share < .001 ? '< 0,1 %' : percentages.format(share);
+    text.append(chartNumber('strong', unmatched),
+      ` ${countName(unmatched, 'security')} (${portion}) en subcuadrantes con 0 ${countName(0, related.kind)} en el inventario consultado.`);
   } else {
-    text.append(element('strong', null, `${number.format(cross.sharedQuadrants)} de ${number.format(scopeCount)} cuadrantes`),
-      ' tienen registros en ambas categorías.');
+    text.append(element('strong', null, `${number.format(cross.sharedQuadrants)} de ${number.format(scopeCount)} subcuadrantes`),
+      ' tienen registros en ambos conjuntos.');
   }
+  const section = element('section', 'companion-cross-summary');
+  section.dataset.theme = 'seguridad';
+  if (cross.contextual) section.append(element('p', 'companion-cross-context',
+    [names[secondary.kind]?.[2], secondary.period].filter(Boolean).join(' · ')));
+  else if (cross.differentCutoffs) section.append(element('p', 'companion-cross-context', 'Las consultas tienen cortes distintos.'));
   section.append(text);
-  if (compact) return section;
-  if (rows.length) {
-    const table = element('table', 'companion-cross-table');
-    table.setAttribute('aria-label', 'Recuentos por cuadrante');
-    const header = element('tr');
-    for (const name of ['Cuadrante', label(primary), label(secondary)]) {
-      const heading = element('th', null, name);
-      heading.scope = 'col';
-      header.append(heading);
-    }
-    const thead = element('thead');
-    thead.append(header);
-    table.append(thead);
-    const body = element('tbody');
-    const axes = [['primary', primary.kind], ['secondary', secondary.kind]];
-    const maxima = axes.map(([key]) => Math.max(1, ...rows.map(row => row[key])));
-    for (const row of rows) {
-      const tr = element('tr');
-      const isPriority = row.id === withoutEquipment?.id;
-      if (isPriority) tr.dataset.priority = 'true';
-      const heading = element('th', null, row.id);
-      if (isPriority) heading.append(element('span', 'companion-cross-priority', 'Sin equipamiento'));
-      heading.scope = 'row';
-      tr.append(heading);
-      axes.forEach(([key, kind], index) => {
-        const cell = element('td', 'companion-cross-value');
-        cell.dataset.kind = kind;
-        const values = element('div', 'companion-cross-cell-content');
-        const track = element('span', 'companion-cross-track');
-        track.setAttribute('aria-hidden', 'true');
-        const fill = element('span');
-        fill.style.width = `${100 * row[key] / maxima[index]}%`;
-        fill.style.setProperty('--chart-fill', chartTint(row[key], maxima[index]));
-        track.append(fill);
-        values.append(track, element('strong', null, number.format(row[key])));
-        cell.append(values);
-        tr.append(cell);
-      });
-      body.append(tr);
-    }
-    table.append(body);
-    section.append(table);
-  }
-  if (rows.length || primary.unassignedTotal || secondary.unassignedTotal) {
-    const notes = [rows.length ? 'Escala propia por columna.' : '',
-      primary.unassignedTotal || secondary.unassignedTotal ? 'Solo registros con cuadrante.' : ''];
-    section.append(element('p', 'companion-analysis-note', notes.filter(Boolean).join(' ')));
-  }
   return section;
 }
 
-function patternsCard(layers) {
-  const list = element('dl', 'companion-analysis-patterns');
-  for (const { kind, breakdown = [], topQuadrants = [] } of layers) {
-    const largest = group => breakdown.filter(item => item.group === group && item.total > 0)
-      .sort((a, b) => b.total - a.total)[0];
-    if (kind === 'security') {
-      const hour = largest('Horario');
-      const type = largest('Tipo de robo');
-      if (hour) list.append(fact('Horario con más robos', `${hour.label} · ${number.format(hour.total)}`));
-      if (type) list.append(fact('Tipo más frecuente', `${type.label} · ${number.format(type.total)}`));
-    } else if (kind === 'cameras') {
-      const type = largest('Tipo de cámara');
-      if (type) list.append(fact('Tipo más frecuente', `${type.label} · ${number.format(type.total)}`));
-    }
-    if (topQuadrants[0]) {
-      const { id, total } = topQuadrants[0];
-      list.append(fact(`Mayor recuento de ${countName(0, kind)}`, `${id} · ${number.format(total)}`));
-    }
+function chartBar(value, maximum, family) {
+  const track = element('span', 'companion-cross-track');
+  track.setAttribute('aria-hidden', 'true');
+  const fill = element('span');
+  fill.style.width = `${maximum > 0 ? value / maximum * 100 : 0}%`;
+  fill.style.setProperty('--chart-fill', chartTint(value, maximum, family));
+  track.append(fill);
+  return track;
+}
+
+const chartFamily = { security: 'rosado', cameras: 'azul', fixed: 'morado', alarms: 'rosado' };
+const chartHeading = { security: 'Robos por horario', cameras: 'Cámaras por estado', fixed: 'Casetas por estado', alarms: 'Botones según su uso' };
+const rankColumn = { security: 'Robos', cameras: 'Cámaras', fixed: 'Casetas', alarms: 'Botones' };
+
+function breakdownCard(layer) {
+  if (!layer?.ready) return null;
+  const { kind, breakdown = [] } = layer;
+  const group = kind === 'security' ? (breakdown.filter(row => row.group === 'Horario' && row.total > 0).length > 1 ? 'Horario' : 'Tipo de robo')
+    : kind === 'alarms' ? 'Uso' : 'Estado';
+  const rows = breakdown.filter(row => row.group === group && !row.unit);
+  if (!rows.some(row => row.total > 0)) return null;
+  if (group === 'Tipo de robo') rows.sort((a, b) => b.total - a.total);
+  const section = card(group === 'Tipo de robo' ? 'Robos por tipo' : chartHeading[kind]);
+  section.classList.add('companion-breakdown');
+  section.dataset.kind = kind;
+  const list = element('dl');
+  const maximum = Math.max(...rows.map(row => row.total));
+  for (const { label, total } of rows) {
+    const row = element('div');
+    row.append(element('dt', null, group === 'Horario' ? label.split(' · ')[0] : label.replace(/^Botones /, '')));
+    const value = element('dd');
+    value.append(chartBar(total, maximum, chartFamily[kind]), chartNumber('strong', total));
+    row.append(value);
+    list.append(row);
   }
-  return list.childElementCount ? list : null;
+  section.append(list);
+  return section;
+}
+
+function rankingCard(source, settings, note) {
+  const ranking = resolveCompanionRanking(source, settings);
+  if (!ranking) return null;
+  const { primary, secondary, robberyAxis } = source;
+  const section = element('section', 'companion-territory-ranking');
+  const heading = element('header', 'companion-rank-heading');
+  const { rows, visibleRows, level, order, hasDensity, metric, ascending, first, last, total } = ranking;
+  const orderLabel = ranking.options.find(([value]) => value === order)?.[1];
+  const geography = level === 'unit' ? 'Unidades vecinales' : 'Subcuadrantes';
+  heading.append(element('h2', null, secondary ? 'Cruce territorial' : 'Comparación territorial'),
+    element('p', 'companion-rank-order', `${geography} · ${orderLabel}`));
+  section.append(heading);
+  if (note) section.append(note);
+
+  const insight = element('p', 'companion-rank-insight');
+  const table = element('table', 'companion-cross-table');
+  table.setAttribute('aria-label', 'Totales y concentración media en el área consultada');
+  const head = table.createTHead(), body = table.createTBody(), foot = table.createTFoot();
+  const createHeader = (label, scope) => {
+    const node = element('th', null, label);
+    node.scope = scope;
+    return node;
+  };
+  const description = element('p', 'companion-analysis-note');
+  description.id = 'companion-rank-description';
+  table.setAttribute('aria-describedby', description.id);
+  section.append(insight, table);
+  if (total > ranking.pageSize) section.append(element('p', 'companion-rank-range',
+    `${number.format(first)}–${number.format(last)} de ${number.format(total)}`));
+  section.append(description);
+
+  const summaryAxes = [['primary', primary], ...(secondary ? [['secondary', secondary]] : [])];
+  const columns = [
+    ...summaryAxes.map(([key, layer]) => ({ key, name: rankColumn[layer.kind], kind: layer.kind, total: layer.locatedTotal })),
+    ...(hasDensity ? [{ key: 'density', name: 'Robos/km²', kind: 'security', total: null }] : [])
+  ];
+  const maxima = columns.map(({ key }) => rows.reduce((max, row) => Math.max(max, row[key] ?? 0), 0));
+  const header = element('tr');
+  const label = level === 'unit' ? 'Unidad' : 'Subcuadrante';
+  header.append(createHeader(label, 'col'));
+  for (const { name, key, kind } of columns) {
+    const th = createHeader(name, 'col');
+    th.dataset.kind = kind;
+    if (key === metric) th.setAttribute('aria-sort', ascending ? 'ascending' : 'descending');
+    header.append(th);
+  }
+  if (metric === 'id') header.firstChild.setAttribute('aria-sort', 'ascending');
+  head.append(header);
+  for (const row of visibleRows) {
+    const tr = element('tr');
+    tr.append(createHeader(row.id, 'row'));
+    for (const [index, { key, kind }] of columns.entries()) {
+      const cell = element('td', 'companion-cross-value');
+      const value = row[key];
+      cell.append(chartNumber('strong', value, key === 'density' ? densityNumber : number));
+      if (value !== null) cell.append(chartBar(value, maxima[index], chartFamily[kind]));
+      tr.append(cell);
+    }
+    body.append(tr);
+  }
+  const totals = element('tr');
+  totals.append(createHeader('Total del área', 'row'));
+  for (const column of columns) totals.append(chartNumber('td', column.total));
+  foot.append(totals);
+  description.textContent = [hasDensity ? 'Robos/km² = total dividido por superficie.' : '',
+    columns.length > 1 ? 'Cada columna usa su propia escala.' : '',
+    summaryAxes.some(([, layer]) => layer.unassignedTotal) ? 'La tabla incluye los registros ubicados en un subcuadrante.' : ''].filter(Boolean).join(' ');
+  description.hidden = !description.textContent;
+  const most = hasDensity ? sortCompanionQuadrants(rows, { metric: robberyAxis })[0] : null;
+  const dense = hasDensity ? sortCompanionQuadrants(rows, { metric: 'density' })[0] : null;
+  insight.hidden = !(most && dense?.density > 0 && most.id !== dense.id);
+  if (!insight.hidden) {
+    insight.append(element('strong', null, `${label} ${most.id}`), ' · ', chartNumber('span', most[robberyAxis]),
+      ' robos, mayor total. ', element('strong', null, `${label} ${dense.id}`), ' · ', chartNumber('span', dense.density, densityNumber),
+      ' robos/km², mayor densidad media.');
+  }
+  return section;
 }
 
 function sectorCard(sector, isPreview) {
@@ -521,7 +605,7 @@ function territorialView(root, state) {
   } else {
     const resource = state.resource ? renderCompanionResource(state) : null;
     const results = state.layers?.length ? resultsCard(state.layers, { compact: Boolean(resource) }) : null;
-    const cross = crossCard(insights?.cross, insights?.scopeCount, { compact: Boolean(resource) });
+    const cross = crossFinding(insights?.cross, insights?.scopeCount);
     if (resource) {
       details.append(resource);
       const side = element('section', 'companion-card companion-query-context');
@@ -530,14 +614,20 @@ function territorialView(root, state) {
       if (side.childElementCount) context.append(side);
     } else {
       const report = element('section', 'companion-card companion-analysis-report');
-      const patterns = patternsCard(insights?.layers || []);
-      const local = state.inspected ? sectorCard(sector, true) : sectorCard(overview, false);
+      const rankingSource = insights?.cross ?? insights?.ranking;
+      const ranking = rankingCard(rankingSource, state.ranking, cross);
+      const local = state.inspected ? sectorCard(sector, true) : null;
       if (results) report.append(results);
-      if (cross) report.append(cross);
-      if (patterns) report.append(patterns);
-      if (local) report.append(local);
+      if (ranking) report.append(ranking);
       details.append(report);
-      if (overview?.security && ids?.length) context.append(robberyShare(overview.security, areaLabel));
+      if (local) {
+        local.classList.add('companion-card');
+        context.append(local);
+      } else if (overview?.security && ids?.length) context.append(robberyShare(overview.security, areaLabel));
+      else {
+        const patterns = breakdownCard(insights?.layers?.[0]);
+        if (patterns) context.append(patterns);
+      }
     }
   }
   view.context.replaceChildren(context);
@@ -551,21 +641,17 @@ function disposeTerritorialView(root) {
 }
 const isTerritorialMode = mode => ['forecast', 'resource', 'sector', 'summary'].includes(mode);
 
-function idleView(root, showMapLink = false) {
+function idleView(root, showConnectionHelp = false) {
   const idle = element('div', 'companion-idle');
   idle.append(brand());
   const caption = element('div', 'companion-idle-caption');
   caption.append(element('p', null, 'Concejo en perspectiva'));
-  if (showMapLink) {
-    const link = element('a', 'companion-map-link', 'Ir al mapa');
-    link.href = assetUrl('/');
-    caption.append(link);
-  }
+  if (showConnectionHelp) caption.append(element('p', 'companion-idle-note', 'Abre Información complementaria desde el mapa.'));
   idle.append(caption);
   root.replaceChildren(idle);
 }
 
-export function renderCompanion(root, state = {}, { onCurrentSession } = {}) {
+export function renderCompanion(root, state = {}) {
   if (!root) return;
   if (state.mode !== 'agenda') {
     const agenda = agendaViews.get(root);
@@ -576,33 +662,18 @@ export function renderCompanion(root, state = {}, { onCurrentSession } = {}) {
   if (!territorial) disposeTerritorialView(root);
   if (territorial) territorialView(root, state);
   else if (state.mode === 'agenda') agendaView(root, state);
-  else if (state.mode === 'previous-session') renderPreviousSession(root, state.session, onCurrentSession);
+  else if (state.mode === 'previous-session') renderPreviousSession(root, state.session);
   else idleView(root);
 }
 
 const root = document.getElementById('companion-root');
 if (root) {
   let last = '';
-  let connection;
-  let focusCurrentSession = false;
-  const onCurrentSession = () => {
-    focusCurrentSession = true;
-    if (window.desktop?.showCurrentSession) window.desktop.showCurrentSession();
-    else connection?.requestCurrentSession();
-  };
   const update = state => {
     const fingerprint = isTerritorialMode(state?.mode) ? null : JSON.stringify(state || {});
     if (fingerprint !== null && fingerprint === last) return;
     last = fingerprint;
-    renderCompanion(root, state, { onCurrentSession });
-    if (focusCurrentSession && state.mode !== 'previous-session') {
-      const heading = root.querySelector('h1');
-      if (heading) {
-        focusCurrentSession = false;
-        heading.tabIndex = -1;
-        heading.focus({ preventScroll: true });
-      }
-    }
+    renderCompanion(root, state);
   };
   update({ mode: 'idle' });
   window.addEventListener('pagehide', event => {
@@ -619,7 +690,7 @@ if (root) {
       if (state && !eventReceived) update(state);
     });
   } else {
-    connection = connectCompanionViewer(update);
+    const connection = connectCompanionViewer(update);
     if (connection?.embedded) document.body.classList.add('companion-embedded');
     if (!connection) idleView(root, true);
   }

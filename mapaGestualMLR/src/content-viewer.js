@@ -1,11 +1,13 @@
 import { fitContentViewport, panContentViewport, zoomContentViewport } from './content-viewport.js';
 import { assetUrl } from './asset-url.js';
+import { CHART_SIZE, createCouncilChart } from './council-chart.js';
 
 export function createContentViewer(container, { onChange = () => {}, manifestUrl = '/content/manifest.json' } = {}) {
   const standalone = !document.body.classList.contains('twin-projection');
   let manifest = null, slides = [], slideIndex = 0, opened = false, destroyed = false;
   let viewport = fitContentViewport({ width: 1, height: 1, imageWidth: 1, imageHeight: 1 });
   let drag = null, imageGeneration = 0, returnFocus = null;
+  let chart = null;
   const mapElements = new Set();
   const overlay = document.createElement('section');
   overlay.className = 'content-viewer'; overlay.hidden = true;
@@ -18,6 +20,8 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
     stage.setAttribute('aria-keyshortcuts', 'ArrowUp ArrowDown ArrowLeft ArrowRight');
   }
   const image = document.createElement('img'); image.className = 'content-image'; image.alt = ''; image.draggable = false;
+  const vector = document.createElement('div'); vector.className = 'content-image content-vector'; vector.hidden = true;
+  vector.setAttribute('role', 'img');
   const status = document.createElement('span'); status.className = 'content-page-status'; status.setAttribute('aria-live', 'polite');
   const heading = document.createElement('div');
   heading.className = 'content-heading';
@@ -26,13 +30,16 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   topic.textContent = 'Seguridad y riesgos';
   const title = document.createElement('h1');
   title.id = 'content-title';
-  heading.append(topic, title, status);
+  const detail = document.createElement('p'); detail.className = 'content-detail';
+  const chartNote = document.createElement('span'); chartNote.className = 'content-note'; chartNote.hidden = true;
+  detail.append(status, chartNote);
+  heading.append(topic, title, detail);
   const unavailable = document.createElement('p');
   unavailable.className = 'content-unavailable';
   unavailable.hidden = true;
   unavailable.setAttribute('role', 'status');
   unavailable.textContent = 'No se pudo cargar este gráfico. Prueba con otro o vuelve al mapa.';
-  stage.append(image, unavailable);
+  stage.append(image, vector, unavailable);
   const controls = document.createElement('nav'); controls.className = 'content-controls'; controls.setAttribute('aria-label', 'Navegación de gráficos');
   const button = (id, label, symbol, action, caption = '', parent = controls) => {
     const element = document.createElement('button'); element.type = 'button'; element.id = id;
@@ -87,15 +94,16 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
   function info() {
     const page = slides[slideIndex];
     return { isOpen: opened, slideIndex, slideCount: slides.length, count: slides.length,
-      sourcePage: page?.sourcePage ?? null, title: page?.title ?? '', reading: page?.reading ?? '',
+      sourcePage: page?.sourcePage ?? null, title: page?.title ?? '', reading: chart?.takeaway ?? page?.reading ?? '',
       scale: viewport.scale, offset: { x: viewport.x, y: viewport.y },
       canPrevious: opened && slideIndex > 0, canNext: opened && slideIndex < slides.length - 1 };
   }
   function emit(reason) { onChange({ reason, ...info() }); }
   function paint() {
-    image.style.width = `${viewport.imageWidth * viewport.fit}px`;
-    image.style.height = `${viewport.imageHeight * viewport.fit}px`;
-    image.style.transform = `translate(-50%, -50%) translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
+    const artwork = chart ? vector : image;
+    artwork.style.width = `${viewport.imageWidth * viewport.fit}px`;
+    artwork.style.height = `${viewport.imageHeight * viewport.fit}px`;
+    artwork.style.transform = `translate(-50%, -50%) translate(${viewport.x}px, ${viewport.y}px) scale(${viewport.scale})`;
     stage.dataset.zoomed = String(viewport.scale > 1.001);
     if (standalone) {
       const [reduce, fit, enlarge] = zoomButtons;
@@ -111,28 +119,39 @@ export function createContentViewer(container, { onChange = () => {}, manifestUr
     if (!opened) return;
     const page = slides[slideIndex];
     const width = stage.clientWidth || 1, height = stage.clientHeight || 1;
-    viewport = fitContentViewport({ width, height, imageWidth: page.width || image.naturalWidth || 1,
-      imageHeight: page.height || image.naturalHeight || 1,
+    const chartSize = chart ? CHART_SIZE : page;
+    viewport = fitContentViewport({ width, height, imageWidth: chartSize.width || image.naturalWidth || 1,
+      imageHeight: chartSize.height || image.naturalHeight || 1,
       scale: reset ? 1 : viewport.scale, x: reset ? 0 : viewport.x, y: reset ? 0 : viewport.y });
     paint();
   }
   function setPage() {
     const page = slides[slideIndex], generation = ++imageGeneration;
-    // Reset the page's transform before loading so dimensions cannot carry
-    // over from the previous page, including a slow image decode.
-    viewport = fitContentViewport({ width: stage.clientWidth || 1, height: stage.clientHeight || 1,
-      imageWidth: page.width || 1, imageHeight: page.height || 1 });
     const pageTitle = page.title || `Gráfico ${slideIndex + 1}`;
-    image.alt = page.description || pageTitle;
+    chart = standalone ? createCouncilChart(page.chart, pageTitle) : null;
     unavailable.hidden = true;
-    image.hidden = false;
-    image.onload = () => { if (!destroyed && generation === imageGeneration) resize(true); };
-    image.onerror = () => {
-      if (destroyed || generation !== imageGeneration || !opened) return;
-      image.hidden = true;
-      unavailable.hidden = false;
-    };
-    image.src = assetUrl(page.src); paint();
+    image.hidden = Boolean(chart);
+    vector.hidden = !chart;
+    chartNote.hidden = !chart?.note;
+    chartNote.textContent = chart?.note ?? '';
+    if (chart) {
+      vector.replaceChildren(chart.svg);
+      vector.setAttribute('aria-label', chart.description);
+      image.onload = image.onerror = null;
+      image.removeAttribute('src');
+    } else {
+      vector.replaceChildren();
+      image.alt = page.description || pageTitle;
+      image.onload = () => { if (!destroyed && generation === imageGeneration) resize(true); };
+      image.onerror = () => {
+        if (destroyed || generation !== imageGeneration || !opened) return;
+        image.hidden = true;
+        unavailable.hidden = false;
+      };
+      image.src = assetUrl(page.src);
+    }
+    // Reset before the new artwork is painted, including slow raster assets.
+    resize(true);
     const focused = document.activeElement;
     previous.disabled = slideIndex === 0; next.disabled = slideIndex === slides.length - 1;
     if (standalone && ((focused === previous && previous.disabled) || (focused === next && next.disabled))) {

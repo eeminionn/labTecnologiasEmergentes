@@ -2,12 +2,10 @@
   --session-overrun: var(--rosado-50);
   --session-overrun-ink: var(--tema-texto);
   --session-pending: color-mix(in srgb, var(--tinta-suave) 24%, var(--superficie));
-  --session-priority-ink: var(--morado-100);
-  --session-priority-background: var(--morado-10);
+  --session-priority-ink: var(--tema-texto);
+  --session-priority-background: var(--rosado-10);
 }
 .previous-session-view .companion-content { padding-block: 28px 24px; gap: 18px; }
-.previous-session-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px 24px; }
-.companion-app .previous-session-next { min-height: 44px; padding-inline: 18px; }
 .previous-session-layout { display: grid; align-items: start; gap: 20px; }
 .previous-session-layout.has-attendance { grid-template-columns: minmax(0, 1fr) clamp(220px, 25vw, 290px); }
 .previous-session-view .previous-session-chart,
@@ -24,7 +22,7 @@
 .previous-session-attendance-heading h2 { margin: 0; font-size: 22px; line-height: 1.25; }
 .previous-session-total { text-align: right; font-variant-numeric: tabular-nums; }
 .previous-session-total dt { color: var(--ink-secondary); font-size: 12px; }
-.previous-session-total dd { color: var(--azul-100); font-size: 26px; font-weight: 600; line-height: 1.2; }
+.previous-session-total dd { color: var(--azul-100); font-size: clamp(19px, 2.3vw, 26px); font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
 .previous-session-keys { display: flex; flex-wrap: wrap; grid-column: 1 / -1; gap: 8px 18px; }
 .previous-session-key { display: inline-flex; align-items: center; gap: 7px; color: var(--ink-secondary); font-size: 12px; }
 .previous-session-key :is(.previous-session-actual-key, .previous-session-overrun-key, .previous-session-pending-key) {
@@ -37,7 +35,7 @@
 
 .previous-session-axis, .previous-session-row {
   display: grid;
-  grid-template-columns: minmax(130px, 34%) minmax(0, 1fr) 86px;
+  grid-template-columns: minmax(120px, 33%) minmax(0, 1fr) clamp(86px, 17%, 112px);
   align-items: center;
   column-gap: 12px;
   padding-inline: 10px;
@@ -68,12 +66,12 @@
   filter: drop-shadow(1px 0 0 var(--superficie)) drop-shadow(-1px 0 0 var(--superficie));
 }
 .previous-session-value { display: grid; gap: 2px; text-align: right; font-variant-numeric: tabular-nums; }
-.previous-session-value strong { font-size: 15px; font-weight: 600; white-space: nowrap; }
+.previous-session-value strong { font-size: 15px; font-weight: 700; overflow-wrap: anywhere; }
 .previous-session-value small { font-size: 11px; line-height: 1.3; color: var(--ink-secondary); }
 .previous-session-delta { font-weight: 600; }
 .previous-session-row[data-timing="overrun"] .previous-session-delta { color: var(--session-overrun-ink); }
 .previous-session-row[data-carryover="true"] {
-  border: 1px solid var(--morado-30); border-radius: 7px; margin-top: 2px; background: var(--session-priority-background);
+  border: 1px solid var(--rosado-30); border-radius: 7px; margin-top: 2px; background: var(--session-priority-background);
 }
 .previous-session-row[data-carryover="true"] .previous-session-topic strong { font-weight: 600; }
 .previous-session-priority-label {
@@ -86,10 +84,18 @@
 }
 
 .previous-session-attendance-heading { display: grid; gap: 4px; margin-bottom: 18px; }
+.previous-session-attendance-chart {
+  display: flex; block-size: 8px; overflow: hidden; margin-top: 6px;
+  border-radius: 99px; background: var(--azul-10);
+}
+.previous-session-attendance-chart > span[data-present="true"] { background: var(--azul-100); }
+.previous-session-attendance-chart > span[data-present="false"] { background: var(--tema-100); }
+.previous-session-attendance-chart > span[data-present="undefined"] { background: var(--tinta-suave); }
+.previous-session-view .previous-session-empty { color: var(--tinta-suave); font-size: 12px; }
 .previous-session-attendance-groups { display: grid; align-items: start; gap: 16px; }
 .previous-session-attendance-group { --attendance-color: var(--ink-secondary); }
 .previous-session-attendance-group[data-present="true"] { --attendance-color: var(--azul-100); }
-.previous-session-attendance-group[data-present="false"] { --attendance-color: var(--morado-100); }
+.previous-session-attendance-group[data-present="false"] { --attendance-color: var(--tema-texto); }
 .previous-session-attendance-group h3 {
   display: flex;
   align-items: baseline;
@@ -121,15 +127,19 @@
   .previous-session-attendee { padding-block: 5px; font-size: 13px; }
 }
 
-@media (max-width: 850px) {
+@media (max-width: 740px) {
   .previous-session-layout.has-attendance { grid-template-columns: minmax(0, 1fr); }
   .previous-session-attendance-groups { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px 24px; }
 }
 
 @media (max-width: 550px) {
-  .previous-session-axis, .previous-session-row { grid-template-columns: minmax(92px, 38%) minmax(0, 1fr) 64px; padding-inline: 3px; column-gap: 7px; }
+  .previous-session-axis, .previous-session-row { grid-template-columns: minmax(80px, 34%) minmax(0, 1fr) minmax(68px, 25%); padding-inline: 3px; column-gap: 6px; }
   .previous-session-topic strong, .previous-session-value strong { font-size: 12px; }
   .previous-session-axis { font-size: 11px; }
+}
+
+@media (max-width: 430px) {
+  .previous-session-ticks > span:not(:first-child, :last-child) { visibility: hidden; }
 }
 
 .previous-session-visually-hidden {

@@ -12,7 +12,7 @@ import { createForecastView } from './analysis-forecast-view.js';
 import { createAnalysisQuadrants, classifyAnalysisQuadrant, normalizeAnalysisQuadrants, toggleAnalysisArea } from './analysis-quadrants.js';
 import { createAnalysisQuadrantSelector } from './analysis-quadrant-selector.js';
 import { createAnalysisInspector } from './analysis-inspector.js';
-import { buildCompanionAnalysis } from './companion-analysis-data.js';
+import { buildCompanionAnalysis, resolveCompanionRanking } from './companion-analysis-data.js';
 import { analysisBlendOpacity } from './analysis-transition.js';
 import { assetUrl } from './asset-url.js';
 
@@ -121,6 +121,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
   let timelineFrames=null,timelineActive=false,suppressTimelineFrame=false;
   let forecastTrigger=null, forecastPointerDown=null, forecastViewport=null;
   let forecastRaster=null, companionContext=null, companionAnalysis=null;
+  let rankingSettings={}, rankingSource=null, rankingView=null;
   let quadrantIds=null, mapPointerStart=null;
   const quadrantCache=new WeakMap();
   const recordQuadrant=record=>{
@@ -154,7 +155,12 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
           document.getElementById(`${getAnalysisLayer(next).prefix}-category-${next}`)?.focus({preventScroll:true});
         }
       },
-      cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:()=>{catalog.close();for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();clearHover();},playback:togglePlayback,seek:seekPlayback
+      cameraType:value=>setDatasetFilters('cameras',{type:toggleCameraType(datasets.cameras.filters.type,value)},{keepPicker:true}),robbery:value=>setDatasetFilters('security',{robbery:toggleSecurityRobberyType(datasets.security.filters.robbery,value)},{keepPicker:true}),display:setCameraDisplay,resourceFilters:values=>setResourceFilters(kind,values),catalog:openCatalog,locate:locateResource,opacity:value=>setOpacity(kind,value),clearHover:key=>{
+        if(key==='area'||key==='companion')playback.pause();
+        catalog.close();
+        for(const [id,panel] of Object.entries(panels))if(id!==kind)panel.closePicker();
+        clearHover();
+      },playback:togglePlayback,seek:seekPlayback,companionRanking:setCompanionRanking
     });
   }
   const el=(tag,cls,text)=>{const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e;};
@@ -229,12 +235,15 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
       preview:forecast.active?null:preview});
   }
   function updatePanels(){
+    const robberyUnits=visibleUnitRobberies(),security=datasets.security;
+    const robberyTotals=robberyUnits?{units:robberyUnits,parts:security.quadrantRobberies,
+      areaTotal:security.summary.total,period:companionCut('security',security.filters,security.dateRange).period}:null;
     overlay.dataset.crossed=String(!forecast.active&&crossed());
     overlay.dataset.category=activeCategory;
     for(const [kind,panel] of Object.entries(panels)){
       const resource=getAnalysisLayer(kind).resource;
       const dataset=datasets[kind];
-      panel.update({...dataset,units:district.units,unitRobberies:visibleUnitRobberies(),quadrantIds,spatialLabel:spatialLabel(quadrantIds),loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
+      panel.update({...dataset,units:district.units,robberyTotals,quadrantIds,spatialLabel:spatialLabel(quadrantIds),loaded:resource?resourcesReady:loaded,error:resource?resourceError:failure,canChoose:loaded,visible:!forecast.active&&visible(kind),side:activeCategory===kind?'left':'right',crossed:crossed(),datasetCount:dataset.records.length,playback:kind==='security'?playback.info():null});
     }
     const dock=panels[activeCategory].inspectorSlot;
     if(inspector.element.parentNode!==dock)dock.append(inspector.element);
@@ -278,7 +287,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
   const pointerLeave=cancelPendingHover,outsidePicker=event=>{
     const target=event.target;
     if(!target.closest?.('.analysis-layer-picker,.analysis-layer-trigger,.analysis-compare'))catalog.close(false);
-    if(!target.closest?.('.analysis-date-popover,.analysis-quadrant-filter,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter'))closeAllPickers();
+    if(!target.closest?.('.analysis-date-popover,.analysis-quadrant-filter,.analysis-date-selection,.analysis-filter-date,.analysis-camera-filters,.analysis-robbery-filter,.analysis-companion-trigger'))closeAllPickers();
   },keyDown=event=>{
     if(event.key!=='Escape')return;
     if(forecast.active){forecast.stopPlacing();return;}
@@ -412,7 +421,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     if(!unchanged)companionAnalysis={ids:quadrantIds,layers:inputs,value:buildCompanionAnalysis({
       layers:inputs.map(layer=>({...layer,filtered:Boolean(layer.filterLabels?.length)
         ||layer.kind==='security'&&layer.filters.period!=='all'})),
-      quadrantIds,allQuadrantIds,quadrantOf:recordQuadrant
+      quadrantIds,allQuadrantIds,quadrantOf:recordQuadrant,quadrantAreaM2:id=>district.byId.get(id)?.areaM2
     })};
     return companionAnalysis.value;
   }
@@ -443,6 +452,27 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     ],focusQuadrantId:state.local?.id};
     onCompanion({mode:'forecast',forecast:state,territory});
   }
+  function resolveRanking(){
+    const resolved=resolveCompanionRanking(rankingSource,rankingSettings);
+    rankingView=resolved?{...resolved,automatic:!rankingSettings.level}:null;
+  }
+  function setCompanionRanking(change){
+    rankingSettings={...rankingSettings,...change};
+    resolveRanking();
+    publishCompanion();
+  }
+  function companionRanking(insights){
+    const source=insights.cross??insights.ranking;
+    if(source!==rankingSource){
+      rankingSource=source;
+      rankingSettings={...rankingSettings,page:0};
+      resolveRanking();
+    }
+    for(const [kind,panel] of Object.entries(panels))panel.setCompanionRanking(kind===activeCategory?rankingView:null);
+    if(!rankingView)return null;
+    const {level,order,page}=rankingView;
+    return {level,order,page};
+  }
   function publishCompanion() {
     if(destroyed)return;
     if(forecast.active){publishForecastCompanion(forecast.info());return;}
@@ -458,12 +488,13 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     const territory={quadrantIds,areaLabel:scope.label,layers:ids.map(territoryLayer),
       focus:record?{lat:record.lat,lng:record.lng,label:record.title}:null,
       focusQuadrantId:hoverDetails?.quadrantIds?.[0]??null};
+    const insights=companionInsights(layers);
     onCompanion({
       mode:record?'resource':sector?'sector':'summary',kind,title,
       period:record?(dataset.dateRange?.label??dataset.filters.year):crossed()?null:layers[0].period,
       resource:record,sector,inspected:Boolean(hoverDetails),overview:scope,
       filters:dataset.filters,dateRange:dataset.dateRange,summary:dataset.summary,
-      layers:layers.map(({records,...layer})=>layer),territory,insights:companionInsights(layers)
+      layers:layers.map(({records,...layer})=>layer),territory,insights,ranking:companionRanking(insights)
     });
   }
   function prepareTimelineFrames(){
@@ -539,18 +570,21 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     const key=JSON.stringify(filters);
     if(!cache.has(key)){
       const records=camera?filterCameraRecords(dataset.records,filters,dataset.metadata):filterSecurityRecords(dataset.records,filters);
-      let unitRobberies=null;
+      let unitRobberies=null,quadrantRobberies=null;
       if(!camera){
         unitRobberies=Object.fromEntries(district.units.map(unit=>[unit.id,0]));
+        quadrantRobberies=Object.fromEntries(allQuadrantIds.map(id=>[id,0]));
         for(const record of records){
-          const unit=district.byId.get(recordQuadrant(record))?.unit;
-          if(unit)unitRobberies[unit]++;
+          const quadrant=district.byId.get(recordQuadrant(record));
+          if(!quadrant)continue;
+          unitRobberies[quadrant.unit]++;
+          quadrantRobberies[quadrant.id]++;
         }
       }
       if(cache.size>=5)cache.delete(cache.keys().next().value);
-      cache.set(key,{records,unitRobberies,communeSurface:buildDensitySurface(records,boundary)});
+      cache.set(key,{records,unitRobberies,quadrantRobberies,communeSurface:buildDensitySurface(records,boundary)});
     }
-    const {records,unitRobberies,communeSurface}=cache.get(key);
+    const {records,unitRobberies,quadrantRobberies,communeSurface}=cache.get(key);
     const filtered=inQuadrants(records);
     const surface=filtered.length===records.length?communeSurface:buildDensitySurface(filtered,boundary);
     const selected=quadrantIds===null?null:new Set(quadrantIds);
@@ -560,7 +594,7 @@ export async function createAnalysisView(container,{map,onChange=()=>{},onCompan
     })):[];
     return {filtered,communeTotal:records.length,summary:camera?summarizeCameraRecords(filtered):{total:filtered.length},
       areaDetails:new Map(),surface,communeSurface,mapPoints,
-      image:withImage?densityImage(surface,camera,quadrantIds,communeSurface):null,unitRobberies};
+      image:withImage?densityImage(surface,camera,quadrantIds,communeSurface):null,unitRobberies,quadrantRobberies};
   }
   function refreshMapDataset(kind){
     const d=datasets[kind];

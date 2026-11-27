@@ -20,7 +20,7 @@ function scopedMessage(event, session) {
     : null;
 }
 
-export function createCompanionPublisher({ enabled = true, onCurrentSession = () => {} } = {}) {
+export function createCompanionPublisher({ enabled = true } = {}) {
   let latest = { mode: 'idle' };
   let popup = null;
   let popupReady = false;
@@ -39,9 +39,7 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
     catch { return false; }
   }
 
-  if (enabled && native) {
-    window.desktop.onCompanionCurrentSession?.(onCurrentSession);
-  } else if (enabled) {
+  if (enabled && !native) {
     window.addEventListener('message', event => {
       const message = scopedMessage(event, session);
       if (!message || !event.source) return;
@@ -55,8 +53,7 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
         if (activeFrame) frame.ready = true;
         else popupReady = true;
         post(event.source, session, { type: 'state', state: latest });
-      } else if (message.type === 'current-session') onCurrentSession();
-      else if (message.type === 'close' && activeFrame) frame.onClose?.();
+      } else if (message.type === 'close' && activeFrame) frame.onClose?.();
     });
 
     channel = openBroadcastChannel(session);
@@ -64,7 +61,7 @@ export function createCompanionPublisher({ enabled = true, onCurrentSession = ()
       if (event.data?.type === 'ready') {
         broadcastReady = true;
         channel.postMessage({ type: 'state', state: latest });
-      } else if (event.data?.type === 'current-session') onCurrentSession();
+      }
     });
   }
 
@@ -168,12 +165,5 @@ export function connectCompanionViewer(onState) {
   });
   ready();
 
-  return {
-    embedded,
-    requestCurrentSession() {
-      const request = { type: 'current-session' };
-      if (source && (directReady || embedded)) post(source, session, request);
-      else channel?.postMessage(request);
-    }
-  };
+  return { embedded };
 }

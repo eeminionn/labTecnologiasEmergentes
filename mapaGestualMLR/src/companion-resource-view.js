@@ -28,10 +28,25 @@ function price(label, pesos) {
   return fact(label, money.format(pesos), 'companion-resource-price', `${uf.format(pesos / UF_REFERENCE.pesos)} UF`);
 }
 
-function datedFact(label, value, elapsed, className) {
+function datedFact(label, value, elapsed, className, comparison) {
   const date = value ? element('time', null, shortDate(value)) : 'Por confirmar';
   if (value) date.dateTime = value;
-  return fact(label, date, className, Number.isInteger(elapsed) ? `${days(elapsed)} corridos` : '');
+  const item = fact(label, date, className, Number.isInteger(elapsed) ? `${days(elapsed)} corridos` : '');
+  if (comparison) {
+    const { maximum, planned } = comparison;
+    const track = element('span', 'companion-procurement-track');
+    track.setAttribute('aria-hidden', 'true');
+    const normal = element('span', 'companion-procurement-track-planned');
+    normal.style.width = `${Math.min(elapsed, planned) / maximum * 100}%`;
+    track.append(normal);
+    if (elapsed > planned) {
+      const extension = element('span', 'companion-procurement-track-overrun');
+      extension.style.width = `${(elapsed - planned) / maximum * 100}%`;
+      track.append(extension);
+    }
+    item.lastElementChild.append(track);
+  }
+  return item;
 }
 
 function procurementSection(procurement) {
@@ -60,9 +75,14 @@ function procurementSection(procurement) {
   identity.append(fact('ID de la licitación', procurement.id || 'Por confirmar'),
     fact('Encargado', procurement.lead || 'Por confirmar'));
   const dates = element('dl', 'companion-procurement-dates');
+  const comparable = [procurement.plannedDays, procurement.elapsedDays].every(value => Number.isInteger(value) && value >= 0);
+  const comparison = comparable ? {
+    maximum: Math.max(1, procurement.plannedDays, procurement.elapsedDays),
+    planned: procurement.plannedDays
+  } : null;
   dates.append(datedFact('Cierre', procurement.close),
-    datedFact('Entrega prometida', procurement.promisedDelivery, procurement.plannedDays),
-    datedFact('Puesta en marcha real', procurement.operation, procurement.elapsedDays, 'companion-procurement-operation'));
+    datedFact('Entrega prometida', procurement.promisedDelivery, procurement.plannedDays, undefined, comparison),
+    datedFact('Puesta en marcha real', procurement.operation, procurement.elapsedDays, 'companion-procurement-operation', comparison));
   section.append(heading, identity, dates);
 
   if (late || procurement.reason) {

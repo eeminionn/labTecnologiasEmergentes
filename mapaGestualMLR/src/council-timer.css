@@ -18,7 +18,7 @@ body:not(.twin-projection) #council-timer-label {
   line-height: 1.2;
 }
 body:not(.twin-projection) #council-timer-value {
-  font-size: 26px;
+  font-size: clamp(26px, 2.2vw, 30px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1.1;

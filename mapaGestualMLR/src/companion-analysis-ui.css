@@ -1,0 +1,124 @@
+.companion-territory-ranking {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.companion-rank-heading {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px 10px;
+}
+.companion-territorial .companion-rank-heading h2 { margin: 0; }
+.companion-territorial .companion-rank-order,
+.companion-territorial .companion-rank-range {
+  color: var(--tinta-suave);
+  font-size: 11px;
+  line-height: 1.35;
+  font-variant-numeric: tabular-nums;
+}
+.companion-rank-range { text-align: right; }
+.companion-territory-ranking .companion-cross-summary {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.companion-territorial .companion-rank-insight {
+  padding: 5px 8px;
+  border-inline-start: 2px solid var(--rosado-100);
+  background: var(--rosado-10);
+  color: var(--tinta);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.companion-territory-ranking .companion-cross-table {
+  border-spacing: 0;
+  margin: 0;
+  line-height: 1.3;
+}
+.companion-territory-ranking .companion-cross-table th,
+.companion-territory-ranking .companion-cross-table td {
+  padding: 4px 6px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.companion-territory-ranking .companion-cross-table th:first-child {
+  width: 22%;
+  text-align: left;
+}
+.companion-cross-table tbody th,
+.companion-cross-table tbody td { border-top: 1px solid var(--azul-10); }
+.companion-cross-table thead th[aria-sort] { font-weight: 700; }
+.companion-cross-table tfoot :is(td, th) {
+  border-top: 1px solid var(--azul-30);
+  background: var(--azul-10);
+  font-weight: 700;
+}
+.companion-territory-ranking .companion-cross-track {
+  width: 100%;
+  height: 4px;
+  margin-top: 3px;
+  overflow: hidden;
+  background: var(--azul-10);
+}
+.companion-territory-ranking .companion-cross-value strong {
+  display: block;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+.companion-breakdown dl { display: grid; gap: 5px; }
+.companion-breakdown dl > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, .95fr);
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+.companion-breakdown :is(dt, dd, strong) { min-width: 0; overflow-wrap: anywhere; }
+.companion-breakdown dd {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 5px;
+  font-variant-numeric: tabular-nums;
+}
+.companion-breakdown .companion-cross-track {
+  height: 6px;
+  overflow: hidden;
+  background: var(--azul-10);
+}
+.companion-territorial .companion-layer-result-main {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) fit-content(65%);
+  align-items: baseline;
+}
+.companion-territorial .companion-layer-result-main h3 { min-width: 0; overflow-wrap: anywhere; }
+.companion-territorial .companion-layer-result-main > strong {
+  min-width: 0;
+  font-size: clamp(20px, 2.25vw, 32px);
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+.companion-territorial :is([data-kind="security"], [data-kind="alarms"]) { --projection-series-ink: #c5266e; }
+.companion-territorial [data-kind="cameras"] { --projection-series-ink: var(--azul-100); }
+.companion-territorial [data-kind="fixed"] { --projection-series-ink: var(--morado-100); }
+.companion-territorial .companion-breakdown h2,
+.companion-territorial .companion-cross-table thead th[data-kind],
+.companion-territorial .companion-layer-result-main :is(h3, strong) {
+  color: var(--projection-series-ink, var(--tinta));
+}
+.companion-territorial .companion-territorial-context .companion-local-detail { margin: 0; }
+
+@media (max-height: 760px) {
+  .companion-territory-ranking { gap: 5px; margin-top: 8px; padding-top: 7px; }
+  .companion-territory-ranking .companion-cross-table :is(th, td) { padding-block: 3px; }
+}
+@media (max-width: 450px) {
+  .companion-territory-ranking .companion-cross-table :is(th, td) { padding-inline: 3px; }
+  .companion-territory-ranking .companion-cross-table th:first-child { width: 24%; }
+}

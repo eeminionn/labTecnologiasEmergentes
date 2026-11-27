@@ -234,7 +234,8 @@ export function createCompanionTerritoryMap() {
         sample.dataset.heat = '';
         sample.style.background = `linear-gradient(90deg, ${stops.map(stop => `rgb(${stop.color.join(',')}) ${stop.value * 100}%`).join(', ')})`;
       }
-      row.append(sample, node('span', '', layer.label || layerNames[layer.kind]));
+      const label = layer.mode === 'heatmap' ? `Concentración local · ${layerNames[layer.kind]}` : layerNames[layer.kind];
+      row.append(sample, node('span', '', layer.label || label));
       legend.append(row);
     }
   }

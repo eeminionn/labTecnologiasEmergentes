@@ -28,7 +28,7 @@ const trafficCheck = !browserBuild && parameters.has('traffic-check');
 const analysisCheck = !browserBuild && parameters.has('analysis-check');
 const twinProjection = !browserBuild && window.desktop?.twinBridge === true;
 const companionEnabled = !twinProjection && !smoke && !trafficCheck && !analysisCheck;
-const companion = createCompanionPublisher({ enabled: companionEnabled, onCurrentSession: showCurrentSession });
+const companion = createCompanionPublisher({ enabled: companionEnabled });
 const webCompanion = browserBuild ? createWebCompanionView(companion, $('companion-open')) : null;
 const previousSession = {mode:'previous-session',session:PREVIOUS_COUNCIL_SESSION};
 let awaitingCurrentSession=companionEnabled&&!browserBuild;
@@ -490,7 +490,7 @@ async function verifyNativeSelection() {
   try {
     const beforeMap=map.info();
     const pointHold=await hold(map.targets().find(target=>target.id==='point-0'),true,'changing');
-    await waitFor(()=>contentViewer.isOpen && $('map').querySelector('.content-image')?.naturalWidth>0,2000,'primer gráfico');
+    await waitFor(()=>contentViewer.isOpen && ($('map').querySelector('.content-vector:not([hidden]) svg') || $('map').querySelector('img.content-image')?.naturalWidth>0),2000,'primer gráfico');
     const contentOpened=contentViewer.info().sourcePage===2 && contentViewer.info().slideCount===5;
     const firstBoundary=!!$('content-previous')?.disabled && !control('content-previous');
     cancelGesture();

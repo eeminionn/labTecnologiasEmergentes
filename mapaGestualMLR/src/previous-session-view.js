@@ -3,6 +3,7 @@ import { chartTint } from './companion-chart-tint.js';
 
 const renderedSessions = new WeakMap();
 const number = new Intl.NumberFormat('es-CL', { maximumFractionDigits: 1 });
+const compactNumber = new Intl.NumberFormat('es', { notation: 'compact', maximumFractionDigits: 1 });
 
 function element(tag, className, text) {
   const node = document.createElement(tag);
@@ -13,6 +14,16 @@ function element(tag, className, text) {
 
 function minutes(value) {
   return Number.isFinite(value) ? Math.max(0, value) : 0;
+}
+
+function durationAxis(peak) {
+  const interval = Math.max(10, peak / 4);
+  const unit = 10 ** Math.floor(Math.log10(interval));
+  const step = [1, 2, 2.5, 5, 10].find(value => value >= interval / unit) * unit;
+  const divisions = Math.ceil(Math.max(40, peak) / step);
+  const maximum = divisions * step;
+  if (!Number.isFinite(maximum)) return { maximum: peak, ticks: [0, peak / 4, peak / 2, peak * .75, peak] };
+  return { maximum, ticks: Array.from({ length: divisions + 1 }, (_, index) => index * step) };
 }
 
 function sessionDate(value) {
@@ -30,36 +41,30 @@ function legend(label, className) {
   return item;
 }
 
-export function renderPreviousSession(root, session = {}, onCurrentSession) {
+export function renderPreviousSession(root, session = {}) {
+  session = session ?? {};
   const key = JSON.stringify(session);
   const previous = renderedSessions.get(root);
   if (previous?.key === key && previous.main.isConnected) return;
 
-  const topics = Array.isArray(session.topics) ? session.topics : [];
+  const topics = Array.isArray(session.topics) ? session.topics.filter(topic => typeof topic?.title === 'string') : [];
   const total = Number.isFinite(session.durationMinutes)
-    ? session.durationMinutes
+    ? minutes(session.durationMinutes)
     : topics.reduce((sum, topic) => sum + minutes(topic.actualMinutes), 0);
-  const maximum = Math.max(40, ...topics.map(topic => Math.ceil(Math.max(minutes(topic.actualMinutes), minutes(topic.plannedMinutes)) / 10) * 10));
+  const { maximum, ticks: ticksValues } = durationAxis(topics.reduce((peak, topic) =>
+    Math.max(peak, minutes(topic.actualMinutes), minutes(topic.plannedMinutes)), 0));
   const planned = [...new Set(topics.map(topic => minutes(topic.plannedMinutes)))];
-  const longest = Math.max(1, ...topics.map(topic => minutes(topic.actualMinutes)));
+  const longest = topics.reduce((peak, topic) => Math.max(peak, minutes(topic.actualMinutes)), 1);
   const scale = value => value / maximum * 100 + '%';
 
   const main = element('div', 'companion-shell previous-session-view');
   const topbar = element('header', 'companion-topbar');
   topbar.append(element('strong', null, 'La Reina'), element('span', null, 'Concejo en perspectiva'));
   const content = element('div', 'companion-content');
-  const heading = element('header', 'previous-session-heading');
-  const headingText = element('div', 'companion-heading');
+  const heading = element('header', 'companion-heading');
   const title = element('h1', null, session.title || 'Sesión pasada');
   title.id = 'companion-title';
-  headingText.append(title, element('p', 'companion-subtitle', sessionDate(session.date)));
-  heading.append(headingText);
-  if (typeof onCurrentSession === 'function') {
-    const next = element('button', 'primary previous-session-next', 'Ir a la sesión actual');
-    next.type = 'button';
-    next.addEventListener('click', onCurrentSession);
-    heading.append(next);
-  }
+  heading.append(title, element('p', 'companion-subtitle', sessionDate(session.date)));
 
   const layout = element('div', 'previous-session-layout');
   const figure = element('figure', 'companion-card previous-session-chart');
@@ -69,7 +74,8 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   const chartTitle = element('h2', null, 'Tiempo por tema');
   chartTitle.id = 'previous-session-chart-title';
   const totalTime = element('dl', 'previous-session-total');
-  totalTime.append(element('dt', null, 'Duración de la sesión'), element('dd', null, `${number.format(total)} min`));
+  totalTime.append(element('dt', null, 'Duración de la sesión'),
+    element('dd', null, topics.length || total > 0 ? `${number.format(total)} min` : '—'));
   const plannedTotal = topics.reduce((sum, topic) => sum + minutes(topic.plannedMinutes), 0);
   if (plannedTotal > 0) totalTime.append(element('dd', 'previous-session-plan-total', `${number.format(plannedTotal)} min previstos`));
   caption.append(chartTitle, totalTime);
@@ -78,7 +84,7 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   keys.append(legend(planned.length === 1 ? `${number.format(planned[0])} min previstos por tema` : 'Minutos previstos', 'previous-session-planned-key'));
   keys.append(legend('Tiempo excedido', 'previous-session-overrun-key'));
   keys.append(legend('Tiempo pendiente', 'previous-session-pending-key'));
-  caption.append(keys);
+  if (topics.length) caption.append(keys);
   const overruns = topics.filter(topic => minutes(topic.actualMinutes) > minutes(topic.plannedMinutes) + 3).length;
   const pending = topics.filter(topic => minutes(topic.actualMinutes) < minutes(topic.plannedMinutes) / 2).length;
   if (overruns || pending) caption.append(element('p', 'previous-session-overview',
@@ -89,8 +95,8 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
   axis.setAttribute('aria-hidden', 'true');
   axis.append(element('span', null, 'Tema'));
   const ticks = element('div', 'previous-session-ticks');
-  for (let value = 0; value <= maximum; value += 10) {
-    const tick = element('span', null, value);
+  for (const value of ticksValues) {
+    const tick = element('span', null, value >= 1000 ? compactNumber.format(value) : number.format(value));
     tick.style.left = `${value / maximum * 100}%`;
     ticks.append(tick);
   }
@@ -134,18 +140,25 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
     row.append(topicTitle, track, value);
     list.append(row);
   });
-  figure.append(caption, axis, list);
+  figure.append(caption);
+  if (topics.length) figure.append(axis, list);
+  else figure.append(element('p', 'previous-session-empty', 'No hay tiempos registrados por tema.'));
   layout.append(figure);
 
   const attendees = Array.isArray(session.attendance) ? session.attendance.filter(person => typeof person?.name === 'string' && person.name.trim()) : [];
-  if (attendees.length) {
+  if (Array.isArray(session.attendance)) {
     layout.classList.add('has-attendance');
     const attendance = element('section', 'companion-card previous-session-attendance');
+    attendance.dataset.theme = 'seguridad';
     attendance.setAttribute('aria-labelledby', 'previous-session-attendance-title');
     const attendanceHeading = element('header', 'previous-session-attendance-heading');
     const attendanceTitle = element('h2', null, 'Asistencia');
     attendanceTitle.id = 'previous-session-attendance-title';
     attendanceHeading.append(attendanceTitle);
+    const attendanceChart = element('div', 'previous-session-attendance-chart');
+    attendanceChart.setAttribute('aria-hidden', 'true');
+    if (attendees.length) attendanceHeading.append(attendanceChart);
+    else attendanceHeading.append(element('p', 'previous-session-empty', 'Sin registro de asistencia.'));
     const groups = element('div', 'previous-session-attendance-groups');
     for (const { present, label, empty } of [
       { present: true, label: 'Presentes', empty: 'Sin asistentes' },
@@ -153,6 +166,12 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
       { present: undefined, label: 'Sin registro' }
     ]) {
       const people = attendees.filter(person => (typeof person.present === 'boolean' ? person.present : undefined) === present);
+      if (people.length) {
+        const portion = element('span');
+        portion.dataset.present = String(present);
+        portion.style.flexGrow = String(people.length);
+        attendanceChart.append(portion);
+      }
       if (!people.length && !empty) continue;
       const group = element('div', 'previous-session-attendance-group');
       group.dataset.present = String(present);
@@ -173,7 +192,8 @@ export function renderPreviousSession(root, session = {}, onCurrentSession) {
       }
       groups.append(group);
     }
-    attendance.append(attendanceHeading, groups);
+    attendance.append(attendanceHeading);
+    if (attendees.length) attendance.append(groups);
     layout.append(attendance);
   }
 

@@ -117,8 +117,8 @@
 }
 .companion-resource-details .companion-procurement-compliance[data-status="late"] {
   border-color: var(--rosado-40);
-  color: var(--morado-100);
-  background: var(--rosado-20);
+  color: var(--procurement-late);
+  background: var(--superficie);
 }
 .companion-resource-details .companion-procurement-compliance[data-status="on-time"] {
   color: var(--azul-100);
@@ -131,12 +131,18 @@
   block-size: 14px;
   border-radius: 50%;
   color: var(--superficie);
-  background: var(--morado-100);
+  background: var(--procurement-late);
   font-size: 11px;
   font-weight: 700;
 }
 .companion-resource-details .companion-procurement-identity { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .companion-resource-details .companion-procurement-dates { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.companion-procurement-track {
+  display: flex; width: 100%; height: 6px; margin-top: 4px;
+  overflow: hidden; border-radius: 3px; background: var(--azul-20);
+}
+.companion-procurement-track-planned { background: var(--azul-100); }
+.companion-procurement-track-overrun { background: var(--rosado-100); }
 .companion-procurement[data-status="late"] .companion-procurement-operation dd { color: var(--procurement-late); }
 .companion-resource-details .companion-procurement-reason {
   display: flex;

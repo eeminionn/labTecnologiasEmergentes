@@ -3,7 +3,11 @@ import { ANALYSIS_LAYERS, ANALYSIS_YEARS, ALARM_RANK_DEFAULT, ALARM_RANK_MAX, MO
 import { CAMERA_HEAT_COLOR_STOPS } from './camera-analysis-data.js';
 import { unitNeighborhoodColor } from './analysis-quadrants.js';
 const MONTHS = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-const number = value => new Intl.NumberFormat('es-CL').format(value);
+const fullNumber = new Intl.NumberFormat('es-CL');
+const compactNumber = new Intl.NumberFormat('es-CL', { notation: 'compact', compactDisplay: 'long', maximumFractionDigits: 1 });
+const number = value => fullNumber.format(value);
+const visibleTotal = value => value < 100000000 ? number(value) : compactNumber.format(value);
+const hasCount = value => Number.isSafeInteger(value) && value >= 0;
 const HIGH_ROBBERY_THRESHOLD = .9;
 const MAX_HIGHLIGHTED_UNITS = 3;
 export const CAMERA_CHOICES = {
@@ -18,7 +22,7 @@ export const SECURITY_CHOICES = {
 export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const { id: kind, prefix, resource, label, tone } = layer, camera = kind === 'cameras';
   const controls = [], filterButtons = [], modeButtons = [];
-  let state = null, picker = null;
+  let state = null, picker = null, companionState = null;
   const el = (tag, cls, text) => { const e=document.createElement(tag);if(cls)e.className=cls;if(text)e.textContent=text;return e; };
   const panel=el('section',`analysis-panel analysis-${tone}-panel`);
   panel.setAttribute('aria-label',label);
@@ -52,7 +56,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   });
   header.append(titleRow,categoryOptions,category);
   const body=el('div','analysis-body'),stats=el('section','analysis-stats');stats.setAttribute('aria-label','Resultados de la consulta');
-  const resultLabel=el('p','analysis-result-label','Resultado');
+  const resultLabel=el('p','analysis-result-label','Total del área');
   const totalRow=el('div','analysis-total-row'),total=el('strong',null,'—');total.id=`${prefix}-total`;
   const totalLabel=el('span','analysis-total-label',layer.count);totalRow.append(total,totalLabel);
   const selectedPeriod=el('p','analysis-selected-period','Cargando datos…');
@@ -60,12 +64,13 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   stats.setAttribute('role','status');stats.setAttribute('aria-atomic','true');
   const empty=el('p','analysis-empty','Sin resultados. Cambia el período o el área.');empty.hidden=true;
   const heatKey=el('div','analysis-heat-key');heatKey.hidden=true;
-  heatKey.setAttribute('aria-label',`Concentración relativa de ${layer.count}, de menor a mayor`);
-  const heatRamp=el('span','analysis-heat-ramp');heatRamp.setAttribute('aria-hidden','true');
+  heatKey.setAttribute('role','img');
+  heatKey.setAttribute('aria-label',`Concentración local de ${layer.count}, de baja a alta`);
+  const heatRamp=el('span','analysis-heat-ramp');
   const stops=camera?CAMERA_HEAT_COLOR_STOPS:HEAT_COLOR_STOPS;
   heatRamp.style.background=`linear-gradient(90deg,${stops.map(stop=>`rgb(${stop.color.join(',')}) ${stop.value*100}%`).join(',')})`;
-  heatKey.append(el('span','analysis-heat-label','Concentración'),el('span',null,'Menor'),heatRamp,el('span',null,'Mayor'));
-  stats.append(resultLabel,totalRow,selectedPeriod,empty,heatKey);
+  heatKey.append(el('span','analysis-heat-label','Concentración local'),el('span',null,'Baja'),heatRamp,el('span',null,'Alta'));
+  stats.append(resultLabel,totalRow,selectedPeriod,empty);
   const monitoring=kind==='fixed'?el('p','analysis-monitoring-count'):null;
   if(monitoring)stats.append(monitoring);
   const area=el('fieldset','analysis-filter analysis-quadrant-filter');
@@ -167,6 +172,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   const actions=el('div','analysis-actions');
   const compare=button(actions,`${prefix}-cross`,'Comparar con…',(_,anchor)=>callbacks.catalog('compare',anchor),'analysis-compare');
   const forecast=button(actions,`${prefix}-forecast`,'Simular inversión',(_,anchor)=>callbacks.forecast(anchor),'forecast-entry');
+  const companionTrigger=button(actions,`${prefix}-companion-options`,'Tabla complementaria',()=>openPicker('companion'),'analysis-companion-trigger');
+  companionTrigger.hidden=true;
+  companionTrigger.setAttribute('aria-haspopup','dialog');companionTrigger.setAttribute('aria-expanded','false');
   compare.setAttribute('aria-haspopup','dialog');compare.setAttribute('aria-expanded','false');
   compare.setAttribute('aria-controls','analysis-layer-picker');
   const opacityRow=el('div','analysis-opacity'),opacityLabel=el('label',null,'Visibilidad'),opacityValue=el('output',null,'100%');
@@ -176,7 +184,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   opacityRow.prepend(opacityLabel);opacityRow.append(slider,opacityValue);
   button(opacityRow,`${prefix}-opacity-more`,'+',()=>callbacks.opacity(Math.min(1,(state?.opacity||1)+.1))).setAttribute('aria-label','Aumentar visibilidad');
   less.setAttribute('aria-label','Disminuir visibilidad');
-  footer.append(stats,inspectorSlot,opacityRow,actions);panel.append(header,body,footer);
+  footer.append(stats,heatKey,inspectorSlot,opacityRow,actions);panel.append(header,body,footer);
   let timeline=null,playbackButton=null,timelineSlider=null,timelineOutput=null,playIcon=null,pauseIcon=null;
   if(kind==='security') {
     timeline=el('section','analysis-timeline-bar');timeline.hidden=true;timeline.setAttribute('aria-label','Línea de tiempo de robos');
@@ -205,87 +213,206 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])timeline.addEventListener(type,event=>event.stopPropagation());
   }
   const popover=el('section','analysis-date-popover');popover.id=`${prefix}-filter-popover`;popover.hidden=true;popover.setAttribute('role','dialog');popover.setAttribute('aria-labelledby',`${prefix}-picker-title`);
-  for(const control of [areaTrigger,monthPicker,...Object.values(cameraTriggers)])control.setAttribute('aria-controls',popover.id);
+  for(const control of [areaTrigger,monthPicker,companionTrigger,...Object.values(cameraTriggers)])control.setAttribute('aria-controls',popover.id);
   const popoverHeading=el('div','analysis-date-heading'),popoverTitle=el('strong');popoverTitle.id=`${prefix}-picker-title`;popoverHeading.append(popoverTitle);
   const close=button(popoverHeading,`${prefix}-date-close`,'×',closePicker);close.setAttribute('aria-label','Cerrar opciones');
   const grids={};
   const areaPicker=el('div','analysis-area-picker');grids.area=areaPicker;
-  const areaSummary=el('p','analysis-area-summary');areaSummary.setAttribute('role','status');
-  const robberyKey=el('div','analysis-unit-robbery-key','Robos por unidad');robberyKey.hidden=true;
-  const highRobberyKey=el('strong','analysis-unit-robbery-high','Mayor cantidad');highRobberyKey.hidden=true;robberyKey.append(highRobberyKey);
-  const unitGrid=el('div','analysis-unit-grid');unitGrid.setAttribute('role','group');unitGrid.setAttribute('aria-label','Unidades vecinales');
+  const areaSummary=el('p','analysis-area-summary');
+  areaSummary.setAttribute('role','status');
+  const rankingToolbar=el('div','analysis-area-order');
+  rankingToolbar.hidden=true;
+  const rankingPeriod=el('p','analysis-area-ranking-period');
+  const orderChoices=el('div','analysis-options');
+  orderChoices.setAttribute('role','group');
+  orderChoices.setAttribute('aria-label','Orden de las zonas');
+  let areaOrder='most';
+  const orderButtons=new Map([
+    ['most','Más robos'],['least','Menos robos'],['number','Por número']
+  ].map(([order,text])=>[order,button(orderChoices,`${prefix}-area-sort-${order}`,text,()=>{
+    areaOrder=order;
+    updateAreaSelection();
+  })]));
+  rankingToolbar.append(rankingPeriod,orderChoices);
+  const totalsHeading=el('div','analysis-area-totals-heading');
+  const totalsZone=el('span',null,'Unidad');
+  totalsHeading.append(totalsZone,el('span',null,'Total de robos'));
+  const unitGrid=el('div','analysis-unit-grid');
+  unitGrid.setAttribute('role','group');
+  unitGrid.setAttribute('aria-label','Unidades vecinales');
   const unitDetail=el('div','analysis-unit-detail');unitDetail.hidden=true;
   const unitBack=button(unitDetail,`${prefix}-unit-back`,'‹ Otras unidades',()=>showAreaUnit(null),'analysis-unit-back');
   const unitAll=button(unitDetail,`${prefix}-unit-all`,'Seleccionar toda la unidad',()=>callbacks.toggleUnit(activeUnitId),'analysis-unit-all');
   const childGrid=el('div','analysis-subquadrant-grid');childGrid.setAttribute('role','group');
-  unitDetail.append(childGrid);areaPicker.append(areaSummary,robberyKey,unitGrid,unitDetail);popover.append(areaPicker);
+  unitDetail.append(childGrid);
+  const areaRobberyTotal=el('div','analysis-area-robbery-summary');
+  const areaTotalValue=el('strong');
+  areaRobberyTotal.append(el('span',null,'Total del área'),areaTotalValue);
+  areaPicker.append(areaSummary,unitBack,unitAll,rankingToolbar,totalsHeading,unitGrid,unitDetail,areaRobberyTotal);
+  popover.append(areaPicker);
   const unitButtonsById=new Map(),areaButtonsById=new Map();
-  let areaUnits=[],unitsSource=null,unitsSignature='',activeUnitId=null;
+  let areaUnits=[],unitsSource=null,activeUnitId=null;
   function showAreaUnit(id,focus=true) {
-    const previous=activeUnitId;activeUnitId=id;
+    const previous=activeUnitId;
+    activeUnitId=id;
     const unit=areaUnits.find(item=>item.id===id);
-    unitGrid.hidden=id!==null;unitDetail.hidden=id===null;
+    unitGrid.hidden=Boolean(unit);
+    unitBack.hidden=unitAll.hidden=unitDetail.hidden=!unit;
     if(unit)unitDetail.style.setProperty('--unit-color',unitNeighborhoodColor(unit.id));
-    for(const [childId,control] of areaButtonsById)control.hidden=!unit?.children.some(child=>child.id===childId);
+    for(const [childId,{control}] of areaButtonsById)control.hidden=!unit?.children.some(child=>child.id===childId);
     popoverTitle.textContent=unit?`Unidad vecinal ${unit.label}`:'Unidades vecinales';
     childGrid.setAttribute('aria-label',unit?`Subcuadrantes de la unidad vecinal ${unit.label}`:'Subcuadrantes');
     updateAreaSelection();
     if(focus) {
       positionPicker(areaTrigger);
-      (unit?unitAll:unitButtonsById.get(previous)||unitGrid.querySelector('button'))?.focus({preventScroll:true});
+      const row=unit?unitAll:unitButtonsById.get(previous)?.control||unitGrid.querySelector('button');
+      row?.focus();
     }
   }
   function updateAreaUnits(units) {
     if(units===unitsSource)return;
-    unitsSource=units;
-    const signature=JSON.stringify(units.map(unit=>[unit.id,unit.label,unit.children.map(child=>[child.id,child.label])]));
-    if(signature===unitsSignature)return;
-    unitsSignature=signature;areaUnits=units;
-    for(const e of [...unitButtonsById.values(),...areaButtonsById.values()])controls.splice(controls.indexOf(e),1);
+    unitsSource=units;areaUnits=units;
+    for(const {control} of [...unitButtonsById.values(),...areaButtonsById.values()]) controls.splice(controls.indexOf(control),1);
     unitButtonsById.clear();areaButtonsById.clear();unitGrid.replaceChildren();childGrid.replaceChildren();
     for(const unit of units) {
       const control=button(unitGrid,`${prefix}-unit-${unit.id}`,'',()=>showAreaUnit(unit.id),'analysis-unit-option');
       control.style.setProperty('--unit-color',unitNeighborhoodColor(unit.id));
-      control.append(el('span','analysis-unit-number',unit.label),el('small','analysis-unit-robbery-total'),el('small','analysis-unit-count'));unitButtonsById.set(unit.id,control);
+      const total=el('span','analysis-unit-robbery-total'),selection=el('span','analysis-unit-count');
+      control.append(el('span','analysis-unit-number',unit.label),selection,total);
+      unitButtonsById.set(unit.id,{control,total,selection});
       for(const child of unit.children) {
-        const item=button(childGrid,`${prefix}-quadrant-${child.id}`,child.label,()=>callbacks.toggleQuadrant(child.id),'analysis-subquadrant-option');
-        item.setAttribute('aria-label',`Subcuadrante ${child.label}`);areaButtonsById.set(child.id,item);
+        const item=button(childGrid,`${prefix}-quadrant-${child.id}`,'',()=>callbacks.toggleQuadrant(child.id),'analysis-subquadrant-option');
+        const count=el('span','analysis-unit-robbery-total');
+        item.append(el('span','analysis-subquadrant-number',child.label),count);
+        areaButtonsById.set(child.id,{control:item,total:count});
       }
     }
     if(!areaUnits.some(unit=>unit.id===activeUnitId))activeUnitId=null;
     showAreaUnit(activeUnitId,false);
   }
+  function orderAreaRows(list,areas,buttons,counts) {
+    const canRank=Boolean(counts)&&areaOrder!=='number';
+    const direction=areaOrder==='least'?1:-1;
+    const ordered=canRank?[...areas].sort((a,b)=>direction*((counts[a.id]??0)-(counts[b.id]??0))):areas;
+    for(const [index,area] of ordered.entries()){
+      const {control}=buttons.get(area.id),atIndex=list.children.item(index);
+      if(control!==atIndex)list.insertBefore(control,atIndex);
+    }
+  }
+  function updateCount({control,total},value,high=false) {
+    const valid=hasCount(value);
+    const raw=valid?number(value):'';
+    total.hidden=!valid;
+    total.textContent=valid?visibleTotal(value):'';
+    total.dataset.highRobberies=String(high);
+    if(valid)control.dataset.robberyTotal=String(value);
+    else delete control.dataset.robberyTotal;
+    return raw?`, ${raw} ${value===1?'robo':'robos'}`:'';
+  }
   function updateAreaSelection() {
-    const selected=state?.quadrantIds??[];
-    const totals=state?.unitRobberies;
-    const ranked=areaUnits.filter(unit=>totals?.[unit.id]>0).sort((left,right)=>totals[right.id]-totals[left.id]);
-    const cutoff=(totals?.[ranked[0]?.id]??0)*HIGH_ROBBERY_THRESHOLD;
-    const highlighted=new Set(ranked.slice(0,MAX_HIGHLIGHTED_UNITS).filter(unit=>totals[unit.id]>=cutoff).map(unit=>unit.id));
-    robberyKey.hidden=!totals||activeUnitId!==null;
-    highRobberyKey.hidden=!highlighted.size;
-    for(const unit of areaUnits) {
-      const control=unitButtonsById.get(unit.id),count=unit.children.filter(child=>selected.includes(child.id)).length;
-      const robberyTotal=totals?.[unit.id],hasTotal=Number.isFinite(robberyTotal)&&robberyTotal>=0;
-      const robberyLabel=control.querySelector('.analysis-unit-robbery-total');
-      robberyLabel.hidden=!hasTotal;robberyLabel.textContent=hasTotal?number(robberyTotal):'';
-      robberyLabel.dataset.highRobberies=String(highlighted.has(unit.id));
-      if(hasTotal)control.dataset.robberyTotal=String(robberyTotal);else delete control.dataset.robberyTotal;
+    const selected=new Set(state?.quadrantIds??[]);
+    const robberyTotals=state?.robberyTotals;
+    const units=robberyTotals?.units,parts=robberyTotals?.parts;
+    const unit=areaUnits.find(item=>item.id===activeUnitId);
+    const scopeCounts=unit?parts:units;
+    const shownAreas=unit?.children??areaUnits;
+    const canInspect=Boolean(scopeCounts);
+    const most=shownAreas.reduce((highest,area)=>Math.max(highest,scopeCounts?.[area.id]??0),0);
+    const highlighted=new Set(shownAreas.filter(area=>most>0&&scopeCounts[area.id]>=most*HIGH_ROBBERY_THRESHOLD)
+      .sort((a,b)=>scopeCounts[b.id]-scopeCounts[a.id]).slice(0,MAX_HIGHLIGHTED_UNITS).map(area=>area.id));
+    rankingToolbar.hidden=most<=0;
+    totalsHeading.hidden=!canInspect;
+    totalsZone.textContent=unit?'Subcuadrante':'Unidad';
+    rankingPeriod.textContent=robberyTotals?.period??'';
+    for(const [order,button] of orderButtons)button.setAttribute('aria-pressed',String(order===areaOrder));
+    unitGrid.dataset.totals=childGrid.dataset.totals=String(canInspect);
+    orderAreaRows(unitGrid,areaUnits,unitButtonsById,units);
+    if(unit)orderAreaRows(childGrid,unit.children,areaButtonsById,parts);
+    for(const area of areaUnits) {
+      const entry=unitButtonsById.get(area.id),{control,selection}=entry;
+      const count=area.children.filter(child=>selected.has(child.id)).length;
+      const high=!unit&&highlighted.has(area.id);
+      const robbery=updateCount(entry,units?.[area.id],high);
       control.disabled=!state?.canChoose;
-      control.dataset.selection=count===0?'none':count===unit.children.length?'all':'partial';
-      const scope=state?.quadrantIds===null?'incluida en toda la comuna':`${count} de ${unit.children.length} subcuadrantes seleccionados`;
-      const description=`Unidad vecinal ${unit.label}${hasTotal?`, ${number(robberyTotal)} robos`:''}${highlighted.has(unit.id)?', entre las de mayor cantidad':''}, ${scope}`;
+      control.dataset.selection=count===0?'none':count===area.children.length?'all':'partial';
+      const scope=state?.quadrantIds===null?'incluida en toda la comuna':`${count} de ${area.children.length} subcuadrantes seleccionados`;
+      const description=`Unidad vecinal ${area.label}${robbery}${high?', entre las de mayor cantidad':''}, ${scope}`;
       control.setAttribute('aria-label',description);control.title=description;
-      control.querySelector('.analysis-unit-count').textContent=count?`${count}/${unit.children.length}`:'';
+      selection.textContent=count?`${count}/${area.children.length}`:'';
     }
-    for(const [id,control] of areaButtonsById) {
-      control.disabled=!state?.canChoose;control.setAttribute('aria-pressed',String(selected.includes(id)));
+    for(const [id,entry] of areaButtonsById) {
+      const {control}=entry;
+      const active=selected.has(id);
+      const robbery=updateCount(entry,parts?.[id],Boolean(unit)&&highlighted.has(id));
+      control.disabled=!state?.canChoose;
+      control.setAttribute('aria-pressed',String(active));
+      control.setAttribute('aria-label',`Subcuadrante ${id}${robbery}`);
+      control.title=`Subcuadrante ${id}${robbery}`;
     }
-    const unit=areaUnits.find(unit=>unit.id===activeUnitId),all=Boolean(unit?.children.length)&&unit.children.every(child=>selected.includes(child.id));
+    const all=Boolean(unit?.children.length)&&unit.children.every(child=>selected.has(child.id));
     unitAll.disabled=!state?.canChoose;unitBack.disabled=!state?.canChoose;
     unitAll.setAttribute('aria-pressed',String(all));
     unitAll.textContent=all?'Quitar toda la unidad':'Seleccionar toda la unidad';
     const scope=state?.spatialLabel??'Toda la comuna';
     if(areaSummary.textContent!==scope)areaSummary.textContent=scope;
+    const count=robberyTotals?.areaTotal;
+    areaRobberyTotal.hidden=!hasCount(count);
+    if(!areaRobberyTotal.hidden){
+      const noun=count===1?'robo':'robos';
+      areaTotalValue.textContent=`${visibleTotal(count)} ${noun}`;
+      areaTotalValue.title=`${number(count)} ${noun}`;
+    }
+  }
+  const companionPicker=el('div','analysis-companion-options');
+  grids.companion=companionPicker;
+  const levelOptions=el('fieldset','analysis-companion-choice');
+  const levelChoices=el('div','analysis-options');
+  const levelButtons=new Map([
+    ['','Según el área'],['unit','Unidades'],['part','Subcuadrantes']
+  ].map(([level,label])=>[level,button(levelChoices,`${prefix}-companion-level-${level||'auto'}`,label,()=>{
+    callbacks.companionRanking({level,page:0});
+  })]));
+  levelOptions.append(el('legend',null,'Nivel territorial'),levelChoices);
+  const sortOptions=el('fieldset','analysis-companion-choice');
+  const sortChoices=el('div','analysis-options');
+  sortOptions.append(el('legend',null,'Orden'),sortChoices);
+  let sortButtons=new Map(),sortSignature='';
+  const pages=el('div','analysis-companion-pages');
+  pages.setAttribute('role','group');pages.setAttribute('aria-label','Página de la tabla complementaria');
+  const previousPage=button(pages,`${prefix}-companion-page-previous`,'Anterior',()=>{
+    callbacks.companionRanking({page:companionState.page-1});
+  });
+  const pagePosition=el('output');pagePosition.setAttribute('aria-live','polite');
+  pages.append(pagePosition);
+  const nextPage=button(pages,`${prefix}-companion-page-next`,'Siguiente',()=>{
+    callbacks.companionRanking({page:companionState.page+1});
+  });
+  companionPicker.append(levelOptions,sortOptions,pages);
+  popover.append(companionPicker);
+
+  function setCompanionRanking(next){
+    if(companionState===next)return;
+    companionState=next;
+    companionTrigger.hidden=!next;
+    if(!next){
+      if(picker==='companion')closePicker();
+      return;
+    }
+    const signature=JSON.stringify(next.options);
+    if(signature!==sortSignature){
+      sortSignature=signature;
+      for(const control of sortButtons.values())controls.splice(controls.indexOf(control),1);
+      sortChoices.replaceChildren();
+      sortButtons=new Map(next.options.map(([order,label])=>[order,button(sortChoices,`${prefix}-companion-order-${order.replace(':','-')}`,label,()=>{
+        callbacks.companionRanking({order,page:0});
+      })]));
+    }
+    for(const [level,control] of levelButtons)control.setAttribute('aria-pressed',String(level===(next.automatic?'':next.level)));
+    for(const [order,control] of sortButtons)control.setAttribute('aria-pressed',String(order===next.order));
+    previousPage.setAttribute('aria-disabled',String(next.page===0));
+    nextPage.setAttribute('aria-disabled',String(next.page+1>=next.pageCount));
+    const position=`${number(next.first)}–${number(next.last)} de ${number(next.total)}`;
+    if(pagePosition.textContent!==position)pagePosition.textContent=position;
   }
   for(const [key,items] of resource?[]:[['month',MONTHS.map((m,i)=>[String(i+1).padStart(2,'0'),m])],...(camera?Object.entries(CAMERA_CHOICES):[['robbery',[['all','Todos'],...SECURITY_ROBBERY_TYPES.map(type=>[type.value,type.label])]],['period',SECURITY_CHOICES.period]])]) {
     const grid=el('div','analysis-date-grid');grid.dataset.grid=key;grids[key]=grid;
@@ -302,12 +429,17 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
   }
   popover.prepend(popoverHeading);overlay.append(panel,popover);
   for(const area of [panel,popover])for(const type of ['pointerdown','mousedown','touchstart','click','dblclick','wheel'])area.addEventListener(type,event=>event.stopPropagation());
-  function pickerAnchor(key){return key==='area'?areaTrigger:key==='month'?monthPicker:cameraTriggers[key];}
+  function pickerAnchor(key){
+    if(key==='area')return areaTrigger;
+    if(key==='month')return monthPicker;
+    if(key==='companion')return companionTrigger;
+    return cameraTriggers[key];
+  }
   function closePicker(){
     const anchor=pickerAnchor(picker);
     if(popover.contains(document.activeElement)&&anchor?.getClientRects().length)anchor.focus({preventScroll:true});
     picker=null;popover.hidden=true;
-    for(const e of [areaTrigger,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
+    for(const e of [areaTrigger,monthPicker,companionTrigger,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
   }
   function positionPicker(anchor) {
     const outer=container.getBoundingClientRect(),a=anchor.getBoundingClientRect(),p=popover.getBoundingClientRect(),r=panel.getBoundingClientRect();
@@ -316,16 +448,17 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     popover.style.top=`${Math.max(68,Math.min(outer.height-p.height-12,a.top-outer.top))}px`;
   }
   function openPicker(key) {
-    if(!state?.loaded || !grids[key] || key==='area'&&!state.canChoose || key==='month'&&state.temporalMode!=='month')return;
+    if(!state?.loaded || !grids[key] || key==='area'&&!state.canChoose
+      || key==='month'&&state.temporalMode!=='month' || key==='companion'&&!companionState)return;
     if(picker===key){closePicker();return;}
-    callbacks.clearHover();picker=key;popover.hidden=false;
-    for(const e of [areaTrigger,monthPicker,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
+    callbacks.clearHover(key);picker=key;popover.dataset.picker=key;popover.hidden=false;
+    for(const e of [areaTrigger,monthPicker,companionTrigger,...Object.values(cameraTriggers)])e.setAttribute('aria-expanded','false');
     for(const [name,grid] of Object.entries(grids))grid.hidden=name!==key;
-    popoverTitle.textContent={area:'Unidades vecinales',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
+    popoverTitle.textContent={area:'Unidades vecinales',companion:'Tabla complementaria',month:`Elige el mes · ${state.selectedYear}`,state:'Estado de las cámaras',type:'Tipos de cámara',robbery:'Tipos de robo',period:'Horario del día'}[key];
     if(key==='area')showAreaUnit(null,false);
     const anchor=pickerAnchor(key);anchor.setAttribute('aria-expanded','true');
     positionPicker(anchor);
-    const first=key==='area'?(unitGrid.querySelector('[data-selection="all"]')||unitGrid.querySelector('[data-selection="partial"]')||unitGrid.querySelector('button')):(grids[key].querySelector('[aria-pressed="true"]')||grids[key].querySelector('button'));
+    const first=key==='area'?(rankingToolbar.hidden?unitGrid.querySelector('button'):orderButtons.get(areaOrder)):(grids[key].querySelector('[aria-pressed="true"]')||grids[key].querySelector('button'));
     first?.focus({preventScroll:true});
   }
   function update(next) {
@@ -351,7 +484,7 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     whole.disabled=noSelection.disabled=!next.canChoose;
     const scopeText=next.spatialLabel??'Toda la comuna';
     if(spatialContext.textContent!==scopeText)spatialContext.textContent=scopeText;
-    heatKey.hidden=resource||camera&&next.display!=='heatmap';
+    heatKey.hidden=!next.loaded||Boolean(next.error)||next.summary.total===0||resource||camera&&next.display!=='heatmap';
     if(timeline){timeline.hidden=!next.visible;timeline.dataset.crossed=String(next.crossed);timelineSlider.disabled=!next.loaded;updatePlayback(next.playback);}
     const f=next.filters;
     filterButtons.forEach(e=>{
@@ -380,8 +513,9 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       const value=e.dataset.option==='month'?next.selectedMonth:f[e.dataset.option];
       e.setAttribute('aria-pressed',String(Array.isArray(value)?value.includes(e.dataset.value):value===e.dataset.value));
     }
-    const resultTotal=next.loaded?number(next.summary.total):'—';
+    const resultTotal=next.loaded?visibleTotal(next.summary.total):'—';
     if(total.textContent!==resultTotal)total.textContent=resultTotal;
+    if(next.loaded)total.title=number(next.summary.total);else total.removeAttribute('title');
     const hour=SECURITY_CHOICES.period.find(item=>item[0]===f.period);
     const date=next.dateRange?.label||'2023–2025';
     const cutoff=next.dateRange?.end?.split('-').reverse().join('/');
@@ -414,10 +548,8 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
       }
     }
     if(resourceToggle)resourceToggle.disabled=!next.loaded||!next.summary.total;
-    if(resource){
-      const unit=next.summary.total===1?(kind==='alarms'?'botón':'ubicación'):layer.count;
-      if(totalLabel.textContent!==unit)totalLabel.textContent=unit;
-    }
+    const unit=next.summary.total===1?(kind==='fixed'?'ubicación':layer.singular):layer.count;
+    if(totalLabel.textContent!==unit)totalLabel.textContent=unit;
     opacityRow.hidden=!next.crossed;compare.hidden=!primary||next.crossed;
     slider.value=String(Math.round(next.opacity*100));opacityValue.textContent=`${Math.round(next.opacity*100)}%`;
     if(!next.visible)closePicker();
@@ -446,5 +578,5 @@ export function createAnalysisPanel(overlay, container, layer, callbacks) {
     })
       .map(e=>{const r=e.getBoundingClientRect();return{id:e.id,x:r.left+r.width/2-outer.left,y:r.top+r.height/2-outer.top,width:r.width,height:r.height,element:e,priority:25};});
   }
-  return {element:panel,body,popover,timeline,inspectorSlot,comparisonSlot,controls,update,updatePlayback,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};
+  return {element:panel,body,popover,timeline,inspectorSlot,comparisonSlot,controls,update,updatePlayback,setCompanionRanking,openPicker,closePicker,targets,get picker(){return picker;},get isVisible(){return !panel.hidden;}};
 }

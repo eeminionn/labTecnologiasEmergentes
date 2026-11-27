@@ -206,7 +206,7 @@ body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experienc
   display: flex;
   flex-direction: column;
   gap: 10px;
-  width: 308px;
+  width: 320px;
   max-height: calc(100% - 82px);
   padding: 14px;
   border: 1px solid var(--border);
@@ -318,7 +318,7 @@ body:not(.twin-projection) .council-agenda-choice[aria-current="true"] {
 }
 body:not(.twin-projection) .council-agenda-choice time {
   color: var(--municipal-petroleo);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 body:not(.twin-projection) .council-agenda-name { font-size: 12px; line-height: 1.35; }
@@ -472,7 +472,7 @@ body:not(.twin-projection) .leaflet-popup-content { margin: 16px 20px; line-heig
 body:not(.twin-projection) .demo-popup strong { font-size: 14px; color: var(--tema-texto, var(--azul-100)); }
 body:not(.twin-projection) .demo-popup p { color: var(--ink-secondary); }
 
-/* Graphic pages keep their original white artwork; only navigation is glass. */
+/* The five charts share the same presentation area. */
 body:not(.twin-projection) .content-viewer { background: #fff; }
 body:not(.twin-projection) .content-heading {
   position: absolute;
@@ -485,11 +485,19 @@ body:not(.twin-projection) .content-heading {
 body:not(.twin-projection) .content-heading h1 {
   margin: 2px 0 3px;
   color: var(--ink);
-  font-size: clamp(17px, 2vw, 22px);
+  font-size: clamp(17px, 2vw, 23px);
   line-height: 1.25;
   letter-spacing: -.35px;
 }
 body:not(.twin-projection) .content-topic { margin: 0; color: var(--tema-texto); font-size: 11px; font-weight: 600; }
+body:not(.twin-projection) .content-detail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 12px;
+  margin: 0;
+  color: var(--ink-secondary);
+  font-size: 12px;
+}
 body:not(.twin-projection) .content-page-status {
   position: static;
   width: auto;
@@ -497,10 +505,16 @@ body:not(.twin-projection) .content-page-status {
   margin: 0;
   clip-path: none;
   color: var(--ink-secondary);
-  font-size: 11px;
   font-variant-numeric: tabular-nums;
 }
-body:not(.twin-projection) .content-stage { inset: 116px 120px 70px; }
+body:not(.twin-projection) .content-stage { inset: 110px 114px 70px; max-width: 1110px; margin-inline: auto; }
+body:not(.twin-projection) .content-vector svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  font-family: var(--municipal-font);
+  font-variant-numeric: tabular-nums;
+}
 body:not(.twin-projection) .content-stage:focus-visible {
   outline: 2px solid var(--municipal-petroleo);
   outline-offset: 3px;
@@ -520,7 +534,7 @@ body:not(.twin-projection) .content-control {
   box-shadow: var(--glass-shadow), var(--glass-inset);
 }
 body:not(.twin-projection) .content-control-symbol { font-size: 23px; }
-body:not(.twin-projection) .content-control-caption { font-size: 11px; font-weight: 600; margin-bottom: 6px; }
+body:not(.twin-projection) .content-control-caption { font-size: 12px; font-weight: 600; margin-bottom: 6px; }
 body:not(.twin-projection) #content-previous { left: 18px; transform: translateY(-50%); }
 body:not(.twin-projection) #content-next { left: auto; right: 18px; transform: translateY(-50%); }
 body:not(.twin-projection) #content-close {
@@ -763,10 +777,13 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
 @media (max-height: 780px) {
   body:not(.twin-projection):not(.analysis-open):not(.content-open):not(.experience-open) .map-intro {
     --council-camera-clearance: 228px;
-    gap: 7px;
+    gap: 5px;
     padding: 10px;
   }
-  body:not(.twin-projection) .council-agenda-current { padding-block: 8px; }
+  body:not(.twin-projection) .council-agenda-current { padding-block: 7px; }
+  body:not(.twin-projection) .council-agenda-list { gap: 2px; }
+  body:not(.twin-projection) .council-agenda-choice { min-height: 32px; padding-block: 3px; }
+  body:not(.twin-projection) .council-agenda-nav { padding-top: 5px; }
   body:not(.twin-projection) #diagnostics { width: 165px; bottom: 14px; }
   body:not(.twin-projection) .traffic-toolbar { max-height: calc(100% - 205px); }
   body:not(.twin-projection) .traffic-subtitle { margin-bottom: 10px; }
@@ -788,6 +805,13 @@ body:not(.twin-projection).experience-open .boundary-attribution { visibility: h
   body:not(.twin-projection):has(#diagnostics:not([hidden])) .map-intro {
     max-height: calc(100% - var(--council-camera-clearance, 264px) - 58px);
   }
+}
+@media (max-width: 560px) {
+  body:not(.twin-projection) .content-heading { padding-inline-start: 15px; padding-inline-end: 145px; }
+  body:not(.twin-projection) #content-close { width: 112px; right: 13px; }
+  body:not(.twin-projection) .content-stage { inset: 145px 12px 79px; }
+  body:not(.twin-projection) #content-previous,
+  body:not(.twin-projection) #content-next { top: auto; bottom: 13px; height: 52px; transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   body:not(.twin-projection) button { transition: none; }
